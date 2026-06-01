@@ -319,6 +319,34 @@ When a newer push arrives while a CI run is in flight, GitHub Actions cancels it
 is **not a real problem**. Always check `gh run list` to confirm whether a more recent
 successful run superseded the cancelled one.
 
+### Validating Solution Feasibility with `mipster_validate_sol`
+
+`mipster_validate_sol` checks whether a `.sol` file is truly feasible for a given problem —
+useful for catching preprocessing bugs or other solver errors that produce infeasible solutions.
+
+```sh
+mipster_validate_sol problem.mps[.gz] solution.sol
+```
+
+It checks:
+- Variable bounds (`lb ≤ x[i] ≤ ub`)
+- Integrality (`|x[i] − round(x[i])| ≤ 1e-5` for integer variables)
+- Row activities (`rowLB ≤ Ax ≤ rowUB` for every constraint)
+- Objective value (computed `c·x` vs. claimed in `.sol` header)
+
+Exit codes: `0` = feasible, `1` = violations found, `2` = file/usage error.
+
+To validate all solutions from an experiment:
+```sh
+for sol in /path/to/experiment/*.sol; do
+  inst=$(basename "$sol" .sol)
+  mipster_validate_sol "$MIPSTER_INSTANCES/miplib/2017+spp/${inst}.mps.gz" "$sol" || \
+    echo "INFEASIBLE: $inst"
+done
+```
+
+Full documentation: `docs/utils.html` (mipster_validate_sol section).
+
 ## Hardware & Parallelism
 
 Exploit all cores of the machine where the experiment is running.

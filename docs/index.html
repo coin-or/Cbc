@@ -204,6 +204,7 @@
     <a href="#quickstart">Quick Start</a>
     <a href="#contributing">Contributing</a>
     <a href="parameters.html">Parameters</a>
+    <a href="utils.html">Utils</a>
     <a href="https://github.com/h-g-s/mipster">GitHub</a>
   </div>
 </nav>
@@ -438,6 +439,13 @@ Cbc_deleteModel(m);</code></pre>
     <div class="feature-card">
       <h3>🐛 Debug Builds</h3>
       <p>AddressSanitizer and ThreadSanitizer builds available via <code>./configster --debug --sanitizer=asan</code>. Every CI run tests the ASan binary against the benchmark suite.</p>
+    </div>
+    <div class="feature-card">
+      <h3>🐛 Debug Bugs</h3>
+      <p>If MIPster claims the wrong optimal or declares an instance infeasible when it isn't,
+      use <a href="utils.html"><code>mipster_diag</code></a> to pinpoint the culprit.
+      It runs a focused debugCuts pass and — optionally — a 13-config feature sweep,
+      producing clean, actionable output in minutes.</p>
     </div>
     <div class="feature-card">
       <h3>📬 Submit a PR</h3>

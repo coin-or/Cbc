@@ -204,9 +204,52 @@ $MIPSTER_PREFIX/bin/mipster problem.mps -solve
 - **ThreadSanitizer build:** `./configster --debug --sanitizer=tsan --install` (installs to `$MIPSTER_PREFIX-tsan`)
 - `LD_LIBRARY_PATH` must include `.libs/` subdirs of each project when running binaries from the build tree (see `.vscode/launch.json` for the full path list)
 
-### Debugging Invalid Cuts
+### Diagnosing Wrong Results with `mipster_diag`
 
-If MIPster produces a wrong (suboptimal) proven-optimal, the likely cause is a cut that incorrectly excludes the optimal solution. Use the `-debugCuts <solution.sol>` parameter to detect this automatically via `OsiRowCutDebugger`:
+`mipster_diag` is the **first tool to reach for** when MIPster claims wrong-optimal or
+wrong-infeasible. It automates the two most useful debugging passes and produces clean,
+actionable output.
+
+**Default flow (fast, ~1–3 min):**
+1. Baseline run — confirm the bug reproduces within the time limit.
+2. Auto-obtain reference solution (if `-sol` not provided).
+3. `debugCuts` pass — activates `OsiRowCutDebugger` and prints:
+   - `bad row N lb <= act <= ub` — an invalid row cut excludes the reference solution
+   - `nodeBoundProp BAD FIXING (phase,rnd): col N ...` — a bound propagation step wrongly
+     fixed a variable outside the reference solution's value
+
+```sh
+# Minimal usage: supply the certified optimal value
+mipster_diag problem.mps -opt <certified_value>
+
+# Provide a known-good solution to skip auto-obtain
+mipster_diag problem.mps -opt <N> -sol /tmp/ref.sol
+
+# Reproduce bugs triggered by specific parameter settings
+mipster_diag problem.mps -opt <N> -p nodeBoundProp on -p nodeBoundPropMinDepth 2
+
+# 60 s per run is the default; increase for hard instances
+mipster_diag problem.mps -opt <N> -time 300
+
+# Add -scan for the full 13-config feature-disabling sweep (slow)
+mipster_diag problem.mps -opt <N> -sol /tmp/ref.sol -scan
+```
+
+**Actionable output example** (enlight_hard, wrong-infeasible bug):
+```
+nodeBoundProp BAD FIXING (propagation, round 0): col 156 (y#9#2) type=binary old=[1,3] new=[1,1] but optimal has 2
+* 156 2
+BAD 156 1 <= 2 <= 1
+```
+→ `nodeBoundProp` wrongly fixed column 156 to `[1,1]` even though the optimal value is 2.
+The bug is in the bound propagation code, not in any row cut.
+
+If the debugCuts pass shows no `bad row` or `BAD FIXING` lines, add `-scan` to run
+the 13-config feature sweep and identify which cut family or feature is responsible.
+
+### Debugging Invalid Cuts (manual)
+
+For finer control beyond `mipster_diag`, use `-debugCuts` directly:
 
 ```sh
 # Get a known good solution (preprocessing off)
@@ -258,7 +301,10 @@ Each diagnostic result is printed on its own labeled line:
 #### Follow-up steps
 
 1. **Identify LEADs** — the feature(s) marked `LEAD` are the prime suspects.
-2. **Reproduce locally** with that feature disabled to confirm: add `-<feature> off` before `-solve`.
+2. **Reproduce locally** with `mipster_diag` (pass LEAD's parameter via `-p`):
+   ```sh
+   mipster_diag problem.mps -opt <certified_value> -p <param> off
+   ```
 3. **Run debugCuts** to find the exact invalid cut (requires the reference `.sol` file):
    ```sh
    $MIPSTER_PREFIX/bin/mipster problem.mps -debugCuts /path/to/known.sol -solve 2>&1 | grep "bad row"

@@ -77,7 +77,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_miplib
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_miplib
 
 noinst_PROGRAMS = gen_miclsp_solutions
 
@@ -114,6 +114,14 @@ CInterfaceTest_miclsp_SOURCES = CInterfaceTest_miclsp.c
 nodist_EXTRA_CInterfaceTest_miclsp_SOURCES = dummy.cpp
 CInterfaceTest_miclsp_LDADD = ../src/libmipster.la
 CInterfaceTest_miclsp_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+
+########################################################################
+#                   MESCN tests (supply chain: binary + integer + continuous)#
+########################################################################
+
+CInterfaceTest_mescn_SOURCES = CInterfaceTest_mescn.c
+nodist_EXTRA_CInterfaceTest_mescn_SOURCES = dummy.cpp
+CInterfaceTest_mescn_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   MDKP random-instance tests                          #

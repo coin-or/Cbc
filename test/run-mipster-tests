@@ -101,6 +101,7 @@ TESTS=(
   CInterfaceTest_fl_random
   CInterfaceTest_mdkp_random
   CInterfaceTest_miclsp
+  CInterfaceTest_mescn
   CInterfaceTest_nursesched
   CInterfaceTest_a1
   CInterfaceTest_graphdraw

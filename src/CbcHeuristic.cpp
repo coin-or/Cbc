@@ -1154,7 +1154,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       if ((model_->specialOptions() & 1) != 0) {
         const OsiRowCutDebugger *debugger = solver2->getRowCutDebugger();
         if (debugger) {
-          printf("On optimal path after preprocessing\n");
+;
         }
       }
 #endif
@@ -1323,7 +1323,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           if ((model_->specialOptions() & 1) != 0) {
             const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger();
             if (debugger) {
-              printf("On optimal path BB\n");
+;
             }
           }
 #endif
@@ -1499,7 +1499,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         if ((model_->specialOptions() & 1) != 0) {
           const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger();
           if (debugger) {
-            printf("On optimal path CC\n");
+;
           }
         }
 #endif
@@ -1628,7 +1628,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           if ((model_->specialOptions() & 1) != 0) {
             const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger();
             if (debugger) {
-              printf("On optimal path DD\n");
+;
             }
           }
 #endif

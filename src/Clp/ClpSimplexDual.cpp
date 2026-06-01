@@ -5742,7 +5742,6 @@ int ClpSimplexDual::perturb()
   if (perturbation_ >= 70) {
     modifyRowCosts = true;
     perturbation_ -= 20;
-    printf("Row costs modified, ");
   }
   bool uniformChange = false;
   bool inCbcOrOther = (specialOptions_ & 0x03000000) != 0;
@@ -5844,7 +5843,6 @@ int ClpSimplexDual::perturb()
     if (perturbation_ <= -900) {
       modifyRowCosts = true;
       perturbation_ += 1000;
-      printf("Row costs modified, ");
     }
     if (perturbation_ <= -10) {
       perturbation_ += 10;

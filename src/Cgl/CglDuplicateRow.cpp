@@ -27,7 +27,7 @@ void CglDuplicateRow::generateCuts(const OsiSolverInterface & si, OsiCuts & cs,
 #ifdef CGL_DEBUG
   const OsiRowCutDebugger * debugger = si.getRowCutDebugger();
   if (debugger&&debugger->onOptimalPath(si)) {
-    printf("On optimal path\n");
+;
   }
 #endif
   // Don't do in tree ?

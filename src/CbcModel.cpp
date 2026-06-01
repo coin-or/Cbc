@@ -4439,8 +4439,7 @@ void CbcModel::branchAndBound(int doStatistics)
     OsiRowCutDebugger *debuggerX = const_cast< OsiRowCutDebugger * >(solver_->getRowCutDebuggerAlways());
     const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
     if (!debugger) {
-      // infeasible!!
-      printf("before search\n");
+      // infeasible!! — print only columns where the reference solution is outside bounds
       const double *lower = solver_->getColLower();
       const double *upper = solver_->getColUpper();
       const double *solution = debuggerX->optimalSolution();
@@ -4448,8 +4447,8 @@ void CbcModel::branchAndBound(int doStatistics)
       for (int i = 0; i < numberColumns; i++) {
         if (solver_->isInteger(i)) {
           if (solution[i] < lower[i] - 1.0e-6 || solution[i] > upper[i] + 1.0e-6)
-            printf("**** ");
-          printf("%d %g <= %g <= %g\n", i, lower[i], solution[i], upper[i]);
+            printf("debugger: col %d  bounds=[%g,%g]  opt_val=%g  EXCLUDED\n",
+              i, lower[i], upper[i], solution[i]);
         }
       }
       // abort();
@@ -11366,7 +11365,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
     const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
     if (debugger) {
       onOptimalPath = true;
-      printf("On optimal path d\n");
+;
       solver_->writeMpsNative("onopt.mps", NULL, NULL, 2);
       // but check cuts
       OsiSolverInterface *temp = solver_->clone();
@@ -15647,7 +15646,7 @@ int CbcModel::resolve(OsiSolverInterface *solver)
       const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
       if (debugger) {
         onOptimalPath = true;
-        printf("On optimal path before resolve\n");
+;
       }
     }
 #endif
@@ -15679,7 +15678,7 @@ int CbcModel::resolve(OsiSolverInterface *solver)
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
       const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
       if (debugger && solver_->isProvenOptimal()) {
-        printf("On optimal path after resolve\n");
+;
       } else {
         solver_->writeMpsNative("badSolve.mps", NULL, NULL, 2);
         printf("NOT on optimal path after resolve\n");
@@ -16199,7 +16198,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
     const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
     if (debugger) {
       onOptimalPath = true;
-      printf("On optimal path - choose\n");
+;
     }
   }
 #endif
@@ -16581,10 +16580,10 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
   if (onOptimalPath) {
     const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
     if (!debugger) {
-      printf("NOT On optimal path - choose\n");
+;
       abort();
     } else {
-      printf("Still On optimal path - choose\n");
+;
       if (anyAction == -2) {
         printf("anyAction 2!!\n");
         abort();
@@ -17577,7 +17576,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
       const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
       if (debugger) {
         onOptimalPath = true;
-        printf("On optimal path\n");
+;
       }
     }
 

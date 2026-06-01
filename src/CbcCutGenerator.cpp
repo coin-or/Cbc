@@ -298,7 +298,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 #ifdef CGL_DEBUG
     const OsiRowCutDebugger *debugger2 = solver->getRowCutDebugger();
     if (debugger2 && debugger2->onOptimalPath(*solver)) {
-      printf("On optimal path cbcgen\n");
+;
     } else {
       debugger2 = NULL;
     }
@@ -505,7 +505,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 #ifdef CGL_DEBUG
         const OsiRowCutDebugger *debugger = solver->getRowCutDebugger();
         if (debugger && debugger->onOptimalPath(*solver)) {
-          printf("On optimal path CbcCut\n");
+;
           int nCols = solver->getNumCols();
           int i;
           const double *optimal = debugger->optimalSolution();

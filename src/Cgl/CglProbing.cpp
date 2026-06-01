@@ -1331,7 +1331,7 @@ void CglProbing::generateCuts(const OsiSolverInterface &si, OsiCuts &cs,
 #ifdef CGL_DEBUG
   const OsiRowCutDebugger *debugger = si.getRowCutDebugger();
   if (debugger && debugger->onOptimalPath(si)) {
-    printf("On optimal path %d\n", nPath);
+;
     nPath++;
     int nCols = si.getNumCols();
     int i;
@@ -1404,7 +1404,7 @@ int CglProbing::generateCutsAndModify(const OsiSolverInterface &si,
 #ifdef CGL_DEBUG
   const OsiRowCutDebugger *debugger = si.getRowCutDebugger();
   if (debugger && debugger->onOptimalPath(si)) {
-    printf("On optimal path %d\n", nPath);
+;
     nPath++;
     int nCols = si.getNumCols();
     int i;

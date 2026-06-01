@@ -218,9 +218,8 @@ int OsiRowCutDebugger::printOptimalSolution(const OsiSolverInterface &si) const
           }
           ok = false;
           std::cout << "* ";
-        }
-        if (value || !ok)
           std::cout << j << " " << value << std::endl;
+        }
       }
     }
     for (int i = 0; i < 2; i++) {

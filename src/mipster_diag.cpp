@@ -3,26 +3,33 @@
  *
  * Diagnoses wrong-optimal and wrong-infeasible MIP results by:
  *   1. Confirming the bug is reproducible within the given time limit.
- *   2. Running 13 feature-disabling configurations to locate the culprit.
- *   3. Auto-obtaining a reference solution (if -sol is not given) via a
+ *   2. Auto-obtaining a reference solution (if -sol is not given) via a
  *      progressive preprocess-off/nodeBoundProp-off/cuts-off ladder.
- *   4. Running a -debugCuts pass which prints:
+ *   3. Running a -debugCuts pass which prints:
  *        "bad row"                  — for any row cut that excludes the
  *                                     certified optimal solution
  *        "nodeBoundProp BAD FIXING" — for any bound fixing in
  *                                     CbcBoundPropagation that contradicts
  *                                     the certified optimal solution
  *      If neither type of message appears, the bug lies outside row cuts and
- *      node-level bound propagation.
+ *      bound propagation; use -scan to run a full feature-disabling sweep.
+ *   4. (Optional, -scan) Running 13 feature-disabling configurations to
+ *      narrow down the culprit when debugCuts alone is not conclusive.
  *
  * Usage:
  *   mipster_diag <problem.{mps,lp}[.gz]> -opt <value> [OPTIONS]
  *
- *   -opt N     Certified optimal value (required)
- *   -sol FILE  Known-good .sol file for the -debugCuts pass;
- *              if omitted the tool attempts to auto-obtain one
- *   -time N    Per-run wall-clock time limit in seconds (default: 60)
- *   -max       Maximisation problem (default: minimisation)
+ *   -opt N        Certified optimal value (required)
+ *   -sol FILE     Known-good .sol file for the -debugCuts pass;
+ *                 if omitted the tool attempts to auto-obtain one
+ *   -time N       Per-run wall-clock time limit in seconds (default: 60)
+ *   -max          Maximisation problem (default: minimisation)
+ *   -scan         Also run 13 feature-disabling configurations to locate
+ *                 the culprit (slow: up to 13 × time-limit seconds extra)
+ *   -p PAR VAL    Extra solver parameter applied to every run.
+ *                 Repeat to add multiple parameters.
+ *                 Use to reproduce bugs that only trigger with specific settings,
+ *                 e.g.: -p nodeBoundProp on -p nodeBoundPropMinDepth 2
  *
  * To generate a reference solution manually:
  *   mipster problem.mps -preprocess off -solve -solu /tmp/ref.sol
@@ -34,7 +41,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <unistd.h>
+#include <vector>
 
 /* ── Diagnostic feature configurations ──────────────────────── */
 
@@ -63,6 +72,33 @@ static const DiagConfig CONFIGS[] = {
   { "no-zerohalf",      "zero",          "off" },
 };
 static const int N_CONFIGS = (int)(sizeof(CONFIGS) / sizeof(CONFIGS[0]));
+
+/* ── Suppress solver stdout noise during non-diagnostic solves ── */
+
+/* Redirect both stdout and stderr to /dev/null, run the solve, then restore.
+ * BAD FIXING and bad row use plain printf (stdout) — they would be silenced.
+ * Only use this for baseline / scan / auto-sol runs; use Cbc_solve()
+ * directly for the debugCuts pass where we want those messages. */
+static void silent_solve(Cbc_Model *m)
+{
+  fflush(stdout);
+  fflush(stderr);
+  int saved_out = dup(STDOUT_FILENO);
+  int saved_err = dup(STDERR_FILENO);
+  int devnull = open("/dev/null", O_WRONLY);
+  dup2(devnull, STDOUT_FILENO);
+  dup2(devnull, STDERR_FILENO);
+  close(devnull);
+
+  Cbc_solve(m);
+
+  fflush(stdout);
+  fflush(stderr);
+  dup2(saved_out, STDOUT_FILENO);
+  dup2(saved_err, STDERR_FILENO);
+  close(saved_out);
+  close(saved_err);
+}
 
 /* ── Result classification ───────────────────────────────────── */
 
@@ -97,11 +133,14 @@ static const char *rk_name(ResultKind k)
 
 /* ── Build a fresh model ─────────────────────────────────────── */
 
+struct ExtraParam { const char *param; const char *value; };
+
 struct Opts {
   const char *filename;
   int         is_max;
   int         time_limit;
   int         log_level;
+  std::vector<ExtraParam> extra; /* applied to every run */
 };
 
 static Cbc_Model *make_model(const Opts &o)
@@ -126,6 +165,8 @@ static Cbc_Model *make_model(const Opts &o)
     Cbc_setObjSense(m, -1.0);
   if (o.time_limit > 0)
     Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, (double)o.time_limit);
+  for (const auto &ep : o.extra)
+    Cbc_setParameter(m, ep.param, ep.value);
   return m;
 }
 
@@ -171,7 +212,7 @@ static bool run_feature_scan(const Opts &base, double cert,
       continue;
     }
     Cbc_setParameter(m, cfg.param, cfg.value);
-    Cbc_solve(m);
+    silent_solve(m);
 
     ResultKind rk = classify(m, cert);
     double obj   = Cbc_getObjValue(m);
@@ -246,7 +287,7 @@ static bool auto_obtain_sol(const Opts &base, double cert,
     if (!m) break;
     for (int i = 0; i < n; i++)
       Cbc_setParameter(m, ladder[i][0], ladder[i][1]);
-    Cbc_solve(m);
+    silent_solve(m);
 
     ResultKind rk = classify(m, cert);
     if (rk == RK_OK || rk == RK_LEAD) {
@@ -274,16 +315,28 @@ static void run_debug_cuts(const Opts &base, const char *sol_path, double cert)
          "  Watch for:\n"
          "    'bad row N lb <= act <= ub'           invalid row cut\n"
          "    'nodeBoundProp BAD FIXING (phase,rnd)' wrong bound fixing\n"
-         "  No such lines → row cuts and nodeBoundProp are NOT the source.\n\n",
+         "  No such lines → row cuts and nodeBoundProp are NOT the source.\n"
+         "  Use -scan to run feature-disabling sweep.\n\n",
          sol_path);
   fflush(stdout);
 
-  Opts opts = base;
-  opts.log_level = 1;
-  Cbc_Model *m = make_model(opts);
+  Cbc_Model *m = make_model(base);  /* log_level stays 0; BAD FIXING uses printf */
   if (!m) return;
   Cbc_setParameter(m, "debugCuts", sol_path);
+
+  /* Suppress stderr noise (▶ Non-default parameters) while keeping stdout
+   * visible so BAD FIXING and bad row messages print through. */
+  fflush(stderr);
+  int saved_err = dup(STDERR_FILENO);
+  int devnull = open("/dev/null", O_WRONLY);
+  dup2(devnull, STDERR_FILENO);
+  close(devnull);
+
   Cbc_solve(m);
+
+  fflush(stderr);
+  dup2(saved_err, STDERR_FILENO);
+  close(saved_err);
 
   printf("\n  debugCuts result: %s  obj=%.6g  (certified=%.6g)\n",
          rk_name(classify(m, cert)), Cbc_getObjValue(m), cert);
@@ -299,24 +352,30 @@ static void usage(const char *prog)
     "Usage: %s <problem.{mps,lp}[.gz]> -opt <value> [OPTIONS]\n"
     "\n"
     "Diagnose wrong MIPster results (wrong-optimal or wrong-infeasible).\n"
-    "Runs %d feature-disabling configurations to locate the culprit, then\n"
-    "a -debugCuts pass to identify bad row cuts and bound-propagation fixings.\n"
+    "By default: confirms the bug, then runs a -debugCuts pass that prints\n"
+    "'bad row' (invalid row cut) and 'nodeBoundProp BAD FIXING' (wrong bound\n"
+    "fixing) messages — enough to identify most soundness bugs.\n"
     "\n"
     "Required:\n"
-    "  -opt N     Certified optimal value\n"
+    "  -opt N        Certified optimal value\n"
     "\n"
     "Options:\n"
-    "  -sol FILE  Known-good .sol file for the debugCuts pass\n"
-    "             (if omitted the tool attempts to auto-obtain one)\n"
-    "  -time N    Per-run wall-clock time limit in seconds (default: 60)\n"
-    "  -max       Maximisation problem (default: minimisation)\n"
+    "  -sol FILE     Known-good .sol file for the debugCuts pass\n"
+    "                (if omitted the tool attempts to auto-obtain one)\n"
+    "  -time N       Per-run wall-clock time limit in seconds (default: 60)\n"
+    "  -max          Maximisation problem (default: minimisation)\n"
+    "  -scan         Also run %d feature-disabling configs to narrow down\n"
+    "                the culprit (slow: up to %d × time-limit extra seconds)\n"
+    "  -p PAR VAL    Extra solver parameter applied to every run (repeatable).\n"
+    "                Use to reproduce bugs triggered by specific settings.\n"
     "\n"
     "Quick workflow:\n"
-    "  # 1. Get a reference solution with all features off\n"
-    "  mipster problem.mps -preprocess off -solve -solu /tmp/ref.sol\n"
-    "  # 2. Run diagnostics\n"
-    "  %s problem.mps -opt <N> -sol /tmp/ref.sol [-time 120]\n",
-    prog, N_CONFIGS, prog);
+    "  # Default: fast debugCuts pass (a few minutes at most)\n"
+    "  %s problem.mps -opt <N> [-sol /tmp/ref.sol] [-time 120]\n"
+    "  %s problem.mps -opt <N> -p nodeBoundProp on -p nodeBoundPropMinDepth 2\n"
+    "  # Full feature scan if debugCuts is not conclusive:\n"
+    "  %s problem.mps -opt <N> -sol /tmp/ref.sol -scan\n",
+    prog, N_CONFIGS, N_CONFIGS, prog, prog, prog);
 }
 
 /* ── main ────────────────────────────────────────────────────── */
@@ -329,6 +388,8 @@ int main(int argc, char **argv)
   bool        has_opt    = false;
   int         time_limit = 60;
   bool        is_max     = false;
+  bool        do_scan    = false;
+  std::vector<ExtraParam> extra;
 
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-opt") && i + 1 < argc)
@@ -339,6 +400,13 @@ int main(int argc, char **argv)
       time_limit = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-max"))
       is_max = true;
+    else if (!strcmp(argv[i], "-scan"))
+      do_scan = true;
+    else if (!strcmp(argv[i], "-p") && i + 2 < argc) {
+      ExtraParam ep = { argv[i + 1], argv[i + 2] };
+      extra.push_back(ep);
+      i += 2;
+    }
     else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help"))
       { usage(argv[0]); return 0; }
     else if (argv[i][0] != '-')
@@ -357,16 +425,19 @@ int main(int argc, char **argv)
   printf("  Certified opt: %.6g  (%s)\n", cert, is_max ? "max" : "min");
   printf("  Time limit:    %ds per run\n", time_limit);
   if (sol_file) printf("  Sol file:      %s\n", sol_file);
+  if (do_scan)  printf("  Feature scan:  enabled (%d configs)\n", N_CONFIGS);
+  for (const auto &ep : extra)
+    printf("  Extra param:   %s %s\n", ep.param, ep.value);
 
-  Opts base = { filename, is_max ? 1 : 0, time_limit, /*log_level=*/0 };
+  Opts base = { filename, is_max ? 1 : 0, time_limit, /*log_level=*/0, extra };
 
-  /* ── Baseline: confirm the bug ── */
+  /* ── Phase 1: Baseline — confirm the bug ── */
   printf("\n  Baseline run (default settings, %ds)...\n", time_limit);
   fflush(stdout);
   {
     Cbc_Model *m = make_model(base);
     if (!m) return 1;
-    Cbc_solve(m);
+    silent_solve(m);
     ResultKind rk = classify(m, cert);
     double obj    = Cbc_getObjValue(m);
     double bound  = Cbc_getBestPossibleObjValue(m);
@@ -395,34 +466,38 @@ int main(int argc, char **argv)
     }
   }
 
-  /* ── Feature scan ── */
   char scan_sol_path[256] = "";
   snprintf(scan_sol_path, sizeof(scan_sol_path),
            "/tmp/mipster_diag_%d.sol", (int)getpid());
-
-  bool have_scan_sol = run_feature_scan(base, cert,
-                                        sol_file ? nullptr : scan_sol_path);
-
-  /* ── Resolve reference solution ── */
   bool cleanup_sol = false;
+
+  /* ── Phase 2: Auto-obtain reference solution if not provided ── */
   if (!sol_file) {
-    if (have_scan_sol) {
+    cleanup_sol = auto_obtain_sol(base, cert, scan_sol_path);
+    if (cleanup_sol)
       sol_file = scan_sol_path;
-      cleanup_sol = true;
-    } else {
-      cleanup_sol = auto_obtain_sol(base, cert, scan_sol_path);
-      if (cleanup_sol)
-        sol_file = scan_sol_path;
-    }
   }
 
-  /* ── debugCuts pass ── */
+  /* ── Phase 3: debugCuts pass ── */
   if (sol_file)
     run_debug_cuts(base, sol_file, cert);
   else
     printf("\n  debugCuts: skipped — no reference solution available.\n"
            "  Run: mipster problem.mps -preprocess off -solve -solu /tmp/ref.sol\n"
            "  Then rerun with -sol /tmp/ref.sol\n");
+
+  /* ── Phase 4 (optional): Feature scan ── */
+  if (do_scan) {
+    bool have_scan_sol = run_feature_scan(base, cert,
+                                          sol_file ? nullptr : scan_sol_path);
+    if (!sol_file && have_scan_sol) {
+      sol_file = scan_sol_path;
+      cleanup_sol = true;
+    }
+  } else {
+    printf("\n  Tip: if debugCuts output above is not conclusive, rerun with -scan\n"
+           "  to run %d feature-disabling configurations.\n", N_CONFIGS);
+  }
 
   if (cleanup_sol)
     unlink(scan_sol_path);

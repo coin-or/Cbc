@@ -5512,7 +5512,7 @@ void CbcModel::branchAndBound(int doStatistics)
       tree_->setComparison(*nodeCompare_);
       unlockThread();
     }
-    if (numberNodes_ >= lastPrintEvery && CoinWallclockTime() - lastSecPrintProgress_ > secsPrintFrequency_) {
+    if ((numberNodes_ >= lastPrintEvery && CoinWallclockTime() - lastSecPrintProgress_ > secsPrintFrequency_)||!numberNodes_) {
       lastPrintEvery = numberNodes_ + printFrequency_;
       lockThread();
       int nNodes = tree_->size();
@@ -5558,17 +5558,17 @@ void CbcModel::branchAndBound(int doStatistics)
         else
           lastBestPossibleObjective = bestPossibleObjective_;
         messageHandler()->message(CBC_STATUS, messages())
-          << numberNodes_ << std::max(nNodes, 1) << currentBestObj
+          << numberNodes_+numberExtraNodes_ << std::max(nNodes, 1) << currentBestObj
           << trueObjValue(bestPossibleObjective_) << getCurrentSeconds() << CoinMessageEol;
       } else if (intParam_[CbcPrinting] == 1) {
         messageHandler()->message(CBC_STATUS2, messages())
-          << numberNodes_ << nNodes << currentBestObj
+          << numberNodes_+numberExtraNodes_ << nNodes << currentBestObj
           << trueObjValue(bestPossibleObjective_) << tree_->lastDepth()
           << tree_->lastUnsatisfied() << tree_->lastObjective()
           << numberIterations_ << getCurrentSeconds() << CoinMessageEol;
       } else if (!numberExtraIterations_) {
         messageHandler()->message(CBC_STATUS2, messages())
-          << numberNodes_ << nNodes << currentBestObj
+          << numberNodes_+numberExtraNodes_ << nNodes << currentBestObj
           << trueObjValue(bestPossibleObjective_) << tree_->lastDepth()
           << tree_->lastUnsatisfied() << tree_->lastObjective()
           << numberIterations_
@@ -15065,6 +15065,7 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
       if (how != CBC_ROUNDING) {
         handler_->message(how, messages_)
           << trueBestObjValue() << numberIterations_ << numberNodes_
+	  << currentDepth_ << tree_->size()
           << getCurrentSeconds() << CoinMessageEol;
         dealWithEventHandler(CbcEventHandler::solution, objectiveValue,
           solution);
@@ -15076,6 +15077,7 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
           name = "Reduced search";
         handler_->message(CBC_ROUNDING, messages_)
           << trueBestObjValue() << name << numberIterations_ << numberNodes_
+	  << currentDepth_ << tree_->size()
           << getCurrentSeconds() << CoinMessageEol;
         dealWithEventHandler(CbcEventHandler::heuristicSolution, objectiveValue,
           solution);
@@ -15195,6 +15197,7 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
           const char *name = lastHeuristic_->heuristicName();
           handler_->message(CBC_ROUNDING, messages_)
             << trueBestObjValue() << name << numberIterations_ << numberNodes_
+	    << currentDepth_ << tree_->size()
             << getCurrentSeconds() << CoinMessageEol;
         }
       }
@@ -19384,7 +19387,9 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
       // baseModel->handler_ (workers are cloned with their own handlers).
       handler_->message(CBC_ROUNDING, messages_)
         << trueBestObjValue() << "heuristic" << baseModel->numberIterations_
-        << baseModel->numberNodes_ << getCurrentSeconds() << CoinMessageEol;
+        << baseModel->numberNodes_
+	<< currentDepth_ << tree_->size()
+	<< getCurrentSeconds() << CoinMessageEol;
     }
     baseModel->numberSolutions_++;
     unlockThread();

@@ -91,6 +91,8 @@ struct IncumbentMsg {
   double obj = 0.0;
   std::string method;
   long nodes = 0;
+  int depth = 0;
+  int ontree = 0;
   double elapsed = 0.0;
 };
 
@@ -105,8 +107,10 @@ static bool parseIncumbentMsg(const char *buf, IncumbentMsg &out)
   const char *aftP = std::strstr(p, " after ");
   out.method = (byP && aftP && aftP > byP + 10) ? std::string(byP + 10, aftP) : "B&B";
   if (!aftP) return false;
-  return std::sscanf(aftP, " after %*ld iterations and %ld nodes (%lf",
-    &out.nodes, &out.elapsed) == 2;
+  long int iterations;
+  int nGot = std::sscanf(aftP, " after %*ld iterations and %ld nodes %d depth %d ontree (%lf",
+			 &out.nodes, &out.depth, &out.ontree, &out.elapsed);
+  return (nGot==4);
 }
 
 // ---------------------------------------------------------------------------
@@ -1280,9 +1284,13 @@ int CbcOutputHandler::print()
         const char *p = std::strstr(buf, "Integer solution of ");
         if (p) {
           double obj, elapsed; long nodes;
-          if (std::sscanf(p, "Integer solution of %lf found after %*ld iterations and %ld nodes (%lf",
-                &obj, &nodes, &elapsed) == 3)
-            bnbOut_->onBnBIncumbent(obj, nodes, elapsed);
+	  int depth, ontree;
+	  long int iterations;
+          int nGot = std::sscanf(p, "Integer solution of %lf found after %*ld iterations and %ld nodes %d depth %d ontree (%lf",
+				 &obj, &iterations,&nodes, &depth,
+				 &ontree, &elapsed);
+	  if (nGot == 6)
+            bnbOut_->onBnBIncumbent(obj, nodes, depth, ontree, elapsed);
         }
         return 0;
       }
@@ -1627,7 +1635,8 @@ void CbcOutputHandler::routeIncumbentMessage(const char *buf, int /*ext*/)
   if (!bnbOut_) return;
   IncumbentMsg im;
   if (parseIncumbentMsg(buf, im))
-    bnbOut_->onHeurIncumbent(im.obj, im.method.c_str(), im.nodes, im.elapsed);
+    bnbOut_->onHeurIncumbent(im.obj, im.method.c_str(), im.ontree, im.depth,
+			     im.nodes, im.elapsed);
 }
 
 void CbcOutputHandler::beginRestartMode()
@@ -2356,15 +2365,17 @@ void CbcBnBOutput::queuePreProgressIncumbent(double obj, const char *method,
   preProgressIncumbents_.push_back({ obj, method ? method : "", nodes, CoinWallclockTime() });
 }
 
-void CbcBnBOutput::onBnBIncumbent(double obj, long nodes, double /*elapsed*/)
+void CbcBnBOutput::onBnBIncumbent(double obj, long nodes, int depth,
+				  int ontree, double /*elapsed*/)
 {
-  printRow(true, nodes, lastOnTree_, lastDepth_, obj, "B&B", lastBestBound_, CoinWallclockTime());
+  printRow(true, nodes, ontree, depth, obj, "B&B", lastBestBound_, CoinWallclockTime());
 }
 
 void CbcBnBOutput::onHeurIncumbent(double obj, const char *method,
+				   int ontree, int depth,
   long nodes, double /*elapsed*/)
 {
-  printRow(true, nodes, lastOnTree_, lastDepth_, obj, method, lastBestBound_, CoinWallclockTime());
+  printRow(true, nodes, ontree, depth, obj, method, lastBestBound_, CoinWallclockTime());
 }
 
 void CbcBnBOutput::onStopReason(const char *reason)

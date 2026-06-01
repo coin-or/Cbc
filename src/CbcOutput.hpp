@@ -534,10 +534,13 @@ public:
   void onProgress(long nodes, int onTree, int depth, double bestSol, double bestBound, double elapsed);
 
   // ext=4 (CBC_SOLUTION): incumbent found by B&B LP
-  void onBnBIncumbent(double obj, long nodes, double elapsed);
+  void onBnBIncumbent(double obj, long nodes, int depth, int ontree,
+		      double elapsed);
 
   // ext=12 (CBC_ROUNDING): incumbent found by a named heuristic
-  void onHeurIncumbent(double obj, const char *method, long nodes, double elapsed);
+  void onHeurIncumbent(double obj, const char *method,
+		       int ontree, int depth,
+		       long nodes, double elapsed);
 
   // Queue an incumbent found before B&B starts (e.g. during root cut gen).
   // It will be emitted as a ★ row at the top of the B&B table once the

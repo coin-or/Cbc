@@ -39,17 +39,17 @@ static Cbc_message us_english[] = {
 #endif
   { CBC_GAP, 11, 1, "Exiting as integer gap of %g less than %g or %g%%" },
 #ifndef CBC_MANY_NODE_COUNTS
-  { CBC_ROUNDING, 12, 1, "Integer solution of %.13g found by %s after %d iterations and %d nodes (%.2f seconds)" },
+  { CBC_ROUNDING, 12, 1, "Integer solution of %.13g found by %s after %d iterations and %d nodes %d depth %d ontree (%.2f seconds)" },
 #else
-  { CBC_ROUNDING, 12, 1, "Integer solution of %.13g found by %s after %ld iterations and %ld nodes (%.2f seconds)" },
+  { CBC_ROUNDING, 12, 1, "Integer solution of %.13g found by %s after %ld iterations and %ld nodes %d depth %d ontree (%.2f seconds)" },
 #endif
   { CBC_ROOT, 13, 1, "At root node, %d cuts changed objective from %g to %g in %d passes" },
   { CBC_GENERATOR, 14, 1, "Cut generator %d (%s) - %d row cuts average %.1f elements, %d column cuts (%d active) %? in %.3f seconds - new frequency is %d" },
   { CBC_BRANCH, 15, 3, "Node %d Obj %g Unsat %d depth %d" },
 #ifndef CBC_MANY_NODE_COUNTS
-  { CBC_STRONGSOL, 16, 1, "Integer solution of %g found by strong branching after %d iterations and %d nodes (%.2f seconds)" },
+  { CBC_STRONGSOL, 16, 1, "Integer solution of %g found by strong branching after %d iterations and %d nodes %d depth %d ontree (%.2f seconds)" },
 #else
-  { CBC_STRONGSOL, 16, 1, "Integer solution of %g found by strong branching after %ld iterations and %ld nodes (%.2f seconds)" },
+  { CBC_STRONGSOL, 16, 1, "Integer solution of %g found by strong branching after %ld iterations and %ld nodes %d depth %d ontree (%.2f seconds)" },
 #endif
   { CBC_VUB_PASS, 17, 1, "%d solved, %d variables fixed, %d tightened" },
   { CBC_VUB_END, 18, 1, "After tightenVubs, %d variables fixed, %d tightened" },
@@ -59,9 +59,9 @@ static Cbc_message us_english[] = {
   { CBC_NOTFEAS2, 22, 2, "On closer inspection objective value of %g above cutoff of %g" },
   { CBC_NOTFEAS3, 23, 2, "Allowing solution, even though largest row infeasibility is %g" },
 #ifndef CBC_MANY_NODE_COUNTS
-  { CBC_TREE_SOL, 24, 1, "Integer solution of %g found by subtree after %d iterations and %d nodes (%.2f seconds)" },
+  { CBC_TREE_SOL, 24, 1, "Integer solution of %g found by subtree after %d iterations and %d nodes %d depth %d ontree (%.2f seconds)" },
 #else
-  { CBC_TREE_SOL, 24, 1, "Integer solution of %g found by subtree after %ld iterations and %ld nodes (%.2f seconds)" },
+  { CBC_TREE_SOL, 24, 1, "Integer solution of %g found by subtree after %ld iterations and %ld nodes %d depth %d ontree (%.2f seconds)" },
 #endif
   { CBC_ITERATE_STRONG, 25, 3, "%d cleanup iterations before strong branching" },
   { CBC_PRIORITY, 26, 1, "Setting priorities for objects %d to %d inclusive (out of %d)" },

@@ -238,14 +238,25 @@ def generate_jssp_mps(name, n_jobs, n_machines, jobs, output_path):
         # COLUMNS section
         f.write("COLUMNS\n")
 
-        # Mark integer variables
-        f.write("    MARK0000  'MARKER'                 'INTORG'\n")
-
         # Track which columns were actually written
         written_cols = set()
+        in_integer_section = False
 
         for col_idx, (col_name, col_type, lb, ub, obj_coef) in enumerate(cols):
             col_written = False
+
+            # Switch to integer section when we hit first BINARY variable
+            if col_type == "BINARY" and not in_integer_section:
+                f.write("    MARK0000  'MARKER'                 'INTORG'\n")
+                in_integer_section = True
+            # Switch to continuous section when we hit first CONTINUOUS after BINARY
+            elif col_type == "CONTINUOUS" and in_integer_section:
+                f.write("    MARK0001  'MARKER'                 'INTEND'\n")
+                in_integer_section = False
+            # Switch back to integer if we see BINARY after CONTINUOUS
+            elif col_type == "BINARY" and not in_integer_section and col_idx > 0:
+                f.write("    MARK0002  'MARKER'                 'INTORG'\n")
+                in_integer_section = True
 
             # Objective
             if obj_coef != 0.0:
@@ -262,13 +273,9 @@ def generate_jssp_mps(name, n_jobs, n_machines, jobs, output_path):
             if col_written:
                 written_cols.add(col_idx)
 
-            # Switch marker for continuous variables
-            if col_type == "CONTINUOUS" and col_idx > 0 and cols[col_idx-1][1] == "BINARY":
-                f.write("    MARK0001  'MARKER'                 'INTEND'\n")
-            elif col_type == "BINARY" and col_idx > 0 and cols[col_idx-1][1] == "CONTINUOUS":
-                f.write("    MARK0002  'MARKER'                 'INTORG'\n")
-
-        f.write("    MARK9999  'MARKER'                 'INTEND'\n")
+        # Close integer section if still open
+        if in_integer_section:
+            f.write("    MARK9999  'MARKER'                 'INTEND'\n")
 
         # RHS section
         f.write("RHS\n")

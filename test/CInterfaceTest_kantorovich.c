@@ -89,6 +89,32 @@ int main() {
   printf("Optimal: %.0f bars\n", obj);
   assert(fabs(obj - 3.0) < 1e-4);
 
+  /* Validate best solution feasibility */
+  const double *bestSol = Cbc_getColSolution(model);
+  double maxViolRow = 0.0, maxViolCol = 0.0;
+  int rowIdx = -1, colIdx = -1;
+  if (!Cbc_checkFeasibility(model, bestSol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+    printf("FAIL: best solution infeasible — rowViol=%.2e (row %d) colViol=%.2e (col %d)\n",
+           maxViolRow, rowIdx, maxViolCol, colIdx);
+    assert(0);
+  }
+
+  /* Validate ALL solutions in the pool */
+  int nSol = Cbc_numberSavedSolutions(model);
+  for (int s = 0; s < nSol; s++) {
+    const double *sol = Cbc_savedSolution(model, s);
+    double solObj = Cbc_savedSolutionObj(model, s);
+    maxViolRow = 0.0; maxViolCol = 0.0;
+    rowIdx = -1; colIdx = -1;
+
+    if (!Cbc_checkFeasibility(model, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+      printf("FAIL: pool solution %d/%d infeasible (obj=%.0f) — "
+             "rowViol=%.2e (row %d) colViol=%.2e (col %d)\n",
+             s+1, nSol, solObj, maxViolRow, rowIdx, maxViolCol, colIdx);
+      assert(0);
+    }
+  }
+
   /* Print solution */
   const double *sol = Cbc_getColSolution(model);
   for (int j = 0; j < N_BARS; j++) {

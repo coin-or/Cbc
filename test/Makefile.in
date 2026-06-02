@@ -122,7 +122,8 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_setcover$(EXEEXT) \
 	CInterfaceTest_setpacking$(EXEEXT) \
 	CInterfaceTest_setpartitioning$(EXEEXT) \
-	CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT)
+	CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT) \
+	CInterfaceTest_jssp_fixtures$(EXEEXT)
 noinst_PROGRAMS = gen_miclsp_solutions$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -210,6 +211,10 @@ CInterfaceTest_j3041_1_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_jssp_OBJECTS = CInterfaceTest_jssp.$(OBJEXT)
 CInterfaceTest_jssp_OBJECTS = $(am_CInterfaceTest_jssp_OBJECTS)
 CInterfaceTest_jssp_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_jssp_fixtures_OBJECTS = CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.$(OBJEXT)
+CInterfaceTest_jssp_fixtures_OBJECTS =  \
+	$(am_CInterfaceTest_jssp_fixtures_OBJECTS)
+CInterfaceTest_jssp_fixtures_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_kantorovich_OBJECTS =  \
 	CInterfaceTest_kantorovich.$(OBJEXT)
 CInterfaceTest_kantorovich_OBJECTS =  \
@@ -359,6 +364,8 @@ am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po \
 	./$(DEPDIR)/CInterfaceTest_j3041_1-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_jssp.Po \
+	./$(DEPDIR)/CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.Po \
+	./$(DEPDIR)/CInterfaceTest_jssp_fixtures-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_kantorovich.Po \
 	./$(DEPDIR)/CInterfaceTest_mdkp_random.Po \
 	./$(DEPDIR)/CInterfaceTest_mescn.Po \
@@ -453,6 +460,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_j3041_1_SOURCES) \
 	$(CInterfaceTest_jssp_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_jssp_SOURCES) \
+	$(CInterfaceTest_jssp_fixtures_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_jssp_fixtures_SOURCES) \
 	$(CInterfaceTest_kantorovich_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_kantorovich_SOURCES) \
 	$(CInterfaceTest_mdkp_random_SOURCES) \
@@ -769,7 +778,13 @@ dist_pkgtestfixture_DATA = \
   fixtures/mis_n35_sd137_geometric_diverse.mps.gz \
   fixtures/mis_n36_sd42_grid_unit.mps.gz \
   fixtures/mis_n40_sd137_planar_uniform.mps.gz \
-  fixtures/mis_n30_sd42_cycle_uniform.mps.gz
+  fixtures/mis_n30_sd42_cycle_uniform.mps.gz \
+  fixtures/jssp_ft06.mps.gz \
+  fixtures/jssp_ft10.mps.gz \
+  fixtures/jssp_la01.mps.gz \
+  fixtures/jssp_la06.mps.gz \
+  fixtures/jssp_la11.mps.gz \
+  fixtures/jssp_orb01.mps.gz
 
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
@@ -1000,6 +1015,10 @@ CInterfaceTest_mis_SOURCES = CInterfaceTest_mis.c
 nodist_EXTRA_CInterfaceTest_mis_SOURCES = dummy.cpp
 CInterfaceTest_mis_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_mis_LDADD = ../src/libmipster.la
+CInterfaceTest_jssp_fixtures_SOURCES = CInterfaceTest_jssp_fixtures.c
+nodist_EXTRA_CInterfaceTest_jssp_fixtures_SOURCES = dummy.cpp
+CInterfaceTest_jssp_fixtures_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_jssp_fixtures_LDADD = ../src/libmipster.la
 
 ########################################################################
 #             gen_miclsp_solutions — reference solution generator      #
@@ -1140,6 +1159,10 @@ CInterfaceTest_j3041_1$(EXEEXT): $(CInterfaceTest_j3041_1_OBJECTS) $(CInterfaceT
 CInterfaceTest_jssp$(EXEEXT): $(CInterfaceTest_jssp_OBJECTS) $(CInterfaceTest_jssp_DEPENDENCIES) $(EXTRA_CInterfaceTest_jssp_DEPENDENCIES) 
 	@rm -f CInterfaceTest_jssp$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_jssp_OBJECTS) $(CInterfaceTest_jssp_LDADD) $(LIBS)
+
+CInterfaceTest_jssp_fixtures$(EXEEXT): $(CInterfaceTest_jssp_fixtures_OBJECTS) $(CInterfaceTest_jssp_fixtures_DEPENDENCIES) $(EXTRA_CInterfaceTest_jssp_fixtures_DEPENDENCIES) 
+	@rm -f CInterfaceTest_jssp_fixtures$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_jssp_fixtures_OBJECTS) $(CInterfaceTest_jssp_fixtures_LDADD) $(LIBS)
 
 CInterfaceTest_kantorovich$(EXEEXT): $(CInterfaceTest_kantorovich_OBJECTS) $(CInterfaceTest_kantorovich_DEPENDENCIES) $(EXTRA_CInterfaceTest_kantorovich_DEPENDENCIES) 
 	@rm -f CInterfaceTest_kantorovich$(EXEEXT)
@@ -1285,6 +1308,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_j3041_1-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_jssp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_jssp_fixtures-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_kantorovich.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mdkp_random.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mescn.Po@am__quote@ # am--include-marker
@@ -1431,6 +1456,20 @@ CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.obj: CInterfaceTest_j3041_1.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_j3041_1.c' object='CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_j3041_1_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.obj `if test -f 'CInterfaceTest_j3041_1.c'; then $(CYGPATH_W) 'CInterfaceTest_j3041_1.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_j3041_1.c'; fi`
+
+CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.o: CInterfaceTest_jssp_fixtures.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_jssp_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.Tpo -c -o CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.o `test -f 'CInterfaceTest_jssp_fixtures.c' || echo '$(srcdir)/'`CInterfaceTest_jssp_fixtures.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.Tpo $(DEPDIR)/CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_jssp_fixtures.c' object='CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_jssp_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.o `test -f 'CInterfaceTest_jssp_fixtures.c' || echo '$(srcdir)/'`CInterfaceTest_jssp_fixtures.c
+
+CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.obj: CInterfaceTest_jssp_fixtures.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_jssp_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.Tpo -c -o CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.obj `if test -f 'CInterfaceTest_jssp_fixtures.c'; then $(CYGPATH_W) 'CInterfaceTest_jssp_fixtures.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_jssp_fixtures.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.Tpo $(DEPDIR)/CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_jssp_fixtures.c' object='CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_jssp_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.obj `if test -f 'CInterfaceTest_jssp_fixtures.c'; then $(CYGPATH_W) 'CInterfaceTest_jssp_fixtures.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_jssp_fixtures.c'; fi`
 
 CInterfaceTest_miclsp-CInterfaceTest_miclsp.o: CInterfaceTest_miclsp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_miclsp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_miclsp-CInterfaceTest_miclsp.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_miclsp-CInterfaceTest_miclsp.Tpo -c -o CInterfaceTest_miclsp-CInterfaceTest_miclsp.o `test -f 'CInterfaceTest_miclsp.c' || echo '$(srcdir)/'`CInterfaceTest_miclsp.c
@@ -1679,6 +1718,20 @@ CInterfaceTest_j3041_1-dummy.obj: dummy.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_j3041_1-dummy.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_j3041_1_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_j3041_1-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
+CInterfaceTest_jssp_fixtures-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_jssp_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_jssp_fixtures-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_jssp_fixtures-dummy.Tpo -c -o CInterfaceTest_jssp_fixtures-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_jssp_fixtures-dummy.Tpo $(DEPDIR)/CInterfaceTest_jssp_fixtures-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_jssp_fixtures-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_jssp_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_jssp_fixtures-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_jssp_fixtures-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_jssp_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_jssp_fixtures-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_jssp_fixtures-dummy.Tpo -c -o CInterfaceTest_jssp_fixtures-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_jssp_fixtures-dummy.Tpo $(DEPDIR)/CInterfaceTest_jssp_fixtures-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_jssp_fixtures-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_jssp_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_jssp_fixtures-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
 
 CInterfaceTest_miclsp-dummy.o: dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_miclsp_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_miclsp-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_miclsp-dummy.Tpo -c -o CInterfaceTest_miclsp-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
@@ -2002,6 +2055,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_j3041_1-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp_fixtures-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_kantorovich.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mescn.Po
@@ -2099,6 +2154,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_j3041_1-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp_fixtures-CInterfaceTest_jssp_fixtures.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp_fixtures-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_kantorovich.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mescn.Po

@@ -97,7 +97,13 @@ dist_pkgtestfixture_DATA = \
   fixtures/mis_n35_sd137_geometric_diverse.mps.gz \
   fixtures/mis_n36_sd42_grid_unit.mps.gz \
   fixtures/mis_n40_sd137_planar_uniform.mps.gz \
-  fixtures/mis_n30_sd42_cycle_uniform.mps.gz
+  fixtures/mis_n30_sd42_cycle_uniform.mps.gz \
+  fixtures/jssp_ft06.mps.gz \
+  fixtures/jssp_ft10.mps.gz \
+  fixtures/jssp_la01.mps.gz \
+  fixtures/jssp_la06.mps.gz \
+  fixtures/jssp_la11.mps.gz \
+  fixtures/jssp_orb01.mps.gz
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
 pkgtestsoldir = $(datadir)/mipster/test/fixtures/solutions
@@ -151,7 +157,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis CInterfaceTest_jssp_fixtures
 
 noinst_PROGRAMS = gen_miclsp_solutions
 
@@ -386,6 +392,11 @@ CInterfaceTest_mis_SOURCES = CInterfaceTest_mis.c
 nodist_EXTRA_CInterfaceTest_mis_SOURCES = dummy.cpp
 CInterfaceTest_mis_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_mis_LDADD = ../src/libmipster.la
+
+CInterfaceTest_jssp_fixtures_SOURCES = CInterfaceTest_jssp_fixtures.c
+nodist_EXTRA_CInterfaceTest_jssp_fixtures_SOURCES = dummy.cpp
+CInterfaceTest_jssp_fixtures_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_jssp_fixtures_LDADD = ../src/libmipster.la
 
 ########################################################################
 #             gen_miclsp_solutions — reference solution generator      #

@@ -104,6 +104,17 @@ int main() {
   Cbc_solve(m);
   assert(Cbc_isProvenOptimal(m));
 
+  const double *sol = Cbc_getColSolution(m);
+  double maxViolRow = 0.0; int rowIdx = -1;
+  double maxViolCol = 0.0; int colIdx = -1;
+
+  if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+    printf("FAIL: Cbc_checkFeasibility failed  "
+           "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
+           maxViolRow, rowIdx, maxViolCol, colIdx);
+    return 1;
+  }
+
   double makespan = Cbc_getObjValue(m);
   printf("Optimal makespan: %.0f (expected 7)\n", makespan);
   assert(fabs(makespan - 7.0) < 1e-4);

@@ -127,6 +127,7 @@ TESTS=(
   CInterfaceTest_setpartitioning
   CInterfaceTest_bpc
   CInterfaceTest_mis
+  CInterfaceTest_jssp_fixtures
 )
 
 TOTAL=${#TESTS[@]}

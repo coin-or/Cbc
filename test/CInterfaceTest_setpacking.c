@@ -65,15 +65,32 @@ static int test_setpacking(const char *fixture_dir, const SetPackingTestCase *tc
     pass = 0;
   }
 
-  const double *sol = Cbc_getColSolution(m);
+  /* Check feasibility of best solution */
+  const double *bestSol = Cbc_getColSolution(m);
   double maxViolRow = 0.0; int rowIdx = -1;
   double maxViolCol = 0.0; int colIdx = -1;
 
-  if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
-    printf("    FAIL: Cbc_checkFeasibility failed  "
+  if (!Cbc_checkFeasibility(m, bestSol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+    printf("    FAIL: best solution infeasible  "
            "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
            maxViolRow, rowIdx, maxViolCol, colIdx);
     pass = 0;
+  }
+
+  /* Check feasibility of ALL solutions in the pool */
+  int nSol = Cbc_numberSavedSolutions(m);
+  for (int s = 0; s < nSol; s++) {
+    const double *sol = Cbc_savedSolution(m, s);
+    double solObj = Cbc_savedSolutionObjective(m, s);
+    maxViolRow = 0.0; rowIdx = -1;
+    maxViolCol = 0.0; colIdx = -1;
+
+    if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+      printf("    FAIL: pool solution %d/%d infeasible (obj=%.2f)  "
+             "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
+             s+1, nSol, solObj, maxViolRow, rowIdx, maxViolCol, colIdx);
+      pass = 0;
+    }
   }
 
   double obj = Cbc_getObjValue(m);

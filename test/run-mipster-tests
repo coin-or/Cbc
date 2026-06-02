@@ -121,6 +121,12 @@ TESTS=(
   CInterfaceTest_new
   CInterfaceTest_tsp_cuts
   CInterfaceTest_vrp
+  CInterfaceTest_qap
+  CInterfaceTest_setcover
+  CInterfaceTest_setpacking
+  CInterfaceTest_setpartitioning
+  CInterfaceTest_bpc
+  CInterfaceTest_mis
 )
 
 TOTAL=${#TESTS[@]}

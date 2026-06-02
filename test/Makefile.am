@@ -54,7 +54,50 @@ dist_pkgtestfixture_DATA = \
   fixtures/vrppd_small_scale.mps.gz \
   fixtures/vrppd_small_uniform.mps.gz \
   fixtures/vrppd_tight.mps.gz \
-  fixtures/vrppd_tight_ring.mps.gz
+  fixtures/vrppd_tight_ring.mps.gz \
+  fixtures/qap_n4_s42_uniform_euclidean.mps.gz \
+  fixtures/qap_n5_s42_uniform_euclidean.mps.gz \
+  fixtures/qap_n5_s137_sparse_manhattan.mps.gz \
+  fixtures/qap_n6_s42_uniform_grid.mps.gz \
+  fixtures/qap_n6_s137_hub_euclidean.mps.gz \
+  fixtures/qap_n7_s42_uniform_euclidean.mps.gz \
+  fixtures/qap_n7_s137_sparse_grid.mps.gz \
+  fixtures/scp_e10_s15_sd42_uniform.mps.gz \
+  fixtures/scp_e15_s20_sd42_sparse.mps.gz \
+  fixtures/scp_e20_s30_sd42_dense.mps.gz \
+  fixtures/scp_e20_s25_sd137_hierarchical.mps.gz \
+  fixtures/scp_e30_s50_sd42_uniform.mps.gz \
+  fixtures/scp_e40_s60_sd137_sparse.mps.gz \
+  fixtures/scp_e50_s80_sd42_dense.mps.gz \
+  fixtures/spp_e10_s15_sd42_random.mps.gz \
+  fixtures/spp_e12_s18_sd42_k_partite.mps.gz \
+  fixtures/spp_e15_s20_sd137_geometric.mps.gz \
+  fixtures/spp_e20_s25_sd42_scheduling.mps.gz \
+  fixtures/spp_e30_s50_sd42_random.mps.gz \
+  fixtures/spp_e35_s60_sd137_k_partite.mps.gz \
+  fixtures/spp_e40_s70_sd42_geometric.mps.gz \
+  fixtures/spp_e50_s80_sd137_scheduling.mps.gz \
+  fixtures/sprt_e10_s20_sd42_uniform.mps.gz \
+  fixtures/sprt_e15_s30_sd42_overlapping.mps.gz \
+  fixtures/sprt_e30_s60_sd42_uniform.mps.gz \
+  fixtures/sprt_e40_s80_sd137_overlapping.mps.gz \
+  fixtures/bpc_n10_c100_sd42_random_uniform.mps.gz \
+  fixtures/bpc_n12_c150_sd42_clique_diverse.mps.gz \
+  fixtures/bpc_n15_c100_sd137_bipartite_uniform.mps.gz \
+  fixtures/bpc_n15_c120_sd42_geometric_tight.mps.gz \
+  fixtures/bpc_n20_c150_sd42_random_diverse.mps.gz \
+  fixtures/bpc_n25_c200_sd137_clique_uniform.mps.gz \
+  fixtures/bpc_n30_c180_sd42_geometric_tight.mps.gz \
+  fixtures/mis_n15_sd42_random_uniform.mps.gz \
+  fixtures/mis_n20_sd42_geometric_unit.mps.gz \
+  fixtures/mis_n16_sd137_grid_diverse.mps.gz \
+  fixtures/mis_n18_sd42_k_partite_uniform.mps.gz \
+  fixtures/mis_n20_sd137_tree_uniform.mps.gz \
+  fixtures/mis_n30_sd42_random_uniform.mps.gz \
+  fixtures/mis_n35_sd137_geometric_diverse.mps.gz \
+  fixtures/mis_n36_sd42_grid_unit.mps.gz \
+  fixtures/mis_n40_sd137_planar_uniform.mps.gz \
+  fixtures/mis_n30_sd42_cycle_uniform.mps.gz
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
 pkgtestsoldir = $(datadir)/mipster/test/fixtures/solutions
@@ -108,7 +151,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis
 
 noinst_PROGRAMS = gen_miclsp_solutions
 
@@ -263,7 +306,7 @@ nodist_EXTRA_CInterfaceTest_attfInst1_SOURCES = dummy.cpp
 CInterfaceTest_attfInst1_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_attfInst1_LDADD = ../src/libmipster.la
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CInterfaceTest_attfInst1$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CInterfaceTest_attfInst1$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT) CInterfaceTest_qap$(EXEEXT) CInterfaceTest_setcover$(EXEEXT) CInterfaceTest_setpacking$(EXEEXT) CInterfaceTest_setpartitioning$(EXEEXT) CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT)
 	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests
 
 ########################################################################
@@ -309,6 +352,40 @@ CInterfaceTest_tsp_cuts_LDADD = ../src/libmipster.la
 CInterfaceTest_miplib_SOURCES = CInterfaceTest_miplib.c
 nodist_EXTRA_CInterfaceTest_miplib_SOURCES = dummy.cpp
 CInterfaceTest_miplib_LDADD = ../src/libmipster.la
+
+########################################################################
+#                   Pure binary problem tests (clique cuts)            #
+########################################################################
+
+CInterfaceTest_qap_SOURCES = CInterfaceTest_qap.c
+nodist_EXTRA_CInterfaceTest_qap_SOURCES = dummy.cpp
+CInterfaceTest_qap_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_qap_LDADD = ../src/libmipster.la
+
+CInterfaceTest_setcover_SOURCES = CInterfaceTest_setcover.c
+nodist_EXTRA_CInterfaceTest_setcover_SOURCES = dummy.cpp
+CInterfaceTest_setcover_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_setcover_LDADD = ../src/libmipster.la
+
+CInterfaceTest_setpacking_SOURCES = CInterfaceTest_setpacking.c
+nodist_EXTRA_CInterfaceTest_setpacking_SOURCES = dummy.cpp
+CInterfaceTest_setpacking_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_setpacking_LDADD = ../src/libmipster.la
+
+CInterfaceTest_setpartitioning_SOURCES = CInterfaceTest_setpartitioning.c
+nodist_EXTRA_CInterfaceTest_setpartitioning_SOURCES = dummy.cpp
+CInterfaceTest_setpartitioning_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_setpartitioning_LDADD = ../src/libmipster.la
+
+CInterfaceTest_bpc_SOURCES = CInterfaceTest_bpc.c
+nodist_EXTRA_CInterfaceTest_bpc_SOURCES = dummy.cpp
+CInterfaceTest_bpc_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_bpc_LDADD = ../src/libmipster.la
+
+CInterfaceTest_mis_SOURCES = CInterfaceTest_mis.c
+nodist_EXTRA_CInterfaceTest_mis_SOURCES = dummy.cpp
+CInterfaceTest_mis_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_mis_LDADD = ../src/libmipster.la
 
 ########################################################################
 #             gen_miclsp_solutions — reference solution generator      #

@@ -162,7 +162,38 @@ if (rel_err > 1e-3) {
 
 MIPster maintains a **solution pool** during the search. Best practice is to validate **all solutions**, not just the final incumbent.
 
-Use `mipster_validate_sol` to check:
+#### Using the C API
+
+The simplest approach is `Cbc_checkFeasibility()`, which validates:
+- **Bounds**: `lb ≤ x[i] ≤ ub` for all variables
+- **Integrality**: `|x[i] − round(x[i])| ≤ intTol` for integer variables
+- **Constraints**: `rowLB ≤ Ax ≤ rowUB` for all rows (with `primalTol`)
+
+```c
+double maxViolRow, maxViolCol;
+int rowIdx, colIdx;
+
+const double *solution = Cbc_getColSolution(model);
+
+char is_feasible = Cbc_checkFeasibility(model, solution, 
+                                         &maxViolRow, &rowIdx,
+                                         &maxViolCol, &colIdx);
+
+if (!is_feasible) {
+  if (maxViolRow > 0) {
+    printf("FAIL: row %d violated by %.6f\n", rowIdx, maxViolRow);
+  }
+  if (maxViolCol > 0) {
+    printf("FAIL: column %d violated by %.6f\n", colIdx, maxViolCol);
+  }
+  return 1;
+}
+```
+
+#### Using mipster_validate_sol (external utility)
+
+For comprehensive validation including objective value checking:
+
 - **Bounds**: `lb ≤ x[i] ≤ ub` for all variables
 - **Integrality**: `|x[i] − round(x[i])| ≤ 1e-5` for integer variables
 - **Constraints**: `rowLB ≤ Ax ≤ rowUB` for all rows
@@ -172,26 +203,29 @@ Use `mipster_validate_sol` to check:
 // Get number of solutions in pool
 int n_solutions = Cbc_numberSavedSolutions(model);
 
-// Validate each solution
+// Validate each solution using C API
 for (int i = 0; i < n_solutions; i++) {
-  char sol_file[256];
-  snprintf(sol_file, sizeof(sol_file), "solution_%d.sol", i);
-  
-  // Get solution i from pool
   const double *solution = Cbc_savedSolution(model, i);
   double sol_obj = Cbc_savedSolutionObj(model, i);
   
-  // Write to .sol file format (manual or via helper)
-  write_solution_file(sol_file, solution, sol_obj, n_cols);
+  double maxViolRow, maxViolCol;
+  int rowIdx, colIdx;
   
-  // Validate (external process)
-  if (!validate_solution(mps_file, sol_file)) {
-    printf("FAIL: solution %d/%d (obj=%.2f) violates constraints\n", 
+  char is_feasible = Cbc_checkFeasibility(model, solution,
+                                           &maxViolRow, &rowIdx,
+                                           &maxViolCol, &colIdx);
+  
+  if (!is_feasible) {
+    printf("FAIL: solution %d/%d (obj=%.2f) infeasible\n", 
            i+1, n_solutions, sol_obj);
+    if (maxViolRow > 0) {
+      printf("      row %d violated by %.6f\n", rowIdx, maxViolRow);
+    }
+    if (maxViolCol > 0) {
+      printf("      column %d violated by %.6f\n", colIdx, maxViolCol);
+    }
     return 1;
   }
-  
-  unlink(sol_file);
 }
 
 printf("PASS: all %d solutions validated\n", n_solutions);
@@ -207,17 +241,32 @@ printf("PASS: all %d solutions validated\n", n_solutions);
 For simple tests, validating the final incumbent is often sufficient:
 
 ```c
-// Write best solution to file
-Cbc_writeSolution(model, "solution.sol");
+// Using C API (fastest)
+const double *solution = Cbc_getColSolution(model);
+double maxViolRow, maxViolCol;
+int rowIdx, colIdx;
 
-// Validate
+if (!Cbc_checkFeasibility(model, solution, &maxViolRow, &rowIdx,
+                          &maxViolCol, &colIdx)) {
+  printf("FAIL: incumbent solution infeasible\n");
+  return 1;
+}
+
+// Or using external validator (more comprehensive, includes objective check)
+Cbc_writeSolution(model, "solution.sol");
 if (!validate_solution(mps_file, "solution.sol")) {
   printf("FAIL: incumbent solution violates constraints\n");
   return 1;
 }
 ```
 
-See `test/CInterfaceTest_vrp.c:validate_solution()` for a fork/exec implementation of `validate_solution()`.
+**C API Functions:**
+- `Cbc_checkFeasibility()` - validates bounds, integrality, and constraints
+- `Cbc_getColSolution()` - retrieves incumbent solution
+- `Cbc_savedSolution(model, i)` - retrieves solution `i` from pool
+- `Cbc_numberSavedSolutions()` - returns pool size
+
+See `test/CInterfaceTest_vrp.c:validate_solution()` for a fork/exec implementation using `mipster_validate_sol`.
 
 ### 3. Cross-Solver Validation
 

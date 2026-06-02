@@ -14830,6 +14830,8 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
     printf("obj %g\n", newTrueSolutionValue);
   }
 #endif
+  // allow for fathoming
+  int numberNodes = numberNodes_+numberExtraNodes_;
   OsiSolverInterface *saveContinuousSolver = NULL;
   if ((moreSpecialOptions2_ & 65536) != 0) {
     // May need cuts that are there
@@ -15061,10 +15063,9 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
       if (how == CBC_ROUNDING)
         numberHeuristicSolutions_++;
       numberSolutions_++;
-
       if (how != CBC_ROUNDING) {
         handler_->message(how, messages_)
-          << trueBestObjValue() << numberIterations_ << numberNodes_
+          << trueBestObjValue() << numberIterations_ << numberNodes
 	  << currentDepth_ << tree_->size()
           << getCurrentSeconds() << CoinMessageEol;
         dealWithEventHandler(CbcEventHandler::solution, objectiveValue,
@@ -15076,7 +15077,7 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
         else
           name = "Reduced search";
         handler_->message(CBC_ROUNDING, messages_)
-          << trueBestObjValue() << name << numberIterations_ << numberNodes_
+          << trueBestObjValue() << name << numberIterations_ << numberNodes
 	  << currentDepth_ << tree_->size()
           << getCurrentSeconds() << CoinMessageEol;
         dealWithEventHandler(CbcEventHandler::heuristicSolution, objectiveValue,
@@ -15187,16 +15188,17 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
         }
 
         numberSolutions_++;
+	
 
         if (how != CBC_ROUNDING) {
           handler_->message(how, messages_)
-            << trueBestObjValue() << numberIterations_ << numberNodes_
+            << trueBestObjValue() << numberIterations_ << numberNodes
             << getCurrentSeconds() << CoinMessageEol;
         } else {
           assert(lastHeuristic_);
           const char *name = lastHeuristic_->heuristicName();
           handler_->message(CBC_ROUNDING, messages_)
-            << trueBestObjValue() << name << numberIterations_ << numberNodes_
+            << trueBestObjValue() << name << numberIterations_ << numberNodes
 	    << currentDepth_ << tree_->size()
             << getCurrentSeconds() << CoinMessageEol;
         }

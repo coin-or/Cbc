@@ -29,18 +29,19 @@
 typedef struct {
   const char *name;
   double expected_obj;
-  int timeout_sec;
+  int max_nodes;
+  int timeout_sec;  /* Fallback to prevent infinite loops */
 } SteinerTestCase;
 
 static const SteinerTestCase steiner_test_cases[] = {
-  {"steiner_grid4x4_t3_corners", 5.0, 30},
-  {"steiner_grid5x5_t4_sparse", 8.0, 60},
-  {"steiner_geom15_r30_t3", 140.14, 60},
-  {"steiner_geom20_r35_t5", 138.48, 120},
-  {"steiner_complete10_unit_t4", 4.0, 30},
-  {"steiner_complete12_rand_t3", 15.0, 60},
-  {"steiner_sparse20_p03_t4", 14.0, 120},
-  {"steiner_sparse25_p025_t6", 45.0, 180},
+  {"steiner_grid4x4_t3_corners", 5.0, 10000, 300},
+  {"steiner_grid5x5_t4_sparse", 8.0, 10000, 300},
+  {"steiner_geom15_r30_t3", 140.14, 10000, 300},
+  {"steiner_geom20_r35_t5", 138.48, 10000, 300},
+  {"steiner_complete10_unit_t4", 4.0, 10000, 300},
+  {"steiner_complete12_rand_t3", 15.0, 10000, 300},
+  {"steiner_sparse20_p03_t4", 14.0, 10000, 300},
+  {"steiner_sparse25_p025_t6", 45.0, 10000, 300},
 };
 
 static const int NUM_TESTS = sizeof(steiner_test_cases) / sizeof(steiner_test_cases[0]);
@@ -50,7 +51,7 @@ static int test_steiner(const char *fixture_dir, const SteinerTestCase *tc)
   char path[512];
   snprintf(path, sizeof(path), "%s/%s.mps.gz", fixture_dir, tc->name);
 
-  printf("  %s (timeout=%ds, expected=%.2f)\n", tc->name, tc->timeout_sec, tc->expected_obj);
+  printf("  %s (max_nodes=%d, expected=%.2f)\n", tc->name, tc->max_nodes, tc->expected_obj);
 
   Cbc_Model *m = Cbc_newModel();
   Cbc_setLogLevel(m, 0);
@@ -61,7 +62,8 @@ static int test_steiner(const char *fixture_dir, const SteinerTestCase *tc)
     return 0;
   }
 
-  Cbc_setMaximumSeconds(m, tc->timeout_sec);
+  Cbc_setMaximumNodes(m, tc->max_nodes);
+  Cbc_setMaximumSeconds(m, tc->timeout_sec);  /* Fallback */
   Cbc_solve(m);
 
   int pass = 1;

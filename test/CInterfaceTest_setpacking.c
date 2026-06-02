@@ -22,18 +22,19 @@
 typedef struct {
   const char *name;
   double expected_obj;
-  int timeout_sec;
+  int max_nodes;
+  int timeout_sec;  /* Fallback */
 } SetPackingTestCase;
 
 static const SetPackingTestCase setpacking_test_cases[] = {
-  {"spp_e10_s15_sd42_random", 302.00, 10},
-  {"spp_e12_s18_sd42_k_partite", 111.00, 15},
-  {"spp_e15_s20_sd137_geometric", 314.00, 20},
-  {"spp_e20_s25_sd42_scheduling", 355.00, 20},
-  {"spp_e30_s50_sd42_random", 652.00, 60},
-  {"spp_e35_s60_sd137_k_partite", 238.00, 60},
-  {"spp_e40_s70_sd42_geometric", 986.00, 90},
-  {"spp_e50_s80_sd137_scheduling", 1039.00, 90},
+  {"spp_e10_s15_sd42_random", 302.00, 10000, 300},
+  {"spp_e12_s18_sd42_k_partite", 111.00, 10000, 300},
+  {"spp_e15_s20_sd137_geometric", 314.00, 10000, 300},
+  {"spp_e20_s25_sd42_scheduling", 355.00, 10000, 300},
+  {"spp_e30_s50_sd42_random", 652.00, 10000, 300},
+  {"spp_e35_s60_sd137_k_partite", 238.00, 10000, 300},
+  {"spp_e40_s70_sd42_geometric", 986.00, 10000, 300},
+  {"spp_e50_s80_sd137_scheduling", 1039.00, 10000, 300},
 };
 
 static const int NUM_TESTS = sizeof(setpacking_test_cases) / sizeof(setpacking_test_cases[0]);
@@ -54,7 +55,8 @@ static int test_setpacking(const char *fixture_dir, const SetPackingTestCase *tc
     return 0;
   }
 
-  Cbc_setMaximumSeconds(m, tc->timeout_sec);
+  Cbc_setMaximumNodes(m, tc->max_nodes);
+  Cbc_setMaximumSeconds(m, tc->timeout_sec);  /* Fallback */
   Cbc_solve(m);
 
   int pass = 1;

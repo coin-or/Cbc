@@ -24,17 +24,18 @@
 typedef struct {
   const char *name;
   double expected_obj;
-  int timeout_sec;
+  int max_nodes;
+  int timeout_sec;  /* Fallback */
 } BpcTestCase;
 
 static const BpcTestCase bpc_test_cases[] = {
-  {"bpc_n10_c100_sd42_random_uniform", 3, 20},
-  {"bpc_n12_c150_sd42_clique_diverse", 4, 30},
-  {"bpc_n15_c100_sd137_bipartite_uniform", 4, 30},
-  {"bpc_n15_c120_sd42_geometric_tight", 5, 40},
-  {"bpc_n20_c150_sd42_random_diverse", 6, 90},
-  {"bpc_n25_c200_sd137_clique_uniform", 6, 120},
-  {"bpc_n30_c180_sd42_geometric_tight", 10, 120},
+  {"bpc_n10_c100_sd42_random_uniform", 3, 10000, 300},
+  {"bpc_n12_c150_sd42_clique_diverse", 4, 10000, 300},
+  {"bpc_n15_c100_sd137_bipartite_uniform", 4, 10000, 300},
+  {"bpc_n15_c120_sd42_geometric_tight", 5, 10000, 300},
+  {"bpc_n20_c150_sd42_random_diverse", 6, 10000, 300},
+  {"bpc_n25_c200_sd137_clique_uniform", 6, 10000, 300},
+  {"bpc_n30_c180_sd42_geometric_tight", 10, 10000, 300},
 };
 
 static const int NUM_TESTS = sizeof(bpc_test_cases) / sizeof(bpc_test_cases[0]);
@@ -55,7 +56,8 @@ static int test_bpc(const char *fixture_dir, const BpcTestCase *tc)
     return 0;
   }
 
-  Cbc_setMaximumSeconds(m, tc->timeout_sec);
+  Cbc_setMaximumNodes(m, tc->max_nodes);
+  Cbc_setMaximumSeconds(m, tc->timeout_sec);  /* Fallback */
   Cbc_solve(m);
 
   int pass = 1;

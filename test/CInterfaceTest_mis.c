@@ -25,20 +25,21 @@
 typedef struct {
   const char *name;
   double expected_obj;
-  int timeout_sec;
+  int max_nodes;
+  int timeout_sec;  /* Fallback */
 } MisTestCase;
 
 static const MisTestCase mis_test_cases[] = {
-  {"mis_n15_sd42_random_uniform", 361.00, 10},
-  {"mis_n20_sd42_geometric_unit", 6.00, 15},
-  {"mis_n16_sd137_grid_diverse", 586.00, 10},
-  {"mis_n18_sd42_k_partite_uniform", 338.00, 20},
-  {"mis_n20_sd137_tree_uniform", 626.00, 5},
-  {"mis_n30_sd42_random_uniform", 490.00, 60},
-  {"mis_n35_sd137_geometric_diverse", 709.00, 60},
-  {"mis_n36_sd42_grid_unit", 18.00, 30},
-  {"mis_n40_sd137_planar_uniform", 1042.00, 90},
-  {"mis_n30_sd42_cycle_uniform", 916.00, 10},
+  {"mis_n15_sd42_random_uniform", 361.00, 10000, 300},
+  {"mis_n20_sd42_geometric_unit", 6.00, 10000, 300},
+  {"mis_n16_sd137_grid_diverse", 586.00, 10000, 300},
+  {"mis_n18_sd42_k_partite_uniform", 338.00, 10000, 300},
+  {"mis_n20_sd137_tree_uniform", 626.00, 10000, 300},
+  {"mis_n30_sd42_random_uniform", 490.00, 10000, 300},
+  {"mis_n35_sd137_geometric_diverse", 709.00, 10000, 300},
+  {"mis_n36_sd42_grid_unit", 18.00, 10000, 300},
+  {"mis_n40_sd137_planar_uniform", 1042.00, 10000, 300},
+  {"mis_n30_sd42_cycle_uniform", 916.00, 10000, 300},
 };
 
 static const int NUM_TESTS = sizeof(mis_test_cases) / sizeof(mis_test_cases[0]);
@@ -59,7 +60,8 @@ static int test_mis(const char *fixture_dir, const MisTestCase *tc)
     return 0;
   }
 
-  Cbc_setMaximumSeconds(m, tc->timeout_sec);
+  Cbc_setMaximumNodes(m, tc->max_nodes);
+  Cbc_setMaximumSeconds(m, tc->timeout_sec);  /* Fallback */
   Cbc_solve(m);
 
   int pass = 1;

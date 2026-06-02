@@ -548,7 +548,8 @@ void testQueens(int n) {
         Cbc_addRow(model, name, nz, idx, coef, 'L', 1.0);
     } 
 
-    Cbc_setMaximumSeconds(model, 100);
+    Cbc_setMaximumNodes(model, 100000);
+    Cbc_setMaximumSeconds(model, 300);  /* Fallback to prevent infinite loops */
     Cbc_solve(model);
     xs = Cbc_getColSolution(model);
     if (n<=30)

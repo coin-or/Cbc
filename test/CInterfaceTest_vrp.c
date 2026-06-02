@@ -31,52 +31,53 @@
 typedef struct {
   const char *name;
   double expected_obj; /* 0.0 = no expectation (just check solvability) */
-  int timeout_sec;
+  int max_nodes;
+  int timeout_sec;  /* Fallback to prevent infinite loops */
   int is_vrppd; /* 1 for VRPPD, 0 for CVRP */
 } VRPTestCase;
 
 /* Test instances - ordered by difficulty */
 static const VRPTestCase test_cases[] = {
   /* Easy CVRP (< 1s) */
-  {"cvrp_loose", 90.0, 10, 0},
-  {"cvrp_tight", 130.0, 10, 0},
-  {"cvrp_size_small", 20158.0, 10, 0},
-  {"cvrp_small_scale", 20012.6, 10, 0},
+  {"cvrp_loose", 90.0, 10000, 10, 0},
+  {"cvrp_tight", 130.0, 10000, 10, 0},
+  {"cvrp_size_small", 20158.0, 10000, 10, 0},
+  {"cvrp_small_scale", 20012.6, 10000, 10, 0},
 
   /* Easy VRPPD (< 1s) */
-  {"vrppd_small", 70.0, 10, 1},
-  {"vrppd_small_uniform", 105.0, 10, 1},
-  {"vrppd_small_scale", 26.2, 10, 1},
-  {"vrppd_medium_clustered", 93.43, 10, 1},
-  {"vrppd_tight", 20078.0, 10, 1},
+  {"vrppd_small", 70.0, 10000, 10, 1},
+  {"vrppd_small_uniform", 105.0, 10000, 10, 1},
+  {"vrppd_small_scale", 26.2, 10000, 10, 1},
+  {"vrppd_medium_clustered", 93.43, 10000, 10, 1},
+  {"vrppd_tight", 20078.0, 10000, 10, 1},
 
   /* Medium CVRP (1-10s) */
-  {"cvrp_demand_skewed", 20260.0, 20, 0},
-  {"cvrp_demand_uniform", 20260.0, 20, 0},
-  {"cvrp_sparse_grid", 20233.0, 20, 0},
-  {"cvrp_capacity_loose", 20167.0, 20, 0},
-  {"cvrp_asymmetric", 20370.61, 20, 0},
-  {"cvrp_few_large", 20348.0, 20, 0},
+  {"cvrp_demand_skewed", 20260.0, 50000, 20, 0},
+  {"cvrp_demand_uniform", 20260.0, 50000, 20, 0},
+  {"cvrp_sparse_grid", 20233.0, 50000, 20, 0},
+  {"cvrp_capacity_loose", 20167.0, 50000, 20, 0},
+  {"cvrp_asymmetric", 20370.61, 50000, 20, 0},
+  {"cvrp_few_large", 20348.0, 50000, 20, 0},
 
   /* Medium VRPPD */
-  {"vrppd_large_uniform", 370.27, 20, 1},
-  {"vrppd_tight_ring", 397.0, 20, 1},
-  {"vrppd_many_requests", 153.72, 20, 1},
+  {"vrppd_large_uniform", 370.27, 50000, 20, 1},
+  {"vrppd_tight_ring", 397.0, 50000, 20, 1},
+  {"vrppd_many_requests", 153.72, 50000, 20, 1},
 
   /* Hard CVRP (20s+) */
-  {"cvrp_medium", 320.0, 60, 0},
-  {"cvrp_geo_ring", 20381.0, 60, 0},
-  {"cvrp_demand_outliers", 20298.0, 60, 0},
-  {"cvrp_large_scale", 20752.98, 60, 0},
-  {"cvrp_many_small", 20208.16, 60, 0},
+  {"cvrp_medium", 320.0, 100000, 60, 0},
+  {"cvrp_geo_ring", 20381.0, 100000, 60, 0},
+  {"cvrp_demand_outliers", 20298.0, 100000, 60, 0},
+  {"cvrp_large_scale", 20752.98, 100000, 60, 0},
+  {"cvrp_many_small", 20208.16, 100000, 60, 0},
 
   /* VRPPD with large cost scales */
-  {"vrppd_large_scale", 878.42, 60, 1},
+  {"vrppd_large_scale", 878.42, 100000, 60, 1},
 
-  /* Very hard CVRP (may timeout but should find solution) */
-  {"cvrp_geo_clustered", 0.0, 120, 0}, /* No obj expectation */
-  {"cvrp_capacity_medium", 0.0, 120, 0},
-  {"cvrp_size_large", 0.0, 120, 0},
+  /* Very hard CVRP (may hit node limit but should find solution) */
+  {"cvrp_geo_clustered", 0.0, 100000, 120, 0}, /* No obj expectation */
+  {"cvrp_capacity_medium", 0.0, 100000, 120, 0},
+  {"cvrp_size_large", 0.0, 100000, 120, 0},
 };
 
 static const int num_test_cases = sizeof(test_cases) / sizeof(test_cases[0]);
@@ -146,7 +147,8 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    /* Set time limit */
+    /* Set node limit and time limit (fallback) */
+    Cbc_setMaximumNodes(model, tc->max_nodes);
     Cbc_setMaximumSeconds(model, tc->timeout_sec);
 
     /* Solve */

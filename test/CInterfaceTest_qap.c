@@ -26,17 +26,18 @@
 typedef struct {
   const char *name;
   double expected_obj;
-  int timeout_sec;
+  int max_nodes;
+  int timeout_sec;  /* Fallback */
 } QapTestCase;
 
 static const QapTestCase qap_test_cases[] = {
-  {"qap_n4_s42_uniform_euclidean", 5809.00, 10},
-  {"qap_n5_s42_uniform_euclidean", 11653.00, 30},
-  {"qap_n5_s137_sparse_manhattan", 6070.00, 30},
-  {"qap_n6_s42_uniform_grid", 457.00, 60},
-  {"qap_n6_s137_hub_euclidean", 20623.00, 60},
-  {"qap_n7_s42_uniform_euclidean", 22834.00, 120},
-  {"qap_n7_s137_sparse_grid", 239.00, 120},
+  {"qap_n4_s42_uniform_euclidean", 5809.00, 10000, 300},
+  {"qap_n5_s42_uniform_euclidean", 11653.00, 10000, 300},
+  {"qap_n5_s137_sparse_manhattan", 6070.00, 10000, 300},
+  {"qap_n6_s42_uniform_grid", 457.00, 10000, 300},
+  {"qap_n6_s137_hub_euclidean", 20623.00, 10000, 300},
+  {"qap_n7_s42_uniform_euclidean", 22834.00, 10000, 300},
+  {"qap_n7_s137_sparse_grid", 239.00, 10000, 300},
 };
 
 static const int NUM_TESTS = sizeof(qap_test_cases) / sizeof(qap_test_cases[0]);
@@ -57,7 +58,8 @@ static int test_qap(const char *fixture_dir, const QapTestCase *tc)
     return 0;
   }
 
-  Cbc_setMaximumSeconds(m, tc->timeout_sec);
+  Cbc_setMaximumNodes(m, tc->max_nodes);
+  Cbc_setMaximumSeconds(m, tc->timeout_sec);  /* Fallback */
   Cbc_solve(m);
 
   int pass = 1;

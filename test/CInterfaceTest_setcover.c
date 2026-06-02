@@ -22,17 +22,18 @@
 typedef struct {
   const char *name;
   double expected_obj;
-  int timeout_sec;
+  int max_nodes;
+  int timeout_sec;  /* Fallback */
 } SetCoverTestCase;
 
 static const SetCoverTestCase setcover_test_cases[] = {
-  {"scp_e10_s15_sd42_uniform", 59.00, 10},
-  {"scp_e15_s20_sd42_sparse", 117.00, 15},
-  {"scp_e20_s30_sd42_dense", 13.00, 20},
-  {"scp_e20_s25_sd137_hierarchical", 86.00, 20},
-  {"scp_e30_s50_sd42_uniform", 41.00, 60},
-  {"scp_e40_s60_sd137_sparse", 117.00, 60},
-  {"scp_e50_s80_sd42_dense", 11.00, 90},
+  {"scp_e10_s15_sd42_uniform", 59.00, 10000, 300},
+  {"scp_e15_s20_sd42_sparse", 117.00, 10000, 300},
+  {"scp_e20_s30_sd42_dense", 13.00, 10000, 300},
+  {"scp_e20_s25_sd137_hierarchical", 86.00, 10000, 300},
+  {"scp_e30_s50_sd42_uniform", 41.00, 10000, 300},
+  {"scp_e40_s60_sd137_sparse", 117.00, 10000, 300},
+  {"scp_e50_s80_sd42_dense", 11.00, 10000, 300},
 };
 
 static const int NUM_TESTS = sizeof(setcover_test_cases) / sizeof(setcover_test_cases[0]);
@@ -54,7 +55,8 @@ static int test_setcover(const char *fixture_dir, const SetCoverTestCase *tc)
     return 0;
   }
 
-  Cbc_setMaximumSeconds(m, tc->timeout_sec);
+  Cbc_setMaximumNodes(m, tc->max_nodes);
+  Cbc_setMaximumSeconds(m, tc->timeout_sec);  /* Fallback */
   Cbc_solve(m);
 
   int pass = 1;

@@ -159,6 +159,19 @@ echo ""
 
 declare -a _pids _start_ms _tmpfiles _bins
 
+# Tests that require fixture directory as first argument
+FIXTURE_TESTS=(
+  CInterfaceTest_vrp
+  CInterfaceTest_qap
+  CInterfaceTest_setcover
+  CInterfaceTest_setpacking
+  CInterfaceTest_setpartitioning
+  CInterfaceTest_bpc
+  CInterfaceTest_mis
+  CInterfaceTest_jssp_fixtures
+  CInterfaceTest_steiner
+)
+
 # Phase 1: launch all tests in background
 for i in "${!TESTS[@]}"; do
   name="${TESTS[$i]}"
@@ -168,7 +181,20 @@ for i in "${!TESTS[@]}"; do
   _bins[$i]="$bin"
   _start_ms[$i]=$(get_epoch_ms)
   if [ -n "$bin" ]; then
-    "$bin" > "$tmpfile" 2>&1 &
+    # Check if this test needs fixture directory
+    needs_fixtures=0
+    for ft in "${FIXTURE_TESTS[@]}"; do
+      if [ "$name" = "$ft" ]; then
+        needs_fixtures=1
+        break
+      fi
+    done
+
+    if [ "$needs_fixtures" -eq 1 ] && [ -n "$MIPSTER_FIXTURE_DIR" ]; then
+      "$bin" "$MIPSTER_FIXTURE_DIR" > "$tmpfile" 2>&1 &
+    else
+      "$bin" > "$tmpfile" 2>&1 &
+    fi
     _pids[$i]=$!
   else
     _pids[$i]=""

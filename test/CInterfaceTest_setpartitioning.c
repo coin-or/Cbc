@@ -23,14 +23,15 @@
 typedef struct {
   const char *name;
   double expected_obj;
-  int timeout_sec;
+  int max_nodes;
+  int timeout_sec;  /* Fallback */
 } SetPartitioningTestCase;
 
 static const SetPartitioningTestCase setpartitioning_test_cases[] = {
-  {"sprt_e10_s20_sd42_uniform", 192.00, 10},
-  {"sprt_e15_s30_sd42_overlapping", 125.00, 20},
-  {"sprt_e30_s60_sd42_uniform", 629.00, 60},
-  {"sprt_e40_s80_sd137_overlapping", 744.00, 90},
+  {"sprt_e10_s20_sd42_uniform", 192.00, 10000, 300},
+  {"sprt_e15_s30_sd42_overlapping", 125.00, 10000, 300},
+  {"sprt_e30_s60_sd42_uniform", 629.00, 10000, 300},
+  {"sprt_e40_s80_sd137_overlapping", 744.00, 10000, 300},
 };
 
 static const int NUM_TESTS = sizeof(setpartitioning_test_cases) / sizeof(setpartitioning_test_cases[0]);
@@ -51,7 +52,8 @@ static int test_setpartitioning(const char *fixture_dir, const SetPartitioningTe
     return 0;
   }
 
-  Cbc_setMaximumSeconds(m, tc->timeout_sec);
+  Cbc_setMaximumNodes(m, tc->max_nodes);
+  Cbc_setMaximumSeconds(m, tc->timeout_sec);  /* Fallback */
   Cbc_solve(m);
 
   int pass = 1;

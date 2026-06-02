@@ -121,14 +121,36 @@ def write_qap_mps(filename, n, f, d):
         # COLUMNS section
         fp.write("COLUMNS\n")
 
-        # x[i][k] variables
+        # Track which variables are written to COLUMNS section
+        written_x_vars = set()
+        written_y_vars = set()
+
+        # Collect all McCormick constraints for each x variable first
+        x_mc_coeffs = {}  # (i, k) -> [(mc_name, coeff)]
+        for i in range(n):
+            for k in range(n):
+                x_mc_coeffs[(i, k)] = []
+
+        for i in range(n):
+            for k in range(n):
+                for j in range(i+1, n):
+                    for l in range(n):
+                        if f[i][j] * d[k][l] > 0:
+                            mc_name = f"MC_{i}_{k}_{j}_{l}"
+                            x_mc_coeffs[(i, k)].append((mc_name, -1.0))
+                            x_mc_coeffs[(j, l)].append((mc_name, -1.0))
+
+        # x[i][k] variables - write all coefficients in one block per variable
         for i in range(n):
             for k in range(n):
                 var_name = f"x_{i}_{k}"
                 # Assignment constraints
                 fp.write(f"    {var_name:<10s}  FACIL{i}  1.0\n")
                 fp.write(f"    {var_name:<10s}  LOC{k}  1.0\n")
-                # McCormick constraints (appear in y terms)
+                # McCormick constraints where this variable appears
+                for mc_name, coeff in x_mc_coeffs[(i, k)]:
+                    fp.write(f"    {var_name:<10s}  {mc_name}  {coeff}\n")
+                written_x_vars.add((i, k))
 
         # y[i][k][j][l] variables (auxiliary for linearization)
         for i in range(n):
@@ -142,17 +164,7 @@ def write_qap_mps(filename, n, f, d):
                             fp.write(f"    {var_name:<10s}  OBJ       {cost}\n")
                             # McCormick constraint: y >= x[i][k] + x[j][l] - 1
                             fp.write(f"    {var_name:<10s}  MC_{i}_{k}_{j}_{l}  1.0\n")
-
-        # Add x terms to McCormick constraints
-        for i in range(n):
-            for k in range(n):
-                for j in range(i+1, n):
-                    for l in range(n):
-                        if f[i][j] * d[k][l] > 0:
-                            x_ik = f"x_{i}_{k}"
-                            x_jl = f"x_{j}_{l}"
-                            fp.write(f"    {x_ik:<10s}  MC_{i}_{k}_{j}_{l}  -1.0\n")
-                            fp.write(f"    {x_jl:<10s}  MC_{i}_{k}_{j}_{l}  -1.0\n")
+                            written_y_vars.add((i, k, j, l))
 
         # RHS section
         fp.write("RHS\n")
@@ -167,17 +179,19 @@ def write_qap_mps(filename, n, f, d):
                         if f[i][j] * d[k][l] > 0:
                             fp.write(f"    RHS1      MC_{i}_{k}_{j}_{l}  -1.0\n")
 
-        # BOUNDS section
+        # BOUNDS section - only for variables that were written to COLUMNS
         fp.write("BOUNDS\n")
-        # All variables binary by default
+        # All x variables that were written
         for i in range(n):
             for k in range(n):
-                fp.write(f" BV BND1      x_{i}_{k}\n")
+                if (i, k) in written_x_vars:
+                    fp.write(f" BV BND1      x_{i}_{k}\n")
+        # All y variables that were written
         for i in range(n):
             for k in range(n):
                 for j in range(i+1, n):
                     for l in range(n):
-                        if f[i][j] * d[k][l] > 0:
+                        if (i, k, j, l) in written_y_vars:
                             fp.write(f" BV BND1      y_{i}_{k}_{j}_{l}\n")
 
         fp.write("ENDATA\n")

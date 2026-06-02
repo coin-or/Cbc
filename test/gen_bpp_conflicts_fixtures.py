@@ -156,12 +156,6 @@ def write_bpc_mps(filename, n_items, capacity, weights, conflicts):
         # COLUMNS section
         fp.write("COLUMNS\n")
 
-        # Bin usage variables y[b]
-        for b in range(n_bins):
-            var_name = f"y_{b}"
-            fp.write(f"    {var_name:<10s}  OBJ       1.0\n")
-            # Appears in capacity and conflict constraints
-
         # Item assignment variables x[i][b]
         for i in range(n_items):
             for b in range(n_bins):
@@ -177,11 +171,14 @@ def write_bpc_mps(filename, n_items, capacity, weights, conflicts):
                     elif j < i and (j, i) in conflicts:
                         fp.write(f"    {var_name:<10s}  CONF_{j}_{i}_{b}  1.0\n")
 
-        # y[b] terms in capacity constraints
+        # Bin usage variables y[b] - write all coefficients in one block per variable
         for b in range(n_bins):
             var_name = f"y_{b}"
+            # Objective
+            fp.write(f"    {var_name:<10s}  OBJ       1.0\n")
+            # Capacity constraint
             fp.write(f"    {var_name:<10s}  CAP_{b}  {-capacity}\n")
-            # y[b] terms in conflict constraints
+            # Conflict constraints
             for i, j in conflicts:
                 fp.write(f"    {var_name:<10s}  CONF_{i}_{j}_{b}  -1.0\n")
 

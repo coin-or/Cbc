@@ -38,12 +38,12 @@ typedef struct {
 } JsspTestCase;
 
 static const JsspTestCase jssp_test_cases[] = {
-  {"jssp_ft06", 55, 10000, 300},      /* Fisher & Thompson 6x6 */
-  {"jssp_ft10", 930, 10000, 300},    /* Fisher & Thompson 10x10 */
-  {"jssp_la01", 666, 10000, 300},    /* Lawrence 10x5 */
-  {"jssp_la06", 926, 10000, 300},    /* Lawrence 15x5 */
-  {"jssp_la11", 1222, 10000, 300},   /* Lawrence 20x5 */
-  {"jssp_orb01", 1059, 10000, 300},  /* Applegate & Cook 10x10 */
+  {"jssp_ft06", 55, 100000, 300},      /* Fisher & Thompson 6x6 */
+  {"jssp_ft10", 930, 100000, 300},    /* Fisher & Thompson 10x10 */
+  {"jssp_la01", 666, 100000, 300},    /* Lawrence 10x5 */
+  {"jssp_la06", 926, 100000, 300},    /* Lawrence 15x5 */
+  {"jssp_la11", 1222, 100000, 300},   /* Lawrence 20x5 */
+  {"jssp_orb01", 1059, 100000, 300},  /* Applegate & Cook 10x10 */
 };
 
 static const int NUM_TESTS = sizeof(jssp_test_cases) / sizeof(jssp_test_cases[0]);

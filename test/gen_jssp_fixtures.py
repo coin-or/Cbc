@@ -241,16 +241,26 @@ def generate_jssp_mps(name, n_jobs, n_machines, jobs, output_path):
         # Mark integer variables
         f.write("    MARK0000  'MARKER'                 'INTORG'\n")
 
+        # Track which columns were actually written
+        written_cols = set()
+
         for col_idx, (col_name, col_type, lb, ub, obj_coef) in enumerate(cols):
+            col_written = False
+
             # Objective
             if obj_coef != 0.0:
                 f.write(f"    {col_name:8s}  OBJ       {obj_coef}\n")
+                col_written = True
 
             # Constraints
             for row_name, sense, rhs, coeffs in rows:
                 for var_idx, coef in coeffs:
                     if var_idx == col_idx and coef != 0.0:
                         f.write(f"    {col_name:8s}  {row_name:8s}  {coef}\n")
+                        col_written = True
+
+            if col_written:
+                written_cols.add(col_idx)
 
             # Switch marker for continuous variables
             if col_type == "CONTINUOUS" and col_idx > 0 and cols[col_idx-1][1] == "BINARY":
@@ -266,9 +276,12 @@ def generate_jssp_mps(name, n_jobs, n_machines, jobs, output_path):
             if rhs != 0.0:
                 f.write(f"    RHS       {row_name:8s}  {rhs}\n")
 
-        # BOUNDS section
+        # BOUNDS section - only for columns that were actually written
         f.write("BOUNDS\n")
-        for col_name, col_type, lb, ub, _ in cols:
+        for col_idx, (col_name, col_type, lb, ub, _) in enumerate(cols):
+            if col_idx not in written_cols:
+                continue  # Skip columns not in COLUMNS section
+
             if col_type == "BINARY":
                 f.write(f" BV BOUND     {col_name}\n")
             else:

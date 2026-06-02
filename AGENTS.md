@@ -137,6 +137,14 @@ cd test && make -j$(nproc) test
 
 Individual test binaries: `test/CInterfaceTest`, `test/CbcSolverLpTest`, etc. They can be run directly.
 
+**Writing integration tests?** See `doc/testing-guide.md` for comprehensive guidance on:
+- Choosing diverse test instances
+- Validating objectives and solution feasibility (C API and external tools)
+- Solution pool validation (`Cbc_checkFeasibility`, `Cbc_savedSolution`)
+- Cross-solver validation
+- Automated debugging with `mip_diag`
+- CI integration
+
 ## Code Formatting
 
 All C++ source files use **clang-format** with the project's `.clang-format` config (WebKit-based style, 2-space indent, no column limit). Apply formatting with:

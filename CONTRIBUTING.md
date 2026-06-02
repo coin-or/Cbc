@@ -392,6 +392,13 @@ make -j$(nproc) && make install
 cd test && make -j$(nproc) test
 ```
 
+**Writing integration tests?** See the [Testing Guide](doc/testing-guide.md) for:
+- Choosing diverse test instances
+- Validating objectives and solution feasibility
+- Cross-solver validation
+- Automated debugging with `mip_diag`
+- CI integration
+
 ---
 
 ## 8. Submitting Changes

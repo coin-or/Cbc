@@ -157,8 +157,39 @@ int main(int argc, char **argv) {
     int is_proven_optimal = Cbc_isProvenOptimal(model);
     int has_solution = Cbc_numberSolutions(model) > 0;
 
+    /* Check feasibility of best solution (if exists) */
+    int feasibility_pass = 1;
+    if (has_solution) {
+      const double *bestSol = Cbc_getColSolution(model);
+      double maxViolRow = 0.0; int rowIdx = -1;
+      double maxViolCol = 0.0; int colIdx = -1;
+
+      if (!Cbc_checkFeasibility(model, bestSol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+        printf("    FAIL: best solution infeasible  "
+               "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
+               maxViolRow, rowIdx, maxViolCol, colIdx);
+        feasibility_pass = 0;
+      }
+
+      /* Check feasibility of ALL solutions in the pool */
+      int nSol = Cbc_numberSavedSolutions(model);
+      for (int s = 0; s < nSol; s++) {
+        const double *sol = Cbc_savedSolution(model, s);
+        double solObj = Cbc_savedSolutionObjective(model, s);
+        maxViolRow = 0.0; rowIdx = -1;
+        maxViolCol = 0.0; colIdx = -1;
+
+        if (!Cbc_checkFeasibility(model, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+          printf("    FAIL: pool solution %d/%d infeasible (obj=%.2f)  "
+                 "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
+                 s+1, nSol, solObj, maxViolRow, rowIdx, maxViolCol, colIdx);
+          feasibility_pass = 0;
+        }
+      }
+    }
+
     /* Determine pass/fail */
-    int test_passed = 0;
+    int test_passed = feasibility_pass;  /* Start with feasibility result */
     char status_msg[256] = "";
 
     if (solve_status == -1) {

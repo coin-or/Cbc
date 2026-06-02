@@ -102,7 +102,7 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_tsp_random$(EXEEXT) \
 	CInterfaceTest_fl_random$(EXEEXT) \
 	CInterfaceTest_mdkp_random$(EXEEXT) \
-	CInterfaceTest_miclsp$(EXEEXT) \
+	CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_mescn$(EXEEXT) \
 	CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) \
 	CInterfaceTest_graphdraw$(EXEEXT) \
 	CInterfaceTest_trdta5581$(EXEEXT) \
@@ -117,8 +117,12 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) \
 	CInterfaceTest_kantorovich$(EXEEXT) \
 	CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) \
-	CInterfaceTest_tsp_cuts$(EXEEXT) \
-	CInterfaceTest_miplib$(EXEEXT)
+	CInterfaceTest_tsp_cuts$(EXEEXT) CInterfaceTest_vrp$(EXEEXT) \
+	CInterfaceTest_miplib$(EXEEXT) CInterfaceTest_qap$(EXEEXT) \
+	CInterfaceTest_setcover$(EXEEXT) \
+	CInterfaceTest_setpacking$(EXEEXT) \
+	CInterfaceTest_setpartitioning$(EXEEXT) \
+	CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT)
 noinst_PROGRAMS = gen_miclsp_solutions$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -168,6 +172,10 @@ am_CInterfaceTest_attfInst1_OBJECTS =  \
 CInterfaceTest_attfInst1_OBJECTS =  \
 	$(am_CInterfaceTest_attfInst1_OBJECTS)
 CInterfaceTest_attfInst1_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_bpc_OBJECTS =  \
+	CInterfaceTest_bpc-CInterfaceTest_bpc.$(OBJEXT)
+CInterfaceTest_bpc_OBJECTS = $(am_CInterfaceTest_bpc_OBJECTS)
+CInterfaceTest_bpc_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_colgen_OBJECTS = CInterfaceTest_colgen.$(OBJEXT)
 CInterfaceTest_colgen_OBJECTS = $(am_CInterfaceTest_colgen_OBJECTS)
 CInterfaceTest_colgen_DEPENDENCIES = ../src/libmipster.la
@@ -212,6 +220,9 @@ am_CInterfaceTest_mdkp_random_OBJECTS =  \
 CInterfaceTest_mdkp_random_OBJECTS =  \
 	$(am_CInterfaceTest_mdkp_random_OBJECTS)
 CInterfaceTest_mdkp_random_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_mescn_OBJECTS = CInterfaceTest_mescn.$(OBJEXT)
+CInterfaceTest_mescn_OBJECTS = $(am_CInterfaceTest_mescn_OBJECTS)
+CInterfaceTest_mescn_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_miclsp_OBJECTS =  \
 	CInterfaceTest_miclsp-CInterfaceTest_miclsp.$(OBJEXT)
 CInterfaceTest_miclsp_OBJECTS = $(am_CInterfaceTest_miclsp_OBJECTS)
@@ -224,6 +235,10 @@ CInterfaceTest_mip_reopt_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_miplib_OBJECTS = CInterfaceTest_miplib.$(OBJEXT)
 CInterfaceTest_miplib_OBJECTS = $(am_CInterfaceTest_miplib_OBJECTS)
 CInterfaceTest_miplib_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_mis_OBJECTS =  \
+	CInterfaceTest_mis-CInterfaceTest_mis.$(OBJEXT)
+CInterfaceTest_mis_OBJECTS = $(am_CInterfaceTest_mis_OBJECTS)
+CInterfaceTest_mis_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_new_OBJECTS = CInterfaceTest_new.$(OBJEXT)
 CInterfaceTest_new_OBJECTS = $(am_CInterfaceTest_new_OBJECTS)
 CInterfaceTest_new_DEPENDENCIES = ../src/libmipster.la
@@ -232,6 +247,24 @@ am_CInterfaceTest_nursesched_OBJECTS =  \
 CInterfaceTest_nursesched_OBJECTS =  \
 	$(am_CInterfaceTest_nursesched_OBJECTS)
 CInterfaceTest_nursesched_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_qap_OBJECTS =  \
+	CInterfaceTest_qap-CInterfaceTest_qap.$(OBJEXT)
+CInterfaceTest_qap_OBJECTS = $(am_CInterfaceTest_qap_OBJECTS)
+CInterfaceTest_qap_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_setcover_OBJECTS =  \
+	CInterfaceTest_setcover-CInterfaceTest_setcover.$(OBJEXT)
+CInterfaceTest_setcover_OBJECTS =  \
+	$(am_CInterfaceTest_setcover_OBJECTS)
+CInterfaceTest_setcover_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_setpacking_OBJECTS =  \
+	CInterfaceTest_setpacking-CInterfaceTest_setpacking.$(OBJEXT)
+CInterfaceTest_setpacking_OBJECTS =  \
+	$(am_CInterfaceTest_setpacking_OBJECTS)
+CInterfaceTest_setpacking_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_setpartitioning_OBJECTS = CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.$(OBJEXT)
+CInterfaceTest_setpartitioning_OBJECTS =  \
+	$(am_CInterfaceTest_setpartitioning_OBJECTS)
+CInterfaceTest_setpartitioning_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_trd445c_OBJECTS =  \
 	CInterfaceTest_trd445c-CInterfaceTest_trd445c.$(OBJEXT)
 CInterfaceTest_trd445c_OBJECTS = $(am_CInterfaceTest_trd445c_OBJECTS)
@@ -251,6 +284,9 @@ am_CInterfaceTest_tsp_random_OBJECTS =  \
 CInterfaceTest_tsp_random_OBJECTS =  \
 	$(am_CInterfaceTest_tsp_random_OBJECTS)
 CInterfaceTest_tsp_random_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_vrp_OBJECTS = CInterfaceTest_vrp.$(OBJEXT)
+CInterfaceTest_vrp_OBJECTS = $(am_CInterfaceTest_vrp_OBJECTS)
+CInterfaceTest_vrp_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_yue20013_OBJECTS =  \
 	CInterfaceTest_yue20013-CInterfaceTest_yue20013.$(OBJEXT)
 CInterfaceTest_yue20013_OBJECTS =  \
@@ -310,6 +346,8 @@ am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_advanced.Po \
 	./$(DEPDIR)/CInterfaceTest_attfInst1-CInterfaceTest_attfInst1.Po \
 	./$(DEPDIR)/CInterfaceTest_attfInst1-dummy.Po \
+	./$(DEPDIR)/CInterfaceTest_bpc-CInterfaceTest_bpc.Po \
+	./$(DEPDIR)/CInterfaceTest_bpc-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_colgen.Po \
 	./$(DEPDIR)/CInterfaceTest_construction.Po \
 	./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po \
@@ -323,19 +361,31 @@ am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_jssp.Po \
 	./$(DEPDIR)/CInterfaceTest_kantorovich.Po \
 	./$(DEPDIR)/CInterfaceTest_mdkp_random.Po \
+	./$(DEPDIR)/CInterfaceTest_mescn.Po \
 	./$(DEPDIR)/CInterfaceTest_miclsp-CInterfaceTest_miclsp.Po \
 	./$(DEPDIR)/CInterfaceTest_miclsp-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_mip_reopt.Po \
 	./$(DEPDIR)/CInterfaceTest_miplib.Po \
+	./$(DEPDIR)/CInterfaceTest_mis-CInterfaceTest_mis.Po \
+	./$(DEPDIR)/CInterfaceTest_mis-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_new.Po \
 	./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po \
 	./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po \
+	./$(DEPDIR)/CInterfaceTest_qap-CInterfaceTest_qap.Po \
+	./$(DEPDIR)/CInterfaceTest_qap-dummy.Po \
+	./$(DEPDIR)/CInterfaceTest_setcover-CInterfaceTest_setcover.Po \
+	./$(DEPDIR)/CInterfaceTest_setcover-dummy.Po \
+	./$(DEPDIR)/CInterfaceTest_setpacking-CInterfaceTest_setpacking.Po \
+	./$(DEPDIR)/CInterfaceTest_setpacking-dummy.Po \
+	./$(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Po \
+	./$(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po \
 	./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po \
 	./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po \
 	./$(DEPDIR)/CInterfaceTest_tsp_random.Po \
+	./$(DEPDIR)/CInterfaceTest_vrp.Po \
 	./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po \
 	./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po \
 	./$(DEPDIR)/CbcSolverLpTest.Po ./$(DEPDIR)/dummy.Po \
@@ -385,6 +435,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_advanced_SOURCES) \
 	$(CInterfaceTest_attfInst1_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_attfInst1_SOURCES) \
+	$(CInterfaceTest_bpc_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_bpc_SOURCES) \
 	$(CInterfaceTest_colgen_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_colgen_SOURCES) \
 	$(CInterfaceTest_construction_SOURCES) \
@@ -405,16 +457,28 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_kantorovich_SOURCES) \
 	$(CInterfaceTest_mdkp_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_mdkp_random_SOURCES) \
+	$(CInterfaceTest_mescn_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_mescn_SOURCES) \
 	$(CInterfaceTest_miclsp_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_miclsp_SOURCES) \
 	$(CInterfaceTest_mip_reopt_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_mip_reopt_SOURCES) \
 	$(CInterfaceTest_miplib_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_miplib_SOURCES) \
+	$(CInterfaceTest_mis_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_mis_SOURCES) \
 	$(CInterfaceTest_new_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_new_SOURCES) \
 	$(CInterfaceTest_nursesched_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_nursesched_SOURCES) \
+	$(CInterfaceTest_qap_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_qap_SOURCES) \
+	$(CInterfaceTest_setcover_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_setcover_SOURCES) \
+	$(CInterfaceTest_setpacking_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_setpacking_SOURCES) \
+	$(CInterfaceTest_setpartitioning_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_setpartitioning_SOURCES) \
 	$(CInterfaceTest_trd445c_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_trd445c_SOURCES) \
 	$(CInterfaceTest_trdta5581_SOURCES) \
@@ -423,6 +487,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_tsp_cuts_SOURCES) \
 	$(CInterfaceTest_tsp_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_tsp_random_SOURCES) \
+	$(CInterfaceTest_vrp_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_vrp_SOURCES) \
 	$(CInterfaceTest_yue20013_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_yue20013_SOURCES) \
 	$(CbcSolverLpTest_SOURCES) $(gen_miclsp_solutions_SOURCES) \
@@ -629,7 +695,81 @@ dist_pkgtestfixture_DATA = \
   fixtures/trd445c.mps.gz \
   fixtures/trdta5581.mps.gz \
   fixtures/yue20013.1.150.mps.gz \
-  fixtures/attfInst1.mps.gz
+  fixtures/attfInst1.mps.gz \
+  fixtures/cvrp_asymmetric.mps.gz \
+  fixtures/cvrp_capacity_loose.mps.gz \
+  fixtures/cvrp_capacity_medium.mps.gz \
+  fixtures/cvrp_capacity_tight.mps.gz \
+  fixtures/cvrp_demand_outliers.mps.gz \
+  fixtures/cvrp_demand_skewed.mps.gz \
+  fixtures/cvrp_demand_uniform.mps.gz \
+  fixtures/cvrp_dense_uniform.mps.gz \
+  fixtures/cvrp_few_large.mps.gz \
+  fixtures/cvrp_geo_clustered.mps.gz \
+  fixtures/cvrp_geo_ring.mps.gz \
+  fixtures/cvrp_high_utilization.mps.gz \
+  fixtures/cvrp_large_scale.mps.gz \
+  fixtures/cvrp_loose.mps.gz \
+  fixtures/cvrp_many_small.mps.gz \
+  fixtures/cvrp_medium.mps.gz \
+  fixtures/cvrp_medium_scale.mps.gz \
+  fixtures/cvrp_size_large.mps.gz \
+  fixtures/cvrp_size_small.mps.gz \
+  fixtures/cvrp_small_scale.mps.gz \
+  fixtures/cvrp_sparse_grid.mps.gz \
+  fixtures/cvrp_tight.mps.gz \
+  fixtures/vrppd_large_scale.mps.gz \
+  fixtures/vrppd_large_uniform.mps.gz \
+  fixtures/vrppd_many_requests.mps.gz \
+  fixtures/vrppd_medium_clustered.mps.gz \
+  fixtures/vrppd_small.mps.gz \
+  fixtures/vrppd_small_scale.mps.gz \
+  fixtures/vrppd_small_uniform.mps.gz \
+  fixtures/vrppd_tight.mps.gz \
+  fixtures/vrppd_tight_ring.mps.gz \
+  fixtures/qap_n4_s42_uniform_euclidean.mps.gz \
+  fixtures/qap_n5_s42_uniform_euclidean.mps.gz \
+  fixtures/qap_n5_s137_sparse_manhattan.mps.gz \
+  fixtures/qap_n6_s42_uniform_grid.mps.gz \
+  fixtures/qap_n6_s137_hub_euclidean.mps.gz \
+  fixtures/qap_n7_s42_uniform_euclidean.mps.gz \
+  fixtures/qap_n7_s137_sparse_grid.mps.gz \
+  fixtures/scp_e10_s15_sd42_uniform.mps.gz \
+  fixtures/scp_e15_s20_sd42_sparse.mps.gz \
+  fixtures/scp_e20_s30_sd42_dense.mps.gz \
+  fixtures/scp_e20_s25_sd137_hierarchical.mps.gz \
+  fixtures/scp_e30_s50_sd42_uniform.mps.gz \
+  fixtures/scp_e40_s60_sd137_sparse.mps.gz \
+  fixtures/scp_e50_s80_sd42_dense.mps.gz \
+  fixtures/spp_e10_s15_sd42_random.mps.gz \
+  fixtures/spp_e12_s18_sd42_k_partite.mps.gz \
+  fixtures/spp_e15_s20_sd137_geometric.mps.gz \
+  fixtures/spp_e20_s25_sd42_scheduling.mps.gz \
+  fixtures/spp_e30_s50_sd42_random.mps.gz \
+  fixtures/spp_e35_s60_sd137_k_partite.mps.gz \
+  fixtures/spp_e40_s70_sd42_geometric.mps.gz \
+  fixtures/spp_e50_s80_sd137_scheduling.mps.gz \
+  fixtures/sprt_e10_s20_sd42_uniform.mps.gz \
+  fixtures/sprt_e15_s30_sd42_overlapping.mps.gz \
+  fixtures/sprt_e30_s60_sd42_uniform.mps.gz \
+  fixtures/sprt_e40_s80_sd137_overlapping.mps.gz \
+  fixtures/bpc_n10_c100_sd42_random_uniform.mps.gz \
+  fixtures/bpc_n12_c150_sd42_clique_diverse.mps.gz \
+  fixtures/bpc_n15_c100_sd137_bipartite_uniform.mps.gz \
+  fixtures/bpc_n15_c120_sd42_geometric_tight.mps.gz \
+  fixtures/bpc_n20_c150_sd42_random_diverse.mps.gz \
+  fixtures/bpc_n25_c200_sd137_clique_uniform.mps.gz \
+  fixtures/bpc_n30_c180_sd42_geometric_tight.mps.gz \
+  fixtures/mis_n15_sd42_random_uniform.mps.gz \
+  fixtures/mis_n20_sd42_geometric_unit.mps.gz \
+  fixtures/mis_n16_sd137_grid_diverse.mps.gz \
+  fixtures/mis_n18_sd42_k_partite_uniform.mps.gz \
+  fixtures/mis_n20_sd137_tree_uniform.mps.gz \
+  fixtures/mis_n30_sd42_random_uniform.mps.gz \
+  fixtures/mis_n35_sd137_geometric_diverse.mps.gz \
+  fixtures/mis_n36_sd42_grid_unit.mps.gz \
+  fixtures/mis_n40_sd137_planar_uniform.mps.gz \
+  fixtures/mis_n30_sd42_cycle_uniform.mps.gz
 
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
@@ -694,6 +834,20 @@ CInterfaceTest_miclsp_SOURCES = CInterfaceTest_miclsp.c
 nodist_EXTRA_CInterfaceTest_miclsp_SOURCES = dummy.cpp
 CInterfaceTest_miclsp_LDADD = ../src/libmipster.la
 CInterfaceTest_miclsp_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+
+########################################################################
+#                   MESCN tests (supply chain: binary + integer + continuous)#
+########################################################################
+CInterfaceTest_mescn_SOURCES = CInterfaceTest_mescn.c
+nodist_EXTRA_CInterfaceTest_mescn_SOURCES = dummy.cpp
+CInterfaceTest_mescn_LDADD = ../src/libmipster.la
+
+########################################################################
+#                   VRP tests (CVRP + VRPPD routing problems)          #
+########################################################################
+CInterfaceTest_vrp_SOURCES = CInterfaceTest_vrp.c
+nodist_EXTRA_CInterfaceTest_vrp_SOURCES = dummy.cpp
+CInterfaceTest_vrp_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   MDKP random-instance tests                          #
@@ -820,6 +974,34 @@ nodist_EXTRA_CInterfaceTest_miplib_SOURCES = dummy.cpp
 CInterfaceTest_miplib_LDADD = ../src/libmipster.la
 
 ########################################################################
+#                   Pure binary problem tests (clique cuts)            #
+########################################################################
+CInterfaceTest_qap_SOURCES = CInterfaceTest_qap.c
+nodist_EXTRA_CInterfaceTest_qap_SOURCES = dummy.cpp
+CInterfaceTest_qap_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_qap_LDADD = ../src/libmipster.la
+CInterfaceTest_setcover_SOURCES = CInterfaceTest_setcover.c
+nodist_EXTRA_CInterfaceTest_setcover_SOURCES = dummy.cpp
+CInterfaceTest_setcover_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_setcover_LDADD = ../src/libmipster.la
+CInterfaceTest_setpacking_SOURCES = CInterfaceTest_setpacking.c
+nodist_EXTRA_CInterfaceTest_setpacking_SOURCES = dummy.cpp
+CInterfaceTest_setpacking_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_setpacking_LDADD = ../src/libmipster.la
+CInterfaceTest_setpartitioning_SOURCES = CInterfaceTest_setpartitioning.c
+nodist_EXTRA_CInterfaceTest_setpartitioning_SOURCES = dummy.cpp
+CInterfaceTest_setpartitioning_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_setpartitioning_LDADD = ../src/libmipster.la
+CInterfaceTest_bpc_SOURCES = CInterfaceTest_bpc.c
+nodist_EXTRA_CInterfaceTest_bpc_SOURCES = dummy.cpp
+CInterfaceTest_bpc_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_bpc_LDADD = ../src/libmipster.la
+CInterfaceTest_mis_SOURCES = CInterfaceTest_mis.c
+nodist_EXTRA_CInterfaceTest_mis_SOURCES = dummy.cpp
+CInterfaceTest_mis_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_mis_LDADD = ../src/libmipster.la
+
+########################################################################
 #             gen_miclsp_solutions — reference solution generator      #
 ########################################################################
 gen_miclsp_solutions_SOURCES = gen_miclsp_solutions.c
@@ -923,6 +1105,10 @@ CInterfaceTest_attfInst1$(EXEEXT): $(CInterfaceTest_attfInst1_OBJECTS) $(CInterf
 	@rm -f CInterfaceTest_attfInst1$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_attfInst1_OBJECTS) $(CInterfaceTest_attfInst1_LDADD) $(LIBS)
 
+CInterfaceTest_bpc$(EXEEXT): $(CInterfaceTest_bpc_OBJECTS) $(CInterfaceTest_bpc_DEPENDENCIES) $(EXTRA_CInterfaceTest_bpc_DEPENDENCIES) 
+	@rm -f CInterfaceTest_bpc$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_bpc_OBJECTS) $(CInterfaceTest_bpc_LDADD) $(LIBS)
+
 CInterfaceTest_colgen$(EXEEXT): $(CInterfaceTest_colgen_OBJECTS) $(CInterfaceTest_colgen_DEPENDENCIES) $(EXTRA_CInterfaceTest_colgen_DEPENDENCIES) 
 	@rm -f CInterfaceTest_colgen$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_colgen_OBJECTS) $(CInterfaceTest_colgen_LDADD) $(LIBS)
@@ -963,6 +1149,10 @@ CInterfaceTest_mdkp_random$(EXEEXT): $(CInterfaceTest_mdkp_random_OBJECTS) $(CIn
 	@rm -f CInterfaceTest_mdkp_random$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_mdkp_random_OBJECTS) $(CInterfaceTest_mdkp_random_LDADD) $(LIBS)
 
+CInterfaceTest_mescn$(EXEEXT): $(CInterfaceTest_mescn_OBJECTS) $(CInterfaceTest_mescn_DEPENDENCIES) $(EXTRA_CInterfaceTest_mescn_DEPENDENCIES) 
+	@rm -f CInterfaceTest_mescn$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_mescn_OBJECTS) $(CInterfaceTest_mescn_LDADD) $(LIBS)
+
 CInterfaceTest_miclsp$(EXEEXT): $(CInterfaceTest_miclsp_OBJECTS) $(CInterfaceTest_miclsp_DEPENDENCIES) $(EXTRA_CInterfaceTest_miclsp_DEPENDENCIES) 
 	@rm -f CInterfaceTest_miclsp$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_miclsp_OBJECTS) $(CInterfaceTest_miclsp_LDADD) $(LIBS)
@@ -975,6 +1165,10 @@ CInterfaceTest_miplib$(EXEEXT): $(CInterfaceTest_miplib_OBJECTS) $(CInterfaceTes
 	@rm -f CInterfaceTest_miplib$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_miplib_OBJECTS) $(CInterfaceTest_miplib_LDADD) $(LIBS)
 
+CInterfaceTest_mis$(EXEEXT): $(CInterfaceTest_mis_OBJECTS) $(CInterfaceTest_mis_DEPENDENCIES) $(EXTRA_CInterfaceTest_mis_DEPENDENCIES) 
+	@rm -f CInterfaceTest_mis$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_mis_OBJECTS) $(CInterfaceTest_mis_LDADD) $(LIBS)
+
 CInterfaceTest_new$(EXEEXT): $(CInterfaceTest_new_OBJECTS) $(CInterfaceTest_new_DEPENDENCIES) $(EXTRA_CInterfaceTest_new_DEPENDENCIES) 
 	@rm -f CInterfaceTest_new$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_new_OBJECTS) $(CInterfaceTest_new_LDADD) $(LIBS)
@@ -982,6 +1176,22 @@ CInterfaceTest_new$(EXEEXT): $(CInterfaceTest_new_OBJECTS) $(CInterfaceTest_new_
 CInterfaceTest_nursesched$(EXEEXT): $(CInterfaceTest_nursesched_OBJECTS) $(CInterfaceTest_nursesched_DEPENDENCIES) $(EXTRA_CInterfaceTest_nursesched_DEPENDENCIES) 
 	@rm -f CInterfaceTest_nursesched$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_nursesched_OBJECTS) $(CInterfaceTest_nursesched_LDADD) $(LIBS)
+
+CInterfaceTest_qap$(EXEEXT): $(CInterfaceTest_qap_OBJECTS) $(CInterfaceTest_qap_DEPENDENCIES) $(EXTRA_CInterfaceTest_qap_DEPENDENCIES) 
+	@rm -f CInterfaceTest_qap$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_qap_OBJECTS) $(CInterfaceTest_qap_LDADD) $(LIBS)
+
+CInterfaceTest_setcover$(EXEEXT): $(CInterfaceTest_setcover_OBJECTS) $(CInterfaceTest_setcover_DEPENDENCIES) $(EXTRA_CInterfaceTest_setcover_DEPENDENCIES) 
+	@rm -f CInterfaceTest_setcover$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_setcover_OBJECTS) $(CInterfaceTest_setcover_LDADD) $(LIBS)
+
+CInterfaceTest_setpacking$(EXEEXT): $(CInterfaceTest_setpacking_OBJECTS) $(CInterfaceTest_setpacking_DEPENDENCIES) $(EXTRA_CInterfaceTest_setpacking_DEPENDENCIES) 
+	@rm -f CInterfaceTest_setpacking$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_setpacking_OBJECTS) $(CInterfaceTest_setpacking_LDADD) $(LIBS)
+
+CInterfaceTest_setpartitioning$(EXEEXT): $(CInterfaceTest_setpartitioning_OBJECTS) $(CInterfaceTest_setpartitioning_DEPENDENCIES) $(EXTRA_CInterfaceTest_setpartitioning_DEPENDENCIES) 
+	@rm -f CInterfaceTest_setpartitioning$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_setpartitioning_OBJECTS) $(CInterfaceTest_setpartitioning_LDADD) $(LIBS)
 
 CInterfaceTest_trd445c$(EXEEXT): $(CInterfaceTest_trd445c_OBJECTS) $(CInterfaceTest_trd445c_DEPENDENCIES) $(EXTRA_CInterfaceTest_trd445c_DEPENDENCIES) 
 	@rm -f CInterfaceTest_trd445c$(EXEEXT)
@@ -998,6 +1208,10 @@ CInterfaceTest_tsp_cuts$(EXEEXT): $(CInterfaceTest_tsp_cuts_OBJECTS) $(CInterfac
 CInterfaceTest_tsp_random$(EXEEXT): $(CInterfaceTest_tsp_random_OBJECTS) $(CInterfaceTest_tsp_random_DEPENDENCIES) $(EXTRA_CInterfaceTest_tsp_random_DEPENDENCIES) 
 	@rm -f CInterfaceTest_tsp_random$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_tsp_random_OBJECTS) $(CInterfaceTest_tsp_random_LDADD) $(LIBS)
+
+CInterfaceTest_vrp$(EXEEXT): $(CInterfaceTest_vrp_OBJECTS) $(CInterfaceTest_vrp_DEPENDENCIES) $(EXTRA_CInterfaceTest_vrp_DEPENDENCIES) 
+	@rm -f CInterfaceTest_vrp$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_vrp_OBJECTS) $(CInterfaceTest_vrp_LDADD) $(LIBS)
 
 CInterfaceTest_yue20013$(EXEEXT): $(CInterfaceTest_yue20013_OBJECTS) $(CInterfaceTest_yue20013_DEPENDENCIES) $(EXTRA_CInterfaceTest_yue20013_DEPENDENCIES) 
 	@rm -f CInterfaceTest_yue20013$(EXEEXT)
@@ -1058,6 +1272,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_advanced.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_attfInst1-CInterfaceTest_attfInst1.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_attfInst1-dummy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_bpc-CInterfaceTest_bpc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_bpc-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_colgen.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_construction.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po@am__quote@ # am--include-marker
@@ -1071,19 +1287,31 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_jssp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_kantorovich.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mdkp_random.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mescn.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_miclsp-CInterfaceTest_miclsp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_miclsp-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mip_reopt.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_miplib.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mis-CInterfaceTest_mis.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mis-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_new.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_qap-CInterfaceTest_qap.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_qap-dummy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_setcover-CInterfaceTest_setcover.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_setcover-dummy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_setpacking-CInterfaceTest_setpacking.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_setpacking-dummy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_tsp_random.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_vrp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolverLpTest.Po@am__quote@ # am--include-marker
@@ -1148,6 +1376,20 @@ CInterfaceTest_attfInst1-CInterfaceTest_attfInst1.obj: CInterfaceTest_attfInst1.
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_attfInst1_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_attfInst1-CInterfaceTest_attfInst1.obj `if test -f 'CInterfaceTest_attfInst1.c'; then $(CYGPATH_W) 'CInterfaceTest_attfInst1.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_attfInst1.c'; fi`
 
+CInterfaceTest_bpc-CInterfaceTest_bpc.o: CInterfaceTest_bpc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_bpc_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_bpc-CInterfaceTest_bpc.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_bpc-CInterfaceTest_bpc.Tpo -c -o CInterfaceTest_bpc-CInterfaceTest_bpc.o `test -f 'CInterfaceTest_bpc.c' || echo '$(srcdir)/'`CInterfaceTest_bpc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_bpc-CInterfaceTest_bpc.Tpo $(DEPDIR)/CInterfaceTest_bpc-CInterfaceTest_bpc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_bpc.c' object='CInterfaceTest_bpc-CInterfaceTest_bpc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_bpc_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_bpc-CInterfaceTest_bpc.o `test -f 'CInterfaceTest_bpc.c' || echo '$(srcdir)/'`CInterfaceTest_bpc.c
+
+CInterfaceTest_bpc-CInterfaceTest_bpc.obj: CInterfaceTest_bpc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_bpc_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_bpc-CInterfaceTest_bpc.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_bpc-CInterfaceTest_bpc.Tpo -c -o CInterfaceTest_bpc-CInterfaceTest_bpc.obj `if test -f 'CInterfaceTest_bpc.c'; then $(CYGPATH_W) 'CInterfaceTest_bpc.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_bpc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_bpc-CInterfaceTest_bpc.Tpo $(DEPDIR)/CInterfaceTest_bpc-CInterfaceTest_bpc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_bpc.c' object='CInterfaceTest_bpc-CInterfaceTest_bpc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_bpc_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_bpc-CInterfaceTest_bpc.obj `if test -f 'CInterfaceTest_bpc.c'; then $(CYGPATH_W) 'CInterfaceTest_bpc.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_bpc.c'; fi`
+
 CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.o: CInterfaceTest_etDecsi.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_etDecsi_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Tpo -c -o CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.o `test -f 'CInterfaceTest_etDecsi.c' || echo '$(srcdir)/'`CInterfaceTest_etDecsi.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Tpo $(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po
@@ -1204,6 +1446,20 @@ CInterfaceTest_miclsp-CInterfaceTest_miclsp.obj: CInterfaceTest_miclsp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_miclsp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_miclsp-CInterfaceTest_miclsp.obj `if test -f 'CInterfaceTest_miclsp.c'; then $(CYGPATH_W) 'CInterfaceTest_miclsp.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_miclsp.c'; fi`
 
+CInterfaceTest_mis-CInterfaceTest_mis.o: CInterfaceTest_mis.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_mis_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_mis-CInterfaceTest_mis.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_mis-CInterfaceTest_mis.Tpo -c -o CInterfaceTest_mis-CInterfaceTest_mis.o `test -f 'CInterfaceTest_mis.c' || echo '$(srcdir)/'`CInterfaceTest_mis.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_mis-CInterfaceTest_mis.Tpo $(DEPDIR)/CInterfaceTest_mis-CInterfaceTest_mis.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_mis.c' object='CInterfaceTest_mis-CInterfaceTest_mis.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_mis_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_mis-CInterfaceTest_mis.o `test -f 'CInterfaceTest_mis.c' || echo '$(srcdir)/'`CInterfaceTest_mis.c
+
+CInterfaceTest_mis-CInterfaceTest_mis.obj: CInterfaceTest_mis.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_mis_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_mis-CInterfaceTest_mis.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_mis-CInterfaceTest_mis.Tpo -c -o CInterfaceTest_mis-CInterfaceTest_mis.obj `if test -f 'CInterfaceTest_mis.c'; then $(CYGPATH_W) 'CInterfaceTest_mis.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_mis.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_mis-CInterfaceTest_mis.Tpo $(DEPDIR)/CInterfaceTest_mis-CInterfaceTest_mis.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_mis.c' object='CInterfaceTest_mis-CInterfaceTest_mis.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_mis_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_mis-CInterfaceTest_mis.obj `if test -f 'CInterfaceTest_mis.c'; then $(CYGPATH_W) 'CInterfaceTest_mis.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_mis.c'; fi`
+
 CInterfaceTest_nursesched-CInterfaceTest_nursesched.o: CInterfaceTest_nursesched.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_nursesched_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_nursesched-CInterfaceTest_nursesched.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Tpo -c -o CInterfaceTest_nursesched-CInterfaceTest_nursesched.o `test -f 'CInterfaceTest_nursesched.c' || echo '$(srcdir)/'`CInterfaceTest_nursesched.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Tpo $(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po
@@ -1217,6 +1473,62 @@ CInterfaceTest_nursesched-CInterfaceTest_nursesched.obj: CInterfaceTest_nursesch
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_nursesched.c' object='CInterfaceTest_nursesched-CInterfaceTest_nursesched.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_nursesched_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_nursesched-CInterfaceTest_nursesched.obj `if test -f 'CInterfaceTest_nursesched.c'; then $(CYGPATH_W) 'CInterfaceTest_nursesched.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_nursesched.c'; fi`
+
+CInterfaceTest_qap-CInterfaceTest_qap.o: CInterfaceTest_qap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_qap_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_qap-CInterfaceTest_qap.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_qap-CInterfaceTest_qap.Tpo -c -o CInterfaceTest_qap-CInterfaceTest_qap.o `test -f 'CInterfaceTest_qap.c' || echo '$(srcdir)/'`CInterfaceTest_qap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_qap-CInterfaceTest_qap.Tpo $(DEPDIR)/CInterfaceTest_qap-CInterfaceTest_qap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_qap.c' object='CInterfaceTest_qap-CInterfaceTest_qap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_qap_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_qap-CInterfaceTest_qap.o `test -f 'CInterfaceTest_qap.c' || echo '$(srcdir)/'`CInterfaceTest_qap.c
+
+CInterfaceTest_qap-CInterfaceTest_qap.obj: CInterfaceTest_qap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_qap_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_qap-CInterfaceTest_qap.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_qap-CInterfaceTest_qap.Tpo -c -o CInterfaceTest_qap-CInterfaceTest_qap.obj `if test -f 'CInterfaceTest_qap.c'; then $(CYGPATH_W) 'CInterfaceTest_qap.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_qap.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_qap-CInterfaceTest_qap.Tpo $(DEPDIR)/CInterfaceTest_qap-CInterfaceTest_qap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_qap.c' object='CInterfaceTest_qap-CInterfaceTest_qap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_qap_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_qap-CInterfaceTest_qap.obj `if test -f 'CInterfaceTest_qap.c'; then $(CYGPATH_W) 'CInterfaceTest_qap.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_qap.c'; fi`
+
+CInterfaceTest_setcover-CInterfaceTest_setcover.o: CInterfaceTest_setcover.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setcover_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_setcover-CInterfaceTest_setcover.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_setcover-CInterfaceTest_setcover.Tpo -c -o CInterfaceTest_setcover-CInterfaceTest_setcover.o `test -f 'CInterfaceTest_setcover.c' || echo '$(srcdir)/'`CInterfaceTest_setcover.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setcover-CInterfaceTest_setcover.Tpo $(DEPDIR)/CInterfaceTest_setcover-CInterfaceTest_setcover.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_setcover.c' object='CInterfaceTest_setcover-CInterfaceTest_setcover.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setcover_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_setcover-CInterfaceTest_setcover.o `test -f 'CInterfaceTest_setcover.c' || echo '$(srcdir)/'`CInterfaceTest_setcover.c
+
+CInterfaceTest_setcover-CInterfaceTest_setcover.obj: CInterfaceTest_setcover.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setcover_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_setcover-CInterfaceTest_setcover.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_setcover-CInterfaceTest_setcover.Tpo -c -o CInterfaceTest_setcover-CInterfaceTest_setcover.obj `if test -f 'CInterfaceTest_setcover.c'; then $(CYGPATH_W) 'CInterfaceTest_setcover.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_setcover.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setcover-CInterfaceTest_setcover.Tpo $(DEPDIR)/CInterfaceTest_setcover-CInterfaceTest_setcover.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_setcover.c' object='CInterfaceTest_setcover-CInterfaceTest_setcover.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setcover_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_setcover-CInterfaceTest_setcover.obj `if test -f 'CInterfaceTest_setcover.c'; then $(CYGPATH_W) 'CInterfaceTest_setcover.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_setcover.c'; fi`
+
+CInterfaceTest_setpacking-CInterfaceTest_setpacking.o: CInterfaceTest_setpacking.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpacking_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_setpacking-CInterfaceTest_setpacking.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_setpacking-CInterfaceTest_setpacking.Tpo -c -o CInterfaceTest_setpacking-CInterfaceTest_setpacking.o `test -f 'CInterfaceTest_setpacking.c' || echo '$(srcdir)/'`CInterfaceTest_setpacking.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setpacking-CInterfaceTest_setpacking.Tpo $(DEPDIR)/CInterfaceTest_setpacking-CInterfaceTest_setpacking.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_setpacking.c' object='CInterfaceTest_setpacking-CInterfaceTest_setpacking.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpacking_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_setpacking-CInterfaceTest_setpacking.o `test -f 'CInterfaceTest_setpacking.c' || echo '$(srcdir)/'`CInterfaceTest_setpacking.c
+
+CInterfaceTest_setpacking-CInterfaceTest_setpacking.obj: CInterfaceTest_setpacking.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpacking_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_setpacking-CInterfaceTest_setpacking.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_setpacking-CInterfaceTest_setpacking.Tpo -c -o CInterfaceTest_setpacking-CInterfaceTest_setpacking.obj `if test -f 'CInterfaceTest_setpacking.c'; then $(CYGPATH_W) 'CInterfaceTest_setpacking.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_setpacking.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setpacking-CInterfaceTest_setpacking.Tpo $(DEPDIR)/CInterfaceTest_setpacking-CInterfaceTest_setpacking.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_setpacking.c' object='CInterfaceTest_setpacking-CInterfaceTest_setpacking.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpacking_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_setpacking-CInterfaceTest_setpacking.obj `if test -f 'CInterfaceTest_setpacking.c'; then $(CYGPATH_W) 'CInterfaceTest_setpacking.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_setpacking.c'; fi`
+
+CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.o: CInterfaceTest_setpartitioning.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpartitioning_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Tpo -c -o CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.o `test -f 'CInterfaceTest_setpartitioning.c' || echo '$(srcdir)/'`CInterfaceTest_setpartitioning.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Tpo $(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_setpartitioning.c' object='CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpartitioning_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.o `test -f 'CInterfaceTest_setpartitioning.c' || echo '$(srcdir)/'`CInterfaceTest_setpartitioning.c
+
+CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.obj: CInterfaceTest_setpartitioning.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpartitioning_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Tpo -c -o CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.obj `if test -f 'CInterfaceTest_setpartitioning.c'; then $(CYGPATH_W) 'CInterfaceTest_setpartitioning.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_setpartitioning.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Tpo $(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_setpartitioning.c' object='CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpartitioning_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.obj `if test -f 'CInterfaceTest_setpartitioning.c'; then $(CYGPATH_W) 'CInterfaceTest_setpartitioning.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_setpartitioning.c'; fi`
 
 CInterfaceTest_trd445c-CInterfaceTest_trd445c.o: CInterfaceTest_trd445c.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_trd445c_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_trd445c-CInterfaceTest_trd445c.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Tpo -c -o CInterfaceTest_trd445c-CInterfaceTest_trd445c.o `test -f 'CInterfaceTest_trd445c.c' || echo '$(srcdir)/'`CInterfaceTest_trd445c.c
@@ -1312,6 +1624,20 @@ CInterfaceTest_attfInst1-dummy.obj: dummy.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_attfInst1_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_attfInst1-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
 
+CInterfaceTest_bpc-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_bpc_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_bpc-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_bpc-dummy.Tpo -c -o CInterfaceTest_bpc-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_bpc-dummy.Tpo $(DEPDIR)/CInterfaceTest_bpc-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_bpc-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_bpc_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_bpc-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_bpc-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_bpc_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_bpc-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_bpc-dummy.Tpo -c -o CInterfaceTest_bpc-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_bpc-dummy.Tpo $(DEPDIR)/CInterfaceTest_bpc-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_bpc-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_bpc_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_bpc-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
 CInterfaceTest_etDecsi-dummy.o: dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_etDecsi_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_etDecsi-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_etDecsi-dummy.Tpo -c -o CInterfaceTest_etDecsi-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_etDecsi-dummy.Tpo $(DEPDIR)/CInterfaceTest_etDecsi-dummy.Po
@@ -1368,6 +1694,20 @@ CInterfaceTest_miclsp-dummy.obj: dummy.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_miclsp_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_miclsp-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
 
+CInterfaceTest_mis-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_mis_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_mis-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_mis-dummy.Tpo -c -o CInterfaceTest_mis-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_mis-dummy.Tpo $(DEPDIR)/CInterfaceTest_mis-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_mis-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_mis_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_mis-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_mis-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_mis_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_mis-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_mis-dummy.Tpo -c -o CInterfaceTest_mis-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_mis-dummy.Tpo $(DEPDIR)/CInterfaceTest_mis-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_mis-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_mis_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_mis-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
 CInterfaceTest_nursesched-dummy.o: dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_nursesched_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_nursesched-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_nursesched-dummy.Tpo -c -o CInterfaceTest_nursesched-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_nursesched-dummy.Tpo $(DEPDIR)/CInterfaceTest_nursesched-dummy.Po
@@ -1381,6 +1721,62 @@ CInterfaceTest_nursesched-dummy.obj: dummy.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_nursesched-dummy.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_nursesched_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_nursesched-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
+CInterfaceTest_qap-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_qap_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_qap-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_qap-dummy.Tpo -c -o CInterfaceTest_qap-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_qap-dummy.Tpo $(DEPDIR)/CInterfaceTest_qap-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_qap-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_qap_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_qap-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_qap-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_qap_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_qap-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_qap-dummy.Tpo -c -o CInterfaceTest_qap-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_qap-dummy.Tpo $(DEPDIR)/CInterfaceTest_qap-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_qap-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_qap_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_qap-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
+CInterfaceTest_setcover-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setcover_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_setcover-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_setcover-dummy.Tpo -c -o CInterfaceTest_setcover-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setcover-dummy.Tpo $(DEPDIR)/CInterfaceTest_setcover-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_setcover-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setcover_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_setcover-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_setcover-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setcover_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_setcover-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_setcover-dummy.Tpo -c -o CInterfaceTest_setcover-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setcover-dummy.Tpo $(DEPDIR)/CInterfaceTest_setcover-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_setcover-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setcover_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_setcover-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
+CInterfaceTest_setpacking-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpacking_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_setpacking-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_setpacking-dummy.Tpo -c -o CInterfaceTest_setpacking-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setpacking-dummy.Tpo $(DEPDIR)/CInterfaceTest_setpacking-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_setpacking-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpacking_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_setpacking-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_setpacking-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpacking_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_setpacking-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_setpacking-dummy.Tpo -c -o CInterfaceTest_setpacking-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setpacking-dummy.Tpo $(DEPDIR)/CInterfaceTest_setpacking-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_setpacking-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpacking_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_setpacking-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
+CInterfaceTest_setpartitioning-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpartitioning_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_setpartitioning-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Tpo -c -o CInterfaceTest_setpartitioning-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Tpo $(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_setpartitioning-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpartitioning_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_setpartitioning-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_setpartitioning-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpartitioning_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_setpartitioning-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Tpo -c -o CInterfaceTest_setpartitioning-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Tpo $(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_setpartitioning-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpartitioning_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_setpartitioning-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
 
 CInterfaceTest_trd445c-dummy.o: dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_trd445c_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_trd445c-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_trd445c-dummy.Tpo -c -o CInterfaceTest_trd445c-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
@@ -1593,6 +1989,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_advanced.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_attfInst1-CInterfaceTest_attfInst1.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_attfInst1-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_bpc-CInterfaceTest_bpc.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_bpc-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_colgen.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_construction.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po
@@ -1606,19 +2004,31 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_kantorovich.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_mescn.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_miclsp-CInterfaceTest_miclsp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_miclsp-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mip_reopt.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_miplib.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_mis-CInterfaceTest_mis.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_mis-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_new.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_qap-CInterfaceTest_qap.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_qap-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setcover-CInterfaceTest_setcover.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setcover-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setpacking-CInterfaceTest_setpacking.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setpacking-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_vrp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po
 	-rm -f ./$(DEPDIR)/CbcSolverLpTest.Po
@@ -1676,6 +2086,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_advanced.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_attfInst1-CInterfaceTest_attfInst1.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_attfInst1-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_bpc-CInterfaceTest_bpc.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_bpc-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_colgen.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_construction.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po
@@ -1689,19 +2101,31 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_kantorovich.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_mescn.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_miclsp-CInterfaceTest_miclsp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_miclsp-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mip_reopt.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_miplib.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_mis-CInterfaceTest_mis.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_mis-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_new.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_qap-CInterfaceTest_qap.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_qap-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setcover-CInterfaceTest_setcover.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setcover-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setpacking-CInterfaceTest_setpacking.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setpacking-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_vrp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po
 	-rm -f ./$(DEPDIR)/CbcSolverLpTest.Po
@@ -1766,7 +2190,7 @@ miplib3_tests: CInterfaceTest_miplib$(EXEEXT)
 
 .PHONY: test
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CInterfaceTest_attfInst1$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CInterfaceTest_attfInst1$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT) CInterfaceTest_qap$(EXEEXT) CInterfaceTest_setcover$(EXEEXT) CInterfaceTest_setpacking$(EXEEXT) CInterfaceTest_setpartitioning$(EXEEXT) CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT)
 	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

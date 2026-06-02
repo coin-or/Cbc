@@ -33,7 +33,8 @@
 typedef struct {
   const char *name;
   double expected_makespan;
-  int timeout_sec;
+  int max_nodes;
+  int timeout_sec;  /* Fallback to prevent infinite loops */
 } JsspTestCase;
 
 static const JsspTestCase jssp_test_cases[] = {

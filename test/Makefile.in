@@ -123,7 +123,8 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_setpacking$(EXEEXT) \
 	CInterfaceTest_setpartitioning$(EXEEXT) \
 	CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT) \
-	CInterfaceTest_jssp_fixtures$(EXEEXT)
+	CInterfaceTest_jssp_fixtures$(EXEEXT) \
+	CInterfaceTest_steiner$(EXEEXT)
 noinst_PROGRAMS = gen_miclsp_solutions$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -270,6 +271,10 @@ am_CInterfaceTest_setpartitioning_OBJECTS = CInterfaceTest_setpartitioning-CInte
 CInterfaceTest_setpartitioning_OBJECTS =  \
 	$(am_CInterfaceTest_setpartitioning_OBJECTS)
 CInterfaceTest_setpartitioning_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_steiner_OBJECTS =  \
+	CInterfaceTest_steiner-CInterfaceTest_steiner.$(OBJEXT)
+CInterfaceTest_steiner_OBJECTS = $(am_CInterfaceTest_steiner_OBJECTS)
+CInterfaceTest_steiner_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_trd445c_OBJECTS =  \
 	CInterfaceTest_trd445c-CInterfaceTest_trd445c.$(OBJEXT)
 CInterfaceTest_trd445c_OBJECTS = $(am_CInterfaceTest_trd445c_OBJECTS)
@@ -386,6 +391,8 @@ am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_setpacking-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Po \
 	./$(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Po \
+	./$(DEPDIR)/CInterfaceTest_steiner-CInterfaceTest_steiner.Po \
+	./$(DEPDIR)/CInterfaceTest_steiner-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po \
 	./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po \
@@ -488,6 +495,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_setpacking_SOURCES) \
 	$(CInterfaceTest_setpartitioning_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_setpartitioning_SOURCES) \
+	$(CInterfaceTest_steiner_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_steiner_SOURCES) \
 	$(CInterfaceTest_trd445c_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_trd445c_SOURCES) \
 	$(CInterfaceTest_trdta5581_SOURCES) \
@@ -784,7 +793,15 @@ dist_pkgtestfixture_DATA = \
   fixtures/jssp_la01.mps.gz \
   fixtures/jssp_la06.mps.gz \
   fixtures/jssp_la11.mps.gz \
-  fixtures/jssp_orb01.mps.gz
+  fixtures/jssp_orb01.mps.gz \
+  fixtures/steiner_grid4x4_t3_corners.mps.gz \
+  fixtures/steiner_grid5x5_t4_sparse.mps.gz \
+  fixtures/steiner_geom15_r30_t3.mps.gz \
+  fixtures/steiner_geom20_r35_t5.mps.gz \
+  fixtures/steiner_complete10_unit_t4.mps.gz \
+  fixtures/steiner_complete12_rand_t3.mps.gz \
+  fixtures/steiner_sparse20_p03_t4.mps.gz \
+  fixtures/steiner_sparse25_p025_t6.mps.gz
 
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
@@ -1019,6 +1036,10 @@ CInterfaceTest_jssp_fixtures_SOURCES = CInterfaceTest_jssp_fixtures.c
 nodist_EXTRA_CInterfaceTest_jssp_fixtures_SOURCES = dummy.cpp
 CInterfaceTest_jssp_fixtures_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_jssp_fixtures_LDADD = ../src/libmipster.la
+CInterfaceTest_steiner_SOURCES = CInterfaceTest_steiner.c
+nodist_EXTRA_CInterfaceTest_steiner_SOURCES = dummy.cpp
+CInterfaceTest_steiner_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_steiner_LDADD = ../src/libmipster.la
 
 ########################################################################
 #             gen_miclsp_solutions — reference solution generator      #
@@ -1216,6 +1237,10 @@ CInterfaceTest_setpartitioning$(EXEEXT): $(CInterfaceTest_setpartitioning_OBJECT
 	@rm -f CInterfaceTest_setpartitioning$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_setpartitioning_OBJECTS) $(CInterfaceTest_setpartitioning_LDADD) $(LIBS)
 
+CInterfaceTest_steiner$(EXEEXT): $(CInterfaceTest_steiner_OBJECTS) $(CInterfaceTest_steiner_DEPENDENCIES) $(EXTRA_CInterfaceTest_steiner_DEPENDENCIES) 
+	@rm -f CInterfaceTest_steiner$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_steiner_OBJECTS) $(CInterfaceTest_steiner_LDADD) $(LIBS)
+
 CInterfaceTest_trd445c$(EXEEXT): $(CInterfaceTest_trd445c_OBJECTS) $(CInterfaceTest_trd445c_DEPENDENCIES) $(EXTRA_CInterfaceTest_trd445c_DEPENDENCIES) 
 	@rm -f CInterfaceTest_trd445c$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_trd445c_OBJECTS) $(CInterfaceTest_trd445c_LDADD) $(LIBS)
@@ -1330,6 +1355,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_setpacking-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_steiner-CInterfaceTest_steiner.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_steiner-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po@am__quote@ # am--include-marker
@@ -1568,6 +1595,20 @@ CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.obj: CInterfaceTes
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_setpartitioning.c' object='CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpartitioning_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.obj `if test -f 'CInterfaceTest_setpartitioning.c'; then $(CYGPATH_W) 'CInterfaceTest_setpartitioning.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_setpartitioning.c'; fi`
+
+CInterfaceTest_steiner-CInterfaceTest_steiner.o: CInterfaceTest_steiner.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_steiner_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_steiner-CInterfaceTest_steiner.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_steiner-CInterfaceTest_steiner.Tpo -c -o CInterfaceTest_steiner-CInterfaceTest_steiner.o `test -f 'CInterfaceTest_steiner.c' || echo '$(srcdir)/'`CInterfaceTest_steiner.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_steiner-CInterfaceTest_steiner.Tpo $(DEPDIR)/CInterfaceTest_steiner-CInterfaceTest_steiner.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_steiner.c' object='CInterfaceTest_steiner-CInterfaceTest_steiner.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_steiner_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_steiner-CInterfaceTest_steiner.o `test -f 'CInterfaceTest_steiner.c' || echo '$(srcdir)/'`CInterfaceTest_steiner.c
+
+CInterfaceTest_steiner-CInterfaceTest_steiner.obj: CInterfaceTest_steiner.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_steiner_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_steiner-CInterfaceTest_steiner.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_steiner-CInterfaceTest_steiner.Tpo -c -o CInterfaceTest_steiner-CInterfaceTest_steiner.obj `if test -f 'CInterfaceTest_steiner.c'; then $(CYGPATH_W) 'CInterfaceTest_steiner.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_steiner.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_steiner-CInterfaceTest_steiner.Tpo $(DEPDIR)/CInterfaceTest_steiner-CInterfaceTest_steiner.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_steiner.c' object='CInterfaceTest_steiner-CInterfaceTest_steiner.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_steiner_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_steiner-CInterfaceTest_steiner.obj `if test -f 'CInterfaceTest_steiner.c'; then $(CYGPATH_W) 'CInterfaceTest_steiner.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_steiner.c'; fi`
 
 CInterfaceTest_trd445c-CInterfaceTest_trd445c.o: CInterfaceTest_trd445c.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_trd445c_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_trd445c-CInterfaceTest_trd445c.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Tpo -c -o CInterfaceTest_trd445c-CInterfaceTest_trd445c.o `test -f 'CInterfaceTest_trd445c.c' || echo '$(srcdir)/'`CInterfaceTest_trd445c.c
@@ -1831,6 +1872,20 @@ CInterfaceTest_setpartitioning-dummy.obj: dummy.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_setpartitioning_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_setpartitioning-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
 
+CInterfaceTest_steiner-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_steiner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_steiner-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_steiner-dummy.Tpo -c -o CInterfaceTest_steiner-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_steiner-dummy.Tpo $(DEPDIR)/CInterfaceTest_steiner-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_steiner-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_steiner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_steiner-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_steiner-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_steiner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_steiner-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_steiner-dummy.Tpo -c -o CInterfaceTest_steiner-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_steiner-dummy.Tpo $(DEPDIR)/CInterfaceTest_steiner-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_steiner-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_steiner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_steiner-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
 CInterfaceTest_trd445c-dummy.o: dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_trd445c_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_trd445c-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_trd445c-dummy.Tpo -c -o CInterfaceTest_trd445c-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_trd445c-dummy.Tpo $(DEPDIR)/CInterfaceTest_trd445c-dummy.Po
@@ -2077,6 +2132,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_setpacking-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_steiner-CInterfaceTest_steiner.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_steiner-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po
@@ -2176,6 +2233,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_setpacking-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_setpartitioning-CInterfaceTest_setpartitioning.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_setpartitioning-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_steiner-CInterfaceTest_steiner.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_steiner-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po

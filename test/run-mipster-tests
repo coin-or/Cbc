@@ -128,6 +128,7 @@ TESTS=(
   CInterfaceTest_bpc
   CInterfaceTest_mis
   CInterfaceTest_jssp_fixtures
+  CInterfaceTest_steiner
 )
 
 TOTAL=${#TESTS[@]}

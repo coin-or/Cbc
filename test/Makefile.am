@@ -103,7 +103,15 @@ dist_pkgtestfixture_DATA = \
   fixtures/jssp_la01.mps.gz \
   fixtures/jssp_la06.mps.gz \
   fixtures/jssp_la11.mps.gz \
-  fixtures/jssp_orb01.mps.gz
+  fixtures/jssp_orb01.mps.gz \
+  fixtures/steiner_grid4x4_t3_corners.mps.gz \
+  fixtures/steiner_grid5x5_t4_sparse.mps.gz \
+  fixtures/steiner_geom15_r30_t3.mps.gz \
+  fixtures/steiner_geom20_r35_t5.mps.gz \
+  fixtures/steiner_complete10_unit_t4.mps.gz \
+  fixtures/steiner_complete12_rand_t3.mps.gz \
+  fixtures/steiner_sparse20_p03_t4.mps.gz \
+  fixtures/steiner_sparse25_p025_t6.mps.gz
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
 pkgtestsoldir = $(datadir)/mipster/test/fixtures/solutions
@@ -157,7 +165,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis CInterfaceTest_jssp_fixtures
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis CInterfaceTest_jssp_fixtures CInterfaceTest_steiner
 
 noinst_PROGRAMS = gen_miclsp_solutions
 
@@ -397,6 +405,11 @@ CInterfaceTest_jssp_fixtures_SOURCES = CInterfaceTest_jssp_fixtures.c
 nodist_EXTRA_CInterfaceTest_jssp_fixtures_SOURCES = dummy.cpp
 CInterfaceTest_jssp_fixtures_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_jssp_fixtures_LDADD = ../src/libmipster.la
+
+CInterfaceTest_steiner_SOURCES = CInterfaceTest_steiner.c
+nodist_EXTRA_CInterfaceTest_steiner_SOURCES = dummy.cpp
+CInterfaceTest_steiner_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_steiner_LDADD = ../src/libmipster.la
 
 ########################################################################
 #             gen_miclsp_solutions — reference solution generator      #

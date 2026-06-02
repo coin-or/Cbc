@@ -23,7 +23,38 @@ dist_pkgtestfixture_DATA = \
   fixtures/trd445c.mps.gz \
   fixtures/trdta5581.mps.gz \
   fixtures/yue20013.1.150.mps.gz \
-  fixtures/attfInst1.mps.gz
+  fixtures/attfInst1.mps.gz \
+  fixtures/cvrp_asymmetric.mps.gz \
+  fixtures/cvrp_capacity_loose.mps.gz \
+  fixtures/cvrp_capacity_medium.mps.gz \
+  fixtures/cvrp_capacity_tight.mps.gz \
+  fixtures/cvrp_demand_outliers.mps.gz \
+  fixtures/cvrp_demand_skewed.mps.gz \
+  fixtures/cvrp_demand_uniform.mps.gz \
+  fixtures/cvrp_dense_uniform.mps.gz \
+  fixtures/cvrp_few_large.mps.gz \
+  fixtures/cvrp_geo_clustered.mps.gz \
+  fixtures/cvrp_geo_ring.mps.gz \
+  fixtures/cvrp_high_utilization.mps.gz \
+  fixtures/cvrp_large_scale.mps.gz \
+  fixtures/cvrp_loose.mps.gz \
+  fixtures/cvrp_many_small.mps.gz \
+  fixtures/cvrp_medium.mps.gz \
+  fixtures/cvrp_medium_scale.mps.gz \
+  fixtures/cvrp_size_large.mps.gz \
+  fixtures/cvrp_size_small.mps.gz \
+  fixtures/cvrp_small_scale.mps.gz \
+  fixtures/cvrp_sparse_grid.mps.gz \
+  fixtures/cvrp_tight.mps.gz \
+  fixtures/vrppd_large_scale.mps.gz \
+  fixtures/vrppd_large_uniform.mps.gz \
+  fixtures/vrppd_many_requests.mps.gz \
+  fixtures/vrppd_medium_clustered.mps.gz \
+  fixtures/vrppd_small.mps.gz \
+  fixtures/vrppd_small_scale.mps.gz \
+  fixtures/vrppd_small_uniform.mps.gz \
+  fixtures/vrppd_tight.mps.gz \
+  fixtures/vrppd_tight_ring.mps.gz
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
 pkgtestsoldir = $(datadir)/mipster/test/fixtures/solutions
@@ -77,7 +108,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_miplib
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib
 
 noinst_PROGRAMS = gen_miclsp_solutions
 
@@ -122,6 +153,14 @@ CInterfaceTest_miclsp_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VA
 CInterfaceTest_mescn_SOURCES = CInterfaceTest_mescn.c
 nodist_EXTRA_CInterfaceTest_mescn_SOURCES = dummy.cpp
 CInterfaceTest_mescn_LDADD = ../src/libmipster.la
+
+########################################################################
+#                   VRP tests (CVRP + VRPPD routing problems)          #
+########################################################################
+
+CInterfaceTest_vrp_SOURCES = CInterfaceTest_vrp.c
+nodist_EXTRA_CInterfaceTest_vrp_SOURCES = dummy.cpp
+CInterfaceTest_vrp_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   MDKP random-instance tests                          #

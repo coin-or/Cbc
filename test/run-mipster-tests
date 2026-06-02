@@ -120,6 +120,7 @@ TESTS=(
   CInterfaceTest_mip_reopt
   CInterfaceTest_new
   CInterfaceTest_tsp_cuts
+  CInterfaceTest_vrp
 )
 
 TOTAL=${#TESTS[@]}

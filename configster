@@ -78,13 +78,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
-# REPO_DIR: the monorepo root (where configure.ac lives).
-# If configster is in a scripts/ subdirectory, go up one level; otherwise use SCRIPT_DIR.
-if [[ -f "${SCRIPT_DIR}/configure.ac" ]]; then
-  REPO_DIR="$SCRIPT_DIR"
-else
-  REPO_DIR="$(dirname "$SCRIPT_DIR")"
-fi
+# REPO_DIR: the Cbc monorepo root (parent of scripts/)
+# WORKSPACE_DIR: workspace root containing sibling scripts (cbc_build.sh, etc.)
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+WORKSPACE_DIR="$(dirname "$REPO_DIR")"
+WORKSPACE_NAME="$(basename "$WORKSPACE_DIR")"
 ARCH="$(uname -m)"
 NPROC="$(nproc 2>/dev/null || echo 4)"
 PROJECTS=(Cbc)
@@ -213,9 +211,19 @@ derive_prefix() {
 # outer wrapper configure.ac at <repo>/configure.ac.  Use the nested package dir
 # when present so package-specific options (AMD, etc.) stay available.
 # When the monorepo root (REPO_DIR) is itself the project directory (e.g. the
-# Flat monorepo — project dir is always the repo root.
+# repo is named "mipster" but the project is "Cbc"), fall back to REPO_DIR.
 _project_dir() {
-  echo "$REPO_DIR"
+  local project="$1"
+  local root="${WORKSPACE_DIR}/${project}"
+  local nested="${root}/${project}"
+  if [[ -f "${root}/configure.ac" && -f "${nested}/configure.ac" ]] \
+     && grep -q 'AC_COIN_MAIN_PACKAGEDIR' "${root}/configure.ac"; then
+    echo "$nested"
+  elif [[ ! -d "$root" && -f "${SCRIPT_DIR}/configure.ac" ]]; then
+    echo "$SCRIPT_DIR"
+  else
+    echo "$root"
+  fi
 }
 
 _project_configure() {
@@ -354,14 +362,11 @@ detect_lib_paths() {
     AMD_LIB="-lamd -lsuitesparseconfig"
   fi
 
-  # ── Homebrew binutils ─────────────────────────────────────────────────────
-  # Newer GCC (≥15) emits DWARF5 .base64 directives that require binutils ≥2.44.
-  # If the selected compiler is from brew and brew binutils is installed, use its
-  # assembler/linker via -B<path> to avoid "unknown pseudo-op" errors from the
-  # older system assembler.  Skip this when using the system compiler (it is
-  # always compatible with the system assembler).
+  # ── Homebrew binutils (aarch64 only) ─────────────────────────────────────
+  # GCC-15 emits DWARF5 .base64 directives; system binutils 2.42 can't assemble
+  # them. Use the brew binutils 2.46+ assembler via -B<path>.
   HOMEBREW_BINUTILS=""
-  if [[ -n "$BREW_PREFIX" && -d "${BREW_PREFIX}/Cellar/binutils" ]]; then
+  if [[ "$ARCH" == "aarch64" && -n "$BREW_PREFIX" ]]; then
     HOMEBREW_BINUTILS="$(ls -d "${BREW_PREFIX}/Cellar/binutils"/*/bin \
                          2>/dev/null | sort -V | tail -1 || true)"
   fi
@@ -499,21 +504,8 @@ build_flags() {
       cxx+=" -fno-omit-frame-pointer" ;;
   esac
 
-  # Homebrew binutils: only needed when the compiler itself is from brew.
-  # Resolve the compiler path now (same preference order as _find_compiler).
-  if [[ -n "${HOMEBREW_BINUTILS:-}" ]]; then
-    local _probe_cxx
-    _probe_cxx="$(command -v "${CXX:-}" 2>/dev/null || true)"
-    if [[ -z "$_probe_cxx" ]]; then
-      for _c in g++-15 g++-14 g++-13 g++; do
-        _probe_cxx="$(command -v "$_c" 2>/dev/null || true)"
-        [[ -n "$_probe_cxx" ]] && break
-      done
-    fi
-    if [[ "$_probe_cxx" == "${BREW_PREFIX}"/* ]]; then
-      cxx+=" -B${HOMEBREW_BINUTILS}"
-    fi
-  fi
+  # Homebrew binutils for DWARF5 (aarch64)
+  [[ -n "${HOMEBREW_BINUTILS:-}" ]] && cxx+=" -B${HOMEBREW_BINUTILS}"
 
   # OpenBLAS: include path + define go into ADD_CXXFLAGS for all projects
   # (harmless for those that don't use it); the linker flag goes ONLY to Clp

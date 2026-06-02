@@ -1,6 +1,6 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: "Cbc/src/Makefile.am,**/configure.ac,Cbc/scripts/configster,cbc_build.sh,cbc_clean.sh"
+fileMatchPattern: "src/Makefile.am,**/configure.ac,configster"
 ---
 
 # MIPster — Build System
@@ -15,13 +15,13 @@ export MIPSTER_CBC_MASTER="$HOME/dev/cbc-master" # upstream Cbc master reference
 
 Debug builds install to `$MIPSTER_PREFIX-dbg` (ASan) and `$MIPSTER_PREFIX-tsan` (TSan).
 
-## Preferred Workflow: `Cbc/scripts/configster`
+## Preferred Workflow: `configster`
 
 ```sh
-./Cbc/scripts/configster --opt --install          # optimised build
-./Cbc/scripts/configster --debug --sanitizer=asan --install   # ASan
-./Cbc/scripts/configster --debug --sanitizer=tsan --install   # TSan
-./Cbc/scripts/configster --debug --sanitizer=valgrind --install  # Valgrind-friendly
+./configster --opt --install          # optimised build
+./configster --debug --sanitizer=asan --install   # ASan
+./configster --debug --sanitizer=tsan --install   # TSan
+./configster --debug --sanitizer=valgrind --install  # Valgrind-friendly
 ```
 
 Key options: `--static`/`--shared`/`--both`, `--prefix=PATH`, `--jobs=N`, `--dry-run`.
@@ -29,28 +29,27 @@ Key options: `--static`/`--shared`/`--both`, `--prefix=PATH`, `--jobs=N`, `--dry
 ## Incremental Rebuild
 
 ```sh
-./cbc_build.sh --install   # rebuild + reinstall (safest, no reconfigure)
-./cbc_build.sh             # rebuild only
-cd Cbc && make V=1 -j$(nproc) && make install   # direct
+make -j$(nproc) && make install   # rebuild + reinstall (no reconfigure)
+make V=1 -j$(nproc)               # verbose rebuild only
 ```
 
 ## Adding New Source Files
 
-1. Edit `Cbc/src/Makefile.am` — add `.cpp` to `lib*_la_SOURCES`, `.hpp` to `includecoin_HEADERS`
-2. Regenerate: `cd Cbc && autoreconf --install -I BuildTools`
-3. Rebuild: `./Cbc/scripts/configster --opt --install`
+1. Edit `src/Makefile.am` — add `.cpp` to `lib*_la_SOURCES`, `.hpp` to `includecoin_HEADERS`
+2. Regenerate: `autoreconf --install -I BuildTools`
+3. Rebuild: `./configster --opt --install`
 
 ## Running Tests
 
 ```sh
-cd Cbc/test && make -j$(nproc) test
-# Individual binaries: Cbc/test/CInterfaceTest, Cbc/test/cbc_unittest
+cd test && make -j$(nproc) test
+# Individual binaries: test/CInterfaceTest, test/CbcSolverLpTest
 ```
 
 ## Code Formatting
 
 ```sh
-cd Cbc && ./format-all-sources.sh     # all sources
+./format-all-sources.sh               # all sources
 clang-format -i path/to/file.cpp      # single file
 ```
 
@@ -59,6 +58,6 @@ Style: 2-space indent, no tabs, `PointerAlignment: Right`, `BreakBeforeBraces: W
 ## Cleaning
 
 ```sh
-./cbc_clean.sh                  # clean + distclean
-./cbc_clean.sh --distclean-only # distclean only (removes Makefiles)
+make clean        # remove build objects (keeps Makefiles)
+make distclean    # full clean (removes Makefiles; requires reconfigure after)
 ```

@@ -61,10 +61,26 @@ static int check_ufl_solution(Cbc_Model *m, const UflInstance *inst,
   double maxViolRow, maxViolCol;
   int rowIdx, colIdx;
   if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
-    printf("    FAIL [%s]: Cbc_checkFeasibility failed — "
+    printf("    FAIL [%s]: best solution Cbc_checkFeasibility failed — "
            "maxRowViol=%.2e (row %d)  maxColViol=%.2e (col %d)\n",
            label, maxViolRow, rowIdx, maxViolCol, colIdx);
     return 0;
+  }
+
+  /* Check feasibility of ALL solutions in the pool */
+  int nSol = Cbc_numberSavedSolutions(m);
+  for (int s = 0; s < nSol; s++) {
+    const double *poolSol = Cbc_savedSolution(m, s);
+    double poolObj = Cbc_savedSolutionObj(m, s);
+    maxViolRow = 0.0; maxViolCol = 0.0;
+    rowIdx = -1; colIdx = -1;
+
+    if (!Cbc_checkFeasibility(m, poolSol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+      printf("    FAIL [%s]: pool solution %d/%d infeasible (obj=%.1f) — "
+             "maxRowViol=%.2e (row %d)  maxColViol=%.2e (col %d)\n",
+             label, s+1, nSol, poolObj, maxViolRow, rowIdx, maxViolCol, colIdx);
+      return 0;
+    }
   }
 
   int mm = inst->m, n = inst->n;
@@ -118,10 +134,26 @@ static int check_cflp_solution(Cbc_Model *m, const CflpInstance *inst,
   double maxViolRow, maxViolCol;
   int rowIdx, colIdx;
   if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
-    printf("    FAIL [%s]: Cbc_checkFeasibility failed — "
+    printf("    FAIL [%s]: best solution Cbc_checkFeasibility failed — "
            "maxRowViol=%.2e (row %d)  maxColViol=%.2e (col %d)\n",
            label, maxViolRow, rowIdx, maxViolCol, colIdx);
     return 0;
+  }
+
+  /* Check feasibility of ALL solutions in the pool */
+  int nSol = Cbc_numberSavedSolutions(m);
+  for (int s = 0; s < nSol; s++) {
+    const double *poolSol = Cbc_savedSolution(m, s);
+    double poolObj = Cbc_savedSolutionObj(m, s);
+    maxViolRow = 0.0; maxViolCol = 0.0;
+    rowIdx = -1; colIdx = -1;
+
+    if (!Cbc_checkFeasibility(m, poolSol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+      printf("    FAIL [%s]: pool solution %d/%d infeasible (obj=%.1f) — "
+             "maxRowViol=%.2e (row %d)  maxColViol=%.2e (col %d)\n",
+             label, s+1, nSol, poolObj, maxViolRow, rowIdx, maxViolCol, colIdx);
+      return 0;
+    }
   }
 
   int mm = inst->m, n = inst->n;

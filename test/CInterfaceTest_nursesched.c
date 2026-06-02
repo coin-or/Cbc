@@ -308,7 +308,7 @@ static void test_mip(void)
   CHECK(fabs(obj - NURSESCHED_MIP_OPT) < MIP_TOL,
         "MIP: optimal value matches known optimum");
 
-  /* Solution must be integer-feasible */
+  /* Best solution must be integer-feasible */
   const double *sol = Cbc_bestSolution(m);
   CHECK(sol != NULL, "MIP: best solution exists");
   if (sol) {
@@ -317,7 +317,26 @@ static void test_mip(void)
     char feas = Cbc_checkFeasibility(m, sol,
                                      &maxViolRow, &rowIdx,
                                      &maxViolCol, &colIdx);
-    CHECK(feas == 1, "MIP: solution is integer-feasible");
+    CHECK(feas == 1, "MIP: best solution is integer-feasible");
+  }
+
+  /* Check feasibility of ALL solutions in the pool */
+  int nSol = Cbc_numberSavedSolutions(m);
+  for (int s = 0; s < nSol; s++) {
+    const double *poolSol = Cbc_savedSolution(m, s);
+    double poolObj = Cbc_savedSolutionObj(m, s);
+    double maxViolRow = 0.0, maxViolCol = 0.0;
+    int rowIdx = -1, colIdx = -1;
+
+    char feas = Cbc_checkFeasibility(m, poolSol,
+                                     &maxViolRow, &rowIdx,
+                                     &maxViolCol, &colIdx);
+    if (feas != 1) {
+      printf("    FAIL: pool solution %d/%d infeasible (obj=%.2f)  "
+             "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
+             s+1, nSol, poolObj, maxViolRow, rowIdx, maxViolCol, colIdx);
+    }
+    CHECK(feas == 1, "MIP: all pool solutions are integer-feasible");
   }
 
   Cbc_deleteModel(m);

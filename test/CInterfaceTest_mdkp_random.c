@@ -71,15 +71,31 @@ static int test_mdkp(const MdkpInstance *inst)
     return 0;
   }
 
-  /* Structural check: feasibility and integrality */
+  /* Structural check: feasibility and integrality of best solution */
   const double *sol = Cbc_getColSolution(m);
   double maxViolRow = 0.0; int rowIdx = -1;
   double maxViolCol = 0.0; int colIdx = -1;
   if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
-    printf("    FAIL: Cbc_checkFeasibility failed  "
+    printf("    FAIL: best solution Cbc_checkFeasibility failed  "
            "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
            maxViolRow, rowIdx, maxViolCol, colIdx);
     pass = 0;
+  }
+
+  /* Check feasibility of ALL solutions in the pool */
+  int nSol = Cbc_numberSavedSolutions(m);
+  for (int s = 0; s < nSol; s++) {
+    const double *poolSol = Cbc_savedSolution(m, s);
+    double poolObj = Cbc_savedSolutionObj(m, s);
+    maxViolRow = 0.0; rowIdx = -1;
+    maxViolCol = 0.0; colIdx = -1;
+
+    if (!Cbc_checkFeasibility(m, poolSol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+      printf("    FAIL: pool solution %d/%d infeasible (obj=%.0f)  "
+             "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
+             s+1, nSol, poolObj, maxViolRow, rowIdx, maxViolCol, colIdx);
+      pass = 0;
+    }
   }
 
   /* Semantic check: all capacity constraints satisfied */

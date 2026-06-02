@@ -91,15 +91,35 @@ static void test_mtz(const TspInstance *inst)
 
   Cbc_solve(m);
   assert(Cbc_isProvenOptimal(m));
+
+  /* Check feasibility of best solution */
   {
     double maxViolRow, maxViolCol; int rowIdx, colIdx;
     int feas = Cbc_checkFeasibility(m, Cbc_getColSolution(m),
                                     &maxViolRow, &rowIdx, &maxViolCol, &colIdx);
-    if (!feas)
-      printf("    WARN: Cbc_checkFeasibility failed — rowViol=%.2e col=%.2e\n",
-             maxViolRow, maxViolCol);
-    assert(feas);
+    if (!feas) {
+      printf("    FAIL: best solution infeasible — rowViol=%.2e (row %d) colViol=%.2e (col %d)\n",
+             maxViolRow, rowIdx, maxViolCol, colIdx);
+      assert(feas);
+    }
   }
+
+  /* Check feasibility of ALL solutions in the pool */
+  int nSol = Cbc_numberSavedSolutions(m);
+  for (int s = 0; s < nSol; s++) {
+    const double *sol = Cbc_savedSolution(m, s);
+    double solObj = Cbc_savedSolutionObj(m, s);
+    double maxViolRow = 0.0, maxViolCol = 0.0;
+    int rowIdx = -1, colIdx = -1;
+
+    if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+      printf("    FAIL: pool solution %d/%d infeasible (obj=%.0f) — "
+             "rowViol=%.2e (row %d) colViol=%.2e (col %d)\n",
+             s+1, nSol, solObj, maxViolRow, rowIdx, maxViolCol, colIdx);
+      assert(0);
+    }
+  }
+
   int obj = (int)round(Cbc_getObjValue(m));
   printf("    -> MTZ obj=%d %s\n", obj, obj == inst->opt ? "OK" : "FAIL");
   assert(obj == inst->opt);
@@ -285,15 +305,35 @@ static void test_subtour(const TspInstance *inst)
 
   Cbc_solve(m);
   assert(Cbc_isProvenOptimal(m));
+
+  /* Check feasibility of best solution */
   {
     double maxViolRow, maxViolCol; int rowIdx, colIdx;
     int feas = Cbc_checkFeasibility(m, Cbc_getColSolution(m),
                                     &maxViolRow, &rowIdx, &maxViolCol, &colIdx);
-    if (!feas)
-      printf("    WARN: Cbc_checkFeasibility failed — rowViol=%.2e col=%.2e\n",
-             maxViolRow, maxViolCol);
-    assert(feas);
+    if (!feas) {
+      printf("    FAIL: best solution infeasible — rowViol=%.2e (row %d) colViol=%.2e (col %d)\n",
+             maxViolRow, rowIdx, maxViolCol, colIdx);
+      assert(feas);
+    }
   }
+
+  /* Check feasibility of ALL solutions in the pool */
+  int nSol = Cbc_numberSavedSolutions(m);
+  for (int s = 0; s < nSol; s++) {
+    const double *sol = Cbc_savedSolution(m, s);
+    double solObj = Cbc_savedSolutionObj(m, s);
+    double maxViolRow = 0.0, maxViolCol = 0.0;
+    int rowIdx = -1, colIdx = -1;
+
+    if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+      printf("    FAIL: pool solution %d/%d infeasible (obj=%.0f) — "
+             "rowViol=%.2e (row %d) colViol=%.2e (col %d)\n",
+             s+1, nSol, solObj, maxViolRow, rowIdx, maxViolCol, colIdx);
+      assert(0);
+    }
+  }
+
   int obj = (int)round(Cbc_getObjValue(m));
   printf("    -> Subtour obj=%d %s\n", obj, obj == inst->opt ? "OK" : "FAIL");
   assert(obj == inst->opt);

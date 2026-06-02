@@ -350,7 +350,7 @@ int main(void)
       int nSol = Cbc_numberSavedSolutions(model);
       for (int s = 0; s < nSol; s++) {
         const double *sol = Cbc_savedSolution(model, s);
-        double solObj = Cbc_savedSolutionObjective(model, s);
+        double solObj = Cbc_savedSolutionObj(model, s);
         maxViolRow = 0.0; rowIdx = -1;
         maxViolCol = 0.0; colIdx = -1;
 

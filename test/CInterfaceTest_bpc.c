@@ -82,7 +82,7 @@ static int test_bpc(const char *fixture_dir, const BpcTestCase *tc)
   int nSol = Cbc_numberSavedSolutions(m);
   for (int s = 0; s < nSol; s++) {
     const double *sol = Cbc_savedSolution(m, s);
-    double solObj = Cbc_savedSolutionObjective(m, s);
+    double solObj = Cbc_savedSolutionObj(m, s);
     maxViolRow = 0.0; rowIdx = -1;
     maxViolCol = 0.0; colIdx = -1;
 

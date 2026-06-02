@@ -1,9 +1,9 @@
 #! /bin/sh
 # Wrapper for compilers which do not understand '-c -o'.
 
-scriptversion=2024-06-19.01; # UTC
+scriptversion=2025-06-18.21; # UTC
 
-# Copyright (C) 1999-2024 Free Software Foundation, Inc.
+# Copyright (C) 1999-2025 Free Software Foundation, Inc.
 # Written by Tom Tromey <tromey@cygnus.com>.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -37,11 +37,11 @@ IFS=" ""	$nl"
 
 file_conv=
 
-# func_file_conv build_file lazy
+# func_file_conv build_file unneeded_conversions
 # Convert a $build file to $host form and store it in $file
 # Currently only supports Windows hosts. If the determined conversion
-# type is listed in (the comma separated) LAZY, no conversion will
-# take place.
+# type is listed in (the comma separated) UNNEEDED_CONVERSIONS, no
+# conversion will take place.
 func_file_conv ()
 {
   file=$1
@@ -51,9 +51,20 @@ func_file_conv ()
 	# lazily determine how to convert abs files
 	case `uname -s` in
 	  MINGW*)
-	    file_conv=mingw
+	    if test -n "$MSYSTEM" && (cygpath --version) >/dev/null 2>&1; then
+	      # MSYS2 environment.
+	      file_conv=cygwin
+	    else
+	      # Original MinGW environment.
+	      file_conv=mingw
+	    fi
 	    ;;
-	  CYGWIN* | MSYS*)
+	  MSYS*)
+	    # Old MSYS environment, or MSYS2 with 32-bit MSYS2 shell.
+	    file_conv=cygwin
+	    ;;
+	  CYGWIN*)
+	    # Cygwin environment.
 	    file_conv=cygwin
 	    ;;
 	  *)
@@ -63,12 +74,14 @@ func_file_conv ()
       fi
       case $file_conv/,$2, in
 	*,$file_conv,*)
+	  # This is the optimization mentioned above:
+	  # If UNNEEDED_CONVERSIONS contains $file_conv, don't convert.
 	  ;;
 	mingw/*)
 	  file=`cmd //C echo "$file " | sed -e 's/"\(.*\) " *$/\1/'`
 	  ;;
-	cygwin/* | msys/*)
-	  file=`cygpath -m "$file" || echo "$file"`
+	cygwin/*)
+	  file=`cygpath -w "$file" || echo "$file"`
 	  ;;
 	wine/*)
 	  file=`winepath -w "$file" || echo "$file"`
@@ -133,9 +146,6 @@ func_cl_wrapper ()
   lib_path=
   shared=:
   linker_opts=
-  outfile=
-  implib=
-  linking=1
   for arg
   do
     if test -n "$eat"; then
@@ -150,13 +160,11 @@ func_cl_wrapper ()
 	      func_file_conv "$2"
 	      set x "$@" -Fo"$file"
 	      shift
-	      outfile="$file"
 	      ;;
 	    *)
 	      func_file_conv "$2"
 	      set x "$@" -Fe"$file"
 	      shift
-	      outfile="$file"
 	      ;;
 	  esac
 	  ;;
@@ -198,17 +206,12 @@ func_cl_wrapper ()
 	  for flag in $arg; do
 	    IFS="$save_ifs"
 	    linker_opts="$linker_opts $flag"
-	    case "$flag" in -IMPLIB:*) implib=${flag#-IMPLIB:} ;; esac
 	  done
 	  IFS="$save_ifs"
 	  ;;
 	-Xlinker)
 	  eat=1
 	  linker_opts="$linker_opts $2"
-	  ;;
-	-std=*)
-	  set x "$@" -std:"${1#-std=}"
-	  shift
 	  ;;
 	-*)
 	  set x "$@" "$1"
@@ -224,11 +227,6 @@ func_cl_wrapper ()
 	  set x "$@" "$file"
 	  shift
 	  ;;
-	-c)
-	  linking=0
-	  set x "$@" "$1"
-	  shift
-	  ;;
 	*)
 	  set x "$@" "$1"
 	  shift
@@ -240,28 +238,8 @@ func_cl_wrapper ()
   if test -n "$linker_opts"; then
     linker_opts="-link$linker_opts"
   fi
-  # remove old $implib, so we can distinguish between generated and not-generated implib below
-  if test -n "$implib" && test -f "$implib" ; then rm "$implib" ; fi
-
-  # add path to MSVC link in front on PATH if we seem to link (check isn't so accurate, but some false-positives shouldn't matter)
-  # compiler will call the link it finds in the PATH, and we don't want it to use MSYS' /bin/link
-  # we assume that MSVC link is in same directory as cl and that cl is found in PATH
-  if test "$linking" = 1 && comppath=`which cl 2>/dev/null` ; then
-    comppath=`dirname "$comppath"`
-    #echo "Adding $comppath to front of PATH"
-    PATH="$comppath:$PATH"
-  fi
-
-  #echo "compile: $@ $linker_opts"
-  "$@" $linker_opts || exit $?
-
-  # if -implib got lost or ignored, then the lib should be named ${outfile/.dll/.lib} and we rename that file
-  if test -n "$implib" && test ! -f "$implib" ; then
-    echo "compile: mv ${outfile/.dll/.lib} $implib"
-    mv "${outfile/.dll/.lib}" "$implib"
-  fi
-
-  exit 0
+  exec "$@" $linker_opts
+  exit 1
 }
 
 eat=
@@ -294,10 +272,7 @@ EOF
     ;;
   cl | *[/\\]cl | cl.exe | *[/\\]cl.exe | \
   clang-cl | *[/\\]clang-cl | clang-cl.exe | *[/\\]clang-cl.exe | \
-  icl | *[/\\]icl | icl.exe | *[/\\]icl.exe | \
-  icx | *[/\\]icx | icx.exe | *[/\\]icx.exe | \
-  ifx | *[/\\]ifx | ifx.exe | *[/\\]ifx.exe | \
-  ifort | *[/\\]ifort | ifort.exe | *[/\\]ifort.exe )
+  icl | *[/\\]icl | icl.exe | *[/\\]icl.exe )
     func_cl_wrapper "$@"      # Doesn't return...
     ;;
 esac
@@ -381,9 +356,9 @@ exit $ret
 # Local Variables:
 # mode: shell-script
 # sh-indentation: 2
-# eval: (add-hook 'before-save-hook 'time-stamp)
+# eval: (add-hook 'before-save-hook 'time-stamp nil t)
 # time-stamp-start: "scriptversion="
-# time-stamp-format: "%:y-%02m-%02d.%02H"
+# time-stamp-format: "%Y-%02m-%02d.%02H"
 # time-stamp-time-zone: "UTC0"
 # time-stamp-end: "; # UTC"
 # End:

@@ -298,7 +298,7 @@ static Cbc_Model *build_mescn(const MESCNInstance *inst)
             nnz++;
           }
         }
-        Cbc_addRow(model, NULL, nnz, indices, values, 'E', 0.0);
+        Cbc_addRow(model, "row", nnz, indices, values, 'E', 0.0);
       }
     }
   }
@@ -334,7 +334,7 @@ static Cbc_Model *build_mescn(const MESCNInstance *inst)
             nnz++;
           }
         }
-        Cbc_addRow(model, NULL, nnz, indices, values, 'E', 0.0);
+        Cbc_addRow(model, "row", nnz, indices, values, 'E', 0.0);
       }
     }
   }
@@ -352,7 +352,7 @@ static Cbc_Model *build_mescn(const MESCNInstance *inst)
           }
         }
         double rhs = inst->demand[(r * P + p) * T + t];
-        Cbc_addRow(model, NULL, nnz, indices, values, 'E', rhs);
+        Cbc_addRow(model, "row", nnz, indices, values, 'E', rhs);
       }
     }
   }
@@ -366,7 +366,7 @@ static Cbc_Model *build_mescn(const MESCNInstance *inst)
         values[nnz] = 1.0;
         nnz++;
       }
-      Cbc_addRow(model, NULL, nnz, indices, values, 'L', inst->cap_factory[f]);
+      Cbc_addRow(model, "row", nnz, indices, values, 'L', inst->cap_factory[f]);
     }
   }
 
@@ -379,7 +379,7 @@ static Cbc_Model *build_mescn(const MESCNInstance *inst)
         values[nnz] = 1.0;
         nnz++;
       }
-      Cbc_addRow(model, NULL, nnz, indices, values, 'L', inst->cap_warehouse[w]);
+      Cbc_addRow(model, "row", nnz, indices, values, 'L', inst->cap_warehouse[w]);
     }
   }
 
@@ -394,7 +394,7 @@ static Cbc_Model *build_mescn(const MESCNInstance *inst)
         indices[nnz] = nidx(F, W, R, P, T, f, p, t);
         values[nnz] = -(double)inst->batch_size[p];
         nnz++;
-        Cbc_addRow(model, NULL, nnz, indices, values, 'E', 0.0);
+        Cbc_addRow(model, "row", nnz, indices, values, 'E', 0.0);
       }
     }
   }
@@ -411,7 +411,7 @@ static Cbc_Model *build_mescn(const MESCNInstance *inst)
         indices[nnz] = uidx(F, W, R, P, T, f, p, t);
         values[nnz] = -(double)M_f;
         nnz++;
-        Cbc_addRow(model, NULL, nnz, indices, values, 'L', 0.0);
+        Cbc_addRow(model, "row", nnz, indices, values, 'L', 0.0);
       }
     }
   }
@@ -431,7 +431,7 @@ static Cbc_Model *build_mescn(const MESCNInstance *inst)
         indices[nnz] = midx(F, W, R, P, T, w, p, t);
         values[nnz] = -(double)inst->truck_size;
         nnz++;
-        Cbc_addRow(model, NULL, nnz, indices, values, 'E', 0.0);
+        Cbc_addRow(model, "row", nnz, indices, values, 'E', 0.0);
       }
     }
   }
@@ -450,7 +450,7 @@ static Cbc_Model *build_mescn(const MESCNInstance *inst)
         indices[nnz] = vidx(F, W, R, P, T, w, p, t);
         values[nnz] = -(double)M_w;
         nnz++;
-        Cbc_addRow(model, NULL, nnz, indices, values, 'L', 0.0);
+        Cbc_addRow(model, "row", nnz, indices, values, 'L', 0.0);
       }
     }
   }

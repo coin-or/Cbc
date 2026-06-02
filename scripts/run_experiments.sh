@@ -11,9 +11,11 @@
 # Output layout ($OUTDIR/):
 #   summary.tsv              — one row per instance: status, obj, elapsed, gap, ...
 #   <instance>.log           — full CBC + sanitizer stdout/stderr
+#   <instance>.sol           — solution file (only present when a feasible solution was found)
+#   <instance>.validate.log  — solution validation output (mipster_validate_sol)
 #   stats.csv                — CBC statistics for all instances when supported
 #   <instance>.vg.log        — valgrind report (when --valgrind is used)
-#   <instance>.err           — extracted error snippet (sanitizer / wrong obj / crash)
+#   <instance>.err           — extracted error snippet (sanitizer / wrong obj / crash / invalid sol)
 #   <instance>.zh-constraints.csv
 #                           — ZeroHalf best/worst constraint report (--zh-constraint-report)
 #   parallel.log             — GNU parallel job log (timing, exit codes)
@@ -25,6 +27,7 @@
 #   SOLVED(best)    solved, objective matches the best-known reference
 #   SOLVED(improved) solved, objective improves on the best-known reference
 #   SOLVED(no_ref)  solved, no reference objective available
+#   INVALID_SOL     CBC found a solution but validation (mipster_validate_sol) failed
 #   WRONG_OBJ       solved but objective is worse than the reference
 #   NO_SOLUTION     CBC exited normally but found no integer feasible solution
 #   TIMEOUT       reached --timelimit; CBC exited on its own (objective accepted)
@@ -188,9 +191,11 @@ concurrently via GNU parallel.
 Output layout (<outdir>/):
   summary.tsv              — one row per instance: status, obj, elapsed, gap
   <instance>.log           — full CBC + sanitizer stdout/stderr
+  <instance>.sol           — solution file (only present when a feasible solution was found)
+  <instance>.validate.log  — solution validation output (mipster_validate_sol)
   stats.csv                — CBC statistics for all instances when supported
   <instance>.vg.log        — valgrind report (when --valgrind is used)
-  <instance>.err           — extracted error snippet (sanitizer / wrong obj / crash)
+  <instance>.err           — extracted error snippet (sanitizer / wrong obj / crash / invalid sol)
   <instance>.zh-constraints.csv
                            — ZeroHalf best/worst constraint report (--zh-constraint-report)
   parallel.log             — GNU parallel job log (timing, exit codes)
@@ -202,7 +207,8 @@ Status values in summary.tsv:
   SOLVED(best)      solved, objective matches the best-known reference
   SOLVED(improved)  solved, objective improves on the best-known reference
   SOLVED(no_ref)    solved, no reference objective available
-  SOLVED(inf) CBC proved infeasible; benchmark agrees (or no ref)
+  SOLVED(inf)       CBC proved infeasible; benchmark agrees (or no ref)
+  INVALID_SOL       CBC found a solution but validation (mipster_validate_sol) failed
   WRONG_OBJ         solved but objective is worse than the reference
   INFEASIBLE_WRONG  CBC proved infeasible but a numeric objective was expected
   NO_SOLUTION       CBC exited normally but found no integer feasible solution
@@ -725,6 +731,7 @@ run_instance() {
   local resultfile="$OUTDIR/${name}.result"
   local csv_statsfile="$OUTDIR/${name}.stats.csv"
   local zh_reportfile="$OUTDIR/${name}.zh-constraints.csv"
+  local solutionfile="$OUTDIR/${name}.sol"
   rm -f "$csv_statsfile"
 
   # Reconstruct VG command from exported scalars
@@ -776,7 +783,7 @@ run_instance() {
   if [[ "$CBC_STATS_MODE" == "writeStat" ]]; then
     cmd+=("-writeStat" "$csv_statsfile")
   fi
-  cmd+=("-quit")
+  cmd+=("-solu" "$solutionfile" "-quit")
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
     if [[ ${#env_assignments[@]} -gt 0 ]]; then
@@ -869,6 +876,27 @@ run_instance() {
   local solution_found=0
   [[ -n "$obj" ]] && solution_found=1
 
+  # ── Validate solution file if present ────────────────────────────────────────
+  local validation_failed=0
+  local validation_msg=""
+  if [[ -f "$solutionfile" ]]; then
+    # Derive path to mipster_validate_sol from CBC_BIN (same directory)
+    local validate_bin="$(dirname "$CBC_BIN")/mipster_validate_sol"
+    if [[ -x "$validate_bin" ]]; then
+      local validate_log="$OUTDIR/${name}.validate.log"
+      set +e
+      "$validate_bin" "$mps" "$solutionfile" > "$validate_log" 2>&1
+      local validate_exit=$?
+      set -e
+      if [[ $validate_exit -eq 1 ]]; then
+        # Exit code 1 means validation failed (solution is infeasible)
+        validation_failed=1
+        validation_msg=$(head -20 "$validate_log" | grep -E "INVALID|violation|Bound|Integrality|Row" || echo "Validation failed (see ${name}.validate.log)")
+      fi
+      # Exit code 0 = valid, 2 = file error (ignore file errors, they're environment issues)
+    fi
+  fi
+
   # Extract primal-dual gap for timeout cases where a feasible solution was found
   local cbc_gap="-"
   if [[ $timed_out -eq 1 && -n "$obj" ]]; then
@@ -897,6 +925,8 @@ run_instance() {
     status="OVERTIME"
   elif [[ $exit_code -ne 0 ]]; then
     status="CRASH(exit=$exit_code)"
+  elif [[ $validation_failed -eq 1 ]]; then
+    status="INVALID_SOL"
   elif [[ $proven_infeasible -eq 1 ]]; then
     if [[ -n "$exp_infeasible" || -z "$exp" ]]; then
       status="SOLVED(inf)"      # CBC proved infeasible; benchmark agrees (or no ref)
@@ -935,6 +965,15 @@ run_instance() {
 
   # Extract error snippets into .err (only created when non-empty)
   > "$errfile"
+  if [[ "$status" == "INVALID_SOL" ]]; then
+    { echo "=== Solution validation failed ==="
+      echo "  CBC reported: $obj"
+      [[ -n "$validation_msg" ]] && echo "$validation_msg"
+      echo ""
+      echo "  See ${name}.validate.log for full validation output"
+      echo ""
+    } >> "$errfile"
+  fi
   if [[ "$status" == "WRONG_OBJ" ]]; then
     { echo "=== Objective worse than reference ==="
       echo "  got:      $obj"
@@ -996,6 +1035,7 @@ run_instance() {
 
   # Extra context: show expected value for wrong-answer cases
   local extra=""
+  [[ "$status" == "INVALID_SOL" ]]      && extra="  validation failed"
   [[ "$status" == "WRONG_OBJ" ]]        && extra="  exp=${exp}"
   [[ "$status" == "INFEASIBLE_WRONG" ]] && extra="  exp=${exp}"
 
@@ -1530,6 +1570,7 @@ fi
   echo ""
   echo "Per-instance logs: $OUTDIR/"
   echo "Summary TSV:       $SUMMARY"
+  echo "Solutions:         $OUTDIR/*.sol  (present when feasible solution found)"
   echo "GNU parallel log:  $OUTDIR/parallel.log"
   [[ -f "$MEM_TSV" ]] && echo "Memory usage log:  $MEM_TSV"
   echo "Experiment setup:  $OUTDIR/experiment_setup.md"

@@ -160,6 +160,8 @@ if (rel_err > 1e-3) {
 
 ### 2. Solution Feasibility Validation
 
+MIPster maintains a **solution pool** during the search. Best practice is to validate **all solutions**, not just the final incumbent.
+
 Use `mipster_validate_sol` to check:
 - **Bounds**: `lb ≤ x[i] ≤ ub` for all variables
 - **Integrality**: `|x[i] − round(x[i])| ≤ 1e-5` for integer variables
@@ -167,17 +169,55 @@ Use `mipster_validate_sol` to check:
 - **Objective**: computed `c·x` matches claimed value
 
 ```c
-// Write solution to file
+// Get number of solutions in pool
+int n_solutions = Cbc_numberSavedSolutions(model);
+
+// Validate each solution
+for (int i = 0; i < n_solutions; i++) {
+  char sol_file[256];
+  snprintf(sol_file, sizeof(sol_file), "solution_%d.sol", i);
+  
+  // Get solution i from pool
+  const double *solution = Cbc_savedSolution(model, i);
+  double sol_obj = Cbc_savedSolutionObj(model, i);
+  
+  // Write to .sol file format (manual or via helper)
+  write_solution_file(sol_file, solution, sol_obj, n_cols);
+  
+  // Validate (external process)
+  if (!validate_solution(mps_file, sol_file)) {
+    printf("FAIL: solution %d/%d (obj=%.2f) violates constraints\n", 
+           i+1, n_solutions, sol_obj);
+    return 1;
+  }
+  
+  unlink(sol_file);
+}
+
+printf("PASS: all %d solutions validated\n", n_solutions);
+```
+
+**Why validate all solutions:**
+- Catches bugs in primal heuristics that produce infeasible solutions
+- Verifies solution pool management is correct
+- Ensures every reported improvement is actually feasible
+
+**Quick validation (incumbent only):**
+
+For simple tests, validating the final incumbent is often sufficient:
+
+```c
+// Write best solution to file
 Cbc_writeSolution(model, "solution.sol");
 
-// Validate (external process)
+// Validate
 if (!validate_solution(mps_file, "solution.sol")) {
-  printf("FAIL: solution violates constraints\n");
+  printf("FAIL: incumbent solution violates constraints\n");
   return 1;
 }
 ```
 
-See `test/CInterfaceTest_vrp.c:validate_solution()` for a fork/exec implementation.
+See `test/CInterfaceTest_vrp.c:validate_solution()` for a fork/exec implementation of `validate_solution()`.
 
 ### 3. Cross-Solver Validation
 

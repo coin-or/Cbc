@@ -8,6 +8,9 @@
 #                             libmipster                               #
 ########################################################################
 
+# Build subdirectories first (dependencies)
+SUBDIRS = CoinUtils Clp Cgl
+
 # Name of the library compiled in this directory.
 # We want it to be installed in the 'lib' directory
 lib_LTLIBRARIES = libmipster.la

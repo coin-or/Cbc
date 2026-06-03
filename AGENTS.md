@@ -97,15 +97,32 @@ Key options:
 
 ### Incremental rebuild after source changes
 
+The build system automatically descends into subdirectory libraries (CoinUtils, Clp, Cgl) and rebuilds them when their source files change.
+
 ```sh
-# Rebuild and reinstall (no reconfigure needed):
-make -j$(nproc) && make install
+# From repo root or src/ directory - automatically rebuilds all changed sources:
+cd src && make -j$(nproc) && make install
 
 # Or with verbose output:
 make V=1 -j$(nproc) && make install
 ```
 
-> **Note:** Since everything is a single monorepo, any source change is picked up by a plain `make` in the repo root — there is no inter-project cascade to worry about.
+The Makefile uses `SUBDIRS = CoinUtils Clp Cgl` so changes to any file in:
+- `src/CoinUtils/` → rebuilds CoinUtils library
+- `src/Clp/` → rebuilds Clp library  
+- `src/Cgl/` → rebuilds Cgl library
+- `src/*.cpp` → rebuilds main Cbc sources
+
+All automatically, in dependency order.
+
+**Verify changes took effect:**
+```sh
+# Check if debug string appears in binary:
+strings src/Cgl/.libs/libCgl.a | grep "your debug string"
+
+# Or run the binary:
+./src/mipster test/fixtures/gesa3.mps.gz -solve 2>&1 | grep "your debug output"
+```
 
 ### Adding new source files
 
@@ -144,6 +161,80 @@ Individual test binaries: `test/CInterfaceTest`, `test/CbcSolverLpTest`, etc. Th
 - Cross-solver validation
 - Automated debugging with `mip_diag`
 - CI integration
+
+### Test Validation Priorities
+
+**Feasibility is paramount** — an infeasible solution is always wrong, regardless of objective or optimality status.
+
+When writing MIP tests, validate in this order:
+
+1. **ALWAYS check feasibility** (highest priority):
+   ```c
+   const double *bestSol = Cbc_getColSolution(m);
+   double maxViolRow = 0.0; int rowIdx = -1;
+   double maxViolCol = 0.0; int colIdx = -1;
+   if (!Cbc_checkFeasibility(m, bestSol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+     printf("FAIL: infeasible solution\n");
+     return 0;
+   }
+   // Also check ALL solutions in the pool
+   for (int s = 0; s < Cbc_numberSavedSolutions(m); s++) {
+     const double *sol = Cbc_savedSolution(m, s);
+     if (!Cbc_checkFeasibility(m, sol, ...)) {
+       printf("FAIL: pool solution %d infeasible\n", s);
+       return 0;
+     }
+   }
+   ```
+
+2. **IF solver claims optimality**, verify objective:
+   ```c
+   int is_optimal = Cbc_isProvenOptimal(m);
+   if (is_optimal) {
+     double obj = Cbc_getObjValue(m);
+     if (fabs(obj - expected_obj) > tolerance) {
+       printf("FAIL: claims optimal but obj=%.6f != expected=%.6f\n", obj, expected_obj);
+       return 0;
+     }
+   }
+   ```
+
+3. **IF solver doesn't claim optimality**, accept feasible solution:
+   - Don't fail if time/node limit hit
+   - Don't check objective (solver may have found suboptimal solution)
+   - Feasibility alone is sufficient
+
+**Rationale:**
+- An infeasible solution indicates a serious bug (wrong cuts, wrong postsolve, etc.)
+- A feasible solution without optimality claim is acceptable (time limit, incomplete search)
+- Only when solver claims "proven optimal" must we verify the objective matches expected
+
+**Example test logic:**
+```c
+int pass = 1;
+int is_optimal = Cbc_isProvenOptimal(m);
+double obj = Cbc_getObjValue(m);
+
+// 1. Check feasibility (always)
+if (!Cbc_checkFeasibility(m, bestSol, ...)) {
+  printf("FAIL: infeasible\n");
+  pass = 0;
+}
+
+// 2. Check objective only if claims optimal
+if (is_optimal && fabs(obj - expected) > tol) {
+  printf("FAIL: claims optimal but wrong obj\n");
+  pass = 0;
+}
+
+// 3. Report result
+if (pass) {
+  if (is_optimal)
+    printf("PASS (proven optimal)\n");
+  else
+    printf("PASS (feasible, not proven optimal)\n");
+}
+```
 
 ## Code Formatting
 

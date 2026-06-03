@@ -7662,7 +7662,7 @@ bool CbcModel::isNodeLimitReached() const
   if (intParam_[CbcMaxNumNode] == COIN_INT_MAX)
     return false;
   else
-    return numberNodes_ >= intParam_[CbcMaxNumNode];
+    return (numberNodes_ + numberExtraNodes_) >= intParam_[CbcMaxNumNode];
 }
 // Time limit reached?
 bool CbcModel::isSecondsLimitReached() const
@@ -19194,7 +19194,7 @@ void CbcModel::saveBestSolution(const double *solution, double objectiveValue)
   }
   // Set unless we are already stopping
   if (status_ != 1) {
-    lastNodeImprovingFeasSol_ = numberNodes_;
+    lastNodeImprovingFeasSol_ = numberNodes_ + numberExtraNodes_;
     lastTimeImprovingFeasSol_ = getCurrentSeconds();
   }
 }
@@ -19712,7 +19712,7 @@ void CbcModel::setOptionalInteger(int index)
 
 bool CbcModel::stoppingCriterionReached() const
 {
-  return (isNodeLimitReached() || numberSolutions_ >= intParam_[CbcMaxNumSol] || stoppedOnGap_ || eventHappened_ || maximumSecondsReached() || (numberSolutions_ && (intParam_[CbcMaxNodesNotImproving] != COIN_INT_MAX && (numberNodes_ - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImproving]))) || (!(maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_)));
+  return (isNodeLimitReached() || numberSolutions_ >= intParam_[CbcMaxNumSol] || stoppedOnGap_ || eventHappened_ || maximumSecondsReached() || (numberSolutions_ && (intParam_[CbcMaxNodesNotImproving] != COIN_INT_MAX && ((numberNodes_ + numberExtraNodes_) - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImproving]))) || (!(maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_)));
 }
 
 // Return true if maximum time reached

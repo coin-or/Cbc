@@ -5936,9 +5936,13 @@ void CbcModel::branchAndBound(int doStatistics)
     status_ = 1;
   numberNodes_ += numberExtraNodes_;
   numberIterations_ += numberExtraIterations_;
-  if (eventHandler) {
+  if (!parentModel_ && eventHandler) {
     eventHandler->event(CbcEventHandler::endSearch);
+    // setup info for printing
+    dealWithEventHandler(CbcEventHandler::endSearch, 0.0,
+			 NULL);
   }
+  
   if (!status_) {
     // Set best possible unless stopped on gap
     if (secondaryStatus_ != 2)
@@ -5972,7 +5976,7 @@ void CbcModel::branchAndBound(int doStatistics)
         << general << CoinMessageEol;
     }
   }
-  if (numberStrongIterations_)
+  if (numberStrongIterations_) 
     handler_->message(CBC_STRONG_STATS, messages_)
       << strongInfo_[0] << numberStrongIterations_ << strongInfo_[2]
       << strongInfo_[1] << CoinMessageEol;
@@ -5983,6 +5987,13 @@ void CbcModel::branchAndBound(int doStatistics)
     handler_->message(CBC_OTHER_STATS2, messages_)
       << maximumDepthActual_ << numberDJFixed_ << numberFathoms_
       << numberExtraNodes_ << numberExtraIterations_ << CoinMessageEol;
+  if (parentModel_&&(specialOptions_&2048)==0) {
+    // update parent information
+    parentModel_->updateStatistics(strongInfo_,numberStrongIterations_,
+				   maximumDepthActual_,numberDJFixed_,
+				   numberFathoms_,numberExtraNodes_,
+				   numberExtraIterations_);
+  }
 #ifdef CBC_HAS_NAUTY
   if (symmetryInfo_)
     symmetryInfo_->statsOrbits(this, 1);
@@ -6656,6 +6667,7 @@ CbcModel::CbcModel()
   , roundIntVars_(false)
   , master_(NULL)
   , masterThread_(NULL)
+  , outputHandler_(NULL)
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = COIN_INT_MAX;
@@ -7173,6 +7185,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , roundIntVars_(rhs.roundIntVars_)
   , master_(NULL)
   , masterThread_(NULL)
+  , outputHandler_(rhs.outputHandler_)
 {
   memcpy(intParam_, rhs.intParam_, sizeof(intParam_));
   memcpy(dblParam_, rhs.dblParam_, sizeof(dblParam_));
@@ -7766,6 +7779,7 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     else
       rootSymmetryInfo_ = NULL;
 #endif
+    outputHandler_ = rhs.outputHandler_;
 #ifdef CBC_PROBE_10
     depth10Probing_ = NULL;
 #endif
@@ -15220,7 +15234,7 @@ CbcModel::dealWithEventHandler(CbcEventHandler::CbcEvent event, double objValue,
   const double *solution)
 {
   CbcEventHandler *eventHandler = getEventHandler();
-  if (eventHandler) {
+  if (eventHandler && solution) {
     // Temporarily put in best
     double saveObj = bestObjective_;
     int numberColumns = solver_->getNumCols();
@@ -15240,6 +15254,16 @@ CbcModel::dealWithEventHandler(CbcEventHandler::CbcEvent event, double objValue,
     }
     return action;
   } else {
+    if (event==CbcEventHandler::endSearch) {
+      // set useful information as normal output may
+      // not appear (owing to timing)
+      CbcBnBOutput * handler = eventHandler->getOutputHandler();
+      handler->onStrongStats(strongInfo_[0],numberStrongIterations_,
+			     strongInfo_[2],strongInfo_[1]);
+      handler->onOtherStats2(maximumDepthActual_,numberDJFixed_,
+			     numberFathoms_, numberExtraNodes_,
+			     numberExtraIterations_);
+    }
     return CbcEventHandler::noAction;
   }
 }
@@ -22064,6 +22088,27 @@ int clpBranchAndCut(CbcModel *cbcModel, OsiClpSolverInterface *solver,
     solver = originalSolver;
   }
   return 0;
+}
+// Set pointer to output controller
+void CbcModel::setBnBOutput(CbcBnBOutput *outputHandler)
+{
+  if (eventHandler_)
+    eventHandler_->setOutputHandler(outputHandler);
+}
+// Update statistics (after problem restarted)
+void CbcModel::updateStatistics(int *strongInfo,int numberStrongIts,
+			int maxDepth,int numberDJFixed,
+			int numberFathoms,int numberExtraNodes,
+			int numberExtraIterations)
+{
+  for (int i=0;i<3;i++)
+    strongInfo_[i]+= strongInfo[i];
+  numberStrongIterations_ += numberStrongIts;
+  maximumDepthActual_ = std::max(maximumDepthActual_,maxDepth);
+  numberDJFixed_ += numberDJFixed;
+  numberFathoms_ += numberFathoms;
+  numberExtraNodes_ += numberExtraNodes;
+  numberExtraIterations_ += numberExtraIterations;
 }
 #ifdef CBC_MORE_USE_GLOBAL_CUTS
 /* Fix variables using two element global cuts */

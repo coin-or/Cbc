@@ -49,7 +49,7 @@
 #include <map>
 
 #include "CbcConfig.h"
-
+#include "CbcOutput.hpp"
 /* May well already be declared, but can't hurt. */
 
 class CbcModel;
@@ -134,8 +134,9 @@ public:
     /*! Pretend solution never happened. */
     killSolution,
     /*! Take action on modified data. */
-    takeAction
-
+    takeAction,
+    /// end of search - so we update some stuff
+    endOfSearch
   };
 
   /*! \brief Data type for event/action pairs */
@@ -221,6 +222,20 @@ public:
     }
     (*eaMap_)[event] = action;
   }
+  
+  /*! \brief Set bnb output handler */
+
+  inline void setOutputHandler(CbcBnBOutput * outputHandler)
+  {
+    bnbHandler_ = outputHandler;
+  }
+
+  /*! \brief Get bnb output handler */
+
+  inline CbcBnBOutput * getOutputHandler() const
+  {
+    return bnbHandler_;
+  }
 
   //@}
 
@@ -238,6 +253,10 @@ protected:
   /*! \brief Default action */
 
   CbcAction dfltAction_;
+
+  /*! \brief pointer to BnBhandler */
+
+  CbcBnBOutput * bnbHandler_;
 
   /*! \brief Pointer to a map that holds non-default event/action pairs */
 

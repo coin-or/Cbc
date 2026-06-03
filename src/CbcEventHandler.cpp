@@ -19,6 +19,7 @@
 CbcEventHandler::CbcEventHandler(CbcModel *model)
   : model_(model)
   , dfltAction_(CbcEventHandler::noAction)
+  , bnbHandler_(NULL)
   , eaMap_(0)
 { /* nothing more required */
 }
@@ -32,6 +33,7 @@ CbcEventHandler::CbcEventHandler(CbcModel *model)
 CbcEventHandler::CbcEventHandler(const CbcEventHandler &rhs)
   : model_(rhs.model_)
   , dfltAction_(rhs.dfltAction_)
+  , bnbHandler_(rhs.bnbHandler_)
   , eaMap_(0)
 {
   if (rhs.eaMap_ != 0) {
@@ -48,6 +50,7 @@ CbcEventHandler::operator=(const CbcEventHandler &rhs)
   if (this != &rhs) {
     model_ = rhs.model_;
     dfltAction_ = rhs.dfltAction_;
+    bnbHandler_ = rhs.bnbHandler_;
     if (rhs.eaMap_ != 0) {
       eaMap_ = new eaMapPair(*rhs.eaMap_);
     } else {

@@ -37,6 +37,7 @@
 #include "CbcCompareBase.hpp"
 #include "CbcCountRowCut.hpp"
 #include "CbcMessage.hpp"
+#include "CbcOutput.hpp"
 #include "CbcEventHandler.hpp"
 #include "ClpDualRowPivot.hpp"
 #ifndef CBC_OTHER_SOLVER
@@ -2142,6 +2143,11 @@ public:
   {
     return defaultHandler_;
   }
+  /// Update statistics (after problem restarted)
+  void updateStatistics(int *strongInfo,int numberStrongIts,
+			int maxDepth,int numberDJFixed,
+			int numberFathoms,int numberExtraNodes,
+			int numberExtraIterations);
   //@}
   //---------------------------------------------------------------------------
   ///@name Specialized
@@ -2939,6 +2945,8 @@ public:
   {
     this->mipStart_ = mipstart;
   }
+  /// Set pointer to output controller
+  void setBnBOutput(CbcBnBOutput *outputHandler);
 
   /** if original column names will be preserved in preprocessed problem
    */
@@ -3540,6 +3548,8 @@ private:
   CbcBaseModel *master_;
   /// Pointer to masterthread
   CbcThread *masterThread_;
+  /// pointer to output controller
+  CbcBnBOutput *outputHandler_;
   //@}
 };
 /// So we can use osiObject or CbcObject during transition

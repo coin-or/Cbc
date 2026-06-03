@@ -146,6 +146,7 @@ void CbcCrashHandler(int sig);
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcMessage.hpp"
 #include "CbcOutput.hpp"
+#include "CbcEventHandler.hpp"
 #ifndef CLP_OLD_STYLE
 #include "ClpOutput.hpp"
 #endif
@@ -4866,7 +4867,10 @@ int CbcSolver::postprocess(
       }
     }
     buffer << "Enumerated nodes:               "
-           << babModel_->getNodeCount() << std::endl;
+           << babModel_->getNodeCount();
+    if (babModel_->getExtraNodeCount())
+      buffer << "     (from fathoming "<< babModel_->getExtraNodeCount()<<")";
+    buffer << std::endl;
     buffer << "Total iterations:               ";
     buffer << babModel_->getIterationCount() << std::endl;
 #if CBC_QUIET == 0
@@ -6486,11 +6490,21 @@ public:
     }
 
     // B&B tree output
+    
     if (cbcLogLevel >= 1 && babModel_.numberIntegers() > 0) {
+      // for now only one event so use default constructor
+      // while somebody thinks
+      CbcEventHandler handler(&babModel_);
+      //CbcAction action();
+      //handler.setAction(handler.CbcEvent::endSearch,action);
+      babModel_.passInEventHandler(&handler);
       FILE *outfp = babModel_.messageHandler()->filePointer();
       if (!outfp)
         outfp = stdout;
-      bnbOut_ = std::unique_ptr<CbcBnBOutput>(new CbcBnBOutput(outfp, CbcOutput::useUtf8(), cbcLogLevel));
+      CbcBnBOutput * outputManager = new CbcBnBOutput(outfp, CbcOutput::useUtf8(), cbcLogLevel);
+      bnbOut_ = std::unique_ptr<CbcBnBOutput>(outputManager);
+      // Set to we can get more information
+      babModel_.setBnBOutput(outputManager);
     }
 
     // Composite message handler (Nauty + FPump suppression + cut gen + B&B)

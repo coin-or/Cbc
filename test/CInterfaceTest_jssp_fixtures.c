@@ -26,6 +26,7 @@
      - Machine orderings */
 
 #include "Cbc_C_Interface.h"
+#include "mip_diag.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -36,6 +37,17 @@ typedef struct {
   int max_nodes;
   int timeout_sec;  /* Fallback to prevent infinite loops */
 } JsspTestCase;
+
+/* Builder for mip_diag_*: load fixture from path. Diag helpers free the model. */
+static Cbc_Model *jssp_builder(void *userdata)
+{
+  const char *path = (const char *)userdata;
+  Cbc_Model *m = Cbc_newModel();
+  if (Cbc_readMps(m, path) != 0) {
+    fprintf(stderr, "  [DIAG] builder: cannot read %s\n", path);
+  }
+  return m;
+}
 
 static const JsspTestCase jssp_test_cases[] = {
   {"jssp_ft06", 55, 100000, 300},      /* Fisher & Thompson 6x6 */
@@ -109,6 +121,10 @@ static int test_jssp(const char *fixture_dir, const JsspTestCase *tc)
     printf("    FAIL: proven optimal but makespan=%.0f expected=%.0f (error=%.1f)\n",
            makespan, tc->expected_makespan, abs_err);
     pass = 0;
+
+    printf("    [DIAG] running wrong-optimal feature sweep on %s ...\n", tc->name);
+    mip_diag_wrong_optimal(jssp_builder, (void *)path,
+                           tc->expected_makespan, tc->timeout_sec);
   }
 
   if (pass) {

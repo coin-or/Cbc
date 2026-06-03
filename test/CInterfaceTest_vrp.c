@@ -20,8 +20,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
+#ifdef _WIN32
+#  include <io.h>
+#  define F_OK 0
+#  define access _access
+#else
+#  include <unistd.h>
+#endif
 
 #include "Cbc_C_Interface.h"
 #include "mip_diag.h"
@@ -81,32 +86,6 @@ static const VRPTestCase test_cases[] = {
 };
 
 static const int num_test_cases = sizeof(test_cases) / sizeof(test_cases[0]);
-
-/* Validate solution with mipster_validate_sol utility */
-static int validate_solution(const char *mps_file, const char *sol_file) {
-  pid_t pid = fork();
-  if (pid == 0) {
-    /* Child process: run mipster_validate_sol */
-    execlp("mipster_validate_sol", "mipster_validate_sol", mps_file, sol_file, NULL);
-    /* If we get here, exec failed */
-    fprintf(stderr, "    WARNING: mipster_validate_sol not found in PATH\n");
-    exit(127);
-  } else if (pid > 0) {
-    /* Parent: wait for child */
-    int status;
-    waitpid(pid, &status, 0);
-    if (WIFEXITED(status)) {
-      int exit_code = WEXITSTATUS(status);
-      if (exit_code == 127) {
-        /* mipster_validate_sol not found - skip validation */
-        return 1;
-      }
-      return (exit_code == 0) ? 1 : 0;
-    }
-    return 0;
-  }
-  return 0;
-}
 
 int main(int argc, char **argv) {
   if (argc < 2) {

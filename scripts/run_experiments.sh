@@ -92,6 +92,18 @@ set -euo pipefail
 # Child processes inherit SIG_IGN and are therefore also protected.
 trap '' HUP
 
+TIMEOUT_CMD="timeout"
+GREP_CMD="grep"
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  if ! command -v timeout &>/dev/null && ! command -v gtimeout &>/dev/null; then
+    echo "Error: 'timeout' or 'gtimeout' is required. On macOS, run: brew install coreutils" >&2
+    exit 1
+  fi
+  command -v timeout &>/dev/null || TIMEOUT_CMD="gtimeout"
+  command -v ggrep &>/dev/null && GREP_CMD="ggrep"
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
@@ -597,7 +609,10 @@ else
 fi
 
 # ── Export everything run_instance needs ─────────────────────────────────────
-export CBC_BIN OUTDIR THREADS TIMELIMIT OVERTIME_GRACE WALLCLOCK_LIMIT
+export CBC_BIN OUTDIR THREADS TIMELIMIT OVERTIME_GRACE WALLCLOCK_LIMIT TIMEOUT_CMD GREP_CMD
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  export PARALLEL_SHELL="$BASH"
+fi
 export VG_TOOL VG_SUPPS_STR EXTRA_ENV_STR CBC_EXTRA_OPTS_STR
 export EXPECTED_FILE REL_TOL ABS_TOL DRY_RUN SCRIPT_DIR ZH_CONSTRAINT_REPORT
 export USE_COLOR CBC_STATS_MODE
@@ -799,10 +814,10 @@ run_instance() {
   # Wrap with timeout: send SIGTERM at WALLCLOCK_LIMIT, then SIGKILL after 30s.
   # Exit code 124 means timeout fired (CBC ignored its -seconds limit → OVERTIME).
   if [[ ${#env_assignments[@]} -gt 0 ]]; then
-    timeout --kill-after=30 "$WALLCLOCK_LIMIT" \
+    "$TIMEOUT_CMD" --kill-after=30 "$WALLCLOCK_LIMIT" \
       env "${env_assignments[@]}" "${cmd[@]}" > "$logfile" 2>&1
   else
-    timeout --kill-after=30 "$WALLCLOCK_LIMIT" \
+    "$TIMEOUT_CMD" --kill-after=30 "$WALLCLOCK_LIMIT" \
       "${cmd[@]}" > "$logfile" 2>&1
   fi
   local exit_code=$?
@@ -832,17 +847,17 @@ run_instance() {
     [[ "$_csv_int_feas" == "0" && $proven_infeasible -eq 0 ]] && no_feasible_solution=1
   else
     # Fallback: parse from log (process was killed/crashed before writing CSV).
-    obj=$(grep -iP '^optimal\b.*\bobjective value\b' "$logfile" \
-          | grep -oP '[-\d.eE+]+$' | tail -1 || true)
+    obj=$("$GREP_CMD" -iP '^optimal\b.*\bobjective value\b' "$logfile" \
+          | "$GREP_CMD" -oP '[-\d.eE+]+$' | tail -1 || true)
     [[ -z "$obj" ]] && \
-      obj=$(grep -iP '^objective value[: ]' "$logfile" \
-            | grep -oP '[-\d.eE+]+$' | tail -1 || true)
+      obj=$("$GREP_CMD" -iP '^objective value[: ]' "$logfile" \
+            | "$GREP_CMD" -oP '[-\d.eE+]+$' | tail -1 || true)
     [[ -z "$obj" ]] && \
-      obj=$(grep -iP '^objective:?\s' "$logfile" \
-            | grep -oP '[-\d.eE+]+$' | tail -1 || true)
+      obj=$("$GREP_CMD" -iP '^objective:?\s' "$logfile" \
+            | "$GREP_CMD" -oP '[-\d.eE+]+$' | tail -1 || true)
     grep -qi "time limit\|stopped on time" "$logfile" 2>/dev/null && timed_out=1
     grep -qi '^No feasible solution found' "$logfile" 2>/dev/null && no_feasible_solution=1
-    grep -qiP "Result - (Problem proven infeasible|Linear relaxation infeasible)|Problem is infeasible|Fast preprocessing: infeasibility proved" \
+    "$GREP_CMD" -qiP "Result - (Problem proven infeasible|Linear relaxation infeasible)|Problem is infeasible|Fast preprocessing: infeasibility proved" \
       "$logfile" 2>/dev/null && proven_infeasible=1
     # Discard sentinel "no incumbent" value and explicit no-solution flag.
     if [[ -n "$obj" ]] && awk -v x="$obj" 'BEGIN { exit (x >= 1e49 || x <= -1e49) ? 0 : 1 }'; then
@@ -862,7 +877,7 @@ run_instance() {
   # Extract dual bound (lower bound for minimisation; present in Result block of both
   # stable and dev formats as "Lower bound:  X").
   local dual
-  dual=$(grep -oP '^Lower bound:\s+\K[-\d.eE+]+' "$logfile" | tail -1 || true)
+  dual=$("$GREP_CMD" -oP '^Lower bound:\s+\K[-\d.eE+]+' "$logfile" | tail -1 || true)
   # Discard CBC's "no bound yet" sentinel value.
   if [[ -n "$dual" ]] && awk -v x="$dual" 'BEGIN { exit (x >= 1e49 || x <= -1e49) ? 0 : 1 }'; then
     dual=""
@@ -901,7 +916,7 @@ run_instance() {
   local cbc_gap="-"
   if [[ $timed_out -eq 1 && -n "$obj" ]]; then
     local raw_gap
-    raw_gap=$(grep -oP '^Gap:\s+\K[-\d.eE+]+' "$logfile" | tail -1 || true)
+    raw_gap=$("$GREP_CMD" -oP '^Gap:\s+\K[-\d.eE+]+' "$logfile" | tail -1 || true)
     if [[ -n "$raw_gap" ]]; then
       cbc_gap=$(awk -v g="$raw_gap" 'BEGIN {
         pct = g * 100
@@ -1095,8 +1110,8 @@ print_env_info() {
   if [[ -f "$cbc_cs" ]]; then
     local cfg cc cxx
     cfg=$(_configure_invocation_from_status "$cbc_cs")
-    cc=$(printf '%s\n' "$cfg" | grep -oP 'CC=[^'"'"' ]+' | head -1 | cut -d= -f2 || true)
-    cxx=$(printf '%s\n' "$cfg" | grep -oP 'CXX=[^'"'"' ]+' | head -1 | cut -d= -f2 || true)
+    cc=$(printf '%s\n' "$cfg" | "$GREP_CMD" -oP 'CC=[^'"'"' ]+' | head -1 | cut -d= -f2 || true)
+    cxx=$(printf '%s\n' "$cfg" | "$GREP_CMD" -oP 'CXX=[^'"'"' ]+' | head -1 | cut -d= -f2 || true)
     echo "  Compiler versions:"
     if [[ -n "$cc" ]] && command -v "$cc" &>/dev/null; then
       printf "    CC  (%s):  %s\n" "$cc"  "$("$cc"  --version 2>&1 | head -1)"
@@ -1115,7 +1130,7 @@ print_env_info() {
   echo "  Binary:"
   printf "    %-10s %s\n" "Path:"  "$bin"
   local bin_mtime bin_size_kb
-  bin_mtime=$(stat -c "%y" "$bin" 2>/dev/null | cut -d. -f1 || echo "?")
+  bin_mtime=$(stat -c "%y" "$bin" 2>/dev/null | cut -d. -f1 || stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" "$bin" 2>/dev/null || echo "?")
   bin_size_kb=$(( $(stat -c "%s" "$bin" 2>/dev/null || echo 0) / 1024 ))
   printf "    %-10s %s\n" "Built:"  "$bin_mtime"
   printf "    %-10s %d KB\n" "Size:"   "$bin_size_kb"
@@ -1124,8 +1139,8 @@ print_env_info() {
   # Linked libraries (ldd on the original installed binary)
   # Capture raw output once; reuse it for the pkg-config version filter below.
   local ldd_raw=""
-  ldd_raw=$(ldd "$bin" 2>/dev/null \
-    | grep -E "(openblas|amd|lapack|blas|nauty|colamd|camd|ccolamd|cholmod|suitesparse|gomp)" \
+  ldd_raw=$({ ldd "$bin" 2>/dev/null || otool -L "$bin" 2>/dev/null; } \
+    | "$GREP_CMD" -E "(openblas|amd|lapack|blas|nauty|colamd|camd|ccolamd|cholmod|suitesparse|gomp)" \
     || true)
   echo "  Linked libraries (ldd):"
   if [[ -n "$ldd_raw" ]]; then
@@ -1158,38 +1173,67 @@ print_env_info() {
   echo "  HARDWARE"
   echo "───────────────────────────────────────────────────────────────────────"
 
-  if command -v lscpu &>/dev/null; then
-    local lscpu_out
-    lscpu_out=$(lscpu 2>/dev/null)
-    local arch model cpus sockets cores_per_sock threads_per_core max_mhz min_mhz numa cache_l3
-    arch=$(            awk -F': +' '/^Architecture/{print $2}'        <<< "$lscpu_out")
-    model=$(           awk -F': +' '/^Model name/{print $2}'          <<< "$lscpu_out")
-    cpus=$(            awk -F': +' '/^CPU\(s\):/{print $2; exit}'     <<< "$lscpu_out")
-    sockets=$(         awk -F': +' '/^Socket\(s\)/{print $2}'         <<< "$lscpu_out")
-    cores_per_sock=$(  awk -F': +' '/^Core\(s\) per socket/{print $2}' <<< "$lscpu_out")
-    threads_per_core=$(awk -F': +' '/^Thread\(s\) per core/{print $2}' <<< "$lscpu_out")
-    max_mhz=$(         awk -F': +' '/^CPU max MHz/{print $2}'         <<< "$lscpu_out")
-    min_mhz=$(         awk -F': +' '/^CPU min MHz/{print $2}'         <<< "$lscpu_out")
-    numa=$(            awk -F': +' '/^NUMA node\(s\)/{print $2}'      <<< "$lscpu_out")
-    cache_l3=$(        awk -F': +' '/^L3 cache/{print $2}'            <<< "$lscpu_out")
-    printf "  %-18s %s\n" "Architecture:"  "${arch:-?}"
-    printf "  %-18s %s\n" "CPU model:"     "${model:-?}"
-    printf "  %-18s %s  (%s socket × %s core × %s thread)\n" \
-      "CPU count:" "${cpus:-?}" "${sockets:-?}" "${cores_per_sock:-?}" "${threads_per_core:-?}"
-    if [[ -n "$max_mhz" ]]; then
-      printf "  %-18s %s MHz max%s\n" "CPU freq:" "$max_mhz" \
-        "${min_mhz:+, $min_mhz MHz min}"
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    if command -v sysctl &>/dev/null; then
+      local arch model cpus cores
+      arch=$(sysctl -n hw.machine 2>/dev/null)
+      model=$(sysctl -n machdep.cpu.brand_string 2>/dev/null)
+      cpus=$(sysctl -n hw.logicalcpu 2>/dev/null)
+      cores=$(sysctl -n hw.physicalcpu 2>/dev/null)
+      printf "  %-18s %s\n" "Architecture:"  "${arch:-?}"
+      printf "  %-18s %s\n" "CPU model:"     "${model:-?}"
+      printf "  %-18s %s  (%s core)\n" "CPU count:" "${cpus:-?}" "${cores:-?}"
+    else
+      echo "  (sysctl not available)"
     fi
-    [[ -n "$numa"     ]] && printf "  %-18s %s\n" "NUMA nodes:"  "$numa"
-    [[ -n "$cache_l3" ]] && printf "  %-18s %s\n" "L3 cache:"    "$cache_l3"
   else
-    echo "  (lscpu not available)"
+    if command -v lscpu &>/dev/null; then
+      local lscpu_out
+      lscpu_out=$(lscpu 2>/dev/null)
+      local arch model cpus sockets cores_per_sock threads_per_core max_mhz min_mhz numa cache_l3
+      arch=$(            awk -F': +' '/^Architecture/{print $2}'        <<< "$lscpu_out")
+      model=$(           awk -F': +' '/^Model name/{print $2}'          <<< "$lscpu_out")
+      cpus=$(            awk -F': +' '/^CPU\(s\):/{print $2; exit}'     <<< "$lscpu_out")
+      sockets=$(         awk -F': +' '/^Socket\(s\)/{print $2}'         <<< "$lscpu_out")
+      cores_per_sock=$(  awk -F': +' '/^Core\(s\) per socket/{print $2}' <<< "$lscpu_out")
+      threads_per_core=$(awk -F': +' '/^Thread\(s\) per core/{print $2}' <<< "$lscpu_out")
+      max_mhz=$(         awk -F': +' '/^CPU max MHz/{print $2}'         <<< "$lscpu_out")
+      min_mhz=$(         awk -F': +' '/^CPU min MHz/{print $2}'         <<< "$lscpu_out")
+      numa=$(            awk -F': +' '/^NUMA node\(s\)/{print $2}'      <<< "$lscpu_out")
+      cache_l3=$(        awk -F': +' '/^L3 cache/{print $2}'            <<< "$lscpu_out")
+      printf "  %-18s %s\n" "Architecture:"  "${arch:-?}"
+      printf "  %-18s %s\n" "CPU model:"     "${model:-?}"
+      printf "  %-18s %s  (%s socket × %s core × %s thread)\n" \
+        "CPU count:" "${cpus:-?}" "${sockets:-?}" "${cores_per_sock:-?}" "${threads_per_core:-?}"
+      if [[ -n "$max_mhz" ]]; then
+        printf "  %-18s %s MHz max%s\n" "CPU freq:" "$max_mhz" \
+          "${min_mhz:+, $min_mhz MHz min}"
+      fi
+      [[ -n "$numa"     ]] && printf "  %-18s %s\n" "NUMA nodes:"  "$numa"
+      [[ -n "$cache_l3" ]] && printf "  %-18s %s\n" "L3 cache:"    "$cache_l3"
+    else
+      echo "  (lscpu not available)"
+    fi
   fi
   echo ""
 
   local mem_total mem_used mem_avail
-  read -r mem_total mem_used mem_avail \
-    < <(free -m 2>/dev/null | awk 'NR==2{print $2, $3, $7}' || echo "? ? ?")
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    if command -v sysctl &>/dev/null; then
+      local bytes
+      bytes=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
+      mem_total=$(( bytes / 1048576 ))
+      mem_used="?"
+      mem_avail="?"
+    else
+      mem_total="?"
+      mem_used="?"
+      mem_avail="?"
+    fi
+  else
+    read -r mem_total mem_used mem_avail \
+      < <(free -m 2>/dev/null | awk 'NR==2{print $2, $3, $7}' || echo "? ? ?")
+  fi
   printf "  %-18s %s MiB total, %s MiB available (%s MiB used)\n" \
     "Memory:" "${mem_total:-?}" "${mem_avail:-?}" "${mem_used:-?}"
   printf "  %-18s %s\n" "Kernel:"   "$(uname -r   2>/dev/null || echo '?')"
@@ -1215,20 +1259,20 @@ write_setup_md() {
   if [[ -f "$cbc_cs" ]]; then
     local cfg
     cfg=$(_configure_invocation_from_status "$cbc_cs")
-    cc=$( printf '%s\n' "$cfg" | grep -oP 'CC=[^'"'"' ]+'  | head -1 | cut -d= -f2 || true)
-    cxx=$(printf '%s\n' "$cfg" | grep -oP 'CXX=[^'"'"' ]+' | head -1 | cut -d= -f2 || true)
+    cc=$( printf '%s\n' "$cfg" | "$GREP_CMD" -oP 'CC=[^'"'"' ]+'  | head -1 | cut -d= -f2 || true)
+    cxx=$(printf '%s\n' "$cfg" | "$GREP_CMD" -oP 'CXX=[^'"'"' ]+' | head -1 | cut -d= -f2 || true)
     [[ -n "$cc"  ]] && command -v "$cc"  &>/dev/null && cc_ver=$( "$cc"  --version 2>&1 | head -1)
     [[ -n "$cxx" ]] && command -v "$cxx" &>/dev/null && cxx_ver=$("$cxx" --version 2>&1 | head -1)
     add_cxxflags=$(_subst_from_status "$cbc_cs" "ADD_CXXFLAGS")
   fi
-  bin_mtime=$(stat -c "%y" "$bin" 2>/dev/null | cut -d. -f1 || echo "?")
+  bin_mtime=$(stat -c "%y" "$bin" 2>/dev/null | cut -d. -f1 || stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" "$bin" 2>/dev/null || echo "?")
   bin_size_kb=$(( $(stat -c "%s" "$bin" 2>/dev/null || echo 0) / 1024 ))
 
   # Linked libraries (lib name + resolved path, filtered to interesting ones)
   # Capture raw output once; reuse for pkg-config filtering below.
   local ldd_raw_md=""
-  ldd_raw_md=$(ldd "$bin" 2>/dev/null \
-    | grep -E "(openblas|amd|lapack|blas|nauty|colamd|camd|ccolamd|cholmod|suitesparse|gomp)" \
+  ldd_raw_md=$({ ldd "$bin" 2>/dev/null || otool -L "$bin" 2>/dev/null; } \
+    | "$GREP_CMD" -E "(openblas|amd|lapack|blas|nauty|colamd|camd|ccolamd|cholmod|suitesparse|gomp)" \
     || true)
   local ldd_out=""
   if [[ -n "$ldd_raw_md" ]]; then
@@ -1252,22 +1296,46 @@ write_setup_md() {
   local arch="" cpu_model="" cpus="" sockets="" cores_per_sock="" threads_per_core=""
   local max_mhz="" min_mhz="" numa="" cache_l3=""
   local mem_total="" mem_used="" mem_avail=""
-  if command -v lscpu &>/dev/null; then
-    local lscpu_out
-    lscpu_out=$(lscpu 2>/dev/null)
-    arch=$(            awk -F': +' '/^Architecture/{print $2}'          <<< "$lscpu_out")
-    cpu_model=$(       awk -F': +' '/^Model name/{print $2}'            <<< "$lscpu_out")
-    cpus=$(            awk -F': +' '/^CPU\(s\):/{print $2; exit}'       <<< "$lscpu_out")
-    sockets=$(         awk -F': +' '/^Socket\(s\)/{print $2}'           <<< "$lscpu_out")
-    cores_per_sock=$(  awk -F': +' '/^Core\(s\) per socket/{print $2}'  <<< "$lscpu_out")
-    threads_per_core=$(awk -F': +' '/^Thread\(s\) per core/{print $2}'  <<< "$lscpu_out")
-    max_mhz=$(         awk -F': +' '/^CPU max MHz/{print $2}'           <<< "$lscpu_out")
-    min_mhz=$(         awk -F': +' '/^CPU min MHz/{print $2}'           <<< "$lscpu_out")
-    numa=$(            awk -F': +' '/^NUMA node\(s\)/{print $2}'        <<< "$lscpu_out")
-    cache_l3=$(        awk -F': +' '/^L3 cache/{print $2}'              <<< "$lscpu_out")
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    if command -v sysctl &>/dev/null; then
+      arch=$(sysctl -n hw.machine 2>/dev/null)
+      cpu_model=$(sysctl -n machdep.cpu.brand_string 2>/dev/null)
+      cpus=$(sysctl -n hw.logicalcpu 2>/dev/null)
+      cores_per_sock=$(sysctl -n hw.physicalcpu 2>/dev/null)
+    fi
+  else
+    if command -v lscpu &>/dev/null; then
+      local lscpu_out
+      lscpu_out=$(lscpu 2>/dev/null)
+      arch=$(            awk -F': +' '/^Architecture/{print $2}'          <<< "$lscpu_out")
+      cpu_model=$(       awk -F': +' '/^Model name/{print $2}'            <<< "$lscpu_out")
+      cpus=$(            awk -F': +' '/^CPU\(s\):/{print $2; exit}'       <<< "$lscpu_out")
+      sockets=$(         awk -F': +' '/^Socket\(s\)/{print $2}'           <<< "$lscpu_out")
+      cores_per_sock=$(  awk -F': +' '/^Core\(s\) per socket/{print $2}'  <<< "$lscpu_out")
+      threads_per_core=$(awk -F': +' '/^Thread\(s\) per core/{print $2}'  <<< "$lscpu_out")
+      max_mhz=$(         awk -F': +' '/^CPU max MHz/{print $2}'           <<< "$lscpu_out")
+      min_mhz=$(         awk -F': +' '/^CPU min MHz/{print $2}'           <<< "$lscpu_out")
+      numa=$(            awk -F': +' '/^NUMA node\(s\)/{print $2}'        <<< "$lscpu_out")
+      cache_l3=$(        awk -F': +' '/^L3 cache/{print $2}'              <<< "$lscpu_out")
+    fi
   fi
-  read -r mem_total mem_used mem_avail \
-    < <(free -m 2>/dev/null | awk 'NR==2{print $2, $3, $7}' || echo "? ? ?")
+  
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    if command -v sysctl &>/dev/null; then
+      local bytes
+      bytes=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
+      mem_total=$(( bytes / 1048576 ))
+      mem_used="?"
+      mem_avail="?"
+    else
+      mem_total="?"
+      mem_used="?"
+      mem_avail="?"
+    fi
+  else
+    read -r mem_total mem_used mem_avail \
+      < <(free -m 2>/dev/null | awk 'NR==2{print $2, $3, $7}' || echo "? ? ?")
+  fi
 
   # ── Write Markdown ────────────────────────────────────────────────────────
   {
@@ -1417,7 +1485,7 @@ printf "timestamp\telapsed_s\ttotal_mb\tused_mb\tfree_mb\tavailable_mb\tpct_used
     _ts=$(date -Iseconds)
     _elapsed=$(( SECONDS - EXP_START_EPOCH ))
     read -r _total _used _free _avail \
-      < <(free -m | awk 'NR==2{print $2, $3, $4, $7}') || true
+      < <(free -m 2>/dev/null | awk 'NR==2{print $2, $3, $4, $7}') || true
     _pct=$(awk -v u="${_used:-0}" -v t="${_total:-1}" \
       'BEGIN { printf "%.1f", u/t*100 }')
     printf "%s\t%d\t%d\t%d\t%d\t%d\t%s\n" \
@@ -1433,8 +1501,18 @@ MEM_MONITOR_PID=$!
 # setsid puts parallel in a new session so SIGHUP from a closing terminal
 # does not reach it (parallel reinstalls its own SIGHUP handler and would
 # otherwise stop accepting new jobs mid-run).
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  if command -v setsid &>/dev/null; then
+    SETSID_CMD=(setsid)
+  else
+    SETSID_CMD=()
+  fi
+else
+  SETSID_CMD=(setsid)
+fi
+
 printf '%s\n' "${MPS_FILES[@]}" \
-  | setsid parallel \
+  | "${SETSID_CMD[@]}" parallel \
       --jobs "$PARALLEL" \
       --line-buffer \
       --joblog "$OUTDIR/parallel.log" \
@@ -1490,7 +1568,7 @@ fi
 _ts=$(date -Iseconds)
 _elapsed=$(( SECONDS - EXP_START_EPOCH ))
 read -r _total _used _free _avail \
-  < <(free -m | awk 'NR==2{print $2, $3, $4, $7}') || true
+  < <(free -m 2>/dev/null | awk 'NR==2{print $2, $3, $4, $7}') || true
 _pct=$(awk -v u="${_used:-0}" -v t="${_total:-1}" \
   'BEGIN { printf "%.1f", u/t*100 }')
 printf "%s\t%d\t%d\t%d\t%d\t%d\t%s\n" \

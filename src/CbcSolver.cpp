@@ -47,6 +47,9 @@
 #include <unistd.h>
 #endif
 #ifdef __APPLE__
+#if defined(__GNUC__) && !defined(__clang__)
+#define _Static_assert static_assert
+#endif
 #include <mach-o/dyld.h>
 #endif
 void CbcCrashHandler(int sig);

@@ -86,6 +86,7 @@ else
   REPO_DIR="$(dirname "$SCRIPT_DIR")"
 fi
 ARCH="$(uname -m)"
+[[ "$ARCH" == "arm64" ]] && ARCH="aarch64"
 NPROC="$(nproc 2>/dev/null || echo 4)"
 PROJECTS=(Cbc)
 
@@ -308,8 +309,10 @@ detect_lib_paths() {
     # OpenBLAS's own RPATH already embeds the path to libgomp.so.1, so the
     # OpenMP runtime is resolved automatically at load time — no explicit flag needed.
     OPENBLAS_INC="${_ob_cflags//-fopenmp/}"
+    OPENBLAS_INC="${OPENBLAS_INC//-Xpreprocessor/}"
     OPENBLAS_INC="${OPENBLAS_INC//  / }"   # collapse double-space left by strip
     OPENBLAS_LIB="${_ob_libs//-fopenmp/}"
+    OPENBLAS_LIB="${OPENBLAS_LIB//-Xpreprocessor/}"
     OPENBLAS_LIB="${OPENBLAS_LIB//  / }"
   else
     # System fallback: try Ubuntu multiarch pkgconfig path first, then
@@ -324,8 +327,10 @@ detect_lib_paths() {
                 || echo "-L/usr/lib/${ARCH}-linux-gnu/openblas-pthread -lopenblas")"
     # Strip -fopenmp — same issue as with brew (see comment above).
     OPENBLAS_INC="${_ob_cflags//-fopenmp/}"
+    OPENBLAS_INC="${OPENBLAS_INC//-Xpreprocessor/}"
     OPENBLAS_INC="${OPENBLAS_INC//  / }"
     OPENBLAS_LIB="${_ob_libs//-fopenmp/}"
+    OPENBLAS_LIB="${OPENBLAS_LIB//-Xpreprocessor/}"
     OPENBLAS_LIB="${OPENBLAS_LIB//  / }"
   fi
 
@@ -453,7 +458,13 @@ build_flags() {
   fi
 
   # Architecture optimisations.
-  (( OPT_MARCH_NATIVE )) && cxx+=" -march=native -mtune=native"
+  if (( OPT_MARCH_NATIVE )); then
+    if [[ "$(uname -s)" == "Darwin" && "$ARCH" == "aarch64" ]]; then
+      cxx+=" -mcpu=native"
+    else
+      cxx+=" -march=native -mtune=native"
+    fi
+  fi
 
   # -ffp-contract=off prevents the compiler from emitting FMA (fused multiply-
   # add) instructions that collapse a*b+c into a single op with one rounding,

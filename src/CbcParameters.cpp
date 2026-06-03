@@ -3196,10 +3196,13 @@ void CbcParameters::addCbcModelParams()
       -1.0, COIN_DBL_MAX,
       "With this stopping criterion, after a feasible solution is found, the "
       "search should continue only if the incumbent solution was updated "
-      "recently, the tolerance is specified here. A discussion on why this "
+      "recently, the tolerance is specified here.");
+  /* below taken out as crashes code!!
+  A discussion on why this "
       "criterion can be useful is included here: "
       "https://yetanothermathprogrammingconsultant.blogspot.com/2019/11/"
       "mip-solver-stopping-criteria.html .");
+  */
 
   parameters_[CbcParam::MAXSOLS]->setup(
       "maxSo!lutions", "Maximum number of feasible solutions to get", 1,

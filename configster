@@ -85,7 +85,7 @@ WORKSPACE_DIR="$(dirname "$REPO_DIR")"
 WORKSPACE_NAME="$(basename "$WORKSPACE_DIR")"
 ARCH="$(uname -m)"
 NPROC="$(nproc 2>/dev/null || echo 4)"
-PROJECTS=(Cbc)
+PROJECTS=(MIPster)
 
 # ── ANSI colours (auto-disabled when not a terminal) ─────────────────────────
 if [[ -t 1 ]]; then
@@ -936,8 +936,8 @@ _project_extra_opts() {
   local project="$1"
   _EXTRA_OPTS=()
   case "$project" in
-    CoinUtils|Cbc)
-      # CoinUtils is now built inside Cbc, but older setups may still configure
+    CoinUtils|Cbc|MIPster)
+      # CoinUtils is now built inside MIPster, but older setups may still configure
       # CoinUtils directly. In both cases, route LAPACK detection to OpenBLAS
       # explicitly so the final static library links against -lopenblas.
       if (( OPT_OPENBLAS )); then
@@ -945,7 +945,7 @@ _project_extra_opts() {
       else
         _EXTRA_OPTS+=("--without-lapack")
       fi
-      if [[ "$project" == "Cbc" ]] && (( OPT_AMD )); then
+      if [[ "$project" == "Cbc" || "$project" == "MIPster" ]] && (( OPT_AMD )); then
         _append_with_inc_lib_opts "$project" "amd" "$AMD_INC" "$AMD_LIB"
       fi
       ;;

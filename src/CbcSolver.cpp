@@ -506,7 +506,7 @@ static bool loadOptionFileIntoQueue(const std::string &fileName,
   std::deque< std::string > tempQueue;
   std::string line;
 
-  std::cout << "Extra options - ";
+  //std::cout << "Extra options - ";
   while (std::getline(file, line)) {
     if (line.empty())
       continue;
@@ -521,7 +521,7 @@ static bool loadOptionFileIntoQueue(const std::string &fileName,
     std::string token;
     while (lineStream >> token) {
       tempQueue.push_back(token);
-      std::cout << token << " ";
+      //std::cout << token << " ";
     }
   }
   std::cout << std::endl;
@@ -2521,11 +2521,7 @@ void CbcSolver::printParamChanges()
     return;
   const bool u8 = CbcOutput::useUtf8();
   const char *arrow = u8 ? " \xe2\x86\x92 " : " -> ";
-#ifdef CLP_OLD_STYLE
-  FILE *fp = unitTestCbc ? stdout : stderr;
-#else
-  FILE *fp = stderr;
-#endif
+  FILE *fp = stdout;
   fprintf(fp, "\n%s\n\n",
     CoinTable::phaseStart("Non-default parameters", u8).c_str());
   for (const auto &msg : paramChanges_) {
@@ -6306,6 +6302,9 @@ static bool ends_with(std::string const &value, std::string const &ending) {
 // Wrappers for CbcMain0, CbcMain1. The various forms of callCbc will
 // eventually resolve to a call to CbcMain0 followed by a call to callCbc1.
 //###########################################################################
+// For dealing with printing frequency
+// clean up later
+static double printFrequency = 0.7;
 
 //###########################################################################
 // This is the function for setting things up, default parameters, etc.
@@ -6536,8 +6535,8 @@ public:
 
     // Configure B&B status print frequency for structured output.
     if (bnbOut_) {
-      OsiClpSolverInterface *bnbSolver = getClpSolver(babModel_.solver());
-      double progVal = bnbSolver->getModelPtr()->getMinIntervalProgressUpdate();
+      //OsiClpSolverInterface *bnbSolver = getClpSolver(babModel_.solver());
+      double progVal = printFrequency;//bnbSolver->getModelPtr()->getMinIntervalProgressUpdate();
       if (progVal <= 0.0) {
         babModel_.setSecsPrintFrequency(-1.0);
         if (progVal < -1.0)
@@ -7605,6 +7604,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           printGeneralMessage(model_, message);
           continue;
         }
+	if (clpParamCode == ClpParam::PROGRESS) {
+	  printFrequency = dValue;
+	}
       } else if (cbcParam->type() == CoinParam::paramInt) {
         if ((status = cbcParam->readValue(inputQueue, iValue, &message))) {
           printGeneralMessage(model_, message);
@@ -12099,10 +12101,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             // preProcessPointer removed — was always NULL (dead code)
 #ifndef CBC_OTHER_SOLVER
             {
-              OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());
-              ClpSimplex *simplex = solver->getModelPtr();
+              //OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());
+              //ClpSimplex *simplex = solver->getModelPtr();
               // if wanted go back to old printing method
-              double value = simplex->getMinIntervalProgressUpdate();
+              double value = printFrequency; //simplex->getMinIntervalProgressUpdate();
               if (value <= 0.0) {
                 babModel_->setSecsPrintFrequency(-1.0);
                 if (value < -1.0) {
@@ -12377,7 +12379,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               OsiClpSolverInterface *solver = getClpSolver(model_.solver());
               ClpSimplex *simplex = solver->getModelPtr();
               // if wanted go back to old printing method
-              double value = simplex->getMinIntervalProgressUpdate();
+              double value = printFrequency;//simplex->getMinIntervalProgressUpdate();
               if (value <= 0.0) {
                 model_.setSecsPrintFrequency(-1.0);
                 if (value < 0.0) {

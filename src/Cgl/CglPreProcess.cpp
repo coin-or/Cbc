@@ -5830,6 +5830,33 @@ void CglPreProcess::postProcess(OsiSolverInterface &modelIn, int deleteStuff)
 	    }
           }
         }
+        // IMPORTANT: Copy solution from modelM to model.
+        // The loop above only fixed bounds for integers, but model still has the old
+        // LP relaxation solution. We must copy the values from modelM (which has the
+        // correct integer solution) to model.
+        {
+          int nc = model->getNumCols();
+          double *newSol = new double[nc];
+          const double *oldSol = model->getColSolution();
+          const double *solM = modelM->getColSolution();
+          const double *lo = model->getColLower();
+          const double *hi = model->getColUpper();
+          for (int i = 0; i < nc; i++) {
+            if (i < numberColumns) {
+              // This column exists in modelM, use its value
+              newSol[i] = solM[i];
+            } else {
+              // This column doesn't exist in modelM (modelM has fewer columns),
+              // use the old value but clip to bounds
+              newSol[i] = oldSol[i];
+            }
+            // Clip to bounds
+            newSol[i] = std::max(newSol[i], lo[i]);
+            newSol[i] = std::min(newSol[i], hi[i]);
+          }
+          model->setColSolution(newSol);
+          delete[] newSol;
+        }
       }
       // After the fix loop has tightened bounds (fixing integers), the warm-start
       // basis stored on model may be stale: variables that are now fixed (lo==hi)

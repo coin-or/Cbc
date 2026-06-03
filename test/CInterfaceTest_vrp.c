@@ -169,15 +169,16 @@ int main(int argc, char **argv) {
       }
     }
 
-    /* Determine pass/fail */
-    int test_passed = feasibility_pass;  /* Start with feasibility result */
+    /* Determine pass/fail. Feasibility is paramount: an infeasible solution
+       always fails, regardless of objective or optimality status. */
+    int test_passed = 0;
     char status_msg[256] = "";
 
     if (solve_status == -1) {
-      /* Infeasible */
       snprintf(status_msg, sizeof(status_msg), "FAIL (infeasible)");
+    } else if (!feasibility_pass) {
+      snprintf(status_msg, sizeof(status_msg), "FAIL (solution infeasible)");
     } else if (is_proven_optimal) {
-      /* Optimal */
       if (tc->expected_obj > 0.0) {
         double rel_err = fabs(obj - tc->expected_obj) / fmax(fabs(tc->expected_obj), 1e-6);
         if (rel_err < 1e-3) {
@@ -189,26 +190,15 @@ int main(int argc, char **argv) {
                    obj, tc->expected_obj, rel_err);
         }
       } else {
-        /* No expected obj - just check solved */
         snprintf(status_msg, sizeof(status_msg), "PASS (obj=%.2f)", obj);
         test_passed = 1;
       }
     } else if (has_solution) {
-      /* Feasible but not proven optimal (timeout) */
       snprintf(status_msg, sizeof(status_msg), "PASS (feasible, obj=%.2f, %ds)",
                obj, tc->timeout_sec);
       test_passed = 1;
     } else {
-      /* Timeout with no solution */
       snprintf(status_msg, sizeof(status_msg), "FAIL (timeout, no solution)");
-    }
-
-    /* Validate solution if available */
-    if (test_passed && has_solution) {
-      char sol_file[512];
-      snprintf(sol_file, sizeof(sol_file), "/tmp/vrp_test_%s.sol", tc->name);
-
-      /* External solution validation disabled - Cbc_writeSolution not in C API */
     }
 
     printf("%s\n", status_msg);

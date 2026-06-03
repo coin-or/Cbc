@@ -2643,6 +2643,9 @@ Cbc_solve(Cbc_Model *model)
           addParam("maxSecondsBest", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
         if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX)
           addParamI("maxNodesBest", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
+        // Push random seed through the input queue so CbcParameters::synchronizeModel
+        // doesn't overwrite it (it would otherwise reset the model's seed to its default of 42).
+        addParamI("randomCbcSeed", model->int_param[INT_PARAM_RANDOM_SEED]);
 
         // LP method
         switch (model->lp_method) {
@@ -2718,7 +2721,6 @@ Cbc_solve(Cbc_Model *model)
       model->problemSummaryPrinted = 0;
 
       cbcSolver.model()->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
-      cbcSolver.model()->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
 
       cbcSolver.run(inputQueue, cbc_callb);
 

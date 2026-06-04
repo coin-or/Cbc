@@ -1995,6 +1995,8 @@ public:
     */
   void addHeuristic(CbcHeuristic *generator, const char *name = NULL,
     int before = -1);
+  /// Run heuristic and track execution time and stats
+  int runHeuristic(CbcHeuristic *heuristic, double &heuristicValue, double *newSolution);
   ///Get the specified heuristic
   inline CbcHeuristic *heuristic(int i) const
   {

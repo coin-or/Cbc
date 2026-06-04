@@ -5430,6 +5430,27 @@ void CbcModel::branchAndBound(int doStatistics)
       << trueBestObjValue() << trueObjValue(bestPossibleObjective_) << numberIterations_
       << numberNodes_ << getCurrentSeconds() << CoinMessageEol;
   }
+  // Print heuristics summary
+  for (int i = 0; i < numberHeuristics_; i++) {
+    CbcHeuristic *heur = heuristic_[i];
+    if (heur->numExecutions() > 0) {
+      char summaryMsg[300];
+      int nSol = heur->numberSolutionsFound();
+      if (heur->totalNodesSubMIP() > 0) {
+        std::snprintf(summaryMsg, sizeof(summaryMsg),
+                      "Heuristic %s: executed %d times, found %d solutions in %.2f seconds (failed: %d infeasibility, %d iteration limit; solved %d sub-MIP nodes).",
+                      heur->heuristicName(), heur->numExecutions(), nSol, heur->totalTime(),
+                      heur->numInfeasible(), heur->numIterationLimit(), heur->totalNodesSubMIP());
+      } else {
+        std::snprintf(summaryMsg, sizeof(summaryMsg),
+                      "Heuristic %s: executed %d times, found %d solutions in %.2f seconds (failed: %d infeasibility, %d iteration limit).",
+                      heur->heuristicName(), heur->numExecutions(), nSol, heur->totalTime(),
+                      heur->numInfeasible(), heur->numIterationLimit());
+      }
+      handler_->message(CBC_GENERAL, messages_)
+        << summaryMsg << CoinMessageEol;
+    }
+  }
   if ((moreSpecialOptions_ & 4194304) != 0) {
     // Conflict cuts
     int numberCuts = globalCuts_.sizeRowCuts();
@@ -7779,6 +7800,16 @@ void CbcModel::addHeuristic(CbcHeuristic *generator, const char *name,
   numberHeuristics_++;
 }
 
+// Run heuristic and track execution time and stats
+int CbcModel::runHeuristic(CbcHeuristic *heuristic, double &heuristicValue, double *newSolution)
+{
+  double startTime = getCurrentSeconds();
+  int result = heuristic->solution(heuristicValue, newSolution);
+  double duration = getCurrentSeconds() - startTime;
+  heuristic->recordExecution(duration);
+  return result;
+}
+
 /*
   The last subproblem handled by the solver is not necessarily related to the
   one being recreated, so the first action is to remove all cuts from the
@@ -9303,7 +9334,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           continue;
         // see if heuristic will do anything
         double saveValue = heuristicValue;
-        int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);
+        int ifSol = runHeuristic(heuristic_[i], heuristicValue, newSolution);
         if (ifSol > 0) {
           // better solution found
           heuristic_[i]->incrementNumberSolutionsFound();
@@ -9827,7 +9858,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         if (!heuristic_[i]->shouldHeurRun(whereFrom))
           continue;
         double saveValue = heuristicValue;
-        int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);
+        int ifSol = runHeuristic(heuristic_[i], heuristicValue, newSolution);
         if (ifSol > 0) {
           heuristic_[i]->incrementNumberSolutionsFound();
           found = i;
@@ -10014,7 +10045,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           continue;
         // see if heuristic will do anything
         double saveValue = heuristicValue;
-        int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);
+        int ifSol = runHeuristic(heuristic_[i], heuristicValue, newSolution);
         if (ifSol > 0) {
           // better solution found
           heuristic_[i]->incrementNumberSolutionsFound();
@@ -16961,7 +16992,7 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
             double wallBefore = CoinWallclockTime();
             bool isFPump = (dynamic_cast< CbcHeuristicFPump * >(heuristic_[i]) != nullptr);
             bool isFJ = (dynamic_cast< CbcHeuristicFeasibilityJump * >(heuristic_[i]) != nullptr);
-            int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);
+            int ifSol = runHeuristic(heuristic_[i], heuristicValue, newSolution);
             if (handler_->logLevel() > 1) {
               char line[100];
               sprintf(line, "Heuristic %s took %g seconds (%s)",
@@ -18462,7 +18493,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
             if (!heuristic_[iHeur]->shouldHeurRun(whereFrom))
               continue;
             double saveValue = heurValue;
-            int ifSol = heuristic_[iHeur]->solution(heurValue, newSolution);
+            int ifSol = runHeuristic(heuristic_[iHeur], heurValue, newSolution);
             if (ifSol > 0) {
               // new solution found
               heuristic_[iHeur]->incrementNumberSolutionsFound();
@@ -19507,7 +19538,7 @@ bool CbcModel::integerPresolveThisModel(OsiSolverInterface *originalSolver,
           if (!heuristic_[iHeuristic]->shouldHeurRun(whereFrom))
             continue;
           double saveValue = heuristicValue;
-          int ifSol = heuristic_[iHeuristic]->solution(heuristicValue, newSolution);
+          int ifSol = runHeuristic(heuristic_[iHeuristic], heuristicValue, newSolution);
           if (ifSol > 0) {
             // better solution found
             heuristic_[iHeuristic]->incrementNumberSolutionsFound();

@@ -34,9 +34,13 @@
 #include <stdio.h>
 
 typedef struct {
-  const char *label;  /* human-readable run name */
-  const char *param;  /* Cbc_setParameter name    */
-  const char *value;  /* value to set             */
+  const char *label;   /* human-readable run name           */
+  const char *param;   /* Cbc_setParameter name             */
+  const char *value;   /* value to set                      */
+  const char *param2;  /* optional 2nd parameter (NULL if unused) */
+  const char *value2;  /* optional 2nd value                */
+  const char *param3;  /* optional 3rd parameter (NULL if unused) */
+  const char *value3;  /* optional 3rd value                */
 } MipDiagConfig;
 
 /* Diagnostic configurations — only features that are ON by default.
@@ -46,29 +50,42 @@ typedef struct {
  *   clqstr        : clique strengthening / clique merging (default "before")
  *   boundPropLevel: bound propagation before initial LP solve (default "milpbt")
  *   nodeBoundProp : knapsack bound propagation at B&B nodes (default "on")
+ *   preprocess    : presolve / postsolve pipeline
  *
  * Cut families (default "ifmove"):
  *   gomory, knapsack, flow, mixed (MIR), probing, reduce2, twoMir, zeroHalf
  *
- * Also one combined run that turns off all standard cuts at once.
+ * Tolerances (test whether tight FP tolerances change the outcome — relevant
+ * for big-M formulations on platforms with FMA / different rounding):
+ *   primalTolerance, integerTolerance, dualTolerance
+ *
+ * Also one combined run that turns off all standard cuts at once, and one
+ * that turns off bound propagation at root AND nodes simultaneously.
  */
 static const MipDiagConfig MIP_DIAG_CONFIGS[] = {
   /* infrastructure */
-  { "no-cgraph",        "cgraph",        "off" },
-  { "no-clqstr",        "clqstr",        "off" },
-  { "no-boundproplevel","boundPropL",    "off" },
-  { "no-nodeboundprop", "nodeBoundProp", "off" },
+  { "no-cgraph",         "cgraph",          "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-clqstr",         "clqstr",          "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-boundproplevel", "boundPropL",      "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-nodeboundprop",  "nodeBoundProp",   "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-all-boundprop",  "boundPropL",      "off",   "nodeBoundProp", "off", NULL,           NULL  },
+  { "no-preprocess",     "preprocess",      "off",   NULL,            NULL,  NULL,           NULL  },
   /* all cuts combined */
-  { "no-all-cuts",      "cuts",          "off" },
+  { "no-all-cuts",       "cuts",            "off",   NULL,            NULL,  NULL,           NULL  },
   /* individual cuts */
-  { "no-gomory",        "gomory",        "off" },
-  { "no-knapsack",      "knapsack",      "off" },
-  { "no-flow",          "flow",          "off" },
-  { "no-mir",           "mixed",         "off" },
-  { "no-probing",       "probing",       "off" },
-  { "no-redsplit2",     "reduce2",       "off" },
-  { "no-twomir",        "two",           "off" },
-  { "no-zerohalf",      "zero",          "off" },
+  { "no-gomory",         "gomory",          "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-knapsack",       "knapsack",        "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-flow",           "flow",            "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-mir",            "mixed",           "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-probing",        "probing",         "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-redsplit2",      "reduce2",         "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-twomir",         "two",             "off",   NULL,            NULL,  NULL,           NULL  },
+  { "no-zerohalf",       "zero",            "off",   NULL,            NULL,  NULL,           NULL  },
+  /* tolerance tightening — relevant for big-M formulations (e.g. JSSP)
+   * where FMA / FP rounding may interact with the default tolerances. */
+  { "tight-prim-tol",    "primalTolerance", "1e-9",  NULL,            NULL,  NULL,           NULL  },
+  { "tight-int-tol",     "integerTolerance","1e-9",  NULL,            NULL,  NULL,           NULL  },
+  { "tight-all-tol",     "primalTolerance", "1e-9",  "integerTolerance","1e-9","dualTolerance","1e-9" },
 };
 
 #define MIP_N_DIAG_CONFIGS \
@@ -96,8 +113,20 @@ static void mip_diag_wrong_optimal(
 
   for (int k = 0; k < MIP_N_DIAG_CONFIGS; k++) {
     const MipDiagConfig *cfg = &MIP_DIAG_CONFIGS[k];
-    printf("  [DIAG %2d/%d] %-22s  (%s=%s)\n",
-           k + 1, MIP_N_DIAG_CONFIGS, cfg->label, cfg->param, cfg->value);
+    if (cfg->param3)
+      printf("  [DIAG %2d/%d] %-22s  (%s=%s, %s=%s, %s=%s)\n",
+             k + 1, MIP_N_DIAG_CONFIGS, cfg->label,
+             cfg->param,  cfg->value,
+             cfg->param2, cfg->value2,
+             cfg->param3, cfg->value3);
+    else if (cfg->param2)
+      printf("  [DIAG %2d/%d] %-22s  (%s=%s, %s=%s)\n",
+             k + 1, MIP_N_DIAG_CONFIGS, cfg->label,
+             cfg->param,  cfg->value,
+             cfg->param2, cfg->value2);
+    else
+      printf("  [DIAG %2d/%d] %-22s  (%s=%s)\n",
+             k + 1, MIP_N_DIAG_CONFIGS, cfg->label, cfg->param, cfg->value);
     fflush(stdout);
 
     Cbc_Model *m = builder(userdata);
@@ -106,7 +135,9 @@ static void mip_diag_wrong_optimal(
     if (time_limit_sec > 0)
       Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, (double)time_limit_sec);
 
-    Cbc_setParameter(m, cfg->param, cfg->value);
+    Cbc_setParameter(m, cfg->param,  cfg->value);
+    if (cfg->param2) Cbc_setParameter(m, cfg->param2, cfg->value2);
+    if (cfg->param3) Cbc_setParameter(m, cfg->param3, cfg->value3);
     Cbc_solve(m);
 
     int is_proven  = Cbc_isProvenOptimal(m);

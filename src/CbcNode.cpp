@@ -55,6 +55,31 @@
 #include "ClpPrimalColumnPivot.hpp"
 #include "CglCutGenerator.hpp"
 
+/* When the row-cut debugger is active (i.e. -debugCuts loaded a reference
+ * solution), check that a strong-branching-derived bound tightening on column
+ * iColumn does not exclude the optimum. If it does, print a one-line
+ * diagnostic — analogous to the BAD FIXING checker in CbcBoundPropagation. */
+static inline void cbcnode_checkBranchFixing(
+    OsiSolverInterface *solver,
+    int iColumn,
+    double newLB,
+    double newUB,
+    const char *site)
+{
+  const OsiRowCutDebugger *dbg = solver->getRowCutDebugger();
+  if (!dbg) return;
+  const double *opt = dbg->optimalSolution();
+  if (!opt) return;
+  const double v = opt[iColumn];
+  if (v < newLB - 1.0e-6 || v > newUB + 1.0e-6) {
+    const std::string nm = solver->getColName(iColumn);
+    printf("strongBranch BAD FIXING (%s): col %d (%s) "
+           "new=[%g,%g] but optimal has %g\n",
+           site, iColumn, nm.c_str(), newLB, newUB, v);
+    fflush(stdout);
+  }
+}
+
 CbcNode::CbcNode()
   : nodeInfo_(NULL)
   , objectiveValue_(1.0e100)
@@ -3596,6 +3621,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                   if (newLower > saveLower[iColumn]) {
                     //printf("Could increase lower bound on %d from %g to %g\n",
                     //   iColumn,saveLower[iColumn],newLower);
+                    cbcnode_checkBranchFixing(solver, iColumn, newLower,
+                                              saveUpper[iColumn],
+                                              "down-probe-tighten-LB");
                     saveLower[iColumn] = newLower;
                     solver->setColLower(iColumn, newLower);
                   }
@@ -3881,6 +3909,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                   if (newUpper < saveUpper[iColumn]) {
 		    //printf("Could decrease upper bound on %d from %g to %g\n",
 		    //   iColumn,saveUpper[iColumn],newUpper);
+                    cbcnode_checkBranchFixing(solver, iColumn,
+                                              saveLower[iColumn], newUpper,
+                                              "up-probe-tighten-UB");
 		    saveUpper[iColumn] = newUpper;
 		    solver->setColUpper(iColumn, newUpper);
                   }

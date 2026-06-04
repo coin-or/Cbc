@@ -56,7 +56,7 @@ static Cbc_Model *jssp_builder(void *userdata)
 static const JsspTestCase jssp_test_cases[] = {
   {"jssp_ft06",    55, 1000000, 600},  /* Fisher & Thompson 6x6 */
   {"jssp_ft10",   930, 1000000, 600},  /* Fisher & Thompson 10x10 */
-  {"jssp_la01",   634, 1000000, 600},  /* Lawrence 10x5 */
+  {"jssp_la01",   666, 1000000, 600},  /* Lawrence 10x5 */
   {"jssp_la06",   926, 1000000, 600},  /* Lawrence 15x5 */
   {"jssp_la11",  1222, 1000000, 600},  /* Lawrence 20x5 */
   {"jssp_orb01", 1059, 1000000, 600},  /* Applegate & Cook 10x10 */

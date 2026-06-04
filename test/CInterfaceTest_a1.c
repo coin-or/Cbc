@@ -233,10 +233,12 @@ static void test_mip(void)
   /* Feasibility is mandatory — always check it */
   CHECK(Cbc_bestSolution(m) != NULL, "MIP: best solution exists");
 
-  /* Only require correct objective if solver claims optimality */
+  /* Only require correct objective if solver claims optimality.
+   * Use solver's own gap tolerances — isProvenOptimal() means "within gap". */
   if (is_proven_optimal) {
-    int obj_ok = (fabs(obj - A1_MIP_OPT) < MIP_TOL);
-    CHECK(obj_ok, "MIP: optimal value matches known optimum");
+    double tol = mip_obj_tol(m, A1_MIP_OPT, MIP_TOL);
+    int obj_ok = (fabs(obj - A1_MIP_OPT) <= tol);
+    CHECK(obj_ok, "MIP: optimal value within solver gap tolerance of known optimum");
     if (!obj_ok) {
       char tmp_sol[256];
       snprintf(tmp_sol, sizeof(tmp_sol), "/tmp/mipster_diag_A-1.sol");

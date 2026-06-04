@@ -103,10 +103,10 @@ static int test_setpartitioning(const char *fixture_dir, const SetPartitioningTe
 
   /* Only validate objective if solver claims optimality */
   if (perf->is_optimal) {
-    double rel_err = fabs(obj - tc->expected_obj) / fmax(fabs(tc->expected_obj), 1.0);
-    if (rel_err > 1e-3) {
-      printf("    FAIL: proven optimal but obj=%.2f expected=%.2f (rel_err=%.2e)\n",
-             obj, tc->expected_obj, rel_err);
+    double tol = mip_obj_tol(m, tc->expected_obj, 1e-6);
+    if (fabs(obj - tc->expected_obj) > tol) {
+      printf("    FAIL: proven optimal but obj=%.10g expected=%.10g (tol=%.4g)\n",
+             obj, tc->expected_obj, tol);
       pass = 0;
       char tmp_sol[512];
       snprintf(tmp_sol, sizeof(tmp_sol), "/tmp/mipster_diag_%s.sol", tc->name);

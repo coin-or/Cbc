@@ -175,20 +175,24 @@ static void mip_diag_wrong_optimal(
     double bound   = Cbc_getBestPossibleObjValue(m);
 
     if (is_proven) {
-      double rel_err = fabs(obj - certified_opt) / fmax(fabs(certified_opt), 1.0);
-      if (rel_err > 1e-3)
-        printf("  [DIAG %2d/%d] %-22s  → WRONG opt=%.6g (expected %.6g)"
+      /* Use the solver's own gap tolerances to judge correctness */
+      double ratio_gap = Cbc_getDblParam(m, DBL_PARAM_GAP_RATIO);
+      double abs_gap   = Cbc_getDblParam(m, DBL_PARAM_ALLOWABLE_GAP);
+      double tol = fmax(abs_gap, ratio_gap * fabs(certified_opt));
+      tol = fmax(tol, 1e-6);  /* always allow floating-point noise */
+      if (fabs(obj - certified_opt) > tol)
+        printf("  [DIAG %2d/%d] %-22s  → WRONG opt=%.10g (expected %.10g, tol=%.4g)"
                " — BUG ALSO PRESENT\n",
-               k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, certified_opt);
+               k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, certified_opt, tol);
       else
-        printf("  [DIAG %2d/%d] %-22s  → OK  obj=%.6g certified=%.6g\n",
-               k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, certified_opt);
+        printf("  [DIAG %2d/%d] %-22s  → OK  obj=%.10g certified=%.10g (tol=%.4g)\n",
+               k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, certified_opt, tol);
     } else if (nsaved > 0) {
       double gap = (obj > 1e-10) ? 100.0 * (obj - bound) / obj : 0.0;
       double rel_err = fabs(obj - certified_opt) / fmax(fabs(certified_opt), 1.0);
       int correct = (rel_err <= 1e-3);
-      printf("  [DIAG %2d/%d] %-22s  → not proven  obj=%.6g  bound=%.6g"
-             "  gap=%.1f%%  (%s)%s\n",
+      printf("  [DIAG %2d/%d] %-22s  → not proven  obj=%.10g  bound=%.10g"
+             "  gap=%.4f%%  (%s)%s\n",
              k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, bound, gap,
              time_hit ? "time limit" : node_hit ? "node limit" : "stopped",
              correct ? "  *** LEAD: found correct obj — this feature is SUSPECT ***" : "");
@@ -273,7 +277,7 @@ static void mip_diag_debug_cuts(
   int is_proven = Cbc_isProvenOptimal(m);
   double obj    = Cbc_getObjValue(m);
 
-  printf("\n  [DIAG] debugCuts result: %s  obj=%.6g  (certified=%.6g)\n",
+  printf("\n  [DIAG] debugCuts result: %s  obj=%.10g  (certified=%.10g)\n",
          is_proven ? "proven" : "not proven", obj, certified_opt);
   fflush(stdout);
 

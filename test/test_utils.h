@@ -180,6 +180,27 @@ static void print_perf_summary(const MipPerfRecord *recs, int n, const char *tit
            total_nodes, total_time);
 }
 
+/* Compute the effective MIP objective tolerance after a solve.
+ * Accounts for the solver's ratioGap and allowableGap settings, which
+ * determine how far from the true optimal the solver may stop and still
+ * declare isProvenOptimal() == 1.  The returned tolerance is the absolute
+ * deviation that should be accepted as "correct" for certified_opt.
+ *
+ * base_tol: minimum absolute tolerance for floating-point noise (e.g. 1e-6).
+ *
+ * Formula: max(base_tol, allowableGap, ratioGap * |certified_opt|)
+ *
+ * Example: ratioGap=0.0001 (MIPster default), certified_opt=3200022
+ *   → effective tol ≈ 320  (any integer within 320 of optimal is accepted)
+ */
+static double mip_obj_tol(Cbc_Model *m, double certified_opt, double base_tol)
+{
+  double ratio_gap = Cbc_getDblParam(m, DBL_PARAM_GAP_RATIO);
+  double abs_gap   = Cbc_getDblParam(m, DBL_PARAM_ALLOWABLE_GAP);
+  double gap_tol   = fmax(abs_gap, ratio_gap * fabs(certified_opt));
+  return fmax(base_tol, gap_tol);
+}
+
 /* Builder for mip_diag: loads a model from an MPS file.
  * userdata must be a (const char *) path to the .mps or .mps.gz file. */
 static Cbc_Model *build_mps_model(void *userdata)

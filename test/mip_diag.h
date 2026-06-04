@@ -86,6 +86,25 @@ static const MipDiagConfig MIP_DIAG_CONFIGS[] = {
   { "tight-prim-tol",    "primalTolerance", "1e-9",  NULL,            NULL,  NULL,           NULL  },
   { "tight-int-tol",     "integerTolerance","1e-9",  NULL,            NULL,  NULL,           NULL  },
   { "tight-all-tol",     "primalTolerance", "1e-9",  "integerTolerance","1e-9","dualTolerance","1e-9" },
+  /* Integer-objective auto-detect probes:
+   *
+   * Cbc auto-detects integer objectives and sets cutoffIncrement ≈ 0.999
+   * (CbcModel.cpp:1126). The fathoming check at CbcModel.cpp:11480 then
+   * prunes any node whose LP-bound exceeds bestObj - 0.999 (i.e. anything
+   * within ~0.001 of the incumbent). FP noise from FMA on Apple Silicon
+   * could push the bound just above this threshold and wrongly prune the
+   * optimum.
+   *
+   * tight-cutoff-inc: set increment=1.0 (slightly stricter than the auto-
+   *   detected 0.999). Auto-detect won't override (since 0.999 < 1.0), so
+   *   the user value sticks. Tests whether the 0.001 safety margin matters.
+   * no-fake-obj: set more2MipOptions=lessused (bit 536870912) which, as a
+   *   side-effect at CbcModel.cpp:503-505, disables createFake/randomCost
+   *   for problems with few integer-objective variables (JSSP makespan
+   *   formulation hits this code path with iType=7).
+   */
+  { "tight-cutoff-inc",  "increment",       "1.0",   NULL,            NULL,  NULL,           NULL  },
+  { "no-fake-obj",       "more2!MipOptions","lessused", NULL,         NULL,  NULL,           NULL  },
 };
 
 #define MIP_N_DIAG_CONFIGS \

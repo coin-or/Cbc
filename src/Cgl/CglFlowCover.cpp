@@ -589,6 +589,29 @@ CglFlowCover::generateOneFlowCut( const OsiSolverInterface & si,
     }
   }
 
+  // VUB indicator collision check: if a continuous variable's VUB
+  // indicator binary also appears in this row as a bare binary, the
+  // SGFC lifting double-counts that binary (once via VUB substitution
+  // for the continuous variable's xCoef, once via the bare binary's
+  // own xCoef in L-/L--), producing invalid cuts.  Skip the row.
+  for (i = 0; i < rowLen; ++i) {
+    if (sign[i] == CGLFLOW_COL_CONTPOS || sign[i] == CGLFLOW_COL_CONTNEG) {
+      VUB = getVubs(ind[i]);
+      if (VUB.getVar() != UNDEFINED_) {
+	for (j = 0; j < rowLen; ++j) {
+	  if (j != i && ind[j] == VUB.getVar() &&
+	      (sign[j] == CGLFLOW_COL_BINPOS || sign[j] == CGLFLOW_COL_BINNEG)) {
+	    delete [] sign;
+	    delete [] up;
+	    delete [] x;
+	    delete [] y;
+	    return generated;
+	  }
+	}
+      }
+    }
+  }
+
   //-------------------------------------------------------------------------
   // Find a initial cover (C+, C-) in (N+, N-)
   double  knapRHS   = rhs;

@@ -124,7 +124,8 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_setpartitioning$(EXEEXT) \
 	CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT) \
 	CInterfaceTest_jssp_fixtures$(EXEEXT) \
-	CInterfaceTest_steiner$(EXEEXT)
+	CInterfaceTest_steiner$(EXEEXT) \
+	CInterfaceTest_fcnf_fixtures$(EXEEXT)
 noinst_PROGRAMS = gen_miclsp_solutions$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -195,6 +196,10 @@ am_CInterfaceTest_facility_OBJECTS =  \
 CInterfaceTest_facility_OBJECTS =  \
 	$(am_CInterfaceTest_facility_OBJECTS)
 CInterfaceTest_facility_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_fcnf_fixtures_OBJECTS = CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.$(OBJEXT)
+CInterfaceTest_fcnf_fixtures_OBJECTS =  \
+	$(am_CInterfaceTest_fcnf_fixtures_OBJECTS)
+CInterfaceTest_fcnf_fixtures_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_fl_random_OBJECTS =  \
 	CInterfaceTest_fl_random.$(OBJEXT)
 CInterfaceTest_fl_random_OBJECTS =  \
@@ -363,6 +368,8 @@ am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po \
 	./$(DEPDIR)/CInterfaceTest_etDecsi-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_facility.Po \
+	./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Po \
+	./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_fl_random.Po \
 	./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po \
 	./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po \
@@ -459,6 +466,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_etDecsi_SOURCES) \
 	$(CInterfaceTest_facility_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_facility_SOURCES) \
+	$(CInterfaceTest_fcnf_fixtures_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_fcnf_fixtures_SOURCES) \
 	$(CInterfaceTest_fl_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_fl_random_SOURCES) \
 	$(CInterfaceTest_graphdraw_SOURCES) \
@@ -752,6 +761,15 @@ dist_pkgtestfixture_DATA = \
   fixtures/qap_n6_s137_hub_euclidean.mps.gz \
   fixtures/qap_n7_s42_uniform_euclidean.mps.gz \
   fixtures/qap_n7_s137_sparse_grid.mps.gz \
+  fixtures/fcnf_complete_bip_5x5.mps.gz \
+  fixtures/fcnf_grid_4x4_balanced.mps.gz \
+  fixtures/fcnf_grid_4x4_multimagnitude.mps.gz \
+  fixtures/fcnf_grid_5x5_fixedheavy.mps.gz \
+  fixtures/fcnf_hub_n12.mps.gz \
+  fixtures/fcnf_layered_3stage.mps.gz \
+  fixtures/fcnf_layered_continuous_loose.mps.gz \
+  fixtures/fcnf_random_n15_d3.mps.gz \
+  fixtures/fcnf_random_n20_d4_tight.mps.gz \
   fixtures/scp_e10_s15_sd42_uniform.mps.gz \
   fixtures/scp_e15_s20_sd42_sparse.mps.gz \
   fixtures/scp_e20_s30_sd42_dense.mps.gz \
@@ -1040,6 +1058,10 @@ CInterfaceTest_steiner_SOURCES = CInterfaceTest_steiner.c
 nodist_EXTRA_CInterfaceTest_steiner_SOURCES = dummy.cpp
 CInterfaceTest_steiner_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_steiner_LDADD = ../src/libmipster.la
+CInterfaceTest_fcnf_fixtures_SOURCES = CInterfaceTest_fcnf_fixtures.c
+nodist_EXTRA_CInterfaceTest_fcnf_fixtures_SOURCES = dummy.cpp
+CInterfaceTest_fcnf_fixtures_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_fcnf_fixtures_LDADD = ../src/libmipster.la
 
 ########################################################################
 #             gen_miclsp_solutions — reference solution generator      #
@@ -1164,6 +1186,10 @@ CInterfaceTest_etDecsi$(EXEEXT): $(CInterfaceTest_etDecsi_OBJECTS) $(CInterfaceT
 CInterfaceTest_facility$(EXEEXT): $(CInterfaceTest_facility_OBJECTS) $(CInterfaceTest_facility_DEPENDENCIES) $(EXTRA_CInterfaceTest_facility_DEPENDENCIES) 
 	@rm -f CInterfaceTest_facility$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_facility_OBJECTS) $(CInterfaceTest_facility_LDADD) $(LIBS)
+
+CInterfaceTest_fcnf_fixtures$(EXEEXT): $(CInterfaceTest_fcnf_fixtures_OBJECTS) $(CInterfaceTest_fcnf_fixtures_DEPENDENCIES) $(EXTRA_CInterfaceTest_fcnf_fixtures_DEPENDENCIES) 
+	@rm -f CInterfaceTest_fcnf_fixtures$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_fcnf_fixtures_OBJECTS) $(CInterfaceTest_fcnf_fixtures_LDADD) $(LIBS)
 
 CInterfaceTest_fl_random$(EXEEXT): $(CInterfaceTest_fl_random_OBJECTS) $(CInterfaceTest_fl_random_DEPENDENCIES) $(EXTRA_CInterfaceTest_fl_random_DEPENDENCIES) 
 	@rm -f CInterfaceTest_fl_random$(EXEEXT)
@@ -1327,6 +1353,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_etDecsi-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_facility.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_fl_random.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po@am__quote@ # am--include-marker
@@ -1455,6 +1483,20 @@ CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.obj: CInterfaceTest_etDecsi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_etDecsi.c' object='CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_etDecsi_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.obj `if test -f 'CInterfaceTest_etDecsi.c'; then $(CYGPATH_W) 'CInterfaceTest_etDecsi.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_etDecsi.c'; fi`
+
+CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.o: CInterfaceTest_fcnf_fixtures.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_fcnf_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Tpo -c -o CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.o `test -f 'CInterfaceTest_fcnf_fixtures.c' || echo '$(srcdir)/'`CInterfaceTest_fcnf_fixtures.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Tpo $(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_fcnf_fixtures.c' object='CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_fcnf_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.o `test -f 'CInterfaceTest_fcnf_fixtures.c' || echo '$(srcdir)/'`CInterfaceTest_fcnf_fixtures.c
+
+CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.obj: CInterfaceTest_fcnf_fixtures.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_fcnf_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Tpo -c -o CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.obj `if test -f 'CInterfaceTest_fcnf_fixtures.c'; then $(CYGPATH_W) 'CInterfaceTest_fcnf_fixtures.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_fcnf_fixtures.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Tpo $(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_fcnf_fixtures.c' object='CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_fcnf_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.obj `if test -f 'CInterfaceTest_fcnf_fixtures.c'; then $(CYGPATH_W) 'CInterfaceTest_fcnf_fixtures.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_fcnf_fixtures.c'; fi`
 
 CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o: CInterfaceTest_graphdraw.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Tpo -c -o CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o `test -f 'CInterfaceTest_graphdraw.c' || echo '$(srcdir)/'`CInterfaceTest_graphdraw.c
@@ -1731,6 +1773,20 @@ CInterfaceTest_etDecsi-dummy.obj: dummy.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_etDecsi-dummy.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_etDecsi_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_etDecsi-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
+CInterfaceTest_fcnf_fixtures-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_fcnf_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_fcnf_fixtures-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Tpo -c -o CInterfaceTest_fcnf_fixtures-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Tpo $(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_fcnf_fixtures-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_fcnf_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_fcnf_fixtures-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_fcnf_fixtures-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_fcnf_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_fcnf_fixtures-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Tpo -c -o CInterfaceTest_fcnf_fixtures-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Tpo $(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_fcnf_fixtures-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_fcnf_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_fcnf_fixtures-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
 
 CInterfaceTest_graphdraw-dummy.o: dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_graphdraw-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_graphdraw-dummy.Tpo -c -o CInterfaceTest_graphdraw-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
@@ -2104,6 +2160,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_etDecsi-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_facility.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po
@@ -2205,6 +2263,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_etDecsi-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_facility.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po
@@ -2306,7 +2366,7 @@ miplib3_tests: CInterfaceTest_miplib$(EXEEXT)
 
 .PHONY: test
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CInterfaceTest_attfInst1$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT) CInterfaceTest_qap$(EXEEXT) CInterfaceTest_setcover$(EXEEXT) CInterfaceTest_setpacking$(EXEEXT) CInterfaceTest_setpartitioning$(EXEEXT) CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CInterfaceTest_attfInst1$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT) CInterfaceTest_qap$(EXEEXT) CInterfaceTest_setcover$(EXEEXT) CInterfaceTest_setpacking$(EXEEXT) CInterfaceTest_setpartitioning$(EXEEXT) CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT) CInterfaceTest_fcnf_fixtures$(EXEEXT)
 	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

@@ -46,6 +46,7 @@ CbcHeuristicFPump::CbcHeuristicFPump()
   , accumulate_(0)
   , fixOnReducedCosts_(1)
   , roundExpensive_(false)
+  , skipIfHasIncumbent_(false)
 {
   setWhen(1);
 }
@@ -70,6 +71,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(CbcModel &model,
   , accumulate_(0)
   , fixOnReducedCosts_(1)
   , roundExpensive_(roundExpensive)
+  , skipIfHasIncumbent_(false)
 {
   setWhen(1);
 }
@@ -196,6 +198,7 @@ CbcHeuristicFPump::operator=(const CbcHeuristicFPump &rhs)
     accumulate_ = rhs.accumulate_;
     fixOnReducedCosts_ = rhs.fixOnReducedCosts_;
     roundExpensive_ = rhs.roundExpensive_;
+    skipIfHasIncumbent_ = rhs.skipIfHasIncumbent_;
     fpOutput_ = nullptr; // not copied: caller must reinstall
   }
   return *this;
@@ -238,6 +241,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 */
   if (!when() || (when() == 1 && model_->phase() != 1))
     return 0; // switched off
+  if (skipIfHasIncumbent_ && model_->bestSolution() != nullptr)
+    return 0; // skip: incumbent already found by another heuristic
 #ifdef HEURISTIC_INFORM
   printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
     heuristicName(), numRuns_, numCouldRun_, when_);

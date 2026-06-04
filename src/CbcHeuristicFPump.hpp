@@ -238,6 +238,16 @@ public:
   {
     return reducedCostMultiplier_;
   }
+  /// Set skip-if-incumbent flag (skip FPump if a feasible solution already exists)
+  inline void setSkipIfHasIncumbent(bool value)
+  {
+    skipIfHasIncumbent_ = value;
+  }
+  /// Get skip-if-incumbent flag
+  inline bool skipIfHasIncumbent() const
+  {
+    return skipIfHasIncumbent_;
+  }
 
 protected:
   // Data
@@ -296,6 +306,8 @@ protected:
   int fixOnReducedCosts_;
   /// If true round to expensive
   bool roundExpensive_;
+  /// If true, skip running if model already has an incumbent solution
+  bool skipIfHasIncumbent_;
   /// Output handler for tabular FP progress (not owned, caller manages lifetime)
   CbcFPumpOutput *fpOutput_ = nullptr;
 

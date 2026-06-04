@@ -2417,6 +2417,7 @@ private:
     int tune2_;
     double cutoff_;
     double increment_;
+    bool skipIfFeasible_;
   } fpump_;
 
   /*! \brief Control variable and prototype for greedy cover heuristic */

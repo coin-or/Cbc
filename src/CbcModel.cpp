@@ -64,6 +64,7 @@ extern int gomory_try;
 #include "CbcFullNodeInfo.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicDive.hpp"
+#include "CbcHeuristicFeasibilityJump.hpp"
 #include "CbcRootHeuristicSchedule.hpp"
 #include "CbcHeuristicFPump.hpp"
 #include "CbcHeuristicRINS.hpp"
@@ -16959,6 +16960,7 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
             double before = getCurrentSeconds();
             double wallBefore = CoinWallclockTime();
             bool isFPump = (dynamic_cast< CbcHeuristicFPump * >(heuristic_[i]) != nullptr);
+            bool isFJ = (dynamic_cast< CbcHeuristicFeasibilityJump * >(heuristic_[i]) != nullptr);
             int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);
             if (handler_->logLevel() > 1) {
               char line[100];
@@ -17013,10 +17015,10 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                 // increment number of solutions so other heuristics can test
                 //                            numberSolutions_++;
                 numberHeuristicSolutions_++;
-                if (rootHeurOutput_ && !isFPump)
+                if (rootHeurOutput_ && !isFPump && !isFJ)
                   rootHeurOutput_->onHeurResult(heuristic_[i]->heuristicName(),
                     true, trueObjValue(bestObjective_), CoinWallclockTime() - wallBefore);
-                else if (rootHeurOutput_ && isFPump)
+                else if (rootHeurOutput_ && (isFPump || isFJ))
                   rootHeurOutput_->noteFPSolution(trueObjValue(bestObjective_));
 #ifdef HEURISTIC_INFORM
                 printf("HEUR %s where %d C\n", lastHeuristic_->heuristicName(),
@@ -17055,13 +17057,13 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 #endif
                 lastHeuristic_ = saveHeuristic;
                 heuristicValue = saveValue;
-                if (rootHeurOutput_ && !isFPump)
+                if (rootHeurOutput_ && !isFPump && !isFJ)
                   rootHeurOutput_->onHeurResult(heuristic_[i]->heuristicName(),
                     false, 1e30, CoinWallclockTime() - wallBefore);
               }
             } else {
               heuristicValue = saveValue;
-              if (rootHeurOutput_ && !isFPump)
+              if (rootHeurOutput_ && !isFPump && !isFJ)
                 rootHeurOutput_->onHeurResult(heuristic_[i]->heuristicName(),
                   false, 1e30, CoinWallclockTime() - wallBefore);
             }

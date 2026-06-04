@@ -15,8 +15,10 @@
 
 #include "CbcHeuristicFeasibilityJump.hpp"
 #include "CbcModel.hpp"
-#include "OsiSolverInterface.hpp"
+#include "CbcOutput.hpp"
 #include "CoinPackedMatrix.hpp"
+#include "CoinTable.hpp"
+#include "OsiSolverInterface.hpp"
 
 // Suppress warnings in the third-party header.
 #ifdef __GNUC__
@@ -248,50 +250,86 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
   //   4. CBC global time limit exceeded    (hard wall)
   // ------------------------------------------------------------------
   std::vector< double > bestSol;
-  double bestObj = DBL_MAX;
+  double bestObj = DBL_MAX;   // best FJ solution accepted by CBC (better than cutoff)
+  double fjBestObj = DBL_MAX; // best FJ solution found (for display, ignores CBC cutoff)
   double cutoff = model_->getCutoff();
   int solutionsFound = 0;
 
   // Progress reporting: only print the detailed FJ progress table at the root.
   // In the tree, solutions are reported via the B&B progress table (★ line).
-  const bool printProgress = (depth == 0);
-  const double printInterval = 1.0; // seconds
-  double lastPrintTime = model_->getCurrentSeconds();
-  double fjStartTime = lastPrintTime;
-  bool headerPrinted = false;
   int logLevel = model_->messageHandler()->logLevel();
   FILE *fp = model_->messageHandler()->filePointer();
   if (!fp)
     fp = stdout;
+  const bool printProgress = (depth == 0) && (logLevel >= 1);
+  const double printInterval = 1.0; // seconds
+  double lastPrintTime = model_->getCurrentSeconds();
+  double fjStartTime = lastPrintTime;
 
-  auto printHeader = [&]() {
-    if (!headerPrinted && printProgress && logLevel >= 1) {
-      fprintf(fp, "\n  FeasibilityJump progress:\n");
-      fprintf(fp, "  %-9s  %-9s  %-9s  %11s\n",
-        "Effort(M)", "Stall(M)", "Solutions", "BestObj");
-      fprintf(fp, "  %-9s  %-9s  %-9s  %11s\n",
-        "---------", "---------", "---------", "-----------");
-      fflush(fp);
-      headerPrinted = true;
+  bool utf8 = CbcOutput::useUtf8();
+  bool compact = CbcOutput::useCompact();
+
+  // Objective offset: preprocessed model absorbs substituted-variable contributions
+  // into a constant. Subtract OsiObjOffset to show objectives in original-problem space.
+  // (OsiObjOffset convention: original_obj = preprocessed_obj - OsiObjOffset)
+  double objOffset = 0.0;
+  if (model_->solver())
+    model_->solver()->getDblParam(OsiObjOffset, objOffset);
+  objOffset = -objOffset; // flip sign: now add this to get original-space objective
+
+  static const int FJ_W_EFFORT  = 9;
+  static const int FJ_W_STALL   = 9;
+  static const int FJ_W_NSOLS   = 9;
+  static const int FJ_W_BESTOBJ = 11;
+  const CoinTable fjTable({
+    { "Effort(M)", FJ_W_EFFORT  },
+    { "Stall(M)",  FJ_W_STALL   },
+    { "Solutions", FJ_W_NSOLS   },
+    { "BestObj",   FJ_W_BESTOBJ },
+  }, utf8, /*indent=*/2, compact);
+
+  bool headerPrinted = false;
+
+  if (printProgress) {
+    fprintf(fp, "\n%s\n\n", CoinTable::phaseStart("Feasibility Jump", utf8).c_str());
+    fflush(fp);
+  }
+
+  auto openTable = [&]() {
+    if (headerPrinted || !printProgress)
+      return;
+    headerPrinted = true;
+    if (fjTable.compact()) {
+      fprintf(fp, "%s\n", fjTable.headerLine().c_str());
+      fprintf(fp, "%s\n", fjTable.sepLine().c_str());
+    } else {
+      fprintf(fp, "%s\n", fjTable.sepLine(CoinTable::Top).c_str());
+      fprintf(fp, "%s\n", fjTable.headerLine().c_str());
+      fprintf(fp, "%s\n", fjTable.sepLine(CoinTable::Middle).c_str());
     }
+    fflush(fp);
   };
 
   auto printProgressRow = [&](FJStatus &status, bool isSolution) {
-    printHeader();
+    openTable();
+    const char *pfx = isSolution ? (utf8 ? " \xe2\x98\x85" : " *") : "  ";
+    const char *sep = fjTable.colSep();
     double effortM = static_cast< double >(status.totalEffort) / 1.0e6;
     double stallM = static_cast< double >(status.effortSinceLastImprovement) / 1.0e6;
     char solBuf[24];
-    if (bestSol.empty())
-      snprintf(solBuf, sizeof(solBuf), "%11s", "-");
+    if (fjBestObj >= DBL_MAX / 2)
+      snprintf(solBuf, sizeof(solBuf), "%*s", FJ_W_BESTOBJ, "-");
     else
-      snprintf(solBuf, sizeof(solBuf), "%11.2f", bestObj);
-    fprintf(fp, "  %c %7.3f  %9.3f  %9d  %s\n",
-      isSolution ? '*' : ' ', effortM, stallM, solutionsFound, solBuf);
+      snprintf(solBuf, sizeof(solBuf), "%*.2f", FJ_W_BESTOBJ, fjBestObj + objOffset);
+    fprintf(fp, "%s%*.3f%s%*.3f%s%*d%s%s\n",
+      pfx,
+      FJ_W_EFFORT, effortM, sep,
+      FJ_W_STALL,  stallM,  sep,
+      FJ_W_NSOLS, solutionsFound, sep,
+      solBuf);
     fflush(fp);
     lastPrintTime = model_->getCurrentSeconds();
   };
-
-  int64_t callbackCount = 0;
 
   auto callback = [&](FJStatus status) -> CallbackControlFlow {
     double now = model_->getCurrentSeconds();
@@ -308,20 +346,20 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
     if (stallLimit > 0 && status.effortSinceLastImprovement > stallLimit)
       return CallbackControlFlow::Terminate;
 
-    ++callbackCount;
-
     if (status.solution != nullptr) {
       double obj = status.solutionObjectiveValue * solver->getObjSense();
+      if (obj < fjBestObj)
+        fjBestObj = obj;
       if (obj < bestObj && obj < cutoff) {
         bestObj = obj;
         bestSol.assign(status.solution, status.solution + status.numVars);
       }
       ++solutionsFound;
-      if (printProgress && logLevel >= 1)
+      if (printProgress)
         printProgressRow(status, true);
       if (solutionsFound >= maxSolutions_)
         return CallbackControlFlow::Terminate;
-    } else if (printProgress && logLevel >= 1 && (now - lastPrintTime) >= printInterval) {
+    } else if (printProgress && (now - lastPrintTime) >= printInterval) {
       printProgressRow(status, false);
     }
 
@@ -330,10 +368,28 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
 
   fj.solve(initialValues.data(), callback);
 
-  // Print final summary row if header was printed (root only).
-  if (headerPrinted && printProgress && logLevel >= 1) {
-    fprintf(fp, "  (done — %lld callbacks, %.2fs)\n",
-      (long long)callbackCount, model_->getCurrentSeconds() - fjStartTime);
+  // Close table and print phase-end summary (root only).
+  if (printProgress) {
+    if (headerPrinted && !fjTable.compact())
+      fprintf(fp, "%s\n", fjTable.sepLine(CoinTable::Bottom).c_str());
+    double elapsed = model_->getCurrentSeconds() - fjStartTime;
+    char elapStr[32];
+    if (elapsed < 1.0) snprintf(elapStr, sizeof(elapStr), "%.3f", elapsed);
+    else if (elapsed < 10.0) snprintf(elapStr, sizeof(elapStr), "%.2f", elapsed);
+    else if (elapsed < 100.0) snprintf(elapStr, sizeof(elapStr), "%.1f", elapsed);
+    else snprintf(elapStr, sizeof(elapStr), "%.0f", elapsed);
+    char detail[128];
+    if (fjBestObj >= DBL_MAX / 2) {
+      snprintf(detail, sizeof(detail),
+        "Feasibility Jump%sno solution in %ss",
+        CoinTable::dashSep(utf8), elapStr);
+    } else {
+      snprintf(detail, sizeof(detail),
+        "Feasibility Jump%sbest %.6g in %ss (%d solution%s)",
+        CoinTable::dashSep(utf8), fjBestObj + objOffset, elapStr,
+        solutionsFound, solutionsFound == 1 ? "" : "s");
+    }
+    fprintf(fp, "\n%s\n", CoinTable::phaseEnd(detail, utf8).c_str());
     fflush(fp);
   }
 

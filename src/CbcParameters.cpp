@@ -2449,6 +2449,15 @@ void CbcParameters::addCbcSolverIntParams() {
       "Print feasibility pump progress every N passes (0 = disabled).",
       0, 1000000, "", CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::FPUMPSKIPIFFEASIBLE]->setup(
+      "fpumpSkipIfFeasible",
+      "Skip Feasibility Pump if an incumbent solution already exists (0=no, 1=yes).",
+      0, 1,
+      "When set to 1, Feasibility Pump will not run if a feasible integer solution "
+      "has already been found by another heuristic (e.g. Feasibility Jump). "
+      "Default is 0 (always run FPump when enabled).",
+      CoinParam::displayPriorityLow);
+
   parameters_[CbcParam::MAXHOTITS]->setup(
       "hot!StartMaxIts", "Maximum iterations on hot start",
       0, COIN_INT_MAX);

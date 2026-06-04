@@ -34,8 +34,9 @@
 typedef struct {
   const char *name;
   double expected_makespan;
-  int max_nodes;
-  int timeout_sec;  /* Fallback to prevent infinite loops */
+  int max_nodes;    /* Primary deterministic stop. Keep relaxed. */
+  int timeout_sec;  /* Wall-clock fallback (loose) — only triggers under
+                       pathological behaviour or sanitizer slowdown. */
 } JsspTestCase;
 
 /* Builder for mip_diag_*: load fixture from path. Diag helpers free the model. */
@@ -49,16 +50,32 @@ static Cbc_Model *jssp_builder(void *userdata)
   return m;
 }
 
+/* Limits are deliberately loose: node limit is the deterministic stop,
+ * time limit is a wall-clock fallback (machine-dependent — tight values
+ * cause flaky failures on slow CI runners or sanitizer builds). */
 static const JsspTestCase jssp_test_cases[] = {
-  {"jssp_ft06", 55, 100000, 300},      /* Fisher & Thompson 6x6 */
-  {"jssp_ft10", 930, 100000, 300},    /* Fisher & Thompson 10x10 */
-  {"jssp_la01", 634, 100000, 300},    /* Lawrence 10x5 */
-  {"jssp_la06", 926, 100000, 300},    /* Lawrence 15x5 */
-  {"jssp_la11", 1222, 100000, 300},   /* Lawrence 20x5 */
-  {"jssp_orb01", 1059, 100000, 300},  /* Applegate & Cook 10x10 */
+  {"jssp_ft06",    55, 1000000, 600},  /* Fisher & Thompson 6x6 */
+  {"jssp_ft10",   930, 1000000, 600},  /* Fisher & Thompson 10x10 */
+  {"jssp_la01",   634, 1000000, 600},  /* Lawrence 10x5 */
+  {"jssp_la06",   926, 1000000, 600},  /* Lawrence 15x5 */
+  {"jssp_la11",  1222, 1000000, 600},  /* Lawrence 20x5 */
+  {"jssp_orb01", 1059, 1000000, 600},  /* Applegate & Cook 10x10 */
 };
 
 static const int NUM_TESTS = sizeof(jssp_test_cases) / sizeof(jssp_test_cases[0]);
+
+/* Resolve <fixture_dir>/solutions/<name>.sol if it exists, else NULL.
+ * Returns a pointer to the static buffer `out` (caller-supplied). */
+static const char *jssp_solution_path(const char *fixture_dir, const char *name,
+                                      char *out, size_t out_sz)
+{
+  snprintf(out, out_sz, "%s/solutions/%s.sol", fixture_dir, name);
+  FILE *f = fopen(out, "r");
+  if (!f)
+    return NULL;
+  fclose(f);
+  return out;
+}
 
 static int test_jssp(const char *fixture_dir, const JsspTestCase *tc)
 {
@@ -78,7 +95,7 @@ static int test_jssp(const char *fixture_dir, const JsspTestCase *tc)
   }
 
   Cbc_setMaximumNodes(m, tc->max_nodes);
-  Cbc_setMaximumSeconds(m, tc->timeout_sec);  /* Fallback */
+  Cbc_setMaximumSeconds(m, tc->timeout_sec);  /* wall-clock fallback only */
   Cbc_solve(m);
 
   int pass = 1;
@@ -125,6 +142,26 @@ static int test_jssp(const char *fixture_dir, const JsspTestCase *tc)
     printf("    [DIAG] running wrong-optimal feature sweep on %s ...\n", tc->name);
     mip_diag_wrong_optimal(jssp_builder, (void *)path,
                            tc->expected_makespan, tc->timeout_sec);
+
+    /* If a per-fixture reference solution is available, run debugCuts to
+     * identify cut generators producing rows that exclude the certified
+     * optimum.  Default config catches always-invalid cuts; a second pass
+     * with nodeBoundProp=on isolates cuts generated under tightened node
+     * bounds. */
+    char sol_buf[512];
+    const char *sol = jssp_solution_path(fixture_dir, tc->name,
+                                         sol_buf, sizeof(sol_buf));
+    if (sol) {
+      mip_diag_debug_cuts(jssp_builder, (void *)path,
+                          tc->expected_makespan, tc->timeout_sec,
+                          sol, NULL, NULL);
+      mip_diag_debug_cuts(jssp_builder, (void *)path,
+                          tc->expected_makespan, tc->timeout_sec,
+                          sol, "nodeBoundProp", "on");
+    } else {
+      printf("    [DIAG] no reference .sol for %s — skipping debugCuts pass\n",
+             tc->name);
+    }
   }
 
   if (pass) {

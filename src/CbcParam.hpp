@@ -185,6 +185,7 @@ public:
       SINGLETONBOUNDS,
       SOS,
       USESOLUTION,
+      HEURISTICSTATS,
       LASTBOOLPARAM,
 
       // Keyword Parameters

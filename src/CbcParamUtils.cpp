@@ -630,6 +630,10 @@ int pushCbcSolverBoolParam(CoinParam &param) {
     parameters->setUseSolutionMode(mode);
     break;
   }
+  case CbcParam::HEURISTICSTATS: {
+    parameters->setHeuristicStatsMode(mode);
+    break;
+  }
   default:
     break;
   }

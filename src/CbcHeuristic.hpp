@@ -394,6 +394,31 @@ public:
   {
     numIterationLimit_++;
   }
+  /// Set number of infeasible failures directly
+  inline void setNumInfeasible(int value) const
+  {
+    numInfeasible_ = value;
+  }
+  /// Set number of iteration limit failures directly
+  inline void setNumIterationLimit(int value) const
+  {
+    numIterationLimit_ = value;
+  }
+  /// Add an improvement
+  inline void addImprovement(const std::string &imp) const
+  {
+    improvements_.push_back(imp);
+  }
+  /// Get improvements
+  inline const std::vector<std::string> &improvements() const
+  {
+    return improvements_;
+  }
+  /// Clear improvements
+  inline void clearImprovements() const
+  {
+    improvements_.clear();
+  }
   /// Return objective function value with sign corrected
   inline double trueObjValue(double value) const
   {
@@ -508,6 +533,8 @@ protected:
   mutable int numIterationLimit_;
   /// Cumulative sub-MIP nodes solved by this heuristic
   mutable int totalNodesSubMIP_;
+  /// List of improvements made by this heuristic
+  mutable std::vector<std::string> improvements_;
 
 #ifdef JJF_ZERO
   /// Lower bounds of last node where the heuristic found a solution

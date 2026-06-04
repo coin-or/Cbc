@@ -7818,6 +7818,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         case CbcParam::SOS:
           doSOS = mode;
           break;
+        case CbcParam::HEURISTICSTATS:
+          model_.setPrintHeuristicsSummary(mode != 0);
+          break;
         case CbcParam::CLQSTRENGTHENING:
           clqstrMode = field;
           break;

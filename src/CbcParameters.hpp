@@ -1819,6 +1819,16 @@ public:
     useSolutionMode_ = mode;
   }
 
+  /*! \brief Get heuristic stats mode */
+  inline CbcParameters::OnOffMode getHeuristicStatsMode() {
+    return (heuristicStatsMode_);
+  }
+
+  /*! \brief Set heuristic stats mode */
+  inline void setHeuristicStatsMode(CbcParameters::OnOffMode mode) {
+    heuristicStatsMode_ = mode;
+  }
+
   //@}
 
   /*! \name Status Functions
@@ -2562,6 +2572,7 @@ private:
   CbcParameters::OnOffMode preProcNamesMode_;
   CbcParameters::OnOffMode SOSMode_;
   CbcParameters::OnOffMode useSolutionMode_;
+  CbcParameters::OnOffMode heuristicStatsMode_;
 
   //@}
 

@@ -492,6 +492,7 @@ CbcParameters &CbcParameters::operator=(const CbcParameters &rhs)
   preProcNamesMode_ = rhs.preProcNamesMode_;
   SOSMode_ = rhs.SOSMode_;
   useSolutionMode_ = rhs.useSolutionMode_;
+  heuristicStatsMode_ = rhs.heuristicStatsMode_;
   cur_lang_ = rhs.cur_lang_;
   logLvl_ = rhs.logLvl_;
   lpLogLvl_ = rhs.lpLogLvl_;
@@ -723,6 +724,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::PREPROCNAMES]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::DOHEURISTIC]->setTopic("Heuristics");
   parameters_[CbcParam::USESOLUTION]->setTopic("Heuristics");
+  parameters_[CbcParam::HEURISTICSTATS]->setTopic("Output");
   parameters_[CbcParam::MESSAGES]->setTopic("Output");
   parameters_[CbcParam::ERRORSALLOWED]->setTopic("I/O");
 
@@ -886,6 +888,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
      parameters_[CbcParam::DOHEURISTIC]->setDefault("off");
+     parameters_[CbcParam::HEURISTICSTATS]->setDefault("off");
      parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
      parameters_[CbcParam::MESSAGES]->setDefault("off");
      parameters_[CbcParam::PREPROCNAMES]->setDefault("on");
@@ -2757,6 +2760,10 @@ void CbcParameters::addCbcSolverBoolParams() {
       "sos!Options", "Whether to use SOS from AMPL",
       "Normally if AMPL says there are SOS variables they should be used, but "
       "sometimes they should be turned off - this does so.");
+
+  parameters_[CbcParam::HEURISTICSTATS]->setup(
+      "heuristicStats", "Whether to print heuristic statistics at the end of the solve",
+      "This switches the printing of heuristic statistics summary at the end of the solve on or off.");
 
   parameters_[CbcParam::SINGLETONBOUNDS]->setup(
       "singleton!Bounds",

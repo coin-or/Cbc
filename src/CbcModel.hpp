@@ -2800,6 +2800,16 @@ public:
   {
     return nodeBoundProp_;
   }
+  /// Set whether to print heuristic statistics summary at the end of solve
+  inline void setPrintHeuristicsSummary(bool value)
+  {
+    printHeuristicsSummary_ = value;
+  }
+  /// Get whether to print heuristic statistics summary at the end of solve
+  inline bool printHeuristicsSummary() const
+  {
+    return printHeuristicsSummary_;
+  }
   /// Set maximum depth for node bound propagation
   inline void setNodeBoundPropMaxDepth(int value)
   {
@@ -3309,6 +3319,8 @@ private:
   int printFrequency_;
   /// Print frequency in time
   double secsPrintFrequency_;
+  /// Whether to print heuristic statistics
+  bool printHeuristicsSummary_;
   /// Last time when progress message was printed
   double lastSecPrintProgress_;
   /// Number of cut generators

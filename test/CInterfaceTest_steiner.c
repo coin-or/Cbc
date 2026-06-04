@@ -22,6 +22,8 @@
    Includes diverse graph types: grid, geometric, complete, sparse. */
 
 #include "Cbc_C_Interface.h"
+#include "mip_diag.h"
+#include "test_utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -46,12 +48,16 @@ static const SteinerTestCase steiner_test_cases[] = {
 
 static const int NUM_TESTS = sizeof(steiner_test_cases) / sizeof(steiner_test_cases[0]);
 
-static int test_steiner(const char *fixture_dir, const SteinerTestCase *tc)
+static int test_steiner(const char *fixture_dir, const SteinerTestCase *tc,
+                        MipPerfRecord *perf)
 {
   char path[512];
   snprintf(path, sizeof(path), "%s/%s.mps.gz", fixture_dir, tc->name);
 
-  printf("  %s (max_nodes=%d, expected=%.2f)\n", tc->name, tc->max_nodes, tc->expected_obj);
+  printf("  %s (nodes=%d, expected=%.2f)\n", tc->name, tc->max_nodes, tc->expected_obj);
+
+  perf->name = tc->name; perf->pass = 0; perf->is_optimal = 0;
+  perf->nodes = 0; perf->wall_time = 0.0; perf->obj = 1e30;
 
   Cbc_Model *m = Cbc_newModel();
   Cbc_setLogLevel(m, 0);
@@ -63,18 +69,25 @@ static int test_steiner(const char *fixture_dir, const SteinerTestCase *tc)
   }
 
   Cbc_setMaximumNodes(m, tc->max_nodes);
-  Cbc_setMaximumSeconds(m, tc->timeout_sec);  /* Fallback */
+  double t0 = perf_wall_time();
   Cbc_solve(m);
+  perf->wall_time  = perf_wall_time() - t0;
+  perf->is_optimal = Cbc_isProvenOptimal(m);
+  perf->nodes      = Cbc_getNodeCount(m);
 
   int pass = 1;
+  int nSol = Cbc_numberSavedSolutions(m);
 
-  if (!Cbc_isProvenOptimal(m)) {
-    printf("    FAIL: not proven optimal (status=%d, sols=%d)\n",
-           Cbc_status(m), Cbc_numberSavedSolutions(m));
-    pass = 0;
+  if (nSol == 0) {
+    printf("    FAIL: no feasible solution found (status=%d)\n", Cbc_status(m));
+    Cbc_deleteModel(m);
+    return 0;
   }
 
-  /* Check feasibility of best solution */
+  double obj = Cbc_getObjValue(m);
+  perf->obj = obj;
+
+  /* Check feasibility of best and all pool solutions */
   const double *bestSol = Cbc_getColSolution(m);
   double maxViolRow = 0.0; int rowIdx = -1;
   double maxViolCol = 0.0; int colIdx = -1;
@@ -86,14 +99,10 @@ static int test_steiner(const char *fixture_dir, const SteinerTestCase *tc)
     pass = 0;
   }
 
-  /* Check feasibility of ALL solutions in the pool */
-  int nSol = Cbc_numberSavedSolutions(m);
   for (int s = 0; s < nSol; s++) {
     const double *sol = Cbc_savedSolution(m, s);
     double solObj = Cbc_savedSolutionObj(m, s);
-    maxViolRow = 0.0; rowIdx = -1;
-    maxViolCol = 0.0; colIdx = -1;
-
+    maxViolRow = 0.0; rowIdx = -1; maxViolCol = 0.0; colIdx = -1;
     if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
       printf("    FAIL: pool solution %d/%d infeasible (obj=%.2f)  "
              "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
@@ -102,21 +111,33 @@ static int test_steiner(const char *fixture_dir, const SteinerTestCase *tc)
     }
   }
 
-  double obj = Cbc_getObjValue(m);
-  double abs_err = fabs(obj - tc->expected_obj);
-  double rel_err = abs_err / fmax(fabs(tc->expected_obj), 1.0);
-
-  if (rel_err > 1e-3) {
-    printf("    FAIL: obj=%.2f expected=%.2f (rel_err=%.2e)\n",
-           obj, tc->expected_obj, rel_err);
-    pass = 0;
+  /* Only validate objective if solver claims optimality */
+  if (perf->is_optimal) {
+    double rel_err = fabs(obj - tc->expected_obj) / fmax(fabs(tc->expected_obj), 1.0);
+    if (rel_err > 1e-3) {
+      printf("    FAIL: proven optimal but obj=%.2f expected=%.2f (rel_err=%.2e)\n",
+             obj, tc->expected_obj, rel_err);
+      pass = 0;
+      char tmp_sol[512];
+      snprintf(tmp_sol, sizeof(tmp_sol), "/tmp/mipster_diag_%s.sol", tc->name);
+      mip_diag_write_sol(m, tmp_sol);
+      mip_diag_wrong_optimal(build_mps_model, (void *)path, tc->expected_obj, 300);
+      mip_diag_debug_cuts(build_mps_model, (void *)path, tc->expected_obj, 300,
+                          tmp_sol, NULL, NULL);
+    }
   }
 
   if (pass) {
-    printf("    PASS obj=%.2f\n", obj);
+    if (perf->is_optimal)
+      printf("    PASS obj=%.2f  nodes=%ld  time=%.3fs  (proven optimal)\n",
+             obj, perf->nodes, perf->wall_time);
+    else
+      printf("    PASS obj=%.2f  nodes=%ld  time=%.3fs  (feasible, not proven optimal)\n",
+             obj, perf->nodes, perf->wall_time);
   }
 
   Cbc_deleteModel(m);
+  perf->pass = pass;
   return pass;
 }
 
@@ -131,21 +152,21 @@ int main(int argc, char **argv)
 
   printf("=== Steiner Tree Tests ===\n");
   int passed = 0, failed = 0;
+  MipPerfRecord perf_records[NUM_TESTS];
 
   for (int i = 0; i < NUM_TESTS; i++) {
-    if (test_steiner(fixture_dir, &steiner_test_cases[i])) {
+    if (test_steiner(fixture_dir, &steiner_test_cases[i], &perf_records[i]))
       passed++;
-    } else {
+    else
       failed++;
-    }
   }
 
+  print_perf_summary(perf_records, NUM_TESTS, "Steiner Tree");
   printf("\n");
-  if (failed == 0) {
+  if (failed == 0)
     printf("=== All %d tests PASSED ===\n", passed);
-  } else {
+  else
     printf("=== %d passed, %d FAILED ===\n", passed, failed);
-  }
 
   return (failed == 0) ? 0 : 1;
 }

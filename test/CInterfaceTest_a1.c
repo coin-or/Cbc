@@ -22,6 +22,7 @@
 
 #include "Cbc_C_Interface.h"
 
+#include "mip_diag.h"
 #include "test_utils.h"
 #define A1_MPS fixture_path("A-1.mps.gz")
 
@@ -65,6 +66,13 @@ static Cbc_Model *load_model(int log_level)
     return NULL;
   }
   return m;
+}
+
+/* Builder for mip_diag: loads a fresh model (no solve params) */
+static Cbc_Model *build_a1_for_diag(void *ud)
+{
+  (void)ud;
+  return load_model(0);
 }
 
 /* Saved row data for later re-insertion */
@@ -227,8 +235,16 @@ static void test_mip(void)
 
   /* Only require correct objective if solver claims optimality */
   if (is_proven_optimal) {
-    CHECK(fabs(obj - A1_MIP_OPT) < MIP_TOL,
-          "MIP: optimal value matches known optimum");
+    int obj_ok = (fabs(obj - A1_MIP_OPT) < MIP_TOL);
+    CHECK(obj_ok, "MIP: optimal value matches known optimum");
+    if (!obj_ok) {
+      char tmp_sol[256];
+      snprintf(tmp_sol, sizeof(tmp_sol), "/tmp/mipster_diag_A-1.sol");
+      mip_diag_write_sol(m, tmp_sol);
+      mip_diag_wrong_optimal(build_a1_for_diag, NULL, A1_MIP_OPT, 300);
+      mip_diag_debug_cuts(build_a1_for_diag, NULL, A1_MIP_OPT, 300,
+                          tmp_sol, NULL, NULL);
+    }
   }
 
   int fails = validate_all_saved_solutions(m, A1_MIP_OPT, MIP_TOL, "A-1");

@@ -91,6 +91,29 @@ static const MipDiagConfig MIP_DIAG_CONFIGS[] = {
 #define MIP_N_DIAG_CONFIGS \
   ((int)(sizeof(MIP_DIAG_CONFIGS) / sizeof(MIP_DIAG_CONFIGS[0])))
 
+/* Write the current best solution of m to path in mipstart-compatible format.
+ * Returns 1 on success, 0 on failure. */
+static int mip_diag_write_sol(Cbc_Model *m, const char *path)
+{
+  FILE *f = fopen(path, "w");
+  if (!f) {
+    fprintf(stderr, "[DIAG] cannot write solution to %s\n", path);
+    return 0;
+  }
+  int n = Cbc_getNumCols(m);
+  double obj = Cbc_getObjValue(m);
+  const double *sol = Cbc_getColSolution(m);
+  const double *objCoef = Cbc_getObjCoefficients(m);
+  fprintf(f, "MIP solution - objective value %.10g\n", obj);
+  char colname[256];
+  for (int i = 0; i < n; i++) {
+    Cbc_getColName(m, i, colname, sizeof(colname));
+    fprintf(f, "%6d %-24s %24.15g %24.15g\n", i, colname, sol[i], objCoef[i]);
+  }
+  fclose(f);
+  return 1;
+}
+
 /* Run all diagnostic configurations to locate the culprit feature.
  *
  * builder       : creates a fresh Cbc_Model (model structure only — no
@@ -98,17 +121,16 @@ static const MipDiagConfig MIP_DIAG_CONFIGS[] = {
  * userdata      : passed verbatim to builder.
  * certified_opt : known-correct MIP optimum.
  * time_limit_sec: per-run wall-clock limit in seconds (0 = no limit).
- * node_limit    : per-run B&B node limit (0 = no limit).
  */
 static void mip_diag_wrong_optimal(
     Cbc_Model *(*builder)(void *userdata),
     void *userdata,
-    int certified_opt,
+    double certified_opt,
     int time_limit_sec)
 {
   printf("\n  [DIAG] Wrong optimal — running %d diagnostic configurations\n",
          MIP_N_DIAG_CONFIGS);
-  printf("  [DIAG] certified_opt=%d  time_limit=%ds  (no node limit)\n\n",
+  printf("  [DIAG] certified_opt=%.6g  time_limit=%ds  (no node limit)\n\n",
          certified_opt, time_limit_sec);
 
   for (int k = 0; k < MIP_N_DIAG_CONFIGS; k++) {
@@ -130,6 +152,11 @@ static void mip_diag_wrong_optimal(
     fflush(stdout);
 
     Cbc_Model *m = builder(userdata);
+    if (!m) {
+      printf("  [DIAG %2d/%d] %-22s  → builder returned NULL, skipping\n",
+             k + 1, MIP_N_DIAG_CONFIGS, cfg->label);
+      continue;
+    }
     Cbc_setLogLevel(m, 0);
 
     if (time_limit_sec > 0)
@@ -148,17 +175,19 @@ static void mip_diag_wrong_optimal(
     double bound   = Cbc_getBestPossibleObjValue(m);
 
     if (is_proven) {
-      if (fabs(obj - (double)certified_opt) > 1.0)
-        printf("  [DIAG %2d/%d] %-22s  → WRONG opt=%.0f (expected %d)"
+      double rel_err = fabs(obj - certified_opt) / fmax(fabs(certified_opt), 1.0);
+      if (rel_err > 1e-3)
+        printf("  [DIAG %2d/%d] %-22s  → WRONG opt=%.6g (expected %.6g)"
                " — BUG ALSO PRESENT\n",
                k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, certified_opt);
       else
-        printf("  [DIAG %2d/%d] %-22s  → OK  obj=%.0f certified=%d\n",
+        printf("  [DIAG %2d/%d] %-22s  → OK  obj=%.6g certified=%.6g\n",
                k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, certified_opt);
     } else if (nsaved > 0) {
       double gap = (obj > 1e-10) ? 100.0 * (obj - bound) / obj : 0.0;
-      int correct = (fabs(obj - (double)certified_opt) <= 1.0);
-      printf("  [DIAG %2d/%d] %-22s  → not proven  obj=%.0f  bound=%.0f"
+      double rel_err = fabs(obj - certified_opt) / fmax(fabs(certified_opt), 1.0);
+      int correct = (rel_err <= 1e-3);
+      printf("  [DIAG %2d/%d] %-22s  → not proven  obj=%.6g  bound=%.6g"
              "  gap=%.1f%%  (%s)%s\n",
              k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, bound, gap,
              time_hit ? "time limit" : node_hit ? "node limit" : "stopped",
@@ -198,7 +227,7 @@ static void mip_diag_wrong_optimal(
 static void mip_diag_debug_cuts(
     Cbc_Model *(*builder)(void *userdata),
     void *userdata,
-    int certified_opt,
+    double certified_opt,
     int time_limit_sec,
     const char *ref_sol_path,
     const char *extra_param,
@@ -223,6 +252,10 @@ static void mip_diag_debug_cuts(
   fflush(stdout);
 
   Cbc_Model *m = builder(userdata);
+  if (!m) {
+    printf("  [DIAG] debugCuts: builder returned NULL, skipping.\n");
+    return;
+  }
   /* Keep log level 1 so OsiRowCutDebugger messages reach stdout. */
   Cbc_setLogLevel(m, 1);
 
@@ -240,7 +273,7 @@ static void mip_diag_debug_cuts(
   int is_proven = Cbc_isProvenOptimal(m);
   double obj    = Cbc_getObjValue(m);
 
-  printf("\n  [DIAG] debugCuts result: %s  obj=%.0f  (certified=%d)\n",
+  printf("\n  [DIAG] debugCuts result: %s  obj=%.6g  (certified=%.6g)\n",
          is_proven ? "proven" : "not proven", obj, certified_opt);
   fflush(stdout);
 

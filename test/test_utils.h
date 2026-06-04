@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "Cbc_C_Interface.h"
 
@@ -113,6 +114,83 @@ static int validate_all_saved_solutions(
   }
 
   return failures;
+}
+
+/* ------------------------------------------------------------------ */
+/* Performance measurement                                              */
+/* ------------------------------------------------------------------ */
+
+typedef struct {
+  const char *name;
+  int         pass;
+  int         is_optimal;
+  long        nodes;
+  double      wall_time;  /* solve wall-clock seconds */
+  double      obj;        /* displayed objective (after any sign flip); 1e30 = no solution */
+} MipPerfRecord;
+
+static double perf_wall_time(void)
+{
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (double)ts.tv_sec + ts.tv_nsec * 1e-9;
+}
+
+/* Print a per-instance table + aggregate summary.
+ * title: short label, e.g. "Set Covering". */
+static void print_perf_summary(const MipPerfRecord *recs, int n, const char *title)
+{
+  printf("\n=== %s — Performance Summary ===\n", title);
+  printf("  %-42s %7s  %8s  %12s  %s\n",
+         "Instance", "Nodes", "Time(s)", "Obj", "Status");
+  printf("  %-42s %7s  %8s  %12s  %s\n",
+         "------------------------------------------", "-------", "--------",
+         "------------", "----------");
+
+  long   total_nodes = 0;
+  double total_time  = 0.0;
+  int    n_passed = 0, n_failed = 0, n_optimal = 0;
+
+  for (int i = 0; i < n; i++) {
+    const MipPerfRecord *r = &recs[i];
+    const char *status = !r->pass    ? "FAIL"    :
+                         r->is_optimal ? "optimal" : "feasible";
+    if (r->obj < 1e29)
+      printf("  %-42s %7ld  %8.3f  %12.2f  %s\n",
+             r->name, r->nodes, r->wall_time, r->obj, status);
+    else
+      printf("  %-42s %7ld  %8.3f  %12s  %s\n",
+             r->name, r->nodes, r->wall_time, "-", status);
+    total_nodes += r->nodes;
+    total_time  += r->wall_time;
+    if (r->pass) n_passed++; else n_failed++;
+    if (r->is_optimal) n_optimal++;
+  }
+
+  printf("  %-42s %7s  %8s  %12s  %s\n",
+         "------------------------------------------", "-------", "--------",
+         "------------", "----------");
+  printf("  Total: %d instances  %d passed  %d failed  %d proven optimal\n",
+         n, n_passed, n_failed, n_optimal);
+  if (total_nodes > 0 && total_time > 1e-9)
+    printf("  Nodes: %ld  Time: %.3fs  Throughput: %.0f nodes/s  [machine index]\n",
+           total_nodes, total_time, (double)total_nodes / total_time);
+  else
+    printf("  Nodes: %ld  Time: %.3fs  [all solved at root]\n",
+           total_nodes, total_time);
+}
+
+/* Builder for mip_diag: loads a model from an MPS file.
+ * userdata must be a (const char *) path to the .mps or .mps.gz file. */
+static Cbc_Model *build_mps_model(void *userdata)
+{
+  const char *path = (const char *)userdata;
+  Cbc_Model *m = Cbc_newModel();
+  if (Cbc_readMps(m, path) != 0) {
+    Cbc_deleteModel(m);
+    return NULL;
+  }
+  return m;
 }
 
 #endif /* MIPSTER_TEST_UTILS_H */

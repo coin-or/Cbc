@@ -6644,16 +6644,15 @@ int CbcNode::chooseClpBranch(CbcModel *model,
             }
           }
         }
-        simplex->writeMps("bad8.mps", 2);
-        bool gotSol = model->feasibleSolution(numInf, numInf2);
-        if (!gotSol)
-          assert(gotSol);
+        gotSol = model->feasibleSolution(numInf, numInf2);
       }
-      model->setBestSolution(CBC_STRONGSOL,
-        newObjectiveValue,
-        solver->getColSolution());
-      model->setLastHeuristic(NULL);
-      model->incrementUsed(solver->getColSolution());
+      if (gotSol) {
+        model->setBestSolution(CBC_STRONGSOL,
+          newObjectiveValue,
+          solver->getColSolution());
+        model->setLastHeuristic(NULL);
+        model->incrementUsed(solver->getColSolution());
+      }
     }
   }
   // restore bounds - but set as cut

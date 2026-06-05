@@ -157,19 +157,38 @@ cp "${BUILD_DIR}/src/.libs/mipster" "${INSTALL_DIR}/bin/mipster"
 echo "    bin/mipster: $(du -sh "${INSTALL_DIR}/bin/mipster" | cut -f1)"
 
 # ── Shared library ────────────────────────────────────────────────────────────
-cp -P "${BUILD_DIR}/install/lib"/libmipster*.dylib "${INSTALL_DIR}/lib/" 2>/dev/null || true
+cp -P "${BUILD_DIR}/install/lib"/libmipster*.dylib "${INSTALL_DIR}/lib/"
 
-real_dylib=$(find "${INSTALL_DIR}/lib" -name 'libmipster.*.dylib' ! -type l | head -1)
-if [ -n "${real_dylib}" ]; then
-  install_name_tool -id "@loader_path/$(basename "${real_dylib}")" "${real_dylib}"
-  strip -x "${real_dylib}"
+# Restrict the search to ${INSTALL_DIR}/lib (not lib/dbg) and process EVERY
+# matching real dylib, not just the first one — `find ... | head -1` previously
+# picked up lib/dbg/libmipster.0.dylib by chance, leaving the release dylib
+# with its build-time install name (/tmp/mipster-build-arm64/install/lib/...).
+real_dylibs=$(find "${INSTALL_DIR}/lib" -maxdepth 1 -name 'libmipster*.dylib' ! -type l)
+if [ -z "${real_dylibs}" ]; then
+  echo "ERROR: no libmipster*.dylib found under ${INSTALL_DIR}/lib/" >&2
+  ls -la "${INSTALL_DIR}/lib/" >&2
+  exit 1
 fi
+while IFS= read -r f; do
+  install_name_tool -id "@loader_path/$(basename "${f}")" "${f}"
+  strip -x "${f}"
+done <<< "${real_dylibs}"
+
+# Verify install name was rewritten (catches future regressions).
+real_dylib=$(echo "${real_dylibs}" | head -1)
+install_id=$(otool -D "${real_dylib}" | tail -1)
+case "${install_id}" in
+  @loader_path/*|@rpath/*|@executable_path/*) ;;
+  *)
+    echo "ERROR: install name of ${real_dylib} is '${install_id}'," \
+         "expected @loader_path/* — install_name_tool failed silently." >&2
+    exit 1
+    ;;
+esac
 
 echo "    Shared lib deps:"
-if [ -n "${real_dylib}" ]; then
-  otool -L "${real_dylib}" | grep -v "libmipster\|/usr/lib\|/System\|^${INSTALL_DIR}" \
-    || echo "      (none — only system libs)"
-fi
+otool -L "${real_dylib}" | grep -v "libmipster\|/usr/lib\|/System\|^${INSTALL_DIR}" \
+  || echo "      (none — only system libs)"
 
 # ── Headers ───────────────────────────────────────────────────────────────────
 cp -r "${BUILD_DIR}/install/include/mipster" "${INSTALL_DIR}/include/"
@@ -210,6 +229,17 @@ for f in mipster-tests.desktop mipster-tests-debug.desktop; do
   [ -f "${SRC_DIR}/test/${f}" ] && \
     cp "${SRC_DIR}/test/${f}" "${INSTALL_DIR}/share/applications/" && echo "    ${f}"
 done
+
+# ── Third-party licenses ──────────────────────────────────────────────────────
+# macOS uses Apple's system Accelerate framework (not bundled), but we still
+# ship the upstream MIPster LICENSE and a third-party note for consistency.
+echo ""
+echo "==> Installing third-party license texts..."
+mkdir -p "${INSTALL_DIR}/share/doc/mipster"
+cp "${SRC_DIR}/.github/scripts/THIRD_PARTY_LICENSES.md" \
+   "${INSTALL_DIR}/share/doc/mipster/THIRD_PARTY_LICENSES.md"
+[ -f "${SRC_DIR}/LICENSE" ] && cp "${SRC_DIR}/LICENSE" "${INSTALL_DIR}/share/doc/mipster/LICENSE"
+echo "    THIRD_PARTY_LICENSES.md, LICENSE"
 
 # ── Package ───────────────────────────────────────────────────────────────────
 echo ""

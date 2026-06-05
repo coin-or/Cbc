@@ -84,12 +84,28 @@ build_debug_variant() {
   echo "    bin/mipster-dbg.exe: $(du -sh "${INSTALL_DIR}/bin/mipster-dbg.exe" | cut -f1)"
 
   # ── Debug DLL ─────────────────────────────────────────────────────────────
-  find "${build_dir}/install/bin" -name 'libmipster*.dll' | while read -r f; do
+  # libtool may install the DLL into either ${prefix}/bin or leave it in
+  # ${build_dir}/src/.libs/. Check both locations and fail loudly if neither
+  # has a libmipster*.dll — silent failures here previously shipped tarballs
+  # with no actual DLL, only the import .dll.a stub.
+  local dlls
+  dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
+           -maxdepth 2 -name 'libmipster*.dll' 2>/dev/null || true)
+  if [ -z "${dlls}" ]; then
+    echo "ERROR: no libmipster*.dll found under ${build_dir}/install/bin or" \
+         "${build_dir}/src/.libs — debug build did not produce a DLL." >&2
+    echo "Inventory of build_dir/install/bin:" >&2
+    ls -la "${build_dir}/install/bin/" >&2 || true
+    echo "Inventory of build_dir/src/.libs:" >&2
+    ls -la "${build_dir}/src/.libs/" >&2 || true
+    exit 1
+  fi
+  while IFS= read -r f; do
     # No strip — keep debug symbols.
     local base
     base=$(basename "${f}")
     cp "${f}" "${INSTALL_DIR}/bin/${base%.dll}-${name}.dll"
-  done
+  done <<< "${dlls}"
   echo "    bin/libmipster-${name}.dll: done"
 }
 
@@ -158,19 +174,44 @@ build_variant() {
   # ── Shared library (.dll) ─────────────────────────────────────────────────
   # libtool installs DLLs into $prefix/bin on Windows. Copy libmipster-N.dll
   # alongside the executables so they are found without any PATH change.
-  find "${build_dir}/install/bin" -name 'libmipster*.dll' | while read -r f; do
+  # Also check ${build_dir}/src/.libs as a fallback for libtool variants
+  # that don't install the DLL.
+  local dlls
+  dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
+           -maxdepth 2 -name 'libmipster*.dll' 2>/dev/null || true)
+  if [ -z "${dlls}" ]; then
+    echo "ERROR: no libmipster*.dll found under ${build_dir}/install/bin or" \
+         "${build_dir}/src/.libs — variant '${name}' did not produce a DLL." >&2
+    echo "Inventory of build_dir/install/bin:" >&2
+    ls -la "${build_dir}/install/bin/" >&2 || true
+    echo "Inventory of build_dir/src/.libs:" >&2
+    ls -la "${build_dir}/src/.libs/" >&2 || true
+    exit 1
+  fi
+  while IFS= read -r f; do
     strip --strip-unneeded "${f}" 2>/dev/null || true
     # Suffix dll with variant name to avoid collision between generic/avx2 builds
     local base
     base=$(basename "${f}")
     cp "${f}" "${INSTALL_DIR}/bin/${base%.dll}-${name}.dll"
-  done
-  # Also copy the import lib (.dll.a) to lib/ for developers linking against the DLL
-  mkdir -p "${INSTALL_DIR}/lib"
-  find "${build_dir}/install/lib" -name 'libmipster*.dll.a' | while read -r f; do
-    cp "${f}" "${INSTALL_DIR}/lib/"
-  done
+  done <<< "${dlls}"
+  # Also copy the import lib (.dll.a) to lib/<variant>/ for developers
+  # linking against the DLL. Each variant gets its own subdir to avoid
+  # collisions and to mirror Linux/macOS layout.
+  local variant_libdir="${INSTALL_DIR}/lib/${name}"
+  mkdir -p "${variant_libdir}"
+  local import_libs
+  import_libs=$(find "${build_dir}/install/lib" "${build_dir}/src/.libs" \
+                  -maxdepth 2 -name 'libmipster*.dll.a' 2>/dev/null || true)
+  if [ -z "${import_libs}" ]; then
+    echo "ERROR: no libmipster*.dll.a (import lib) found for variant '${name}'." >&2
+    exit 1
+  fi
+  while IFS= read -r f; do
+    cp "${f}" "${variant_libdir}/"
+  done <<< "${import_libs}"
   echo "    bin/libmipster-${name}.dll: done"
+  echo "    lib/${name}/libmipster.dll.a: done"
 }
 
 build_debug_variant
@@ -299,6 +340,49 @@ else
   echo "    Warning: installer not found at expected path, searching..."
   find "${SRC_DIR}/dist" -name '*.exe' | head -5
 fi
+
+# ── Pre-package verification ──────────────────────────────────────────────────
+# Catch silent breakage early: assert the install tree contains everything
+# the wheel and end-users will rely on.
+echo ""
+echo "==> Verifying install tree..."
+verify_fail=0
+for required in \
+    "${INSTALL_DIR}/bin/mipster.exe" \
+    "${INSTALL_DIR}/bin/mipster-generic.exe" \
+    "${INSTALL_DIR}/bin/mipster-avx2.exe" \
+    "${INSTALL_DIR}/include/mipster/Cbc_C_Interface.h"
+do
+  if [ ! -f "${required}" ]; then
+    echo "  MISSING: ${required}" >&2
+    verify_fail=1
+  fi
+done
+# Per-variant DLL must be present in bin/ (this is what the wheel ships)
+for variant in generic avx2 dbg; do
+  if ! ls "${INSTALL_DIR}/bin"/libmipster-*-${variant}.dll >/dev/null 2>&1; then
+    echo "  MISSING: ${INSTALL_DIR}/bin/libmipster-*-${variant}.dll" >&2
+    verify_fail=1
+  fi
+done
+if [ "${verify_fail}" -ne 0 ]; then
+  echo "ERROR: install tree verification failed — refusing to package." >&2
+  echo "Full inventory:" >&2
+  find "${INSTALL_DIR}" -maxdepth 4 -type f >&2
+  exit 1
+fi
+echo "    OK"
+
+# ── Third-party licenses ──────────────────────────────────────────────────────
+# Windows binaries embed libgcc/libstdc++/libwinpthread statically (GCC RLE
+# applies). Ship the upstream MIPster LICENSE and a third-party note.
+echo ""
+echo "==> Installing third-party license texts..."
+mkdir -p "${INSTALL_DIR}/share/doc/mipster"
+cp "${SRC_DIR}/.github/scripts/THIRD_PARTY_LICENSES.md" \
+   "${INSTALL_DIR}/share/doc/mipster/THIRD_PARTY_LICENSES.md"
+[ -f "${SRC_DIR}/LICENSE" ] && cp "${SRC_DIR}/LICENSE" "${INSTALL_DIR}/share/doc/mipster/LICENSE"
+echo "    THIRD_PARTY_LICENSES.md, LICENSE"
 
 # ── Package as zip ────────────────────────────────────────────────────────────
 echo ""

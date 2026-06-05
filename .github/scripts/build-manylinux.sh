@@ -209,6 +209,11 @@ build_variant() {
   # ── Static binary ───────────────────────────────────────────────────────────
   strip "${build_dir}/src/.libs/mipster"
   cp "${build_dir}/src/.libs/mipster" "${INSTALL_DIR}/bin/mipster-${name}"
+  # Set RPATH to $ORIGIN/../lib/<variant> so libmipster.so + bundled deps are
+  # found relative to the binary on the user's machine. Without this the
+  # binary retains its build-time RUNPATH (/tmp/mipster-build-*/install/lib)
+  # and fails to start anywhere except the build container.
+  patchelf --set-rpath "\$ORIGIN/../lib/${name}" "${INSTALL_DIR}/bin/mipster-${name}"
   echo "    bin/mipster-${name}: $(du -sh "${INSTALL_DIR}/bin/mipster-${name}" | cut -f1)"
 
   # ── Shared library ──────────────────────────────────────────────────────────
@@ -220,15 +225,56 @@ build_variant() {
   # Strip the real .so (not symlinks)
   find "${libdir}" -name 'libmipster.so.*.*' ! -type l | xargs strip --strip-unneeded
 
-  # Set RPATH to $ORIGIN so bundled deps (if any) are found next to the .so
+  # Set RPATH to $ORIGIN so bundled deps (next step) are found next to the .so
   find "${libdir}" -name 'libmipster.so.*.*' ! -type l | \
     xargs -I{} patchelf --set-rpath '$ORIGIN' {}
 
-  # Verify no unexpected external deps (glibc + libm + libpthread are fine)
-  echo "    Shared lib deps:"
-  find "${libdir}" -name 'libmipster.so.*.*' ! -type l | \
-    xargs ldd | grep -v "linux-vdso\|libm\|libc\.so\|libpthread\|libdl\|/lib64/ld\|=>" | \
-    grep "=>" || echo "      (none — fully self-contained)"
+  # ── Bundle non-system runtime deps ──────────────────────────────────────────
+  # Copy any NEEDED .so that isn't a baseline glibc/libm/libpthread/libdl/libz
+  # into lib/<variant>/ so the wheel works on minimal containers (Alpine
+  # base + glibc, slim Debian, etc.). All bundled libs must permit
+  # redistribution; we currently expect libgfortran (GCC runtime exception),
+  # libquadmath (same), libgomp (same), libbz2 (BSD).
+  local main_so
+  main_so=$(find "${libdir}" -name 'libmipster.so.*.*' ! -type l | head -1)
+  echo "    Bundling non-system NEEDED libs:"
+  ldd "${main_so}" | awk '/=>/{print $1, $3}' | while read -r soname sopath; do
+    case "${soname}" in
+      linux-vdso.so*|libm.so*|libc.so*|libpthread.so*|libdl.so*|libz.so*|ld-linux*|librt.so*)
+        ;;
+      libgfortran.so*|libquadmath.so*|libgomp.so*|libbz2.so*|libstdc++.so*|libgcc_s.so*)
+        if [ -f "${sopath}" ] && [ ! -e "${libdir}/${soname}" ]; then
+          cp -L "${sopath}" "${libdir}/${soname}"
+          patchelf --set-rpath '$ORIGIN' "${libdir}/${soname}" 2>/dev/null || true
+          echo "      bundled ${soname} ($(du -sh "${libdir}/${soname}" | cut -f1))"
+        fi
+        ;;
+      *)
+        echo "      WARNING: unbundled non-system dep: ${soname} → ${sopath}" >&2
+        ;;
+    esac
+  done
+
+  # Verify no remaining non-bundled non-system deps after RPATH lookup
+  echo "    Final shared lib deps (post-bundle):"
+  if ldd "${main_so}" | awk '/=>/{print $1, $3}' | \
+       awk '{print $2}' | grep -vE "^(/lib|/usr/lib|/lib64|/usr/lib64|linux-vdso)" | \
+       grep -v "^${libdir}/" | grep -v "^$" | grep .; then
+    echo "WARNING: libmipster.so still references libs outside ${libdir}" >&2
+  else
+    echo "      (all deps resolved within ${libdir} or system libs)"
+  fi
+
+  # Sanity: assert no /tmp/* in RUNPATH of any installed binary or .so
+  for f in "${INSTALL_DIR}/bin/mipster-${name}" "${main_so}"; do
+    rpath=$(patchelf --print-rpath "${f}" 2>/dev/null || true)
+    case "${rpath}" in
+      *"/tmp/"*)
+        echo "ERROR: ${f} has build-time RUNPATH '${rpath}'" >&2
+        exit 1
+        ;;
+    esac
+  done
 
   # ── Headers (only need to do this once) ─────────────────────────────────────
   if [ "${name}" = "generic" ]; then
@@ -338,6 +384,18 @@ echo "    fixtures: $(ls "${INSTALL_DIR}/share/mipster/test/fixtures" | wc -l) f
 for f in mipster-tests.desktop mipster-tests-debug.desktop; do
   [ -f "${SRC_DIR}/test/${f}" ] && cp "${SRC_DIR}/test/${f}" "${INSTALL_DIR}/share/applications/" && echo "    ${f}"
 done
+
+# ── Third-party licenses ──────────────────────────────────────────────────────
+# Bundled libs (libgfortran/libquadmath/libgomp/libgcc_s/libstdc++ via GCC RLE,
+# libbz2 via BSD-like, OpenBLAS via BSD-3-Clause) require their license texts to
+# accompany binary redistribution.
+echo ""
+echo "==> Installing third-party license texts..."
+mkdir -p "${INSTALL_DIR}/share/doc/mipster"
+cp "${SRC_DIR}/.github/scripts/THIRD_PARTY_LICENSES.md" \
+   "${INSTALL_DIR}/share/doc/mipster/THIRD_PARTY_LICENSES.md"
+[ -f "${SRC_DIR}/LICENSE" ] && cp "${SRC_DIR}/LICENSE" "${INSTALL_DIR}/share/doc/mipster/LICENSE"
+echo "    THIRD_PARTY_LICENSES.md, LICENSE"
 
 # ── Package ───────────────────────────────────────────────────────────────────
 echo ""

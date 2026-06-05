@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mipster"
+dynamic = ["version"]
+description = "Pre-built MIPster MIP solver shared library (CPU-dispatched)"
+readme = "README.md"
+license = { text = "EPL-2.0" }
+requires-python = ">=3.8"
+authors = [{ name = "Haroldo Gambini Santos", email = "haroldo.santos@gmail.com" }]
+keywords = ["mip", "milp", "optimization", "solver", "mixed-integer", "branch-and-cut", "coin-or", "cbc"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+]
+
+[project.urls]
+Homepage = "https://github.com/h-g-s/mipster"
+"Bug Tracker" = "https://github.com/h-g-s/mipster/issues"
+
+[project.scripts]
+mipster = "mipster.__main__:main"

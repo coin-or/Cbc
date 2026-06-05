@@ -1623,11 +1623,11 @@ Osi_getRowSense(void *osi, int row);
 
 /** @brief Returns vector with objective function coefficients */
 CBCLIB_EXPORT const double * CBC_LINKAGE
-Osi_getObjCoefficients();
+Osi_getObjCoefficients(void *osi);
 
 /** @brief Returns the objective sense: 1 for MIN and -1 for MAX */
 CBCLIB_EXPORT double CBC_LINKAGE
-Osi_getObjSense();
+Osi_getObjSense(void *osi);
 
 /** @brief Returns solution vector in OsiSolverInterface object */
 CBCLIB_EXPORT const double * CBC_LINKAGE

@@ -4860,6 +4860,35 @@ Osi_getObjValue( void *osi )
   return osiSolver->getObjValue();
 }
 
+/** @brief Returns vector with objective function coefficients */
+const double * CBC_LINKAGE
+Osi_getObjCoefficients(void *osi)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getObjCoefficients();
+}
+
+/** @brief Returns the objective sense: 1 for MIN and -1 for MAX */
+double CBC_LINKAGE
+Osi_getObjSense(void *osi)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getObjSense();
+}
+
+/** @brief Deletes an OsiSolverInterface object owned by the caller.
+ *
+ *  Only call this on solvers obtained from Osi_newSolver(). Solvers passed
+ *  into cut-callback handlers are owned by Cbc and must NOT be freed here.
+ */
+void CBC_LINKAGE
+Osi_deleteSolver(void *osi)
+{
+  delete (OsiSolverInterface *) osi;
+}
+
 /** @brief Sets column upper bound */
 void CBC_LINKAGE
 Osi_setColUpper (void *osi, int elementIndex, double ub)

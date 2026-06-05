@@ -1,0 +1,17 @@
+# Build artefacts produced by `python -m build` / setup.py
+build/
+dist/
+_extract/
+*.egg-info/
+*.whl
+
+# Staged native binaries (populated at wheel-build time from MIPSTER_TARBALL)
+mipster/mipster_dist/
+mipster/mipster_dist_avx2/
+mipster/mipster_dist_neon/
+mipster/mipster_dist_haswell/
+mipster/mipster_dist_debug/
+
+# Bytecode
+__pycache__/
+*.pyc

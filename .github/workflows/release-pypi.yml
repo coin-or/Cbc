@@ -1,0 +1,198 @@
+name: Publish wheels to PyPI
+
+# Trigger model
+# -------------
+# Tag-driven release: every push of a `v*` tag fires the regular CI
+# (linux-ci.yml) which produces the per-platform tarballs as artifacts.
+# This workflow watches for *successful* completions of that CI run on a
+# tag commit and then packages each tarball into a platform-tagged wheel,
+# uploading them to PyPI via Trusted Publisher (no API token in repo
+# secrets).
+#
+# Trusted Publisher configuration (already set up at
+# https://pypi.org/manage/account/publishing/):
+#   Owner:        h-g-s
+#   Repository:   mipster
+#   Workflow:     release-pypi.yml
+#   Environment:  pypi
+#
+# Manual dispatch is also supported for re-runs and TestPyPI uploads.
+
+on:
+  workflow_run:
+    workflows: ["Linux CI"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 3.0.0). Required when triggered manually.'
+        required: true
+      target:
+        description: 'Where to upload (testpypi or pypi)'
+        required: true
+        default: 'testpypi'
+      run_id:
+        description: 'GitHub Actions run ID of the linux-ci.yml run that produced the tarballs (optional). If empty, picks the latest successful run on the same ref.'
+        required: false
+
+permissions:
+  contents: read
+  actions: read   # needed to download artifacts from another workflow run
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ── Gate: only run on tag commits when triggered by a successful CI run ──
+  decide:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       startsWith(github.event.workflow_run.head_branch, 'v'))
+    outputs:
+      version:  ${{ steps.ver.outputs.version }}
+      run_id:   ${{ steps.ver.outputs.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: ver
+        run: |
+          set -e
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            v="${{ inputs.version }}"
+            rid="${{ inputs.run_id }}"
+            if [ -z "$rid" ]; then
+              # Fall back to the latest successful Linux CI run on master.
+              rid=$(gh run list --workflow=linux-ci.yml --branch=master \
+                                --status=success --limit=1 --json databaseId \
+                                --jq '.[0].databaseId')
+            fi
+          else
+            v="${{ github.event.workflow_run.head_branch }}"
+            v="${v#v}"
+            rid="${{ github.event.workflow_run.id }}"
+          fi
+          if [ -z "$v" ]; then
+            echo "::error::Could not determine release version" >&2
+            exit 1
+          fi
+
+          # Consistency check: the C library version in configure.ac must
+          # match the wheel version (modulo PEP 440 dev/rc suffixes).
+          # AC_INIT([Cbc],[0.1.0],...) → ac_ver=0.1.0
+          ac_ver=$(sed -nE 's/^AC_INIT\(\[[^]]+\],\[([0-9.]+)\].*/\1/p' configure.ac | head -1)
+          if [ -z "$ac_ver" ]; then
+            echo "::error::Could not parse version from configure.ac" >&2
+            exit 1
+          fi
+          # Strip PEP 440 pre/post/dev suffixes from $v before comparing
+          # (so 0.2.0.dev1 still matches AC_INIT 0.2.0).  The first %% drops
+          # any trailing letter run; the second strip removes a trailing
+          # dot left behind when the suffix was preceded by '.' (e.g. .dev1).
+          base="${v%%[a-zA-Z]*}"
+          base="${base%.}"
+          if [ "$base" != "$ac_ver" ]; then
+            echo "::error::Version mismatch: wheel=$v (base=$base) but configure.ac AC_INIT=$ac_ver" >&2
+            echo "::error::Bump configure.ac and re-tag, or fix the workflow input." >&2
+            exit 1
+          fi
+          echo "Version OK: wheel=$v matches configure.ac AC_INIT=$ac_ver"
+
+          echo "version=$v"  >> "$GITHUB_OUTPUT"
+          echo "run_id=$rid" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Package each platform tarball into a wheel ────────────────────────────
+  build-wheels:
+    needs: decide
+    name: Wheel ${{ matrix.tag }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - artifact: mipster-linux-x86_64
+            tarball:  mipster-linux-x86_64.tar.gz
+            tag:      manylinux_2_34_x86_64
+          - artifact: mipster-linux-aarch64
+            tarball:  mipster-linux-aarch64.tar.gz
+            tag:      manylinux_2_34_aarch64
+          - artifact: mipster-macos-x86_64
+            tarball:  mipster-macos-x86_64.tar.gz
+            tag:      macosx_10_13_x86_64
+          - artifact: mipster-macos-arm64
+            tarball:  mipster-macos-arm64.tar.gz
+            tag:      macosx_11_0_arm64
+          - artifact: mipster-windows-x86_64
+            tarball:  mipster-windows-x86_64.zip
+            tag:      win_amd64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build tools
+        run: python -m pip install --upgrade build wheel setuptools
+
+      - name: Download tarball artifact from CI run
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: tarballs/
+          # Pulls from the linux-ci.yml run identified above.
+          run-id: ${{ needs.decide.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build wheel
+        working-directory: python
+        env:
+          MIPSTER_VERSION:  ${{ needs.decide.outputs.version }}
+          MIPSTER_PLAT_TAG: ${{ matrix.tag }}
+          MIPSTER_TARBALL:  ${{ github.workspace }}/tarballs/${{ matrix.tarball }}
+        run: |
+          python -m build --wheel --no-isolation
+          ls -la dist/
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.tag }}
+          path: python/dist/*.whl
+
+  # ── Collect every wheel and upload via Trusted Publisher (OIDC) ───────────
+  publish:
+    needs: [decide, build-wheels]
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mipster
+    permissions:
+      id-token: write   # OIDC for Trusted Publisher
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheel-*
+          merge-multiple: true
+          path: dist/
+
+      - run: ls -la dist/
+
+      - name: Publish to TestPyPI (manual dispatch with target=testpypi)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/
+
+      - name: Publish to PyPI (tag-driven, or manual with target=pypi)
+        if: ${{ github.event_name == 'workflow_run' || (github.event_name == 'workflow_dispatch' && inputs.target == 'pypi') }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

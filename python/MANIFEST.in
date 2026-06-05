@@ -1,0 +1,8 @@
+recursive-include mipster/mipster_dist *
+recursive-include mipster/mipster_dist_avx2 *
+recursive-include mipster/mipster_dist_neon *
+recursive-include mipster/mipster_dist_haswell *
+recursive-include mipster/mipster_dist_debug *
+include mipster/__init__.py
+include mipster/__main__.py
+include README.md

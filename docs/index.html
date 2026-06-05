@@ -446,23 +446,23 @@
   <div class="features-grid">
     <div class="feature-card">
       <h3>🚀 Strong Default Performance</h3>
-      <p>Tuned for set packing, covering, and partitioning constraints — common in column-generation formulations. Advanced cut generators and conflict-graph based preprocessing.</p>
+      <p>Conflict-graph preprocessing, Bron–Kerbosch clique cuts, odd-wheel separation, and an aggressive cut-and-branch loop. Tuned for set packing, covering, and partitioning constraints common in column-generation formulations.</p>
+    </div>
+    <div class="feature-card">
+      <h3>🏎 Hardware-Optimised Builds</h3>
+      <p>Every release ships multiple ISA-tuned variants — <strong>AVX2</strong> on Intel/AMD, <strong>Haswell</strong> on macOS x86_64, <strong>ARMv8.2 NEON</strong> on aarch64 — plus a portable baseline. CPUID auto-dispatch at startup picks the fastest binary your CPU can run; no recompilation needed.</p>
     </div>
     <div class="feature-card">
       <h3>⚡ Racing LP Portfolio</h3>
-      <p>Multiple LP configurations race in parallel; the first to finish wins. Exploits all available cores on the node for LP relaxation solving.</p>
-    </div>
-    <div class="feature-card">
-      <h3>🔌 Clean C API</h3>
-      <p>A comprehensive C interface callable from Python (via CFFI/ctypes), Julia, Rust, and any language with C FFI. Binary and source compatible with COIN-OR CBC.</p>
+      <p>Multiple LP configurations race in parallel via <code>-racingLP on</code>; the first to finish wins. Data-driven K=2 / K=3 portfolios from k-fold cross-validation. Exploits all available cores on the LP relaxation.</p>
     </div>
     <div class="feature-card">
       <h3>🤖 Native ML Support</h3>
       <p>Random-forest based <code>-lpMethod=auto</code> picks the best LP algorithm per instance (1.36× geomean speedup). Built-in <code>CbcInstanceFeatures</code> exports <code>OsiFeatures</code> values to CSV for offline tuning and clustering.</p>
     </div>
     <div class="feature-card">
-      <h3>🛡 Debug Binaries Included</h3>
-      <p>Every release ships <code>mipster-dbg</code> with AddressSanitizer and debug symbols. Diagnose solver issues on user machines with the same binary.</p>
+      <h3>🔌 Clean C API</h3>
+      <p>A comprehensive C interface callable from Python (via CFFI/ctypes), Julia, Rust, and any language with C FFI. Binary and source compatible with COIN-OR CBC.</p>
     </div>
     <div class="feature-card">
       <h3>⚖️ EPL-2.0 License</h3>
@@ -554,7 +554,8 @@ Cbc_deleteModel(m);</code></pre>
 
 <!-- Footer -->
 <footer>
-  <p>MIPster is a fork of <a href="https://github.com/coin-or/Cbc">COIN-OR CBC</a> · Licensed under <a href="https://github.com/h-g-s/mipster/blob/master/LICENSE">EPL-2.0</a> · <a href="https://github.com/h-g-s/mipster">GitHub</a></p>
+  <p style="margin-bottom:0.5rem;">MIPster is a fork of <a href="https://github.com/coin-or/Cbc">COIN-OR CBC</a> · Licensed under <a href="https://github.com/h-g-s/mipster/blob/master/LICENSE">EPL-2.0</a> · <a href="https://github.com/h-g-s/mipster">GitHub</a></p>
+  <p style="font-size: 0.78rem;">Powered by <a href="https://github.com/coin-or/Cbc">COIN-OR CBC</a>, <a href="https://github.com/coin-or/Clp">Clp</a>, <a href="https://github.com/coin-or/Cgl">Cgl</a> · primal heuristic adapted from <a href="https://github.com/SINTEF/feasibilityjump">SINTEF Feasibility Jump</a> · BLAS via <a href="https://github.com/OpenMathLib/OpenBLAS">OpenBLAS</a> (Linux/Windows) and <a href="https://developer.apple.com/accelerate/">Apple Accelerate</a> (macOS)</p>
 </footer>
 
 </body>

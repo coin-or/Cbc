@@ -137,7 +137,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install build tools
-        run: python -m pip install --upgrade build wheel setuptools
+        run: python -m pip install --upgrade build wheel setuptools patchelf
 
       - name: Download tarball artifact from CI run
         uses: actions/download-artifact@v4

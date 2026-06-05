@@ -26,6 +26,7 @@ Optional:
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tarfile
 import zipfile
@@ -164,8 +165,28 @@ def _stage_linux(extracted: Path, src_variant: str, wheel_variant: str) -> None:
             shutil.copy2(so, dist / "lib" / so.name, follow_symlinks=False)
     src_bin = extracted / "bin" / f"mipster-{src_variant}"
     if src_bin.is_file():
-        shutil.copy2(src_bin, dist / "bin" / "mipster")
-        os.chmod(dist / "bin" / "mipster", 0o755)
+        out_bin = dist / "bin" / "mipster"
+        shutil.copy2(src_bin, out_bin)
+        os.chmod(out_bin, 0o755)
+        # The tarball binary's RUNPATH is "$ORIGIN/../lib/<variant>" (because
+        # the tarball ships shared bin/ and per-variant lib/<variant>/). In
+        # the wheel each variant has its own mipster_dist_<variant>/lib/, so
+        # the binary needs RUNPATH=$ORIGIN/../lib.
+        _patch_runpath(out_bin, "$ORIGIN/../lib")
+
+
+def _patch_runpath(elf: Path, new_runpath: str) -> None:
+    """Set RUNPATH on an ELF binary. patchelf is required (apt: patchelf)."""
+    patchelf = shutil.which("patchelf")
+    if not patchelf:
+        sys.exit(
+            "patchelf not found on PATH but is required for Linux wheel staging "
+            "(install with `apt-get install patchelf` or `pip install patchelf`)."
+        )
+    subprocess.run(
+        [patchelf, "--set-rpath", new_runpath, str(elf)],
+        check=True,
+    )
 
 
 def _stage_macos_x86(extracted: Path, src_variant: str, wheel_variant: str) -> None:

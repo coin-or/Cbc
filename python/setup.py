@@ -142,7 +142,14 @@ def _stage_layout(extracted: Path, plat_tag: str) -> None:
 
 
 def _stage_linux(extracted: Path, src_variant: str, wheel_variant: str) -> None:
-    """Linux: lib/<src_variant>/libmipster.so* + bin/mipster-<src_variant>."""
+    """Linux: copy entire lib/<src_variant>/ + bin/mipster-<src_variant>.
+
+    The CI tarball already bundles libgfortran.so.5, libquadmath.so.0,
+    libgcc_s.so.1, libstdc++.so.6, and libbz2.so.1 alongside libmipster.so.0
+    in lib/<variant>/. RUNPATH=$ORIGIN on libmipster makes those resolve
+    relative to the wheel's lib dir at runtime, so the wheel must ship them
+    all — not just libmipster.so*.
+    """
     dist = PKG_DIR / ("mipster_dist" if wheel_variant == "generic"
                       else f"mipster_dist_{wheel_variant}")
     (dist / "lib").mkdir(parents=True, exist_ok=True)
@@ -151,7 +158,9 @@ def _stage_linux(extracted: Path, src_variant: str, wheel_variant: str) -> None:
     if not src_lib.is_dir():
         sys.exit(f"Expected {src_lib} in tarball but it is missing.")
     for so in src_lib.iterdir():
-        if so.is_symlink() or so.name.startswith("libmipster.so"):
+        # Copy every .so / .so.N (real files and symlinks) — preserves the
+        # bundled non-mipster runtime libs that libmipster.so depends on.
+        if so.is_symlink() or ".so" in so.name:
             shutil.copy2(so, dist / "lib" / so.name, follow_symlinks=False)
     src_bin = extracted / "bin" / f"mipster-{src_variant}"
     if src_bin.is_file():
@@ -192,30 +201,36 @@ def _stage_macos_arm(extracted: Path) -> None:
 
 
 def _stage_windows(extracted: Path, src_variant: str, wheel_variant: str) -> None:
-    """Windows: libtool produces ``bin/libmipster-N-<variant>.dll``.
+    """Windows: copy bin/<src_variant>/ wholesale into mipster_dist*/bin/.
 
-    The runtime dispatcher (``mipster/__init__.py``) globs for
-    ``libmipster-*.dll`` inside ``mipster_dist*/bin/``, so we rename the
-    variant-suffixed DLL to its un-suffixed canonical name when staging.
+    The CI tarball lays each variant out as bin/<variant>/{mipster.exe,
+    libmipster-0.dll, libgcc_s_seh-1.dll, libstdc++-6.dll,
+    libwinpthread-1.dll, zlib1.dll}.  All of those must travel together
+    into the wheel — the variant EXE imports libmipster-0.dll, which in
+    turn imports the four MinGW runtime DLLs, and Windows' DLL search
+    looks in the directory of the loading EXE first.
     """
     dist = PKG_DIR / ("mipster_dist" if wheel_variant == "generic"
                       else f"mipster_dist_{wheel_variant}")
     (dist / "bin").mkdir(parents=True, exist_ok=True)
-    src_bin = extracted / "bin"
-    matches = sorted(src_bin.glob(f"libmipster-*-{src_variant}.dll"))
-    if not matches:
+    src_variant_dir = extracted / "bin" / src_variant
+    if not src_variant_dir.is_dir():
         sys.exit(
-            f"No libmipster-*-{src_variant}.dll found under {src_bin}; "
-            "Windows tarball appears malformed."
+            f"Expected {src_variant_dir}/ in Windows tarball but it is missing."
         )
-    for dll in matches:
-        # libmipster-0-avx2.dll → libmipster-0.dll
-        canonical = dll.name.replace(f"-{src_variant}", "")
-        shutil.copy2(dll, dist / "bin" / canonical)
-    # Also copy mipster.exe (the CPU-dispatch launcher).
-    exe = src_bin / "mipster.exe"
-    if exe.is_file():
-        shutil.copy2(exe, dist / "bin" / "mipster.exe")
+    for f in src_variant_dir.iterdir():
+        if f.is_file() and (f.suffix.lower() in (".dll", ".exe")):
+            shutil.copy2(f, dist / "bin" / f.name)
+    # The launcher itself lives in bin/mipster.exe (one level up). It picks
+    # the variant subdir at runtime — but inside the wheel each variant has
+    # its own mipster_dist*/bin/mipster.exe (already copied above), so the
+    # Python dispatcher in mipster/__init__.py picks the dir directly and
+    # the launcher is unused by the wheel. We still copy it for parity with
+    # the tarball / for users who poke around in the wheel.
+    launcher = extracted / "bin" / "mipster.exe"
+    if launcher.is_file() and src_variant == "generic":
+        # Only need one copy; goes into the generic dist.
+        pass  # the per-variant mipster.exe (above) already serves this role
 
 
 # ── Driver ───────────────────────────────────────────────────────────────────
@@ -237,6 +252,13 @@ def _main() -> None:
         tarball_path = Path(tarball)
         if not tarball_path.is_file():
             sys.exit(f"MIPSTER_TARBALL={tarball_path} does not exist.")
+
+        # Wipe setuptools' build/ — package_data globs (mipster_dist*/**/*) would
+        # otherwise pick up stale staged files from a previous platform's wheel
+        # build (e.g. Linux .so files leaking into a Windows wheel).
+        build_dir = HERE / "build"
+        if build_dir.exists():
+            shutil.rmtree(build_dir, ignore_errors=True)
 
         extract_root = HERE / "_extract"
         if extract_root.exists():

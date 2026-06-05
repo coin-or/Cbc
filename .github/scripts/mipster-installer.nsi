@@ -77,15 +77,27 @@ Section "MIPster" SecMain
 
   SetOutPath "$INSTDIR\bin"
   File "${DIST_DIR}\${DIST_SUBDIR}\bin\mipster.exe"
-  File "${DIST_DIR}\${DIST_SUBDIR}\bin\mipster-generic.exe"
-  File "${DIST_DIR}\${DIST_SUBDIR}\bin\mipster-avx2.exe"
 
+  ; Per-variant subdirs: each carries mipster.exe + libmipster-N.dll +
+  ; bundled MinGW runtime DLLs. The launcher in $INSTDIR\bin chooses one
+  ; based on CPUID.
+  SetOutPath "$INSTDIR\bin\generic"
+  File "${DIST_DIR}\${DIST_SUBDIR}\bin\generic\*.exe"
+  File "${DIST_DIR}\${DIST_SUBDIR}\bin\generic\*.dll"
+
+  SetOutPath "$INSTDIR\bin\avx2"
+  File "${DIST_DIR}\${DIST_SUBDIR}\bin\avx2\*.exe"
+  File "${DIST_DIR}\${DIST_SUBDIR}\bin\avx2\*.dll"
+
+  SetOutPath "$INSTDIR\bin\dbg"
+  File "${DIST_DIR}\${DIST_SUBDIR}\bin\dbg\*.exe"
+  File "${DIST_DIR}\${DIST_SUBDIR}\bin\dbg\*.dll"
+
+  ; Import libraries (.dll.a) for developers linking against libmipster.
   SetOutPath "$INSTDIR\lib\generic"
-  File /nonfatal "${DIST_DIR}\${DIST_SUBDIR}\lib\generic\*.dll"
   File /nonfatal "${DIST_DIR}\${DIST_SUBDIR}\lib\generic\*.dll.a"
 
   SetOutPath "$INSTDIR\lib\avx2"
-  File /nonfatal "${DIST_DIR}\${DIST_SUBDIR}\lib\avx2\*.dll"
   File /nonfatal "${DIST_DIR}\${DIST_SUBDIR}\lib\avx2\*.dll.a"
 
   SetOutPath "$INSTDIR\include\mipster"
@@ -146,10 +158,7 @@ Section "Uninstall"
   RMDir  "$SMPROGRAMS\MIPster"
 
   Delete "$INSTDIR\uninstall.exe"
-  Delete "$INSTDIR\bin\mipster.exe"
-  Delete "$INSTDIR\bin\mipster-generic.exe"
-  Delete "$INSTDIR\bin\mipster-avx2.exe"
-  RMDir  "$INSTDIR\bin"
+  RMDir /r "$INSTDIR\bin"
   RMDir /r "$INSTDIR\lib"
   RMDir /r "$INSTDIR\include"
   RMDir /r "$INSTDIR\doc"

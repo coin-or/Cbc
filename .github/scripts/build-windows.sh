@@ -7,20 +7,31 @@
 #   dist/mipster-windows-x86_64.zip              — portable archive
 #   dist/mipster-<ver>-setup-windows-x86_64.exe  — NSIS installer (updates PATH)
 #
-# Contents:
-#   bin/mipster.exe              — CPU-dispatch launcher (CPUID → generic or avx2)
-#   bin/mipster-dbg.exe          — debug binary (symbols preserved)
-#   bin/mipster-generic.exe      — baseline x86_64 binary (static, no DLL deps)
-#   bin/mipster-avx2.exe         — AVX2/FMA binary, Haswell 2013+ / Zen2 2019+
-#   bin/test/                    — test suite binaries (generic build)
-#   bin/libmipster-dbg.dll       — debug shared library
-#   lib/generic/libmipster.dll.a — import library, baseline
+# Layout (per-variant subdirs so the EXE's PE import table can keep libtool's
+# natural name `libmipster-0.dll` and find the right variant DLL right next to
+# it — renaming the DLL would not work because the import name is baked into
+# the linked EXE):
+#   bin/mipster.exe              — CPU-dispatch launcher (CPUID → generic/avx2)
+#   bin/generic/mipster.exe      — baseline x86_64 binary
+#   bin/generic/libmipster-0.dll — baseline DLL
+#   bin/generic/{libgcc_s_seh-1,libstdc++-6,libwinpthread-1,zlib1}.dll
+#   bin/avx2/mipster.exe         — AVX2/FMA binary, Haswell 2013+ / Zen2 2019+
+#   bin/avx2/libmipster-0.dll    — AVX2 DLL
+#   bin/avx2/{libgcc_s_seh-1,libstdc++-6,libwinpthread-1,zlib1}.dll
+#   bin/dbg/mipster.exe          — debug binary (symbols preserved)
+#   bin/dbg/libmipster-0.dll     — debug DLL
+#   bin/dbg/{libgcc_s_seh-1,libstdc++-6,libwinpthread-1,zlib1}.dll
+#   bin/test/                    — test suite binaries + DLLs (generic build)
+#   lib/generic/libmipster.dll.a — import library, baseline (for developers)
 #   lib/avx2/libmipster.dll.a    — import library, AVX2
 #   include/mipster/             — public C API headers
 #
 # No OpenBLAS dependency: built without BLAS/LAPACK.
-# Binaries are fully self-contained: libgcc, libstdc++, libwinpthread are
-# linked statically so no extra DLLs need to be distributed.
+# MinGW runtime DLLs (libgcc_s_seh-1, libstdc++-6, libwinpthread-1) are
+# bundled alongside libmipster — libtool ignores -static-libgcc/-static-libstdc++
+# when linking shared libs so they remain dynamic NEEDED entries. zlib1.dll is
+# also bundled (CoinUtils uses it for .gz reading). All bundled DLLs are
+# either GCC-RLE-3.1 (libgcc_s, libstdc++, libwinpthread) or zlib license.
 #
 # Requirements: MSYS2 with mingw-w64-x86_64-gcc, make, autoconf, automake,
 #               libtool, pkg-config, nsis, zip (installed by the CI step).
@@ -35,13 +46,88 @@ SRC_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 INSTALL_DIR="${SRC_DIR}/dist/${DIST_NAME}"
 BUILD_BASE="/tmp/mipster-build-win"
 
+# MinGW runtime DLLs that must travel with each variant subdir (libtool ignores
+# -static-libgcc/-static-libstdc++ when linking the shared library; zlib1.dll is
+# pulled in by CoinUtils for gzipped MPS reading).
+MINGW_RUNTIME_DLLS=(
+  libgcc_s_seh-1.dll
+  libstdc++-6.dll
+  libwinpthread-1.dll
+  zlib1.dll
+)
+
+# Allowed NEEDED-entry regex for verification: Windows system DLLs + libmipster
+# + bundled MinGW runtime + Windows API set redirection DLLs.
+ALLOWED_DLL_DEPS_RE='kernel32|ntdll|msvcrt|user32|advapi32|ws2_32|libmipster|api-ms|libgcc_s_seh-1|libstdc\+\+-6|libwinpthread-1|zlib1'
+
 echo "==> MIPster Windows/MinGW64 build"
 echo "    GCC:    $(gcc --version | head -1)"
 echo "    Source: ${SRC_DIR}"
+echo "    MSYSTEM=${MSYSTEM:-unset}"
+echo "    config.guess: $(${SRC_DIR}/BuildTools/config.guess 2>/dev/null || echo unavailable)"
 
-# bin/ holds both executables AND the DLLs they depend on, so that everything
-# works from any directory on a clean Windows machine without PATH changes.
 mkdir -p "${INSTALL_DIR}/bin" "${INSTALL_DIR}/include"
+
+# Copy the MinGW runtime DLLs into a target directory (next to libmipster*.dll).
+copy_mingw_runtime_into() {
+  local dest="$1"
+  for dll in "${MINGW_RUNTIME_DLLS[@]}"; do
+    local src="/mingw64/bin/${dll}"
+    if [ -f "${src}" ]; then
+      cp "${src}" "${dest}/"
+    else
+      echo "ERROR: ${src} not found — runtime DLL missing from /mingw64/bin/" >&2
+      exit 1
+    fi
+  done
+}
+
+# Locate the libtool-produced libmipster*.dll for a given build dir, refusing
+# any cygmipster*.dll outright. cygmipster*.dll's PE import table forces a
+# dependency on msys-2.0.dll which is not present on a clean Windows host —
+# this is a packaging defect that cannot be fixed by renaming the file.
+locate_mipster_dll() {
+  local build_dir="$1"
+  local cyg_dlls
+  cyg_dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
+               -maxdepth 2 -name 'cygmipster*.dll' 2>/dev/null || true)
+  if [ -n "${cyg_dlls}" ]; then
+    echo "ERROR: libtool produced cygmipster*.dll — MSYSTEM is not MINGW64." >&2
+    echo "  MSYSTEM=${MSYSTEM:-unset}" >&2
+    echo "  Set MSYSTEM=MINGW64 in the workflow before invoking this script." >&2
+    exit 1
+  fi
+  local dlls
+  dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
+           -maxdepth 2 -name 'libmipster*.dll' 2>/dev/null || true)
+  if [ -z "${dlls}" ]; then
+    echo "ERROR: no libmipster*.dll found under ${build_dir}/install/bin or" \
+         "${build_dir}/src/.libs." >&2
+    echo "Inventory of build_dir/install/bin:" >&2
+    ls -la "${build_dir}/install/bin/" >&2 || true
+    echo "Inventory of build_dir/src/.libs:" >&2
+    ls -la "${build_dir}/src/.libs/" >&2 || true
+    exit 1
+  fi
+  # First match — there is only one .dll per build (we built --disable-static).
+  echo "${dlls}" | head -1
+}
+
+# Verify the NEEDED entries of a PE image match the allow-list above.
+verify_dll_deps() {
+  local image="$1"
+  local label="$2"
+  local unbundled
+  unbundled=$(objdump -p "${image}" 2>/dev/null \
+    | awk '/DLL Name:/{print tolower($3)}' \
+    | grep -v -iE "${ALLOWED_DLL_DEPS_RE}" \
+    || true)
+  if [ -n "${unbundled}" ]; then
+    echo "ERROR: ${label} has unbundled non-system DLL deps:" >&2
+    echo "${unbundled}" >&2
+    return 1
+  fi
+}
 
 # ── Build debug variant ────────────────────────────────────────────────────────
 # Note: ASan is not supported with MinGW. Debug binary uses -O1 -g only.
@@ -49,6 +135,7 @@ build_debug_variant() {
   local name="dbg"
   local cxxflags="-O1 -g -fno-omit-frame-pointer"
   local build_dir="${BUILD_BASE}-${name}"
+  local variant_bindir="${INSTALL_DIR}/bin/${name}"
 
   echo ""
   echo "==> Building debug variant: ${name}  CXXFLAGS='${cxxflags}'"
@@ -75,51 +162,18 @@ build_debug_variant() {
   # ── Test ──────────────────────────────────────────────────────────────────
   cd "${build_dir}/test"
   make -j"$(nproc)" CInterfaceTest.exe 2>&1 | tail -2
-  ./CInterfaceTest.exe
+  PATH="${build_dir}/src/.libs:${PATH}" ./CInterfaceTest.exe
   echo "    CInterfaceTest: PASSED (debug)"
 
-  # ── Debug executable ───────────────────────────────────────────────────────
+  # ── Lay out variant subdir: exe + DLL keep their natural names ────────────
+  mkdir -p "${variant_bindir}"
   # No strip — keep debug symbols.
-  cp "${build_dir}/src/.libs/mipster.exe" "${INSTALL_DIR}/bin/mipster-dbg.exe"
-  echo "    bin/mipster-dbg.exe: $(du -sh "${INSTALL_DIR}/bin/mipster-dbg.exe" | cut -f1)"
-
-  # ── Debug DLL ─────────────────────────────────────────────────────────────
-  # libtool's DLL prefix is determined by config.guess. We require MSYSTEM=MINGW64
-  # in the calling environment so the host triple is x86_64-w64-mingw32 and
-  # libtool produces a `libmipster-N.dll` linked only against Windows system
-  # DLLs. If a `cygmipster-N.dll` shows up, the exe's PE import table will
-  # reference that name and the binary will silently require msys-2.0.dll on
-  # the user's machine — which is a packaging defect, not something we can
-  # fix by renaming the file.
-  local cyg_dlls
-  cyg_dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
-               -maxdepth 2 -name 'cygmipster*.dll' 2>/dev/null || true)
-  if [ -n "${cyg_dlls}" ]; then
-    echo "ERROR: libtool produced cygmipster*.dll — MSYSTEM is not MINGW64." >&2
-    echo "  config.guess: $(${SRC_DIR}/BuildTools/config.guess 2>/dev/null || echo unavailable)" >&2
-    echo "  MSYSTEM=${MSYSTEM:-unset}" >&2
-    echo "  Set MSYSTEM=MINGW64 in the workflow before invoking this script." >&2
-    exit 1
-  fi
-  local dlls
-  dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
-           -maxdepth 2 -name 'libmipster*.dll' 2>/dev/null || true)
-  if [ -z "${dlls}" ]; then
-    echo "ERROR: no libmipster*.dll found under ${build_dir}/install/bin or" \
-         "${build_dir}/src/.libs — debug build did not produce a DLL." >&2
-    echo "Inventory of build_dir/install/bin:" >&2
-    ls -la "${build_dir}/install/bin/" >&2 || true
-    echo "Inventory of build_dir/src/.libs:" >&2
-    ls -la "${build_dir}/src/.libs/" >&2 || true
-    exit 1
-  fi
-  while IFS= read -r f; do
-    # No strip — keep debug symbols.
-    local base
-    base=$(basename "${f}")
-    cp "${f}" "${INSTALL_DIR}/bin/${base%.dll}-${name}.dll"
-  done <<< "${dlls}"
-  echo "    bin/libmipster-${name}.dll: done"
+  cp "${build_dir}/src/.libs/mipster.exe" "${variant_bindir}/mipster.exe"
+  local dll
+  dll=$(locate_mipster_dll "${build_dir}")
+  cp "${dll}" "${variant_bindir}/"
+  copy_mingw_runtime_into "${variant_bindir}"
+  echo "    bin/${name}/: $(ls "${variant_bindir}" | wc -l) files"
 }
 
 # ── Build one variant (exe + DLL) ─────────────────────────────────────────────
@@ -127,6 +181,7 @@ build_variant() {
   local name="$1"
   local cxxflags="$2"
   local build_dir="${BUILD_BASE}-${name}"
+  local variant_bindir="${INSTALL_DIR}/bin/${name}"
 
   echo ""
   echo "==> Building variant: ${name}  CXXFLAGS='${cxxflags}'"
@@ -137,8 +192,10 @@ build_variant() {
 
   # Shared build (DLL): CoinUtils/Clp/Cgl are noinst convenience libs so libtool
   # merges them all into libmipster.dll — one self-contained DLL.
-  # MinGW runtime (libgcc, libstdc++, libwinpthread) is embedded statically via
-  # LDFLAGS so libmipster.dll and the exe need only standard Windows system DLLs.
+  # MinGW runtime is *requested* statically via LDFLAGS but libtool ignores
+  # those flags for shared-library linkage; the result is that libmipster*.dll
+  # has dynamic NEEDED entries on libgcc_s_seh-1.dll, libstdc++-6.dll,
+  # libwinpthread-1.dll, and zlib1.dll. We bundle those in each variant subdir.
   "${SRC_DIR}/configure" \
     --prefix="${build_dir}/install" \
     --enable-shared \
@@ -157,9 +214,19 @@ build_variant() {
   # ── Test ──────────────────────────────────────────────────────────────────
   cd "${build_dir}/test"
   make -j"$(nproc)" CInterfaceTest.exe
-  # Set PATH so test exe finds libmipster DLL
   PATH="${build_dir}/src/.libs:${PATH}" ./CInterfaceTest.exe
   echo "    CInterfaceTest: PASSED"
+
+  # ── Lay out variant subdir ────────────────────────────────────────────────
+  mkdir -p "${variant_bindir}"
+  strip "${build_dir}/src/.libs/mipster.exe"
+  cp "${build_dir}/src/.libs/mipster.exe" "${variant_bindir}/mipster.exe"
+  local dll
+  dll=$(locate_mipster_dll "${build_dir}")
+  cp "${dll}" "${variant_bindir}/"
+  strip --strip-unneeded "${variant_bindir}/$(basename "${dll}")" 2>/dev/null || true
+  copy_mingw_runtime_into "${variant_bindir}"
+  echo "    bin/${name}/: $(ls "${variant_bindir}" | wc -l) files"
 
   # ── Collect test binaries for tarball (generic variant only) ──────────────
   if [ "${name}" = "generic" ]; then
@@ -175,49 +242,15 @@ build_variant() {
         cp "${build_dir}/test/${tbin}.exe" "${test_dir}/"
       fi
     done
-    echo "    bin/test/: $(ls "${test_dir}" | wc -l) test binaries"
+    # Test binaries also import libmipster-0.dll → ship the generic DLL +
+    # MinGW runtime next to them so they run from bin/test/ without a PATH
+    # change.
+    cp "${variant_bindir}/$(basename "${dll}")" "${test_dir}/"
+    copy_mingw_runtime_into "${test_dir}"
+    echo "    bin/test/: $(ls "${test_dir}" | wc -l) files"
   fi
 
-  # ── Executable ────────────────────────────────────────────────────────────
-  # On Windows, libtool places the real exe at src/.libs/mipster.exe
-  strip "${build_dir}/src/.libs/mipster.exe"
-  cp "${build_dir}/src/.libs/mipster.exe" "${INSTALL_DIR}/bin/mipster-${name}.exe"
-  echo "    bin/mipster-${name}.exe: $(du -sh "${INSTALL_DIR}/bin/mipster-${name}.exe" | cut -f1)"
-
-  # ── Shared library (.dll) ─────────────────────────────────────────────────
-  # We require MSYSTEM=MINGW64 (see debug variant for rationale). Refuse a
-  # cygmipster-*.dll outright — its PE import table would force users' EXEs
-  # to load msys-2.0.dll, which is not present on a clean Windows host.
-  local cyg_dlls
-  cyg_dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
-               -maxdepth 2 -name 'cygmipster*.dll' 2>/dev/null || true)
-  if [ -n "${cyg_dlls}" ]; then
-    echo "ERROR: libtool produced cygmipster*.dll — MSYSTEM is not MINGW64." >&2
-    echo "  MSYSTEM=${MSYSTEM:-unset}" >&2
-    exit 1
-  fi
-  local dlls
-  dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
-           -maxdepth 2 -name 'libmipster*.dll' 2>/dev/null || true)
-  if [ -z "${dlls}" ]; then
-    echo "ERROR: no libmipster*.dll found under ${build_dir}/install/bin or" \
-         "${build_dir}/src/.libs — variant '${name}' did not produce a DLL." >&2
-    echo "Inventory of build_dir/install/bin:" >&2
-    ls -la "${build_dir}/install/bin/" >&2 || true
-    echo "Inventory of build_dir/src/.libs:" >&2
-    ls -la "${build_dir}/src/.libs/" >&2 || true
-    exit 1
-  fi
-  while IFS= read -r f; do
-    strip --strip-unneeded "${f}" 2>/dev/null || true
-    # Suffix with variant name to avoid collision between generic/avx2 builds.
-    local base
-    base=$(basename "${f}")
-    cp "${f}" "${INSTALL_DIR}/bin/${base%.dll}-${name}.dll"
-  done <<< "${dlls}"
-  # Also copy the import lib (.dll.a) to lib/<variant>/ for developers
-  # linking against the DLL. Each variant gets its own subdir to avoid
-  # collisions and to mirror Linux/macOS layout.
+  # ── Import library (.dll.a) for developers linking against libmipster ─────
   local variant_libdir="${INSTALL_DIR}/lib/${name}"
   mkdir -p "${variant_libdir}"
   local import_libs
@@ -230,7 +263,6 @@ build_variant() {
   while IFS= read -r f; do
     cp "${f}" "${variant_libdir}/"
   done <<< "${import_libs}"
-  echo "    bin/libmipster-${name}.dll: done"
   echo "    lib/${name}/libmipster.dll.a: done"
 }
 
@@ -243,18 +275,24 @@ cp -r "${BUILD_BASE}-generic/install/include/mipster" "${INSTALL_DIR}/include/"
 echo "    include/mipster: copied"
 
 # ── Compile CPU-dispatch launcher ─────────────────────────────────────────────
+# The launcher lives at bin/mipster.exe. It detects AVX2 via CPUID, prepends
+# bin/<variant>/ to PATH so the variant's libmipster-0.dll loads from there,
+# and exec-replaces itself with bin/<variant>/mipster.exe.
 echo ""
 echo "==> Compiling launcher..."
 cat > /tmp/mipster_launcher.c << 'EOF2'
 /*
  * mipster_launcher.c — Windows CPU-dispatch launcher for MIPster.
  *
- * Uses CPUID leaf 7, EBX bit 5 to detect AVX2 support, then exec-replaces
- * itself with mipster-avx2.exe or mipster-generic.exe from the same directory.
+ * Detects AVX2 via CPUID leaf 7 (EBX bit 5), prepends bin/<variant>/ to PATH,
+ * and exec's bin/<variant>/mipster.exe with the same argv. The variant subdir
+ * carries libmipster-0.dll and the MinGW runtime DLLs, so DLL search resolves
+ * locally without needing any installer-managed PATH entry.
  */
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <process.h>
 
@@ -274,7 +312,10 @@ int main(int argc, char *argv[])
 {
     char exe_path[MAX_PATH];
     char dir[MAX_PATH];
+    char variant_dir[MAX_PATH];
     char target[MAX_PATH];
+    char *new_path;
+    const char *old_path;
 
     if (!GetModuleFileNameA(NULL, exe_path, MAX_PATH)) {
         fprintf(stderr, "mipster: GetModuleFileNameA failed (%lu)\n", GetLastError());
@@ -291,8 +332,23 @@ int main(int argc, char *argv[])
         dir[0] = '.'; dir[1] = '\0';
     }
 
-    const char *variant = has_avx2() ? "mipster-avx2.exe" : "mipster-generic.exe";
-    snprintf(target, MAX_PATH, "%s\\%s", dir, variant);
+    const char *variant = has_avx2() ? "avx2" : "generic";
+    snprintf(variant_dir, MAX_PATH, "%s\\%s", dir, variant);
+    snprintf(target, MAX_PATH, "%s\\mipster.exe", variant_dir);
+
+    /* Prepend variant_dir to PATH so libmipster-0.dll resolves from there. */
+    old_path = getenv("PATH");
+    if (old_path == NULL) old_path = "";
+    {
+        size_t need = strlen(variant_dir) + 1 + strlen(old_path) + 1;
+        new_path = (char *)malloc(need);
+        if (!new_path) {
+            fputs("mipster: out of memory\n", stderr);
+            return 1;
+        }
+        snprintf(new_path, need, "%s;%s", variant_dir, old_path);
+        SetEnvironmentVariableA("PATH", new_path);
+    }
 
     _execv(target, (const char * const *)argv);
     fprintf(stderr, "mipster: could not exec '%s': %s\n", target, strerror(errno));
@@ -310,36 +366,31 @@ echo "==> Smoke test (launcher → --version):"
 "${INSTALL_DIR}/bin/mipster.exe" --version 2>&1 | head -1 || true
 echo "    PASSED"
 
-# ── Verify no unexpected DLL dependencies ─────────────────────────────────────
+# ── Verify NEEDED entries on each variant's exe + DLL ─────────────────────────
 echo ""
-echo "==> DLL dependencies (mipster-generic.exe):"
-objdump -p "${INSTALL_DIR}/bin/mipster-generic.exe" 2>/dev/null \
-  | grep 'DLL Name' \
-  | grep -iv 'kernel32\|ntdll\|msvcrt\|user32\|advapi32\|ws2_32\|libmipster\|api-ms' \
-  || echo "    (only system DLLs + libmipster — OK)"
-echo ""
-echo "==> DLL dependencies (libmipster-N-generic.dll):"
-find "${INSTALL_DIR}/bin" -name 'libmipster*-generic.dll' | head -1 | xargs objdump -p 2>/dev/null \
-  | grep 'DLL Name' \
-  | grep -iv 'kernel32\|ntdll\|msvcrt\|user32\|advapi32\|ws2_32\|api-ms' \
-  || echo "    (only system DLLs — self-contained OK)"
+echo "==> Verifying DLL dependencies of all variant binaries..."
+for variant in generic avx2 dbg; do
+  exe="${INSTALL_DIR}/bin/${variant}/mipster.exe"
+  dll=$(find "${INSTALL_DIR}/bin/${variant}" -name 'libmipster*.dll' | head -1)
+  verify_dll_deps "${exe}" "bin/${variant}/mipster.exe"
+  verify_dll_deps "${dll}" "bin/${variant}/$(basename "${dll}")"
+  echo "    bin/${variant}/: deps OK"
+done
+# Launcher itself has no MinGW runtime (compiled with -static-libgcc isn't
+# needed since the launcher is plain C, but verify anyway).
+verify_dll_deps "${INSTALL_DIR}/bin/mipster.exe" "bin/mipster.exe (launcher)"
+echo "    bin/mipster.exe: deps OK"
 
 # ── NSIS installer ────────────────────────────────────────────────────────────
 echo ""
 echo "==> Building NSIS installer..."
 
-# Determine version (from configure.ac or a fallback).
-# AC_INIT([Name],[version],...) — version is the second bracketed argument.
 VERSION=$(grep '^AC_INIT' "${SRC_DIR}/configure.ac" 2>/dev/null \
   | sed 's/AC_INIT(\[[^]]*\],\[\([^]]*\)\].*/\1/' | head -1)
 VERSION=${VERSION:-devel}
 echo "    Version: ${VERSION}"
 
-# Substitute placeholders in the .nsi template.
 NSIS_SCRIPT="/tmp/mipster-installer.nsi"
-# cygpath -m gives Windows-style paths with forward slashes (e.g. D:/a/foo/dist).
-# Forward slashes are safe in sed replacements (no backslash escaping needed)
-# and NSIS accepts them in File/SetOutPath commands.
 DIST_WIN=$(cygpath -m "${SRC_DIR}/dist" 2>/dev/null || echo "${SRC_DIR}/dist")
 DOC_WIN=$(cygpath -m "${SRC_DIR}/doc" 2>/dev/null || echo "${SRC_DIR}/doc")
 
@@ -350,7 +401,6 @@ sed \
   -e "s|@DOC_DIR@|${DOC_WIN}|g" \
   "${SRC_DIR}/.github/scripts/mipster-installer.nsi" > "${NSIS_SCRIPT}"
 
-# makensis is available from the NSIS package in MSYS2
 makensis "${NSIS_SCRIPT}"
 
 INSTALLER_FILE="${SRC_DIR}/dist/mipster-${VERSION}-setup-windows-x86_64.exe"
@@ -362,15 +412,14 @@ else
 fi
 
 # ── Pre-package verification ──────────────────────────────────────────────────
-# Catch silent breakage early: assert the install tree contains everything
-# the wheel and end-users will rely on.
 echo ""
 echo "==> Verifying install tree..."
 verify_fail=0
 for required in \
     "${INSTALL_DIR}/bin/mipster.exe" \
-    "${INSTALL_DIR}/bin/mipster-generic.exe" \
-    "${INSTALL_DIR}/bin/mipster-avx2.exe" \
+    "${INSTALL_DIR}/bin/generic/mipster.exe" \
+    "${INSTALL_DIR}/bin/avx2/mipster.exe" \
+    "${INSTALL_DIR}/bin/dbg/mipster.exe" \
     "${INSTALL_DIR}/include/mipster/Cbc_C_Interface.h"
 do
   if [ ! -f "${required}" ]; then
@@ -378,12 +427,17 @@ do
     verify_fail=1
   fi
 done
-# Per-variant DLL must be present in bin/ (this is what the wheel ships)
 for variant in generic avx2 dbg; do
-  if ! ls "${INSTALL_DIR}/bin"/libmipster-*-${variant}.dll >/dev/null 2>&1; then
-    echo "  MISSING: ${INSTALL_DIR}/bin/libmipster-*-${variant}.dll" >&2
+  if ! ls "${INSTALL_DIR}/bin/${variant}"/libmipster*.dll >/dev/null 2>&1; then
+    echo "  MISSING: ${INSTALL_DIR}/bin/${variant}/libmipster*.dll" >&2
     verify_fail=1
   fi
+  for rt in "${MINGW_RUNTIME_DLLS[@]}"; do
+    if [ ! -f "${INSTALL_DIR}/bin/${variant}/${rt}" ]; then
+      echo "  MISSING: ${INSTALL_DIR}/bin/${variant}/${rt}" >&2
+      verify_fail=1
+    fi
+  done
 done
 if [ "${verify_fail}" -ne 0 ]; then
   echo "ERROR: install tree verification failed — refusing to package." >&2
@@ -394,8 +448,6 @@ fi
 echo "    OK"
 
 # ── Third-party licenses ──────────────────────────────────────────────────────
-# Windows binaries embed libgcc/libstdc++/libwinpthread statically (GCC RLE
-# applies). Ship the upstream MIPster LICENSE and a third-party note.
 echo ""
 echo "==> Installing third-party license texts..."
 mkdir -p "${INSTALL_DIR}/share/doc/mipster"

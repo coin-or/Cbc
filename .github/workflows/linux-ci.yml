@@ -99,6 +99,13 @@ jobs:
   build-windows-x86_64:
     name: Windows x86_64 (generic + AVX2)
     runs-on: windows-latest
+    # MSYSTEM=MINGW64 makes config.guess return x86_64-w64-mingw32 (instead of
+    # x86_64-pc-msys), which in turn makes libtool produce a proper Windows
+    # libmipster-N.dll linked only against system DLLs — not cygmipster-N.dll
+    # which depends on msys-2.0.dll and would not run on a clean Windows host.
+    env:
+      MSYSTEM: MINGW64
+      CHERE_INVOKING: "1"
     defaults:
       run:
         shell: C:\msys64\usr\bin\bash.exe -l {0}
@@ -117,9 +124,11 @@ jobs:
 
       - name: Build + test
         run: |
+          # Confirm we are in MINGW64 and config.guess agrees, so libtool will
+          # produce libmipster-N.dll (not cygmipster-N.dll).
+          echo "MSYSTEM=${MSYSTEM}"
+          gcc -dumpmachine
           export PATH="/mingw64/bin:/usr/bin:$PATH"
-          # MSYS2 login shell may start in a different cwd; use cygpath to get a
-          # reliable POSIX path to the workspace and invoke the script absolutely.
           SRC="$(cygpath -u "${GITHUB_WORKSPACE}")"
           bash "${SRC}/.github/scripts/build-windows.sh"
 

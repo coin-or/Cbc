@@ -84,10 +84,23 @@ build_debug_variant() {
   echo "    bin/mipster-dbg.exe: $(du -sh "${INSTALL_DIR}/bin/mipster-dbg.exe" | cut -f1)"
 
   # ── Debug DLL ─────────────────────────────────────────────────────────────
-  # libtool may install the DLL into either ${prefix}/bin or leave it in
-  # ${build_dir}/src/.libs/. Check both locations and fail loudly if neither
-  # has a libmipster*.dll — silent failures here previously shipped tarballs
-  # with no actual DLL, only the import .dll.a stub.
+  # libtool's DLL prefix is determined by config.guess. We require MSYSTEM=MINGW64
+  # in the calling environment so the host triple is x86_64-w64-mingw32 and
+  # libtool produces a `libmipster-N.dll` linked only against Windows system
+  # DLLs. If a `cygmipster-N.dll` shows up, the exe's PE import table will
+  # reference that name and the binary will silently require msys-2.0.dll on
+  # the user's machine — which is a packaging defect, not something we can
+  # fix by renaming the file.
+  local cyg_dlls
+  cyg_dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
+               -maxdepth 2 -name 'cygmipster*.dll' 2>/dev/null || true)
+  if [ -n "${cyg_dlls}" ]; then
+    echo "ERROR: libtool produced cygmipster*.dll — MSYSTEM is not MINGW64." >&2
+    echo "  config.guess: $(${SRC_DIR}/BuildTools/config.guess 2>/dev/null || echo unavailable)" >&2
+    echo "  MSYSTEM=${MSYSTEM:-unset}" >&2
+    echo "  Set MSYSTEM=MINGW64 in the workflow before invoking this script." >&2
+    exit 1
+  fi
   local dlls
   dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
            -maxdepth 2 -name 'libmipster*.dll' 2>/dev/null || true)
@@ -172,10 +185,17 @@ build_variant() {
   echo "    bin/mipster-${name}.exe: $(du -sh "${INSTALL_DIR}/bin/mipster-${name}.exe" | cut -f1)"
 
   # ── Shared library (.dll) ─────────────────────────────────────────────────
-  # libtool installs DLLs into $prefix/bin on Windows. Copy libmipster-N.dll
-  # alongside the executables so they are found without any PATH change.
-  # Also check ${build_dir}/src/.libs as a fallback for libtool variants
-  # that don't install the DLL.
+  # We require MSYSTEM=MINGW64 (see debug variant for rationale). Refuse a
+  # cygmipster-*.dll outright — its PE import table would force users' EXEs
+  # to load msys-2.0.dll, which is not present on a clean Windows host.
+  local cyg_dlls
+  cyg_dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
+               -maxdepth 2 -name 'cygmipster*.dll' 2>/dev/null || true)
+  if [ -n "${cyg_dlls}" ]; then
+    echo "ERROR: libtool produced cygmipster*.dll — MSYSTEM is not MINGW64." >&2
+    echo "  MSYSTEM=${MSYSTEM:-unset}" >&2
+    exit 1
+  fi
   local dlls
   dlls=$(find "${build_dir}/install/bin" "${build_dir}/src/.libs" \
            -maxdepth 2 -name 'libmipster*.dll' 2>/dev/null || true)
@@ -190,7 +210,7 @@ build_variant() {
   fi
   while IFS= read -r f; do
     strip --strip-unneeded "${f}" 2>/dev/null || true
-    # Suffix dll with variant name to avoid collision between generic/avx2 builds
+    # Suffix with variant name to avoid collision between generic/avx2 builds.
     local base
     base=$(basename "${f}")
     cp "${f}" "${INSTALL_DIR}/bin/${base%.dll}-${name}.dll"

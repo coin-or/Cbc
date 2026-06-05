@@ -47,6 +47,58 @@
     .nav-links a { color: var(--muted); }
     .nav-links a:hover { color: var(--text); text-decoration: none; }
 
+    /* ── What's New banner ── */
+    .whats-new {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+    .whats-new-card {
+      background: linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 100%);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-top: 2rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .whats-new-icon { font-size: 1.6rem; flex-shrink: 0; }
+    .whats-new-body { flex: 1; }
+    .whats-new-tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.05em;
+    }
+    .whats-new-title { color: #fff; font-weight: 600; font-size: 1.05rem; margin-bottom: 0.4rem; }
+    .whats-new-list {
+      color: #cbd5e1;
+      font-size: 0.88rem;
+      line-height: 1.7;
+      margin: 0; padding-left: 1.2rem;
+    }
+    .whats-new-list li { margin-bottom: 0.15rem; }
+    .whats-new-list code {
+      background: rgba(0,0,0,0.25);
+      padding: 0.05rem 0.35rem;
+      border-radius: 3px;
+      font-size: 0.85em;
+    }
+    .whats-new-link {
+      display: inline-block;
+      margin-top: 0.6rem;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .whats-new-link:hover { text-decoration: underline; }
+
     /* ── Hero ── */
     .hero {
       text-align: center;
@@ -217,17 +269,53 @@
 <span> / /  / // // ____(__  ) /_/  __/ /    </span><span class="tree">     /|   |\</span>
 <span>/_/  /_/___/_/   /____/\__/\___/_/     </span><span class="tree">    ◉ ◉   ◉ ◉</span>
 <span class="tag">    {≈≈≈}  globally optimal · locally hip</span></div></div>
-  <div class="badge">Open Source · EPL-2.0 · COIN-OR based</div>
+  <div class="badge">v0.2.0 · Now on PyPI · 5 platforms · EPL-2.0</div>
   <p>A high-performance, single-build MIP solver — a streamlined fork of COIN-OR CBC with a clean C API and strong default performance.</p>
   <a class="btn btn-primary" href="#download">⬇ Download</a>
   &nbsp;
   <a class="btn btn-secondary" href="https://github.com/h-g-s/mipster">View on GitHub</a>
 </div>
 
+<!-- What's New in 0.2.0 -->
+<div class="whats-new">
+  <div class="whats-new-card">
+    <div class="whats-new-icon">🎉</div>
+    <div class="whats-new-body">
+      <span class="whats-new-tag">NEW IN 0.2.0</span>
+      <div class="whats-new-title">Easier installs, smarter solves, hardened correctness</div>
+      <ul class="whats-new-list">
+        <li><strong>Python wheels on PyPI</strong> — <code>pip install mipster</code> across Linux, macOS, Windows; runtime CPU dispatch (AVX2 / Haswell / NEON)</li>
+        <li><strong>Native installers</strong> — Windows <code>.exe</code> (NSIS), macOS <code>.pkg</code>, Linux <code>.deb</code>/<code>.rpm</code>/Arch packages</li>
+        <li><strong>LP auto-tuning</strong> (<code>-lpMethod=auto</code>) — random-forest based, 1.36× geomean LP speedup</li>
+        <li><strong>FeasibilityJump heuristic</strong> at root and in the tree, plus <strong>Racing LP portfolio</strong></li>
+        <li><strong>Soundness fixes</strong> in <code>CglFlowCover</code>, <code>CglProbing</code>, <code>CglKnapsackCover</code>, <code>CglTwoMIR</code>, postprocess</li>
+        <li><strong>New diagnostic tools</strong>: <code>mipster_diag</code> (auto-triage of wrong-optimal) and <code>mipster_validate_sol</code></li>
+      </ul>
+      <a class="whats-new-link" href="https://github.com/h-g-s/mipster/blob/master/CHANGELOG.md">Read the full changelog →</a>
+    </div>
+  </div>
+</div>
+
 <!-- Download -->
 <section id="download">
   <h2>⬇ Download</h2>
   <div class="download-grid">
+
+    <!-- Python (PyPI) -->
+    <div class="dl-card" style="grid-column: 1 / -1; background: linear-gradient(135deg, #1e293b 0%, #1e3a5f 100%); border-color: var(--accent);">
+      <div class="dl-card-header">
+        <div class="dl-icon" style="background:#3776ab;">🐍</div>
+        <div>
+          <div class="dl-card-title">Python — pip install</div>
+          <div class="dl-card-sub">Self-contained wheels for Linux x86_64/aarch64, macOS x86_64/arm64, Windows x86_64</div>
+        </div>
+      </div>
+      <pre style="margin: 0; padding: 0.9rem 1.1rem; background: rgba(0,0,0,0.35); font-size: 0.9rem;"><code>pip install mipster</code></pre>
+      <div style="font-size:0.8rem; color:var(--muted); margin-top:0.7rem;">
+        Runtime CPU dispatch (AVX2 / Haswell / NEON) · No system dependencies ·
+        <a href="https://pypi.org/project/mipster/">View on PyPI →</a>
+      </div>
+    </div>
 
     <!-- Linux x86_64 -->
     <div class="dl-card">
@@ -369,8 +457,8 @@
       <p>A comprehensive C interface callable from Python (via CFFI/ctypes), Julia, Rust, and any language with C FFI. Binary and source compatible with COIN-OR CBC.</p>
     </div>
     <div class="feature-card">
-      <h3>📦 Single Build System</h3>
-      <p>Five upstream projects (CoinUtils, Osi, Clp, Cgl, Cbc) merged into one autotools build. <code>./configure &amp;&amp; make &amp;&amp; make install</code> — no orchestration needed.</p>
+      <h3>🤖 Native ML Support</h3>
+      <p>Random-forest based <code>-lpMethod=auto</code> picks the best LP algorithm per instance (1.36× geomean speedup). Built-in <code>CbcInstanceFeatures</code> exports <code>OsiFeatures</code> values to CSV for offline tuning and clustering.</p>
     </div>
     <div class="feature-card">
       <h3>🛡 Debug Binaries Included</h3>
@@ -387,7 +475,14 @@
 <section id="quickstart">
   <h2>🚀 Quick Start</h2>
 
-  <p style="margin-bottom:1rem; color:var(--muted)">After installing via your platform's package above:</p>
+  <p style="margin-bottom:1rem; color:var(--muted)">From Python (no compilation needed):</p>
+
+  <pre><code>pip install mipster
+
+# Use mipster as a backend in python-mip:
+python -c "from mip import Model; m = Model(solver_name='mipster'); ..."</code></pre>
+
+  <p style="margin-top:1.5rem; margin-bottom:1rem; color:var(--muted)">From the command line, after installing your platform's package:</p>
 
   <pre><code># Solve a MPS file
 mipster problem.mps -solve

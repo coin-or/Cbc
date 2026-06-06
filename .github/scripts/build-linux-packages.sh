@@ -52,6 +52,7 @@ mkdir -p \
   "${STAGE}/usr/bin" \
   "${STAGE}/usr/lib/mipster/generic" \
   "${STAGE}/usr/lib/mipster/avx2" \
+  "${STAGE}/usr/lib/mipster/neon" \
   "${STAGE}/usr/include/mipster" \
   "${STAGE}/usr/share/doc/mipster" \
   "${STAGE}/usr/share/man/man1" \
@@ -60,11 +61,13 @@ mkdir -p \
 # Binaries
 install -m 755 "${DIST_DIR}/bin/mipster"         "${STAGE}/usr/bin/"
 install -m 755 "${DIST_DIR}/bin/mipster-generic" "${STAGE}/usr/bin/"
-[ -f "${DIST_DIR}/bin/mipster-avx2" ] && install -m 755 "${DIST_DIR}/bin/mipster-avx2" "${STAGE}/usr/bin/"
+[ -f "${DIST_DIR}/bin/mipster-avx2" ]  && install -m 755 "${DIST_DIR}/bin/mipster-avx2"  "${STAGE}/usr/bin/"
+[ -f "${DIST_DIR}/bin/mipster-neon" ]  && install -m 755 "${DIST_DIR}/bin/mipster-neon"  "${STAGE}/usr/bin/"
 
 # Shared libraries (if present in dist)
 [ -d "${DIST_DIR}/lib/generic" ] && cp -a "${DIST_DIR}/lib/generic/." "${STAGE}/usr/lib/mipster/generic/"
 [ -d "${DIST_DIR}/lib/avx2" ]    && cp -a "${DIST_DIR}/lib/avx2/."    "${STAGE}/usr/lib/mipster/avx2/"
+[ -d "${DIST_DIR}/lib/neon" ]    && cp -a "${DIST_DIR}/lib/neon/."    "${STAGE}/usr/lib/mipster/neon/"
 
 # Headers
 [ -d "${DIST_DIR}/include/mipster" ] && cp -a "${DIST_DIR}/include/mipster/." "${STAGE}/usr/include/mipster/"

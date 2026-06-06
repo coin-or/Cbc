@@ -4863,12 +4863,13 @@ int CbcSolver::postprocess(
       }
     }
     buffer << "Enumerated nodes:               "
-           << babModel_->getNodeCount();
+           << babModel_->getNodeCount() + babModel_->getExtraNodeCount();
     if (babModel_->getExtraNodeCount())
       buffer << "     (from fathoming "<< babModel_->getExtraNodeCount()<<")";
     buffer << std::endl;
     buffer << "Total iterations:               ";
-    buffer << babModel_->getIterationCount() << std::endl;
+    buffer << babModel_->getIterationCount()
+      + babModel_->numberExtraIterations() << std::endl;
 #if CBC_QUIET == 0
     if (babModel_->useElapsedTime())
       buffer << "Time (B&C, Wallclock seconds):  "
@@ -15463,8 +15464,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   model.setMinimizationObjValue(solved->getMinimizationObjValue());
   model.setContinuousObjective(solved->getContinuousObjective());
   model.setRootObjectiveAfterCuts(solved->rootObjectiveAfterCuts());
-  model.setNodeCount(solved->getNodeCount());
-  model.setIterationCount(solved->getIterationCount());
+  model.setNodeCount(solved->getNodeCount()+solved->getExtraNodeCount());
+  model.setIterationCount(solved->getIterationCount()+solved->numberExtraIterations());
   if (solved->bestSolution()) {
     int n = solved->solver()->getNumCols();
     int nc = model.solver()->getNumCols();

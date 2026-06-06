@@ -4268,6 +4268,9 @@ void CbcModel::branchAndBound(int doStatistics)
   double rootObjectiveValue = solver_->getObjValue();
   numberFixedAtRoot_ = 0;
   numberFixedNow_ = 0;
+  // switch off timing in cut generators
+  for (int i=0;i<numberCutGenerators_;i++)
+    generator_[i]->setTiming(false);
 #ifdef CBC_MORE_USE_GLOBAL_CUTS
   // sort global cuts
   if ((specialOptions_ & 2048) == 0) {
@@ -5565,7 +5568,7 @@ void CbcModel::branchAndBound(int doStatistics)
           << numberNodes_+numberExtraNodes_ << nNodes << currentBestObj
           << trueObjValue(bestPossibleObjective_) << tree_->lastDepth()
           << tree_->lastUnsatisfied() << tree_->lastObjective()
-          << numberIterations_ << getCurrentSeconds() << CoinMessageEol;
+          << numberIterations_+numberExtraIterations_ << getCurrentSeconds() << CoinMessageEol;
       } else if (!numberExtraIterations_) {
         messageHandler()->message(CBC_STATUS2, messages())
           << numberNodes_+numberExtraNodes_ << nNodes << currentBestObj
@@ -5934,8 +5937,10 @@ void CbcModel::branchAndBound(int doStatistics)
   //  If we did any sub trees - did we give up on any?
   if (numberStoppedSubTrees_)
     status_ = 1;
-  numberNodes_ += numberExtraNodes_;
-  numberIterations_ += numberExtraIterations_;
+  if (!parentModel_||((specialOptions_&2048)==0)&&!parentModel_->parentModel()) {
+    //numberNodes_ += numberExtraNodes_;
+    //numberIterations_ += numberExtraIterations_;
+  }
   if (!parentModel_ && eventHandler) {
     eventHandler->event(CbcEventHandler::endSearch);
     // setup info for printing
@@ -5948,12 +5953,12 @@ void CbcModel::branchAndBound(int doStatistics)
     if (secondaryStatus_ != 2)
       bestPossibleObjective_ = bestObjective_;
     handler_->message(CBC_END_GOOD, messages_)
-      << trueBestObjValue() << numberIterations_ << numberNodes_
+      << trueBestObjValue() << numberIterations_+numberExtraIterations_ << numberNodes_+numberExtraNodes_
       << getCurrentSeconds() << CoinMessageEol;
   } else {
     handler_->message(CBC_END, messages_)
       << trueBestObjValue() << trueObjValue(bestPossibleObjective_) << numberIterations_
-      << numberNodes_ << getCurrentSeconds() << CoinMessageEol;
+      << numberNodes_+numberExtraNodes_ << getCurrentSeconds() << CoinMessageEol;
   }
   if ((moreSpecialOptions_ & 4194304) != 0) {
     // Conflict cuts
@@ -8241,7 +8246,7 @@ bool CbcModel::isNodeLimitReached() const
   if (intParam_[CbcMaxNumNode] == COIN_INT_MAX)
     return false;
   else
-    return numberNodes_ >= intParam_[CbcMaxNumNode];
+    return numberNodes_+numberExtraNodes_ >= intParam_[CbcMaxNumNode];
 }
 // Time limit reached?
 bool CbcModel::isSecondsLimitReached() const

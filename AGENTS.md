@@ -10,7 +10,7 @@ The **repository root is the monorepo** — it embeds CoinUtils, Clp, and Cgl so
 
 **Build target:** the repo root. `configster` operates directly on the repo root.
 
-**Dependency order within the monorepo:** `CoinUtils → Clp (includes Osi) → Cgl → Cbc`
+**Component layering (architecture reference only — the build system handles ordering automatically):** `CoinUtils → Clp (includes Osi) → Cgl → Cbc`. This means Cgl may reference Clp/CoinUtils but not Cbc, etc.
 
 > **Note:** Osi sources (`OsiSolverInterface`, `OsiBranchingObject`, `OsiFeatures`, etc.) are compiled as part of the monorepo under `src/OsiCbc/`. They are not a separate project.
 

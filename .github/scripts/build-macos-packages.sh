@@ -59,8 +59,23 @@ if ls "$DIST_DIR/lib/"*/ >/dev/null 2>&1; then
   # x86_64: lib/generic/, lib/haswell/
   mkdir -p "$STAGING/usr/local/lib/mipster"
   cp -rP "$DIST_DIR/lib/"*/ "$STAGING/usr/local/lib/mipster/"
+
+  # Fix dylib load commands in variant binaries: tarball uses paths relative to
+  # the tarball's bin/ dir, but after system installation the libs are under
+  # /usr/local/lib/mipster/<variant>/.  Use install_name_tool -change to
+  # rewrite the recorded LC_LOAD_DYLIB path in each variant binary.
+  for variant in generic haswell; do
+    bin="$STAGING/usr/local/bin/mipster-${variant}"
+    [ -f "$bin" ] || continue
+    old_ref=$(otool -L "$bin" 2>/dev/null | awk '/libmipster/{print $1}' | head -1)
+    if [ -n "$old_ref" ]; then
+      install_name_tool -change "$old_ref" \
+        "/usr/local/lib/mipster/${variant}/$(basename "$old_ref")" "$bin"
+      echo "    fixed dylib ref in mipster-${variant}: $old_ref → /usr/local/lib/mipster/${variant}/$(basename "$old_ref")"
+    fi
+  done
 else
-  # arm64: flat lib/
+  # arm64: flat lib/ — /usr/local/lib/ is a standard search path, no fixup needed
   cp -rP "$DIST_DIR/lib/"* "$STAGING/usr/local/lib/" 2>/dev/null || true
 fi
 

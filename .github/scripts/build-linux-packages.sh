@@ -69,6 +69,17 @@ install -m 755 "${DIST_DIR}/bin/mipster-generic" "${STAGE}/usr/bin/"
 [ -d "${DIST_DIR}/lib/avx2" ]    && cp -a "${DIST_DIR}/lib/avx2/."    "${STAGE}/usr/lib/mipster/avx2/"
 [ -d "${DIST_DIR}/lib/neon" ]    && cp -a "${DIST_DIR}/lib/neon/."    "${STAGE}/usr/lib/mipster/neon/"
 
+# Fix RPATH: tarball binaries use $ORIGIN/../lib/<variant> which resolves
+# correctly relative to the tarball's bin/ dir, but breaks after system
+# installation (/usr/bin/ → /usr/lib/<variant> doesn't exist).
+# Re-patchelf each variant binary to use its absolute installed lib path.
+if command -v patchelf &>/dev/null; then
+  for variant in generic avx2 neon; do
+    bin="${STAGE}/usr/bin/mipster-${variant}"
+    [ -f "${bin}" ] && patchelf --set-rpath "/usr/lib/mipster/${variant}" "${bin}"
+  done
+fi
+
 # Headers
 [ -d "${DIST_DIR}/include/mipster" ] && cp -a "${DIST_DIR}/include/mipster/." "${STAGE}/usr/include/mipster/"
 

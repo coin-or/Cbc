@@ -32,6 +32,8 @@ GitHub Actions workflows live in `.github/workflows/`. There is a single workflo
 
 On push to `main` and on tags, CI also uploads release assets. The library is named **`libmipster`** and headers install to `include/mipster/`.
 
+> ⚠️ **IMPORTANT — Before tagging a release:** always bump the version in `configure.ac` (`AC_INIT` line) to match the new tag **before** pushing the tag. The PyPI publish workflow validates that the tag version and `configure.ac` version match and will fail otherwise.
+
 ## Environment Setup
 
 Set these variables in your shell profile to match your local directory layout:

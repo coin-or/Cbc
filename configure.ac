@@ -8,7 +8,7 @@
 #                       Names and other basic things                        #
 #############################################################################
 
-AC_INIT([Cbc],[0.2.0],[https://github.com/h-g-s/mipster/issues/new],[mipster],[https://github.com/h-g-s/mipster])
+AC_INIT([Cbc],[0.2.1],[https://github.com/h-g-s/mipster/issues/new],[mipster],[https://github.com/h-g-s/mipster])
 
 AC_COPYRIGHT([
 Copyright 2006 International Business Machines and others.

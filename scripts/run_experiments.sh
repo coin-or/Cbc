@@ -259,6 +259,9 @@ Optional:
   --zh-constraint-report
                        Save per-instance ZeroHalf best/worst constraint CSV
                        report to <outdir>/<instance>.zh-constraints.csv
+  --restart            Resume an interrupted run: skip instances whose .result
+                       file already exists in --outdir and only run the rest.
+                       Requires --outdir to point at the previous output dir.
   --dry-run            Print commands without executing them
   -h, --help           Show this help message and exit
 
@@ -290,6 +293,11 @@ Examples:
 
   # Dry run to preview the commands that would be executed:
   ./run_experiments.sh --bin ~/prog/cbc/bin/cbc --dry-run
+
+  # Resume an interrupted run (reuses existing .result files):
+  ./run_experiments.sh --bin ~/prog/cbc/bin/mipster \
+    --outdir /home/haroldo/experiments/cbc/opt_06_05 \
+    --restart
 EOF
 }
 
@@ -306,6 +314,7 @@ VG_SUPPS=()
 EXTRA_ENV=()
 CBC_EXTRA_OPTS=()
 DRY_RUN=0
+RESTART=0
 BUILD_SANITIZER=""        # "asan" | "none" | "" (no build)
 CBCBOX_DIR="/home/haroldo/dev/cbcbox"
 ZH_CONSTRAINT_REPORT=0
@@ -329,7 +338,8 @@ while [[ $# -gt 0 ]]; do
     --build-asan)     BUILD_SANITIZER="asan";   shift   ;;
     --build)          BUILD_SANITIZER="none";   shift   ;;
     --zh-constraint-report) ZH_CONSTRAINT_REPORT=1; shift ;;
-    --dry-run)        DRY_RUN=1;                shift   ;;
+    --restart)          RESTART=1;                 shift   ;;
+    --dry-run)          DRY_RUN=1;                 shift   ;;
     -h|--help)        show_help; exit 0                 ;;
     *) echo "Unknown option: $1" >&2; exit 1  ;;
   esac
@@ -614,7 +624,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   export PARALLEL_SHELL="$BASH"
 fi
 export VG_TOOL VG_SUPPS_STR EXTRA_ENV_STR CBC_EXTRA_OPTS_STR
-export EXPECTED_FILE REL_TOL ABS_TOL DRY_RUN SCRIPT_DIR ZH_CONSTRAINT_REPORT
+export EXPECTED_FILE REL_TOL ABS_TOL DRY_RUN RESTART SCRIPT_DIR ZH_CONSTRAINT_REPORT
 export USE_COLOR CBC_STATS_MODE
 
 # ── ASan environment defaults (only when no ASAN_OPTIONS already set) ─────────
@@ -747,6 +757,12 @@ run_instance() {
   local csv_statsfile="$OUTDIR/${name}.stats.csv"
   local zh_reportfile="$OUTDIR/${name}.zh-constraints.csv"
   local solutionfile="$OUTDIR/${name}.sol"
+
+  if [[ "$RESTART" == "1" && -f "$resultfile" ]]; then
+    echo "  [skip] $name (result exists)"
+    return 0
+  fi
+
   rm -f "$csv_statsfile"
 
   # Reconstruct VG command from exported scalars

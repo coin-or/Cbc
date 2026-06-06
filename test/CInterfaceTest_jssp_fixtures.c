@@ -54,12 +54,12 @@ static Cbc_Model *jssp_builder(void *userdata)
  * time limit is a wall-clock fallback (machine-dependent — tight values
  * cause flaky failures on slow CI runners or sanitizer builds). */
 static const JsspTestCase jssp_test_cases[] = {
-  {"jssp_ft06",    55,  500000, 300},  /* Fisher & Thompson 6x6 */
-  {"jssp_ft10",   930,  500000, 300},  /* Fisher & Thompson 10x10 */
-  {"jssp_la01",   666,  500000, 300},  /* Lawrence 10x5 */
-  {"jssp_la06",   926,  500000, 300},  /* Lawrence 15x5 */
-  {"jssp_la11",  1222,  500000, 300},  /* Lawrence 20x5 */
-  {"jssp_orb01", 1059,  500000, 300},  /* Applegate & Cook 10x10 */
+  {"jssp_ft06",    55,  500000, 600},  /* Fisher & Thompson 6x6 */
+  {"jssp_ft10",   930,  500000, 600},  /* Fisher & Thompson 10x10 */
+  {"jssp_la01",   666,  500000, 600},  /* Lawrence 10x5 */
+  {"jssp_la06",   926,  500000, 600},  /* Lawrence 15x5 */
+  {"jssp_la11",  1222,  500000, 600},  /* Lawrence 20x5 */
+  {"jssp_orb01", 1059,  500000, 600},  /* Applegate & Cook 10x10 */
 };
 
 static const int NUM_TESTS = sizeof(jssp_test_cases) / sizeof(jssp_test_cases[0]);

@@ -372,15 +372,48 @@ fi
 [[ -x "$CBC_BIN" ]] || { echo "Error: $CBC_BIN is not executable" >&2; exit 1; }
 
 # ── Snapshot binary to a temp dir so rebuilds during the run don't interfere ──
-EXP_TMPDIR=$(mktemp -d /tmp/cbc_exp_XXXXXXXX)
-trap 'rm -rf "${EXP_TMPDIR:-}"' EXIT
-TMP_CBC_BIN="$EXP_TMPDIR/cbc"
-cp "$CBC_BIN" "$TMP_CBC_BIN"
-chmod +x "$TMP_CBC_BIN"
+# Exception: system-installed binaries (/usr/bin, /usr/local/bin) are used
+# directly — no rebuild can affect them and they rely on sibling variant
+# binaries + system library paths that must stay in place.
+REAL_CBC_BIN="$(realpath "$CBC_BIN")"
+BIN_DIR="$(dirname "$REAL_CBC_BIN")"
+
+if [[ "$BIN_DIR" == /usr/bin || "$BIN_DIR" == /usr/local/bin ]]; then
+  TMP_CBC_BIN="$REAL_CBC_BIN"
+  echo "==> System binary — using in place: $TMP_CBC_BIN"
+else
+  EXP_TMPDIR=$(mktemp -d /tmp/cbc_exp_XXXXXXXX)
+  trap 'rm -rf "${EXP_TMPDIR:-}"' EXIT
+  mkdir -p "$EXP_TMPDIR/bin"
+
+  # Copy launcher + variant binaries
+  cp "$REAL_CBC_BIN" "$EXP_TMPDIR/bin/mipster"
+  chmod +x "$EXP_TMPDIR/bin/mipster"
+  for vbin in "$BIN_DIR"/mipster-generic "$BIN_DIR"/mipster-neon \
+              "$BIN_DIR"/mipster-avx2   "$BIN_DIR"/mipster-haswell; do
+    [[ -x "$vbin" ]] || continue
+    cp "$vbin" "$EXP_TMPDIR/bin/"
+    echo "    also copied variant: $(basename "$vbin")"
+  done
+
+  # Mirror lib dirs so $ORIGIN/../lib/<variant> RPATHs resolve correctly
+  ORIG_LIB_DIR="$(realpath "$BIN_DIR/../lib" 2>/dev/null || true)"
+  if [[ -d "$ORIG_LIB_DIR" ]]; then
+    for variant in generic neon avx2 haswell; do
+      [[ -d "$ORIG_LIB_DIR/$variant" ]] || continue
+      mkdir -p "$EXP_TMPDIR/lib"
+      cp -rP "$ORIG_LIB_DIR/$variant" "$EXP_TMPDIR/lib/"
+      echo "    also copied lib: $variant"
+    done
+  fi
+
+  TMP_CBC_BIN="$EXP_TMPDIR/bin/mipster"
+  echo "==> Binary snapshotted: $TMP_CBC_BIN"
+  echo "    (original: $REAL_CBC_BIN)"
+fi
+
 ORIGINAL_CBC_BIN="$CBC_BIN"
 CBC_BIN="$TMP_CBC_BIN"
-echo "==> Binary snapshotted: $TMP_CBC_BIN"
-echo "    (original: $ORIGINAL_CBC_BIN)"
 echo ""
 
 # ── Detect optional solver features by querying the actual binary ─────────────

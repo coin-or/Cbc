@@ -881,6 +881,18 @@ static void Cbc_addColBuffer( Cbc_Model *model,
   model->cObj[p] = obj;
   model->nInt += (int)isInteger;
 
+  /* Auto-generate a column name when none is provided, matching the
+     convention used by commercial solvers (e.g. Gurobi assigns "C0000001").
+     This ensures that var.name is always non-empty, which is required for
+     variable look-up by name in callbacks (e.g. lazy constraint generators
+     that call model.translate()). */
+  char autoName[32];
+  if (name == NULL || name[0] == '\0') {
+    int globalCol = Cbc_getNumCols(model) + p;  /* total cols so far */
+    snprintf(autoName, sizeof(autoName), "C%07d", globalCol);
+    name = autoName;
+  }
+
   int ps = model->cNameStart[p];
   strncpy( model->cNames+ps, name, MAX_COL_NAME_SIZE );
   int len = std::min( (int)strlen(name), MAX_COL_NAME_SIZE );
@@ -2355,6 +2367,13 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
   for (int j=0 ; j<numCols ; ++j )
     model->obj_value += cbcModel.bestSolution()[j] * solver->getObjCoefficients()[j];
 
+  /* When proven optimal the best bound equals the incumbent by definition.
+     Sync mipBestPossibleObjValue to the freshly recomputed obj_value so that
+     callers always see bound == value instead of a tiny floating-point
+     discrepancy caused by the two different computation paths. */
+  if (model->mipIsProvenOptimal)
+    model->mipBestPossibleObjValue = model->obj_value;
+
   /* solution pool */
   for ( int i=0 ; i<numSols ; ++i ) {
     const double *xi = cbcModel.savedSolution(i);
@@ -2376,8 +2395,10 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
   } /* saving solution pool */
 
   Cbc_updateSlack(model, cbcModel.getRowActivity(), numRows );
+  model->rSlk = model->slack->data();
   /* storing row activity in MIP sol */
   memcpy(model->mipRowActivity->data(), cbcModel.getRowActivity(), sizeof(double)*numRows );
+  model->rActv = model->mipRowActivity->data();
 
   /* setting this solution as a MIPStart for possible next optimization */
   if (model->nColsMS) {

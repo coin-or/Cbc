@@ -154,7 +154,6 @@ echo "    bin/test/: $(ls "${test_dir}" | wc -l) test binaries"
 # ── Binary ────────────────────────────────────────────────────────────────────
 strip "${BUILD_DIR}/src/.libs/mipster"
 cp "${BUILD_DIR}/src/.libs/mipster" "${INSTALL_DIR}/bin/mipster"
-local old_ref
 old_ref=$(otool -L "${INSTALL_DIR}/bin/mipster" | awk '/libmipster/{print $1}' | head -1)
 if [ -n "${old_ref}" ]; then
   install_name_tool -change "${old_ref}" "@executable_path/../lib/libmipster.0.dylib" "${INSTALL_DIR}/bin/mipster"

@@ -968,6 +968,7 @@ run_instance() {
     else
       status="NO_SOLUTION"
     fi
+    cbc_gap="200%"
   elif [[ $timed_out -eq 1 ]]; then
     if [[ "$cbc_gap" != "-" ]]; then
       status="TIMEOUT(gap=${cbc_gap})"

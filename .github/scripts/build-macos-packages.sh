@@ -54,11 +54,15 @@ mkdir -p \
 # Binaries (launcher + variants)
 cp -r "$DIST_DIR/bin/"* "$STAGING/usr/local/bin/"
 
-# Shared libraries — keep variant subdirs (generic/, haswell/) if present
-if ls "$DIST_DIR/lib/"*/ >/dev/null 2>&1; then
+# Shared libraries
+if [ "$ARCH" = "x86_64" ]; then
   # x86_64: lib/generic/, lib/haswell/
   mkdir -p "$STAGING/usr/local/lib/mipster"
-  cp -rP "$DIST_DIR/lib/"*/ "$STAGING/usr/local/lib/mipster/"
+  for variant in generic haswell; do
+    if [ -d "$DIST_DIR/lib/$variant" ]; then
+      cp -rP "$DIST_DIR/lib/$variant" "$STAGING/usr/local/lib/mipster/"
+    fi
+  done
 
   # Fix dylib load commands in variant binaries: tarball uses paths relative to
   # the tarball's bin/ dir, but after system installation the libs are under
@@ -76,7 +80,15 @@ if ls "$DIST_DIR/lib/"*/ >/dev/null 2>&1; then
   done
 else
   # arm64: flat lib/ — /usr/local/lib/ is a standard search path, no fixup needed
-  cp -rP "$DIST_DIR/lib/"* "$STAGING/usr/local/lib/" 2>/dev/null || true
+  find "$DIST_DIR/lib" -maxdepth 1 -type f -o -type l | while read -r f; do
+    cp -rP "$f" "$STAGING/usr/local/lib/"
+  done
+fi
+
+# Copy debug symbols/libs (dbg/) to /usr/local/lib/dbg if present
+if [ -d "$DIST_DIR/lib/dbg" ]; then
+  mkdir -p "$STAGING/usr/local/lib/dbg"
+  cp -rP "$DIST_DIR/lib/dbg/"* "$STAGING/usr/local/lib/dbg/"
 fi
 
 # Headers

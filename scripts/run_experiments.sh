@@ -259,9 +259,6 @@ Optional:
   --zh-constraint-report
                        Save per-instance ZeroHalf best/worst constraint CSV
                        report to <outdir>/<instance>.zh-constraints.csv
-  --restart            Resume an interrupted run: skip instances whose .result
-                       file already exists in --outdir and only run the rest.
-                       Requires --outdir to point at the previous output dir.
   --dry-run            Print commands without executing them
   -h, --help           Show this help message and exit
 
@@ -293,11 +290,6 @@ Examples:
 
   # Dry run to preview the commands that would be executed:
   ./run_experiments.sh --bin ~/prog/cbc/bin/cbc --dry-run
-
-  # Resume an interrupted run (reuses existing .result files):
-  ./run_experiments.sh --bin ~/prog/cbc/bin/mipster \
-    --outdir /home/haroldo/experiments/cbc/opt_06_05 \
-    --restart
 EOF
 }
 
@@ -314,7 +306,6 @@ VG_SUPPS=()
 EXTRA_ENV=()
 CBC_EXTRA_OPTS=()
 DRY_RUN=0
-RESTART=0
 BUILD_SANITIZER=""        # "asan" | "none" | "" (no build)
 CBCBOX_DIR="/home/haroldo/dev/cbcbox"
 ZH_CONSTRAINT_REPORT=0
@@ -338,8 +329,7 @@ while [[ $# -gt 0 ]]; do
     --build-asan)     BUILD_SANITIZER="asan";   shift   ;;
     --build)          BUILD_SANITIZER="none";   shift   ;;
     --zh-constraint-report) ZH_CONSTRAINT_REPORT=1; shift ;;
-    --restart)          RESTART=1;                 shift   ;;
-    --dry-run)          DRY_RUN=1;                 shift   ;;
+    --dry-run)        DRY_RUN=1;                shift   ;;
     -h|--help)        show_help; exit 0                 ;;
     *) echo "Unknown option: $1" >&2; exit 1  ;;
   esac
@@ -372,48 +362,33 @@ fi
 [[ -x "$CBC_BIN" ]] || { echo "Error: $CBC_BIN is not executable" >&2; exit 1; }
 
 # ── Snapshot binary to a temp dir so rebuilds during the run don't interfere ──
-# Exception: system-installed binaries (/usr/bin, /usr/local/bin) are used
-# directly — no rebuild can affect them and they rely on sibling variant
-# binaries + system library paths that must stay in place.
-REAL_CBC_BIN="$(realpath "$CBC_BIN")"
-BIN_DIR="$(dirname "$REAL_CBC_BIN")"
+EXP_TMPDIR=$(mktemp -d /tmp/cbc_exp_XXXXXXXX)
+trap 'rm -rf "${EXP_TMPDIR:-}"' EXIT
+mkdir -p "$EXP_TMPDIR/bin"
+ORIGINAL_CBC_BIN="$CBC_BIN"
+ORIGINAL_BINDIR="$(cd "$(dirname "$CBC_BIN")" && pwd)"
+TMP_CBC_BIN="$EXP_TMPDIR/bin/$(basename "$CBC_BIN")"
 
-if [[ "$BIN_DIR" == /usr/bin || "$BIN_DIR" == /usr/local/bin ]]; then
-  TMP_CBC_BIN="$REAL_CBC_BIN"
-  echo "==> System binary — using in place: $TMP_CBC_BIN"
-else
-  EXP_TMPDIR=$(mktemp -d /tmp/cbc_exp_XXXXXXXX)
-  trap 'rm -rf "${EXP_TMPDIR:-}"' EXIT
-  mkdir -p "$EXP_TMPDIR/bin"
+# Copy the binary
+cp "$CBC_BIN" "$TMP_CBC_BIN"
+chmod +x "$TMP_CBC_BIN"
 
-  # Copy launcher + variant binaries
-  cp "$REAL_CBC_BIN" "$EXP_TMPDIR/bin/mipster"
-  chmod +x "$EXP_TMPDIR/bin/mipster"
-  for vbin in "$BIN_DIR"/mipster-generic "$BIN_DIR"/mipster-neon \
-              "$BIN_DIR"/mipster-avx2   "$BIN_DIR"/mipster-haswell; do
-    [[ -x "$vbin" ]] || continue
-    cp "$vbin" "$EXP_TMPDIR/bin/"
-    echo "    also copied variant: $(basename "$vbin")"
-  done
-
-  # Mirror lib dirs so $ORIGIN/../lib/<variant> RPATHs resolve correctly
-  ORIG_LIB_DIR="$(realpath "$BIN_DIR/../lib" 2>/dev/null || true)"
-  if [[ -d "$ORIG_LIB_DIR" ]]; then
-    for variant in generic neon avx2 haswell; do
-      [[ -d "$ORIG_LIB_DIR/$variant" ]] || continue
-      mkdir -p "$EXP_TMPDIR/lib"
-      cp -rP "$ORIG_LIB_DIR/$variant" "$EXP_TMPDIR/lib/"
-      echo "    also copied lib: $variant"
-    done
+# Also copy any other executable files in the original binary's directory (like mipster_validate_sol)
+for f in "$ORIGINAL_BINDIR"/*; do
+  if [[ -f "$f" && -x "$f" ]]; then
+    cp "$f" "$EXP_TMPDIR/bin/"
   fi
+done
 
-  TMP_CBC_BIN="$EXP_TMPDIR/bin/mipster"
-  echo "==> Binary snapshotted: $TMP_CBC_BIN"
-  echo "    (original: $REAL_CBC_BIN)"
+# Also copy libraries if they exist next to the binary in a ../lib/ directory
+if [[ -d "$ORIGINAL_BINDIR/../lib" ]]; then
+  mkdir -p "$EXP_TMPDIR/lib"
+  cp -rP "$ORIGINAL_BINDIR/../lib/"* "$EXP_TMPDIR/lib/" 2>/dev/null || true
 fi
 
-ORIGINAL_CBC_BIN="$CBC_BIN"
 CBC_BIN="$TMP_CBC_BIN"
+echo "==> Binary snapshotted: $TMP_CBC_BIN"
+echo "    (original: $ORIGINAL_CBC_BIN)"
 echo ""
 
 # ── Detect optional solver features by querying the actual binary ─────────────
@@ -446,7 +421,7 @@ WALLCLOCK_LIMIT=$((TIMELIMIT + OVERTIME_GRACE))  # hard kill deadline
 
 # ── Output directory ──────────────────────────────────────────────────────────
 if [[ -z "$OUTDIR" ]]; then
-  VARIANT=$(basename "$(dirname "$(dirname "$CBC_BIN")")")  # e.g. cbc-hwpar-tsan
+  VARIANT=$(basename "$(dirname "$(dirname "$ORIGINAL_CBC_BIN")")")  # e.g. cbc-hwpar-tsan
   TS=$(date +%Y%m%d_%H%M%S)
   OUTDIR="exp_results/${VARIANT}_t${THREADS}_p${PARALLEL}_${TS}"
   [[ -n "$VG_TOOL" ]] && OUTDIR="${OUTDIR}_${VG_TOOL}"
@@ -657,7 +632,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   export PARALLEL_SHELL="$BASH"
 fi
 export VG_TOOL VG_SUPPS_STR EXTRA_ENV_STR CBC_EXTRA_OPTS_STR
-export EXPECTED_FILE REL_TOL ABS_TOL DRY_RUN RESTART SCRIPT_DIR ZH_CONSTRAINT_REPORT
+export EXPECTED_FILE REL_TOL ABS_TOL DRY_RUN SCRIPT_DIR ZH_CONSTRAINT_REPORT
 export USE_COLOR CBC_STATS_MODE
 
 # ── ASan environment defaults (only when no ASAN_OPTIONS already set) ─────────
@@ -790,12 +765,6 @@ run_instance() {
   local csv_statsfile="$OUTDIR/${name}.stats.csv"
   local zh_reportfile="$OUTDIR/${name}.zh-constraints.csv"
   local solutionfile="$OUTDIR/${name}.sol"
-
-  if [[ "$RESTART" == "1" && -f "$resultfile" ]]; then
-    echo "  [skip] $name (result exists)"
-    return 0
-  fi
-
   rm -f "$csv_statsfile"
 
   # Reconstruct VG command from exported scalars

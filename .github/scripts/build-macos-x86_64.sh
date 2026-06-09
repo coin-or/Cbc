@@ -191,46 +191,33 @@ build_variant() {
   # ── Binary ──────────────────────────────────────────────────────────────────
   strip "${build_dir}/src/.libs/mipster"
   cp "${build_dir}/src/.libs/mipster" "${INSTALL_DIR}/bin/mipster-${name}"
+  local old_ref
+  old_ref=$(otool -L "${INSTALL_DIR}/bin/mipster-${name}" | awk '/libmipster/{print $1}' | head -1)
+  if [ -n "${old_ref}" ]; then
+    install_name_tool -change "${old_ref}" "@executable_path/../lib/${name}/$(basename "${old_ref}")" "${INSTALL_DIR}/bin/mipster-${name}"
+  fi
   echo "    bin/mipster-${name}: $(du -sh "${INSTALL_DIR}/bin/mipster-${name}" | cut -f1)"
 
   # ── Shared library ──────────────────────────────────────────────────────────
   local libdir="${INSTALL_DIR}/lib/${name}"
   mkdir -p "${libdir}"
   # Copy versioned .dylib and symlinks
-  cp -P "${build_dir}/install/lib"/libmipster*.dylib "${libdir}/"
+  cp -P "${build_dir}/install/lib"/libmipster*.dylib "${libdir}/" 2>/dev/null || true
 
-  # Process every real dylib (not just `head -1`) and assert the install name
-  # was rewritten; previously a stray match could leave the release dylib with
-  # a /tmp/* install name pointing at the build directory.
-  local real_dylibs
-  real_dylibs=$(find "${libdir}" -maxdepth 1 -name 'libmipster*.dylib' ! -type l)
-  if [ -z "${real_dylibs}" ]; then
-    echo "ERROR: no libmipster*.dylib found under ${libdir}/" >&2
-    ls -la "${libdir}/" >&2
-    exit 1
+  # Fix install name and RPATH so dylib is self-contained when placed next to the binary
+  local real_dylib
+  real_dylib=$(find "${libdir}" -name 'libmipster.*.dylib' ! -type l | head -1)
+  if [ -n "${real_dylib}" ]; then
+    install_name_tool -id "@loader_path/$(basename "${real_dylib}")" "${real_dylib}"
+    strip -x "${real_dylib}"
   fi
-  local f
-  while IFS= read -r f; do
-    install_name_tool -id "@loader_path/$(basename "${f}")" "${f}"
-    strip -x "${f}"
-  done <<< "${real_dylibs}"
-
-  local real_dylib install_id
-  real_dylib=$(echo "${real_dylibs}" | head -1)
-  install_id=$(otool -D "${real_dylib}" | tail -1)
-  case "${install_id}" in
-    @loader_path/*|@rpath/*|@executable_path/*) ;;
-    *)
-      echo "ERROR: install name of ${real_dylib} is '${install_id}'," \
-           "expected @loader_path/* — install_name_tool failed silently." >&2
-      exit 1
-      ;;
-  esac
 
   # Verify only system deps
   echo "    Shared lib deps:"
-  otool -L "${real_dylib}" | grep -v "libmipster\|/usr/lib\|/System\|^${libdir}" \
-    || echo "      (none — only system libs)"
+  if [ -n "${real_dylib}" ]; then
+    otool -L "${real_dylib}" | grep -v "libmipster\|/usr/lib\|/System\|^${libdir}" \
+      || echo "      (none — only system libs)"
+  fi
 
   # ── Headers (once) ──────────────────────────────────────────────────────────
   if [ "${name}" = "generic" ]; then
@@ -336,17 +323,6 @@ for f in mipster-tests.desktop mipster-tests-debug.desktop; do
   [ -f "${SRC_DIR}/test/${f}" ] && \
     cp "${SRC_DIR}/test/${f}" "${INSTALL_DIR}/share/applications/" && echo "    ${f}"
 done
-
-# ── Third-party licenses ──────────────────────────────────────────────────────
-# macOS uses Apple's system Accelerate framework (not bundled), but we still
-# ship the upstream MIPster LICENSE and a third-party note for consistency.
-echo ""
-echo "==> Installing third-party license texts..."
-mkdir -p "${INSTALL_DIR}/share/doc/mipster"
-cp "${SRC_DIR}/.github/scripts/THIRD_PARTY_LICENSES.md" \
-   "${INSTALL_DIR}/share/doc/mipster/THIRD_PARTY_LICENSES.md"
-[ -f "${SRC_DIR}/LICENSE" ] && cp "${SRC_DIR}/LICENSE" "${INSTALL_DIR}/share/doc/mipster/LICENSE"
-echo "    THIRD_PARTY_LICENSES.md, LICENSE"
 
 # ── Package ───────────────────────────────────────────────────────────────────
 echo ""

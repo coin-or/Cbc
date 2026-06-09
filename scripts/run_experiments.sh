@@ -23,9 +23,7 @@
 #   memory_usage.tsv         — memory utilisation sampled every 5 min during the run
 #
 # Status values in summary.tsv:
-#   SOLVED          solved, objective matches an exact reference
-#   SOLVED(best)    solved, objective matches the best-known reference
-#   SOLVED(improved) solved, objective improves on the best-known reference
+#   SOLVED          solved, objective within tolerance of the reference
 #   SOLVED(no_ref)  solved, no reference objective available
 #   INVALID_SOL     CBC found a solution but validation (mipster_validate_sol) failed
 #   WRONG_OBJ       solved but objective is worse than the reference
@@ -215,9 +213,7 @@ Output layout (<outdir>/):
   memory_usage.tsv         — memory utilisation sampled every 5 min during the run
 
 Status values in summary.tsv:
-  SOLVED            solved, objective matches an exact reference
-  SOLVED(best)      solved, objective matches the best-known reference
-  SOLVED(improved)  solved, objective improves on the best-known reference
+  SOLVED            solved, objective within tolerance of the reference
   SOLVED(no_ref)    solved, no reference objective available
   SOLVED(inf)       CBC proved infeasible; benchmark agrees (or no ref)
   INVALID_SOL       CBC found a solution but validation (mipster_validate_sol) failed
@@ -705,12 +701,12 @@ gap_vs_ref() {
       }
 
       if (absref <= 1e-10) {
-        print ">100%"
+        print "100%"
         exit 0
       }
 
       pct = diff / absref * 100.0
-      if (pct > 100.0) print ">100%"
+      if (pct > 100.0) print "100%"
       else printf "%.1f%%\n", pct
     }'
 }
@@ -938,7 +934,7 @@ run_instance() {
     if [[ -n "$raw_gap" ]]; then
       cbc_gap=$(awk -v g="$raw_gap" 'BEGIN {
         pct = g * 100
-        if (pct > 100) print ">100%"
+        if (pct > 100) print "100%"
         else           printf "%.1f%%\n", pct
       }')
     elif [[ -n "$exp" ]]; then
@@ -980,20 +976,14 @@ run_instance() {
     fi
   elif [[ -n "$exp" ]]; then
     if ref_allows_obj "$obj" "$exp" "$ref_kind" "$ref_sense"; then
-      if [[ "$ref_kind" == "best" ]]; then
-        if obj_ok "$obj" "$exp"; then
-          status="SOLVED(best)"
-        else
-          status="SOLVED(improved)"
-        fi
-      else
-        status="SOLVED"
-      fi
+      status="SOLVED"
+      cbc_gap="0%"
     else
       status="WRONG_OBJ"
     fi
   else
     status="SOLVED(no_ref)"
+    cbc_gap="0%"
   fi
 
   # Extract error snippets into .err (only created when non-empty)

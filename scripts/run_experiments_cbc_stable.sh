@@ -30,9 +30,7 @@
 #   experiment_setup.md      — binary info, hardware, and experiment parameters
 #
 # Status values in summary.tsv:
-#   SOLVED            solved, objective matches exact reference
-#   SOLVED(best)      solved, objective matches best-known reference
-#   SOLVED(improved)  solved, objective improves on best-known reference
+#   SOLVED            solved, objective within tolerance of the reference
 #   SOLVED(no_ref)    solved, no reference available
 #   SOLVED(inf)       CBC proved infeasible; benchmark agrees (or no ref)
 #   WRONG_OBJ         solved but objective worse than reference
@@ -460,12 +458,12 @@ gap_vs_ref() {
       }
 
       if (absref <= 1e-10) {
-        print ">100%"
+        print "100%"
         exit 0
       }
 
       pct = diff / absref * 100.0
-      if (pct > 100.0) print ">100%"
+      if (pct > 100.0) print "100%"
       else printf "%.1f%%\n", pct
     }'
 }
@@ -583,7 +581,7 @@ run_instance() {
     if [[ -n "$raw_gap" ]]; then
       cbc_gap=$(awk -v g="$raw_gap" 'BEGIN {
         pct = g * 100
-        if (pct > 100) print ">100%"
+        if (pct > 100) print "100%"
         else           printf "%.1f%%\n", pct
       }')
     elif [[ -n "$exp" ]]; then
@@ -617,20 +615,14 @@ run_instance() {
     fi
   elif [[ -n "$exp" ]]; then
     if ref_allows_obj "$obj" "$exp" "$ref_kind" "$ref_sense"; then
-      if [[ "$ref_kind" == "best" ]]; then
-        if obj_ok "$obj" "$exp"; then
-          status="SOLVED(best)"
-        else
-          status="SOLVED(improved)"
-        fi
-      else
-        status="SOLVED"
-      fi
+      status="SOLVED"
+      cbc_gap="0%"
     else
       status="WRONG_OBJ"
     fi
   else
     status="SOLVED(no_ref)"
+    cbc_gap="0%"
   fi
 
   # ── Write .err snippet for actionable failures ────────────────────────────

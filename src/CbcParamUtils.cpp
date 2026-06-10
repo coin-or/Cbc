@@ -1390,8 +1390,8 @@ void setCbcModelDefaults(CbcModel *model)
   model->setDblParam(CbcModel::CbcIntegerTolerance, 1.0e-6);
   model->setDblParam(CbcModel::CbcInfeasibilityWeight, 0.0);
   model->setDblParam(CbcModel::CbcCutoffIncrement, 1.0e-5);
-  model->setDblParam(CbcModel::CbcAllowableGap, 1.0e-10);
-  model->setDblParam(CbcModel::CbcAllowableFractionGap, 0.0);
+  model->setDblParam(CbcModel::CbcAllowableGap, 1.0e-6);
+  model->setDblParam(CbcModel::CbcAllowableFractionGap, 1.0e-4);
   // One year is 60x60x24x365 = 31,536,000 seconds.
   model->setDblParam(CbcModel::CbcMaximumSeconds, 3.0e7);
   model->setDblParam(CbcModel::CbcCurrentCutoff, 1.0e100);

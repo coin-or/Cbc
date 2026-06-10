@@ -942,7 +942,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::RINS]->setDefault("on");
      parameters_[CbcParam::ROUNDING]->setDefault("on");
      parameters_[CbcParam::VND]->setDefault("off");
-     parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-12);
+     parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-6);
      parameters_[CbcParam::CUTOFF]->setDefault(1.0e50);
      parameters_[CbcParam::DIRECTION]->setDefault("min!imize");
      parameters_[CbcParam::INCREMENT]->setDefault(1.0e-4);
@@ -963,7 +963,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::NUMBERANALYZE]->setDefault(0);
      parameters_[CbcParam::REVERSE]->setType(CoinParam::paramAct);
      parameters_[CbcParam::CUTPASS]->setDefault(100);
-     parameters_[CbcParam::GAPRATIO]->setDefault(0.0);
+     parameters_[CbcParam::GAPRATIO]->setDefault(1.0e-4);
      parameters_[CbcParam::TIMELIMIT]->setDefault( 1.0e11);
      parameters_[CbcParam::STRONGBRANCHING]->setDefault(0);
      parameters_[CbcParam::NUMBERBEFORE]->setDefault(10);

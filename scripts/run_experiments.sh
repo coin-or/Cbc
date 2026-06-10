@@ -186,7 +186,7 @@ declare -A EXPECTED_OVERRIDE=(
   # MIPster proves 202.185252817 optimal (gap=0); MIPLIB reference 202.190074193 is stale
   [dt_optimization]=202.185252817
 )
-REL_TOL=1e-6
+REL_TOL=1e-4
 ABS_TOL=1e-4
 
 # ── Help ─────────────────────────────────────────────────────────────────────

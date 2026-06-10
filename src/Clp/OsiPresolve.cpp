@@ -45,6 +45,7 @@
 #include "CoinPresolveDupcol.hpp"
 #include "CoinPresolveImpliedFree.hpp"
 #include "CoinPresolveIsolated.hpp"
+#include "CoinPresolveParity.hpp"
 #include "CoinMessage.hpp"
 
 OsiPresolve::OsiPresolve()
@@ -846,6 +847,12 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 */
   paction_ = make_fixed(prob, paction_);
   paction_ = testRedundant(prob, paction_);
+  // GF(2) parity reduction — run early, before the main loop
+  if (prob->anyInteger() && !prob->status_) {
+    paction_ = parity_action::presolve(prob, paction_);
+    if (prob->status_)
+      return (paction_);
+  }
 
 #if PRESOLVE_DEBUG > 0
   check_and_tell(prob, paction_, pactiond);

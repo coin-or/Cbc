@@ -120,7 +120,8 @@ dist_pkgtestfixture_DATA = \
   fixtures/steiner_complete10_unit_t4.mps.gz \
   fixtures/steiner_complete12_rand_t3.mps.gz \
   fixtures/steiner_sparse20_p03_t4.mps.gz \
-  fixtures/steiner_sparse25_p025_t6.mps.gz
+  fixtures/steiner_sparse25_p025_t6.mps.gz \
+  fixtures/parity_test.lp
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
 pkgtestsoldir = $(datadir)/mipster/test/fixtures/solutions
@@ -174,7 +175,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis CInterfaceTest_jssp_fixtures CInterfaceTest_steiner CInterfaceTest_fcnf_fixtures
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis CInterfaceTest_jssp_fixtures CInterfaceTest_steiner CInterfaceTest_fcnf_fixtures CInterfaceTest_parity
 
 noinst_PROGRAMS = gen_miclsp_solutions
 
@@ -329,7 +330,7 @@ nodist_EXTRA_CInterfaceTest_attfInst1_SOURCES = dummy.cpp
 CInterfaceTest_attfInst1_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_attfInst1_LDADD = ../src/libmipster.la
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CInterfaceTest_attfInst1$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT) CInterfaceTest_qap$(EXEEXT) CInterfaceTest_setcover$(EXEEXT) CInterfaceTest_setpacking$(EXEEXT) CInterfaceTest_setpartitioning$(EXEEXT) CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT) CInterfaceTest_fcnf_fixtures$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CInterfaceTest_attfInst1$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT) CInterfaceTest_qap$(EXEEXT) CInterfaceTest_setcover$(EXEEXT) CInterfaceTest_setpacking$(EXEEXT) CInterfaceTest_setpartitioning$(EXEEXT) CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT) CInterfaceTest_fcnf_fixtures$(EXEEXT) CInterfaceTest_parity$(EXEEXT)
 	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests
 
 ########################################################################
@@ -432,3 +433,13 @@ CInterfaceTest_fcnf_fixtures_LDADD = ../src/libmipster.la
 gen_miclsp_solutions_SOURCES = gen_miclsp_solutions.c
 nodist_EXTRA_gen_miclsp_solutions_SOURCES = dummy.cpp
 gen_miclsp_solutions_LDADD = ../src/libmipster.la
+
+########################################################################
+#                   GF(2) Parity Presolve tests                        #
+########################################################################
+
+CInterfaceTest_parity_SOURCES = CInterfaceTest_parity.c
+nodist_EXTRA_CInterfaceTest_parity_SOURCES = dummy.cpp
+CInterfaceTest_parity_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_parity_LDADD = ../src/libmipster.la
+

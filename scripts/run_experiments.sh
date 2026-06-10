@@ -952,6 +952,7 @@ run_instance() {
     status="VG_ERROR"
   elif [[ $exit_code -eq 124 ]]; then
     status="OVERTIME"
+    cbc_gap="300%"
   elif [[ $exit_code -ne 0 ]]; then
     status="CRASH(exit=$exit_code)"
   elif [[ $validation_failed -eq 1 ]]; then

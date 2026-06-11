@@ -15,7 +15,42 @@
 #include "CbcConfig.h"
 #include <deque>
 #include <string>
+#include <vector>
 #include "CbcParameters.hpp"
+
+/** Statistics for a single cut generator collected during a MIP solve.
+ *
+ *  Note: in multi-thread B&B (-threads N) child models hold independent
+ *  clones of each generator and their stats are NOT merged back to the
+ *  master.  The fields here therefore reflect only master-thread activity
+ *  in that case — the same limitation that exists for all other per-generator
+ *  counters (numberCutsInTotal, etc.).  For the racing-root-LP case the
+ *  stats ARE aggregated via CbcCutGenerator::addStatistics.
+ */
+struct CBCLIB_EXPORT CutGeneratorStats {
+  std::string name;
+  int nCuts = 0;        ///< Total row cuts added
+  int nCalls = 0;       ///< Number of times the generator was invoked
+  double time = 0.0;    ///< Time spent in this generator (seconds)
+  int nColumnCuts = 0;  ///< Total column cuts added
+  int minDepth = -1;    ///< Minimum B&B depth at which generator was called (-1 if never called)
+  int maxDepth = -1;    ///< Maximum B&B depth at which generator was called (-1 if never called)
+};
+
+/** Statistics for a single heuristic collected during a MIP solve.
+ *
+ *  Same threading caveat as CutGeneratorStats: in multi-thread B&B mode
+ *  the heuristics on child thread models are cloned and their stats are
+ *  never merged back, so these fields reflect only master-thread activity.
+ */
+struct CBCLIB_EXPORT HeuristicStats {
+  std::string name;
+  int nExecutions = 0;  ///< Number of times the heuristic was executed
+  double totalTime = 0.0; ///< Total time spent in the heuristic (seconds)
+  int nSolutions = 0;   ///< Number of solutions found
+  int minDepth = -1;    ///< Minimum B&B depth at which heuristic was applied (-1 if never run)
+  int maxDepth = -1;    ///< Maximum B&B depth at which heuristic was applied (-1 if never run)
+};
 
 class CBCLIB_EXPORT CbcSolverStatistics {
 public:
@@ -43,7 +78,7 @@ public:
   /** Cost after tightening LP relaxation with cuts */
   double tighter = 0.0;
 
-  /** Time spent generating cuts */
+  /** Total time spent generating cuts (sum across all generators) */
   double cut_time = 0.0;
 
   /** Nodes processed during branch-and-cut */
@@ -82,14 +117,27 @@ public:
   /** Clique strengthening time (before LP) */
   double clqstr_time = 0.0;
 
-  /** Number of cut generators */
-  int number_generators = 0;
+  /** Per-cut-generator statistics (one entry per registered generator) */
+  std::vector<CutGeneratorStats> cutStats;
 
-  /** Number of cuts per cut generator */
-  int *number_cuts = NULL;
+  /** Per-heuristic statistics (one entry per registered heuristic) */
+  std::vector<HeuristicStats> heuristicStats;
 
-  /** Cut generator name */
-  const char **name_generators = NULL;
+  /**
+   * Canonical set of cut-generator names known to MIPster.
+   * Always written to the CSV even when the generator produced no cuts,
+   * so that the column set stays stable across runs with different settings.
+   * Names must match what CbcSolverCutSetup.cpp passes to addCutGenerator().
+   */
+  static const std::vector<std::string> &knownCutGenerators();
+
+  /**
+   * Canonical set of heuristic names known to MIPster.
+   * Always written to the CSV even when the heuristic was never called.
+   * Names must match setHeuristicName() calls in CbcSolverHeuristics.cpp
+   * and related files (case-sensitive; spaces preserved).
+   */
+  static const std::vector<std::string> &knownHeuristics();
 
   /**
    * Append the collected statistics to a CSV file.

@@ -6,49 +6,44 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace {
-std::string toLower(std::string value) {
+
+std::string toLower(std::string value)
+{
   std::transform(value.begin(), value.end(), value.begin(),
-                 [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
   return value;
 }
 
-std::string stripExtension(const std::string &filename) {
-    std::string base = filename;
-
-    // First handle optional .gz
-    if (base.size() > 3 &&
-        base.compare(base.size() - 3, 3, ".gz") == 0) {
-        base = base.substr(0, base.size() - 3);
-    }
-
-    // Now handle .mps or .lp
-    auto endsWith = [&](const std::string &ext) {
-        return base.size() >= ext.size() &&
-               base.compare(base.size() - ext.size(), ext.size(), ext) == 0;
-    };
-
-    if (endsWith(".mps"))
-        return base.substr(0, base.size() - 4);
-
-    if (endsWith(".lp"))
-        return base.substr(0, base.size() - 3);
-
-    // No recognized extension → return original
-    return filename;
+std::string stripExtension(const std::string &filename)
+{
+  std::string base = filename;
+  if (base.size() > 3 && base.compare(base.size() - 3, 3, ".gz") == 0)
+    base = base.substr(0, base.size() - 3);
+  auto endsWith = [&](const std::string &ext) {
+    return base.size() >= ext.size() &&
+      base.compare(base.size() - ext.size(), ext.size(), ext) == 0;
+  };
+  if (endsWith(".mps"))
+    return base.substr(0, base.size() - 4);
+  if (endsWith(".lp"))
+    return base.substr(0, base.size() - 3);
+  return filename;
 }
 
-
-std::string stripPath(const std::string &value) {
+std::string stripPath(const std::string &value)
+{
   std::string::size_type pos = value.find_last_of("/\\");
   if (pos == std::string::npos)
     return value;
   return value.substr(pos + 1);
 }
 
-std::string buildRuntimeOptions(const std::deque<std::string> &tokens) {
+std::string buildRuntimeOptions(const std::deque<std::string> &tokens)
+{
   std::ostringstream stream;
   bool first = true;
   for (const std::string &token : tokens) {
@@ -58,7 +53,7 @@ std::string buildRuntimeOptions(const std::deque<std::string> &tokens) {
       continue;
     std::string lower = toLower(token);
     if (lower.find(".mps") != std::string::npos ||
-        lower.find(".gz") != std::string::npos)
+      lower.find(".gz") != std::string::npos)
       continue;
     if (lower.rfind("-writestat", 0) == 0)
       break;
@@ -70,8 +65,9 @@ std::string buildRuntimeOptions(const std::deque<std::string> &tokens) {
   return stream.str();
 }
 
-/** Split a CSV line into fields (no quoting support needed here). */
-std::vector<std::string> splitCsv(const std::string &s) {
+/** Split a CSV line into fields. */
+std::vector<std::string> splitCsv(const std::string &s)
+{
   std::vector<std::string> fields;
   std::string::size_type start = 0;
   while (true) {
@@ -86,44 +82,35 @@ std::vector<std::string> splitCsv(const std::string &s) {
   return fields;
 }
 
-/** Number of fixed columns before the per-generator columns. */
-static const int FIXED_COLUMNS = 19;
-
 /**
- * Read existing file contents: header line and all data lines.
- * Returns true if the file existed and contained a header.
- * headerGenerators will contain the generator column names extracted
- * from the header (columns between the fixed columns and "runtime_options").
+ * Convert a generator/heuristic name to a safe column-name fragment.
+ * Lowercases, replaces runs of non-alphanumeric characters with a single
+ * underscore, and strips leading/trailing underscores.
  */
-bool readExistingCsv(const std::string &outFileName,
-                     std::vector<std::string> &headerGenerators,
-                     std::vector<std::string> &dataLines) {
-  headerGenerators.clear();
-  dataLines.clear();
-  std::ifstream in(outFileName.c_str());
-  if (!in.good())
-    return false;
-  std::string line;
-  if (!std::getline(in, line) || line.empty())
-    return false;
-  // Parse header to extract generator column names.
-  // Header format: <16 fixed columns>,gen1,gen2,...,genN,runtime_options
-  std::vector<std::string> hfields = splitCsv(line);
-  // Generator columns are between FIXED_COLUMNS and the last column
-  // (which is "runtime_options").
-  if (static_cast<int>(hfields.size()) > FIXED_COLUMNS + 1) {
-    for (int i = FIXED_COLUMNS; i < static_cast<int>(hfields.size()) - 1; ++i)
-      headerGenerators.push_back(hfields[i]);
+std::string sanitizeName(const std::string &name)
+{
+  std::string result;
+  result.reserve(name.size());
+  bool lastWasUnderscore = true; // suppress leading underscore
+  for (unsigned char ch : name) {
+    if (std::isalnum(ch)) {
+      result += static_cast<char>(std::tolower(ch));
+      lastWasUnderscore = false;
+    } else {
+      if (!lastWasUnderscore)
+        result += '_';
+      lastWasUnderscore = true;
+    }
   }
-  // Read remaining data lines.
-  while (std::getline(in, line))
-    if (!line.empty())
-      dataLines.push_back(line);
-  return true;
+  // strip trailing underscore
+  if (!result.empty() && result.back() == '_')
+    result.pop_back();
+  return result;
 }
 
 std::string formatDouble(double value, int precision,
-                         std::ios_base::fmtflags floatField = std::ios_base::fmtflags(0)) {
+  std::ios_base::fmtflags floatField = std::ios_base::fmtflags(0))
+{
   std::ostringstream out;
   if (floatField != std::ios_base::fmtflags(0))
     out.setf(floatField, std::ios_base::floatfield);
@@ -132,60 +119,240 @@ std::string formatDouble(double value, int precision,
   out.precision(oldPrecision);
   return out.str();
 }
+
+/** Number of fixed columns before the per-generator / per-heuristic columns. */
+static const int FIXED_COLUMNS = 19;
+
+/**
+ * Read existing file contents: header line and all data lines.
+ * Returns true if the file existed and contained a header.
+ * allExtraColumns is populated with every column name beyond the fixed
+ * columns and before "runtime_options".
+ */
+bool readExistingCsv(const std::string &outFileName,
+  std::vector<std::string> &allExtraColumns,
+  std::vector<std::string> &dataLines)
+{
+  allExtraColumns.clear();
+  dataLines.clear();
+  std::ifstream in(outFileName.c_str());
+  if (!in.good())
+    return false;
+  std::string line;
+  if (!std::getline(in, line) || line.empty())
+    return false;
+  std::vector<std::string> hfields = splitCsv(line);
+  if (static_cast<int>(hfields.size()) > FIXED_COLUMNS + 1) {
+    for (int i = FIXED_COLUMNS; i < static_cast<int>(hfields.size()) - 1; ++i)
+      allExtraColumns.push_back(hfields[i]);
+  }
+  while (std::getline(in, line))
+    if (!line.empty())
+      dataLines.push_back(line);
+  return true;
+}
+
 } // namespace
 
+// ---------------------------------------------------------------------------
+// Canonical lists
+// ---------------------------------------------------------------------------
+
+const std::vector<std::string> &CbcSolverStatistics::knownCutGenerators()
+{
+  // Names exactly as passed to CbcModel::addCutGenerator() in
+  // CbcSolverCutSetup.cpp.  Add new names here when new generators are
+  // introduced so that the CSV column set stays stable.
+  static const std::vector<std::string> kList = {
+    "Probing",
+    "Gomory",
+    "GomoryL1",
+    "GomoryL2",
+    "Gomory(2)",
+    "Knapsack",
+    "Reduce-and-split",
+    "Reduce-and-split(2)",
+    "Clique",
+    "OddWheel",
+    "MixedIntegerRounding2",
+    "FlowCover",
+    "TwoMirCuts",
+    "TwoMirCutsL1",
+    "TwoMirCutsL2",
+    "LiftAndProject",
+    "ResidualCapacity",
+    "ZeroHalf",
+    "Stored",
+  };
+  return kList;
+}
+
+const std::vector<std::string> &CbcSolverStatistics::knownHeuristics()
+{
+  // Names exactly as passed to setHeuristicName() in CbcSolverHeuristics.cpp
+  // and CbcSolver.cpp.  Names that sanitize to the same string are treated
+  // as the same heuristic (e.g. "feasibility pump" and "Feasibility pump").
+  static const std::vector<std::string> kList = {
+    "feasibility pump",
+    "rounding",
+    "combine solutions",
+    "greedy cover",
+    "greedy equality",
+    "random rounding",
+    "dynamic pass thru",
+    "linked",
+    "Partial solution given",
+    "FeasibilityJump",
+    "Dantzig-Wolfe-expansion",
+    "RINS",
+    "RENS",
+    "RENSdj",
+    "RENSub",
+    "VND",
+    "Naive",
+    "DiveAny",
+    "DiveCoefficient",
+    "DiveFractional",
+    "DiveGuided",
+    "DiveLineSearch",
+    "DivePseudoCost",
+    "DiveVectorLength",
+    "Multiple root solvers",
+  };
+  return kList;
+}
+
+// ---------------------------------------------------------------------------
+// writeCsv
+// ---------------------------------------------------------------------------
+
 bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
-                                   const std::string &outFileName,
-                                   const std::deque<std::string> &inputQueue) const {
+  const std::string &outFileName,
+  const std::deque<std::string> &inputQueue) const
+{
   if (outFileName.empty())
     return false;
 
-  // Build a mapping: generator name -> cut count for the current run.
-  std::vector<std::string> currentGenNames;
-  std::vector<int> currentGenCuts;
-  for (int i = 0; i < number_generators; ++i) {
-    const char *name = (name_generators && name_generators[i])
-                           ? name_generators[i]
-                           : "cut";
-    currentGenNames.push_back(name);
-    currentGenCuts.push_back(number_cuts ? number_cuts[i] : 0);
+  // ------------------------------------------------------------------
+  // 1. Build the unified cut-generator entity list.
+  //    Start with the canonical list, then append any runtime extras
+  //    (using sanitized names to detect duplicates).
+  // ------------------------------------------------------------------
+  std::vector<std::string> cutNames;   // original names for lookup
+  std::vector<std::string> cutSanitized; // sanitized names (for column ids)
+  auto addCutName = [&](const std::string &name) {
+    std::string san = sanitizeName(name);
+    for (const auto &s : cutSanitized)
+      if (s == san)
+        return; // already present
+    cutNames.push_back(name);
+    cutSanitized.push_back(san);
+  };
+  for (const auto &n : knownCutGenerators())
+    addCutName(n);
+  for (const auto &cs : cutStats)
+    addCutName(cs.name);
+
+  // ------------------------------------------------------------------
+  // 2. Build the unified heuristic entity list (same approach).
+  // ------------------------------------------------------------------
+  std::vector<std::string> heurNames;
+  std::vector<std::string> heurSanitized;
+  auto addHeurName = [&](const std::string &name) {
+    std::string san = sanitizeName(name);
+    for (const auto &s : heurSanitized)
+      if (s == san)
+        return;
+    heurNames.push_back(name);
+    heurSanitized.push_back(san);
+  };
+  for (const auto &n : knownHeuristics())
+    addHeurName(n);
+  for (const auto &hs : heuristicStats)
+    addHeurName(hs.name);
+
+  // ------------------------------------------------------------------
+  // 3. Build maps: sanitized-name -> aggregated stats (accumulate
+  //    entries with the same sanitized name, e.g. "feasibility pump"
+  //    and "Feasibility pump").
+  // ------------------------------------------------------------------
+  std::unordered_map<std::string, CutGeneratorStats> cutMap;
+  for (const auto &cs : cutStats) {
+    std::string san = sanitizeName(cs.name);
+    auto &acc = cutMap[san];
+    acc.name = cs.name; // first wins; canonical list names preferred
+    acc.nCuts += cs.nCuts;
+    acc.nCalls += cs.nCalls;
+    acc.time += cs.time;
+    acc.nColumnCuts += cs.nColumnCuts;
+    if (cs.minDepth >= 0 && (acc.minDepth < 0 || cs.minDepth < acc.minDepth))
+      acc.minDepth = cs.minDepth;
+    if (cs.maxDepth > acc.maxDepth)
+      acc.maxDepth = cs.maxDepth;
   }
 
-  // Read existing file (if any) to get the header's generator columns.
-  std::vector<std::string> headerGenerators;
+  std::unordered_map<std::string, HeuristicStats> heurMap;
+  for (const auto &hs : heuristicStats) {
+    std::string san = sanitizeName(hs.name);
+    auto &acc = heurMap[san];
+    acc.name = hs.name;
+    acc.nExecutions += hs.nExecutions;
+    acc.totalTime += hs.totalTime;
+    acc.nSolutions += hs.nSolutions;
+    if (hs.minDepth >= 0 && (acc.minDepth < 0 || hs.minDepth < acc.minDepth))
+      acc.minDepth = hs.minDepth;
+    if (hs.maxDepth > acc.maxDepth)
+      acc.maxDepth = hs.maxDepth;
+  }
+
+  // ------------------------------------------------------------------
+  // 4. Build the full ordered list of extra column names.
+  //    For each cut:  cut_<san>_cuts, cut_<san>_calls, cut_<san>_time,
+  //                   cut_<san>_minDepth, cut_<san>_maxDepth
+  //    For each heur: heur_<san>_execs, heur_<san>_time, heur_<san>_sols,
+  //                   heur_<san>_minDepth, heur_<san>_maxDepth
+  // ------------------------------------------------------------------
+  std::vector<std::string> extraColNames;
+  for (const auto &san : cutSanitized) {
+    extraColNames.push_back("cut_" + san + "_cuts");
+    extraColNames.push_back("cut_" + san + "_calls");
+    extraColNames.push_back("cut_" + san + "_time");
+    extraColNames.push_back("cut_" + san + "_minDepth");
+    extraColNames.push_back("cut_" + san + "_maxDepth");
+  }
+  for (const auto &san : heurSanitized) {
+    extraColNames.push_back("heur_" + san + "_execs");
+    extraColNames.push_back("heur_" + san + "_time");
+    extraColNames.push_back("heur_" + san + "_sols");
+    extraColNames.push_back("heur_" + san + "_minDepth");
+    extraColNames.push_back("heur_" + san + "_maxDepth");
+  }
+
+  // ------------------------------------------------------------------
+  // 5. Read existing file to check if header needs rewriting.
+  // ------------------------------------------------------------------
+  std::vector<std::string> existingExtraCols;
   std::vector<std::string> existingDataLines;
-  bool hadHeader = readExistingCsv(outFileName, headerGenerators, existingDataLines);
+  bool hadHeader = readExistingCsv(outFileName, existingExtraCols, existingDataLines);
 
-  // Build the final (unified) set of generator column names:
-  // start with the header's generators, then append any new generators
-  // from the current run that weren't already present.
-  std::vector<std::string> finalGenerators = headerGenerators;
-  for (const std::string &gn : currentGenNames) {
-    bool found = false;
-    for (const std::string &hg : finalGenerators) {
-      if (hg == gn) { found = true; break; }
-    }
-    if (!found)
-      finalGenerators.push_back(gn);
-  }
+  bool headerChanged = !hadHeader || (existingExtraCols != extraColNames);
 
-  // Determine if the header needs to be (re)written because the set of
-  // generator columns has changed.
-  bool headerChanged = !hadHeader ||
-    (finalGenerators.size() != headerGenerators.size());
-
-  // Build the header string.
+  // ------------------------------------------------------------------
+  // 6. Build the header string.
+  // ------------------------------------------------------------------
   std::ostringstream headerStream;
   headerStream << "Name,result,integer_feasible,time,sys,elapsed,objective,continuous,"
                << "lp_seconds,tightened,cut_time,"
                << "nodes,iterations,rows,columns,processed_rows,"
                << "processed_columns,cgraph_time,cgraph_density";
-  for (const std::string &gn : finalGenerators)
-    headerStream << ',' << gn;
+  for (const auto &col : extraColNames)
+    headerStream << ',' << col;
   headerStream << ",runtime_options";
   const std::string headerLine = headerStream.str();
 
-  // Build the new data line.
+  // ------------------------------------------------------------------
+  // 7. Build the new data line.
+  // ------------------------------------------------------------------
   std::string inputFileName = parameters[CbcParam::IMPORTFILE]->strVal();
   const std::string problemName = stripExtension(stripPath(inputFileName));
   const std::string runtimeOptions = buildRuntimeOptions(inputQueue);
@@ -206,55 +373,86 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
              << ',' << formatDouble(cgraph_time, 2, std::ios_base::fixed)
              << ',' << formatDouble(cgraph_density, 6);
 
-  // Output generator cut counts aligned to finalGenerators.
-  for (const std::string &gn : finalGenerators) {
-    int cuts = 0;
-    for (int i = 0; i < static_cast<int>(currentGenNames.size()); ++i) {
-      if (currentGenNames[i] == gn) {
-        cuts = currentGenCuts[i];
-        break;
-      }
+  for (const auto &san : cutSanitized) {
+    const auto it = cutMap.find(san);
+    if (it != cutMap.end()) {
+      const auto &cs = it->second;
+      dataStream << ',' << cs.nCuts
+                 << ',' << cs.nCalls
+                 << ',' << formatDouble(cs.time, 4, std::ios_base::fixed)
+                 << ',' << cs.minDepth
+                 << ',' << cs.maxDepth;
+    } else {
+      dataStream << ",0,0,0.0000,-1,-1";
     }
-    dataStream << ',' << cuts;
+  }
+  for (const auto &san : heurSanitized) {
+    const auto it = heurMap.find(san);
+    if (it != heurMap.end()) {
+      const auto &hs = it->second;
+      dataStream << ',' << hs.nExecutions
+                 << ',' << formatDouble(hs.totalTime, 4, std::ios_base::fixed)
+                 << ',' << hs.nSolutions
+                 << ',' << hs.minDepth
+                 << ',' << hs.maxDepth;
+    } else {
+      dataStream << ",0,0.0000,0,-1,-1";
+    }
   }
   dataStream << ',' << runtimeOptions;
   const std::string newDataLine = dataStream.str();
 
+  // ------------------------------------------------------------------
+  // 8. Write file.
+  // ------------------------------------------------------------------
   if (headerChanged) {
-    // Rewrite the entire file: new header, existing data lines (padded
-    // with zeros for any newly-added generator columns), then new line.
+    // Build a position map from existing header column names so we can
+    // remap old rows to the new column layout.
+    std::unordered_map<std::string, int> oldColIndex;
+    oldColIndex.reserve(FIXED_COLUMNS + existingExtraCols.size() + 1);
+    // Fixed columns get indices 0..FIXED_COLUMNS-1.
+    // (We just copy them verbatim, so we only need to map extra cols.)
+    for (int i = 0; i < static_cast<int>(existingExtraCols.size()); ++i)
+      oldColIndex[existingExtraCols[i]] = FIXED_COLUMNS + i;
+    // "runtime_options" is always the last old column.
+    int oldRtOptsIdx = FIXED_COLUMNS + static_cast<int>(existingExtraCols.size());
+
+    int newTotalCols = FIXED_COLUMNS + static_cast<int>(extraColNames.size()) + 1;
+
     std::ofstream file(outFileName.c_str(), std::ios::out | std::ios::trunc);
     if (!file.is_open())
       return false;
-
     file << headerLine << '\n';
 
-    // Number of generator columns that were added beyond the old header.
-    int addedCols = static_cast<int>(finalGenerators.size())
-                    - static_cast<int>(headerGenerators.size());
-
     for (const std::string &dl : existingDataLines) {
-      // Insert `addedCols` zero-valued columns just before the last field
-      // (runtime_options).
-      std::vector<std::string> fields = splitCsv(dl);
-      if (addedCols > 0 && !fields.empty()) {
-        // Last field is runtime_options.
-        std::string rtOpts = fields.back();
-        fields.pop_back();
-        for (int j = 0; j < addedCols; ++j)
-          fields.push_back("0");
-        fields.push_back(rtOpts);
+      std::vector<std::string> oldFields = splitCsv(dl);
+      // Ensure old row has enough fields (pad with empty if truncated).
+      while (static_cast<int>(oldFields.size()) < oldRtOptsIdx + 1)
+        oldFields.emplace_back("0");
+
+      std::vector<std::string> newFields(newTotalCols, "0");
+      // Copy fixed columns verbatim.
+      for (int i = 0; i < FIXED_COLUMNS && i < static_cast<int>(oldFields.size()); ++i)
+        newFields[i] = oldFields[i];
+      // Copy extra columns by name where available.
+      for (int i = 0; i < static_cast<int>(extraColNames.size()); ++i) {
+        auto it = oldColIndex.find(extraColNames[i]);
+        if (it != oldColIndex.end() && it->second < static_cast<int>(oldFields.size()))
+          newFields[FIXED_COLUMNS + i] = oldFields[it->second];
       }
-      for (int i = 0; i < static_cast<int>(fields.size()); ++i) {
-        if (i > 0) file << ',';
-        file << fields[i];
+      // Last column is runtime_options.
+      newFields[newTotalCols - 1] = oldFields[oldRtOptsIdx];
+
+      for (int i = 0; i < newTotalCols; ++i) {
+        if (i > 0)
+          file << ',';
+        file << newFields[i];
       }
       file << '\n';
     }
 
     file << newDataLine << std::endl;
   } else {
-    // Header is unchanged — just append the new data line.
     std::ofstream file(outFileName.c_str(), std::ios::out | std::ios::app);
     if (!file.is_open())
       return false;

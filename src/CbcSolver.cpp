@@ -2269,8 +2269,6 @@ CbcSolver::~CbcSolver()
   delete[] knapsackRow_;
   delete[] debugValues_;
   delete[] lotsize_;
-  delete[] statistics_.number_cuts;
-  delete[] statistics_.name_generators;
 }
 
 //###########################################################################
@@ -2712,10 +2710,6 @@ void CbcSolver::resetRunState()
   debugValues_ = nullptr;
   delete[] lotsize_;
   lotsize_ = nullptr;
-  delete[] statistics_.number_cuts;
-  statistics_.number_cuts = nullptr;
-  delete[] statistics_.name_generators;
-  statistics_.name_generators = nullptr;
 
   // Reset scalars to defaults
   goodModel_ = false;
@@ -12284,31 +12278,30 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             printGeneralMessage(model_, buffer.str());
           }
           int numberGenerators = babModel_->numberCutGenerators();
-          if (statistics.number_cuts != NULL)
-            delete[] statistics.number_cuts;
-          statistics.number_cuts = new int[numberGenerators];
-
-          if (statistics.name_generators != NULL)
-            delete[] statistics.name_generators;
-          statistics.name_generators = new const char *[numberGenerators];
-
-          statistics.number_generators = numberGenerators;
+          statistics.cutStats.clear();
+          statistics.cutStats.resize(numberGenerators);
 
           char timing[30];
           for (int iGenerator = 0; iGenerator < numberGenerators;
             iGenerator++) {
             CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);
-            statistics.name_generators[iGenerator] = generator->cutGeneratorName();
-            statistics.number_cuts[iGenerator] = generator->numberCutsInTotal();
+            CutGeneratorStats &cs = statistics.cutStats[iGenerator];
+            cs.name = generator->cutGeneratorName();
+            cs.nCuts = generator->numberCutsInTotal();
+            cs.nCalls = generator->numberTimesEntered();
+            cs.nColumnCuts = generator->numberColumnCuts();
+            cs.minDepth = generator->minDepthRan();
+            cs.maxDepth = generator->maxDepthRan();
+            if (generator->timing()) {
+              cs.time = generator->timeInCutGenerator();
+              statistics.cut_time += cs.time;
+            }
             buffer.str("");
             buffer << generator->cutGeneratorName() << " was tried "
-                   << generator->numberTimesEntered() << " times and created "
-                   << generator->numberCutsInTotal() + generator->numberColumnCuts()
-                   << " cuts";
-            if (generator->timing()) {
-              buffer << " (" << generator->timeInCutGenerator() << " seconds)";
-              statistics.cut_time += generator->timeInCutGenerator();
-            }
+                   << cs.nCalls << " times and created "
+                   << cs.nCuts + cs.nColumnCuts << " cuts";
+            if (generator->timing())
+              buffer << " (" << cs.time << " seconds)";
             CglStored *stored = dynamic_cast< CglStored * >(generator->generator());
             if (stored && !generator->numberCutsInTotal()) {
               continue;
@@ -12321,6 +12314,24 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             if (!suppressCutStats)
               printGeneralMessage(model_, buffer.str());
           }
+
+          // Collect heuristic statistics
+          {
+            int nHeur = babModel_->numberHeuristics();
+            statistics.heuristicStats.clear();
+            statistics.heuristicStats.resize(nHeur);
+            for (int i = 0; i < nHeur; i++) {
+              CbcHeuristic *h = babModel_->heuristic(i);
+              HeuristicStats &hs = statistics.heuristicStats[i];
+              hs.name = h->heuristicName();
+              hs.nExecutions = h->numExecutions();
+              hs.totalTime = h->totalTime();
+              hs.nSolutions = h->numberSolutionsFound();
+              hs.minDepth = h->minDepthRan();
+              hs.maxDepth = h->maxDepthRan();
+            }
+          }
+
           // Capture cgraph stats if built lazily by cut generators
           // (only if not already captured from explicit buildConflictGraph calls)
           if (statistics.cgraph_time == 0.0 && statistics.cgraph_density == 0.0) {
@@ -12330,12 +12341,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 #ifdef COIN_DEVELOP
           printf("%d solutions found by heuristics\n",
             babModel_->getNumberHeuristicSolutions());
-          // Not really generator but I am feeling lazy
-          for (iGenerator = 0; iGenerator < babModel_->numberHeuristics();
-            iGenerator++) {
-            CbcHeuristic *heuristic = babModel_->heuristic(iGenerator);
+          for (int iH = 0; iH < babModel_->numberHeuristics(); iH++) {
+            CbcHeuristic *heuristic = babModel_->heuristic(iH);
             if (heuristic->numRuns()) {
-              // Need to bring others inline
               buffer.str("");
               buffer << heuristic->heuristicName() << " was tried "
                      << heuristic->numRuns() << " times out of "
@@ -13458,13 +13466,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 #endif
   delete[] lotsize_;
   lotsize_ = NULL;
-  if (statistics_.number_cuts != NULL)
-    delete[] statistics_.number_cuts;
-
-  if (statistics_.name_generators != NULL)
-    delete[] statistics_.name_generators;
-  statistics_.number_cuts = NULL;
-  statistics_.name_generators = NULL;
   // By now all memory should be freed
 #ifdef DMALLOC
   // dmalloc_log_unfreed();

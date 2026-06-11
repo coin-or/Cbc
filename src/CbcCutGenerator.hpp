@@ -485,6 +485,24 @@ public:
   {
     numberShortCutsAtRoot_ = value;
   }
+  /// Minimum B&B depth at which this generator was called (-1 if never called)
+  inline int minDepthRan() const
+  {
+    return minDepthRan_;
+  }
+  /// Maximum B&B depth at which this generator was called (-1 if never called)
+  inline int maxDepthRan() const
+  {
+    return maxDepthRan_;
+  }
+  /// Record B&B depth at which this generator was called
+  inline void recordDepth(int depth)
+  {
+    if (minDepthRan_ < 0 || depth < minDepthRan_)
+      minDepthRan_ = depth;
+    if (depth > maxDepthRan_)
+      maxDepthRan_ = depth;
+  }
   /// Set model
   inline void setModel(CbcModel *model)
   {
@@ -580,6 +598,10 @@ private:
   int switches_;
   /// Maximum number of times to enter
   int maximumTries_;
+  /// Minimum B&B depth at which this generator has been called (-1 if never called)
+  int minDepthRan_;
+  /// Maximum B&B depth at which this generator has been called (-1 if never called)
+  int maxDepthRan_;
 };
 
 // How often to do if mostly switched off (A)

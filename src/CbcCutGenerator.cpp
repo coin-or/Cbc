@@ -54,6 +54,8 @@ CbcCutGenerator::CbcCutGenerator()
   , numberShortCutsAtRoot_(0)
   , switches_(1)
   , maximumTries_(-1)
+  , minDepthRan_(-1)
+  , maxDepthRan_(-1)
 {
 }
 // Normal constructor
@@ -77,6 +79,8 @@ CbcCutGenerator::CbcCutGenerator(CbcModel *model, CglCutGenerator *generator,
   , numberShortCutsAtRoot_(0)
   , switches_(1)
   , maximumTries_(-1)
+  , minDepthRan_(-1)
+  , maxDepthRan_(-1)
 {
   if (howOften < -1900) {
     setGlobalCuts(true);
@@ -126,6 +130,8 @@ CbcCutGenerator::CbcCutGenerator(const CbcCutGenerator &rhs)
   numberCutsAtRoot_ = rhs.numberCutsAtRoot_;
   numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
   numberShortCutsAtRoot_ = rhs.numberShortCutsAtRoot_;
+  minDepthRan_ = rhs.minDepthRan_;
+  maxDepthRan_ = rhs.maxDepthRan_;
 }
 
 // Assignment operator
@@ -157,6 +163,8 @@ CbcCutGenerator::operator=(const CbcCutGenerator &rhs)
     numberCutsAtRoot_ = rhs.numberCutsAtRoot_;
     numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
     numberShortCutsAtRoot_ = rhs.numberShortCutsAtRoot_;
+    minDepthRan_ = rhs.minDepthRan_;
+    maxDepthRan_ = rhs.maxDepthRan_;
   }
   return *this;
 }
@@ -337,6 +345,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       info.options |= 512;
     // above had &&!model_->parentModel()&&depth<2)
     incrementNumberTimesEntered();
+    recordDepth(depth);
     CglProbing *generator = dynamic_cast< CglProbing * >(generator_);
     //if (!depth&&!pass)
     //printf("Cut generator %s when %d\n",generatorName_,whenCutGenerator_);
@@ -2048,6 +2057,13 @@ void CbcCutGenerator::addStatistics(const CbcCutGenerator *other)
   numberActiveCutsAtRoot_ += other->numberActiveCutsAtRoot_;
   // Number of short cuts at root
   numberShortCutsAtRoot_ += other->numberShortCutsAtRoot_;
+  // Depth range (aggregate: keep true min/max across parallel models)
+  if (other->minDepthRan_ >= 0) {
+    if (minDepthRan_ < 0 || other->minDepthRan_ < minDepthRan_)
+      minDepthRan_ = other->minDepthRan_;
+  }
+  if (other->maxDepthRan_ > maxDepthRan_)
+    maxDepthRan_ = other->maxDepthRan_;
 }
 // Scale back statistics by factor
 void CbcCutGenerator::scaleBackStatistics(int factor)

@@ -238,14 +238,12 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
   //    Start with the canonical list, then append any runtime extras
   //    (using sanitized names to detect duplicates).
   // ------------------------------------------------------------------
-  std::vector<std::string> cutNames;   // original names for lookup
   std::vector<std::string> cutSanitized; // sanitized names (for column ids)
   auto addCutName = [&](const std::string &name) {
     std::string san = sanitizeName(name);
     for (const auto &s : cutSanitized)
       if (s == san)
         return; // already present
-    cutNames.push_back(name);
     cutSanitized.push_back(san);
   };
   for (const auto &n : knownCutGenerators())
@@ -256,14 +254,12 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
   // ------------------------------------------------------------------
   // 2. Build the unified heuristic entity list (same approach).
   // ------------------------------------------------------------------
-  std::vector<std::string> heurNames;
   std::vector<std::string> heurSanitized;
   auto addHeurName = [&](const std::string &name) {
     std::string san = sanitizeName(name);
     for (const auto &s : heurSanitized)
       if (s == san)
         return;
-    heurNames.push_back(name);
     heurSanitized.push_back(san);
   };
   for (const auto &n : knownHeuristics())
@@ -280,7 +276,8 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
   for (const auto &cs : cutStats) {
     std::string san = sanitizeName(cs.name);
     auto &acc = cutMap[san];
-    acc.name = cs.name; // first wins; canonical list names preferred
+    if (acc.name.empty())
+      acc.name = cs.name; // first entry wins
     acc.nCuts += cs.nCuts;
     acc.nCalls += cs.nCalls;
     acc.time += cs.time;
@@ -295,7 +292,8 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
   for (const auto &hs : heuristicStats) {
     std::string san = sanitizeName(hs.name);
     auto &acc = heurMap[san];
-    acc.name = hs.name;
+    if (acc.name.empty())
+      acc.name = hs.name; // first entry wins
     acc.nExecutions += hs.nExecutions;
     acc.totalTime += hs.totalTime;
     acc.nSolutions += hs.nSolutions;

@@ -12281,7 +12281,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           statistics.cutStats.clear();
           statistics.cutStats.resize(numberGenerators);
 
-          char timing[30];
           for (int iGenerator = 0; iGenerator < numberGenerators;
             iGenerator++) {
             CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);

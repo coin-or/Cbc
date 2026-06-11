@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <climits>
 #include "CoinPackedMatrix.hpp"
 #include "OsiCuts.hpp"
 #include "CoinHelperFunctions.hpp"
@@ -419,6 +420,24 @@ public:
   {
     improvements_.clear();
   }
+  /// Record the B&B depth at which this heuristic was applied
+  inline void recordDepth(int depth)
+  {
+    if (depth < minDepthRan_)
+      minDepthRan_ = depth;
+    if (depth > maxDepthRan_)
+      maxDepthRan_ = depth;
+  }
+  /// Minimum B&B depth at which this heuristic was applied (-1 if never run)
+  inline int minDepthRan() const
+  {
+    return minDepthRan_ == INT_MAX ? -1 : minDepthRan_;
+  }
+  /// Maximum B&B depth at which this heuristic was applied (-1 if never run)
+  inline int maxDepthRan() const
+  {
+    return maxDepthRan_;
+  }
   /// Return objective function value with sign corrected
   inline double trueObjValue(double value) const
   {
@@ -535,6 +554,10 @@ protected:
   mutable int totalNodesSubMIP_;
   /// List of improvements made by this heuristic
   mutable std::vector<std::string> improvements_;
+  /// Minimum B&B depth at which this heuristic was applied
+  int minDepthRan_;
+  /// Maximum B&B depth at which this heuristic was applied
+  int maxDepthRan_;
 
 #ifdef JJF_ZERO
   /// Lower bounds of last node where the heuristic found a solution

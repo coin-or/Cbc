@@ -10,6 +10,7 @@
 #include "CbcConfig.h"
 
 #include <cassert>
+#include <climits>
 #include <cstdlib>
 #include <cmath>
 #include <cfloat>
@@ -122,6 +123,8 @@ CbcHeuristic::CbcHeuristic()
   , numInfeasible_(0)
   , numIterationLimit_(0)
   , totalNodesSubMIP_(0)
+  , minDepthRan_(INT_MAX)
+  , maxDepthRan_(-1)
 {
   // As CbcHeuristic virtual need to modify .cpp if above change
 }
@@ -155,6 +158,8 @@ CbcHeuristic::CbcHeuristic(CbcModel &model)
   , numInfeasible_(0)
   , numIterationLimit_(0)
   , totalNodesSubMIP_(0)
+  , minDepthRan_(INT_MAX)
+  , maxDepthRan_(-1)
 {
 }
 
@@ -187,7 +192,9 @@ void CbcHeuristic::gutsOfCopy(const CbcHeuristic &rhs)
   numInfeasible_ = rhs.numInfeasible_;
   numIterationLimit_ = rhs.numIterationLimit_;
   totalNodesSubMIP_ = rhs.totalNodesSubMIP_;
-  numIterationLimit_ = rhs.numIterationLimit_;
+  improvements_ = rhs.improvements_;
+  minDepthRan_ = rhs.minDepthRan_;
+  maxDepthRan_ = rhs.maxDepthRan_;
   if (rhs.inputSolution_) {
     int numberColumns = model_->getNumCols();
     setInputSolution(rhs.inputSolution_, rhs.inputSolution_[numberColumns]);

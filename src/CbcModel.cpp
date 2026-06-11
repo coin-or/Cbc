@@ -71,6 +71,7 @@ extern int gomory_try;
 #include "CbcMessage.hpp"
 #include "CbcModel.hpp"
 #include "CbcOutput.hpp"
+#include "CoinTable.hpp"
 #include "CbcStatistics.hpp"
 #include "CbcStrategy.hpp"
 #include "CbcTreeLocal.hpp"
@@ -5432,34 +5433,67 @@ void CbcModel::branchAndBound(int doStatistics)
   }
   // Print heuristics summary
   if (printHeuristicsSummary_) {
+    // Collect heuristics that ran at least once
+    std::vector<CbcHeuristic *> ran;
+    bool anySubMIP = false;
     for (int i = 0; i < numberHeuristics_; i++) {
-      CbcHeuristic *heur = heuristic_[i];
-      if (heur->numExecutions() > 0) {
-        char summaryMsg[1024];
-        int nSol = heur->numberSolutionsFound();
-        std::string impStr;
-        const std::vector<std::string> &imps = heur->improvements();
-        if (!imps.empty()) {
-          impStr = "; improvements: ";
-          for (size_t k = 0; k < imps.size(); k++) {
-            if (k > 0) impStr += ", ";
-            impStr += imps[k];
-          }
-        }
-        if (heur->totalNodesSubMIP() > 0) {
-          std::snprintf(summaryMsg, sizeof(summaryMsg),
-                        "Heuristic %s: executed %d times, found %d solutions in %.2f seconds (failed: %d infeasibility, %d iteration limit; solved %d sub-MIP nodes%s).",
-                        heur->heuristicName(), heur->numExecutions(), nSol, heur->totalTime(),
-                        heur->numInfeasible(), heur->numIterationLimit(), heur->totalNodesSubMIP(), impStr.c_str());
-        } else {
-          std::snprintf(summaryMsg, sizeof(summaryMsg),
-                        "Heuristic %s: executed %d times, found %d solutions in %.2f seconds (failed: %d infeasibility, %d iteration limit%s).",
-                        heur->heuristicName(), heur->numExecutions(), nSol, heur->totalTime(),
-                        heur->numInfeasible(), heur->numIterationLimit(), impStr.c_str());
-        }
-        handler_->message(CBC_GENERAL, messages_)
-          << summaryMsg << CoinMessageEol;
+      if (heuristic_[i]->numExecutions() > 0) {
+        ran.push_back(heuristic_[i]);
+        if (heuristic_[i]->totalNodesSubMIP() > 0)
+          anySubMIP = true;
       }
+    }
+    if (!ran.empty()) {
+      FILE *fp = handler_->filePointer();
+      if (!fp) fp = stdout;
+      const bool u8 = CbcOutput::useUtf8();
+      const bool compact = CbcOutput::useCompact();
+
+      // Compute name column width dynamically
+      int nameW = 12;
+      for (CbcHeuristic *h : ran)
+        nameW = std::max(nameW, (int)std::strlen(h->heuristicName()));
+
+      std::vector<CoinTable::Col> cols = {
+        { "Heuristic",  nameW, /*leftAlign=*/true },
+        { "Calls",      5 },
+        { "Sols",       4 },
+        { "Time(s)",    7 },
+        { "MinDep",     6 },
+        { "MaxDep",     6 },
+        { "Infeas",     6 },
+        { "IterLim",    7 },
+      };
+      if (anySubMIP)
+        cols.push_back({ "SubMIP nodes", 12 });
+
+      CoinTable tbl(cols, u8, /*indent=*/2, compact);
+
+      fprintf(fp, "\n%s\n",
+        CoinTable::phaseStart("Heuristics summary", u8).c_str());
+      fprintf(fp, "%s\n", tbl.sepLine(CoinTable::Top).c_str());
+      fprintf(fp, "%s\n", tbl.headerLine().c_str());
+      fprintf(fp, "%s\n", tbl.sepLine(CoinTable::Middle).c_str());
+
+      const char *sep = tbl.colSep();
+      for (CbcHeuristic *h : ran) {
+        // name (left-aligned)
+        fprintf(fp, "  %-*s", nameW, h->heuristicName());
+        fprintf(fp, "%s%5d", sep, h->numExecutions());
+        fprintf(fp, "%s%4d", sep, h->numberSolutionsFound());
+        fprintf(fp, "%s%7.2f", sep, h->totalTime());
+        fprintf(fp, "%s%6d", sep, h->minDepthRan());
+        fprintf(fp, "%s%6d", sep, h->maxDepthRan());
+        fprintf(fp, "%s%6d", sep, h->numInfeasible());
+        fprintf(fp, "%s%7d", sep, h->numIterationLimit());
+        if (anySubMIP)
+          fprintf(fp, "%s%12d", sep, h->totalNodesSubMIP());
+        fprintf(fp, "\n");
+      }
+
+      fprintf(fp, "%s\n", tbl.sepLine(CoinTable::Bottom).c_str());
+      fprintf(fp, "%s\n\n",
+        CoinTable::phaseEnd("Heuristics summary", u8).c_str());
     }
   }
   if ((moreSpecialOptions_ & 4194304) != 0) {
@@ -7824,28 +7858,31 @@ int CbcModel::runHeuristic(CbcHeuristic *heuristic, double &heuristicValue, doub
   int numIterBefore = heuristic->numIterationLimit();
   
   int result = heuristic->solution(heuristicValue, newSolution);
-  
+
   double duration = getCurrentSeconds() - startTime;
   heuristic->recordExecution(duration);
-  
+  heuristic->recordDepth(currentDepth_);
+
   if (result > 0) {
     // Found solution: revert any failure counters incremented during the run
     heuristic->setNumInfeasible(numInfeasBefore);
     heuristic->setNumIterationLimit(numIterBefore);
   } else {
-    // Failed: ensure exactly one failure is recorded
+    // Failed: check what kind of failure was internally recorded
     bool isInfeasible = (heuristic->numInfeasible() > numInfeasBefore);
-    
+    bool isIterLimit = (heuristic->numIterationLimit() > numIterBefore);
+
     heuristic->setNumInfeasible(numInfeasBefore);
     heuristic->setNumIterationLimit(numIterBefore);
-    
+
     if (isInfeasible) {
       heuristic->recordInfeasible();
-    } else {
+    } else if (isIterLimit) {
       heuristic->recordIterationLimit();
     }
+    // else: heuristic simply found no improving solution — record nothing
   }
-  
+
   return result;
 }
 

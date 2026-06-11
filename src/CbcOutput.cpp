@@ -3,6 +3,15 @@
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
 #include "CbcOutput.hpp"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void CoinPrintPresolveStats();
+#ifdef __cplusplus
+}
+#endif
+
 #include "CbcModel.hpp"
 #include "OsiSolverInterface.hpp"
 #include "OsiClpSolverInterface.hpp"
@@ -377,6 +386,8 @@ void CbcPreprocHandler::printPhaseEnd(double totalTime)
   if (!fp_) return;
   if (totalTime < 0.0)
     totalTime = CoinWallclockTime() - phaseStartTime_;
+  CoinPrintPresolveStats();
+
   char summary[160];
   const std::string tStr = fmtTime(totalTime);
   if (infeasible_) {

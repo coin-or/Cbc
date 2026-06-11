@@ -154,11 +154,12 @@ static void detectParityRows(
       }
     }
 
-    if (valid && nHelpers == 1) {
+    if (valid && nHelpers <= 1) {
       ParityRowInfo info;
       info.row = i;
       info.helperCol = helperCol;
       candidates.push_back(info);
+      // Temporary debug print removed for cleanliness
     }
   }
 }
@@ -388,8 +389,13 @@ static int gaussianEliminationGF2(
   // matrix but has rhs == 1 means 0 = 1, i.e., infeasible.
   for (int r = 0; r < nRows; r++) {
     uint64_t *row = matrix + r * nWords;
-    if (isZeroRow(row, nWords) && rhs[r] != 0)
+    if (isZeroRow(row, nWords) && rhs[r] != 0) {
+#if PRESOLVE_DEBUG > 0
+      printf("PARITY_DEBUG: GF(2) Inconsistency found at pivot-row %d (original row %d), rhs=%d\n",
+             r, sys.rowInfo[r].row, (int)rhs[r]);
+#endif
       return 0; // Infeasible
+    }
   }
 
   // Back-substitution to find solution
@@ -463,15 +469,13 @@ const CoinPresolveAction *parity_action::presolve(
   GF2System sys;
   if (!buildGF2System(prob, candidates, sys)) {
 #if PRESOLVE_DEBUG > 0
-    std::cout << "parity_action: failed to build GF(2) system." << std::endl;
+    printf("PARITY_DEBUG: failed to build GF(2) system.\n");
 #endif
     return next;
   }
 
 #if PRESOLVE_DEBUG > 0
-  std::cout
-    << "parity_action: GF(2) system has " << sys.nRows
-    << " rows, " << sys.nCols << " cols." << std::endl;
+  printf("PARITY_DEBUG: GF(2) system has %d rows, %d cols.\n", sys.nRows, sys.nCols);
 #endif
 
   // Phase 4: Gaussian elimination
@@ -485,26 +489,22 @@ const CoinPresolveAction *parity_action::presolve(
     delete[] pivotCol;
     delete[] solution;
 #if PRESOLVE_DEBUG > 0
-    std::cout
-      << "parity_action: GF(2) system is inconsistent → INFEASIBLE."
-      << std::endl;
+    printf("PARITY_DEBUG: GF(2) system is inconsistent -> INFEASIBLE.\n");
 #endif
     return next;
   }
 
 #if PRESOLVE_DEBUG > 0
-  std::cout
-    << "parity_action: GF(2) elimination result = "
-    << (result == 1 ? "unique" : "free variables")
-    << ", rank = ";
+  printf("PARITY_DEBUG: GF(2) elimination result = %s, rank = ",
+         (result == 1 ? "unique" : "free variables"));
   {
     int rank = 0;
     for (int r = 0; r < sys.nRows; r++)
       if (pivotCol[r] >= 0)
         rank++;
-    std::cout << rank;
+    printf("%d", rank);
   }
-  std::cout << " / " << sys.nCols << std::endl;
+  printf(" / %d\n", sys.nCols);
 #endif
 
   // Phase 5: Fix variables and remove rows
@@ -522,12 +522,28 @@ const CoinPresolveAction *parity_action::presolve(
   std::vector<removed_row> removals;
 
   // Step 5a: Fix determined binaries (pivot columns only)
-  // We only fix variables whose GF(2) column was a pivot —
-  // these are uniquely determined given that free variables = 0.
+  // We only fix variables whose GF(2) column was a pivot.
+  // If the system is under-determined (result == 2), we can only fix a pivot
+  // if it is independent of all free variables (i.e. its row has exactly one 1).
   for (int r = 0; r < sys.nRows; r++) {
     int pc = pivotCol[r];
     if (pc < 0)
       continue;
+      
+    if (result == 2) {
+      int bitCount = 0;
+      uint64_t *row = sys.matrix + r * sys.nWords;
+      for (int w = 0; w < sys.nWords; w++) {
+        uint64_t word = row[w];
+        while (word) {
+          bitCount++;
+          word &= (word - 1);
+        }
+      }
+      if (bitCount > 1)
+        continue; // Depends on free variables, cannot fix
+    }
+
     int origCol = sys.gf2ColToOrig[pc];
     double val = static_cast<double>(solution[pc]);
 
@@ -576,14 +592,17 @@ const CoinPresolveAction *parity_action::presolve(
   int *hincol = prob->hincol_;
   const double tol = 1.0e-8;
 
-  for (int r = 0; r < sys.nRows; r++) {
-    // Only remove rows where we have a pivot (i.e., the row was
-    // used in the elimination and is now redundant given the fixings)
-    if (pivotCol[r] < 0)
-      continue;
+  // We CANNOT do this if there are free variables (result == 2), because the
+  // original rows still enforce constraints among the unfixed free variables.
+  if (result == 1) {
+    for (int r = 0; r < sys.nRows; r++) {
+      // Only remove rows where we have a pivot (i.e., the row was
+      // used in the elimination and is now redundant given the fixings)
+      if (pivotCol[r] < 0)
+        continue;
 
-    int origRow = sys.rowInfo[r].row;
-    int helperCol = sys.rowInfo[r].helperCol;
+      int origRow = sys.rowInfo[r].row;
+      int helperCol = sys.rowInfo[r].helperCol;
 
     // Don't remove prohibited rows
     if (prob->rowProhibited2(origRow))
@@ -663,9 +682,10 @@ const CoinPresolveAction *parity_action::presolve(
     hinrow[origRow] = 0;
     PRESOLVE_REMOVE_LINK(prob->rlink_, origRow);
 
-    // Zero out bounds (standard for removed rows)
-    rlo[origRow] = 0.0;
-    rup[origRow] = 0.0;
+      // Zero out bounds (standard for removed rows)
+      rlo[origRow] = 0.0;
+      rup[origRow] = 0.0;
+    }
   }
 
   delete[] pivotCol;

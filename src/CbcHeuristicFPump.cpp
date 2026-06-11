@@ -3584,7 +3584,7 @@ ClpDisasterHandler *CbcDisasterHandler::clone() const
 // Type of disaster 0 can fix, 1 abort
 int CbcDisasterHandler::typeOfDisaster()
 {
-  if (!cbcModel_->parentModel() && (cbcModel_->specialOptions() & 2048) == 0) {
+  if ((cbcModel_->specialOptions() & 2048) == 0) {
     return 0;
   } else {
     if (cbcModel_->parentModel())

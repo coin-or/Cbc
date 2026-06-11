@@ -693,6 +693,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   double cutoff, std::string name) const
 {
   CbcEventHandler *eventHandler = model_->getEventHandler();
+  // Save max nodes
+  int saveMaxNodes = model_->getMaximumNodes();
   // Use this fraction
   double fractionSmall = fractionSmall_;
   int maximumSolutions = model_->getMaximumSolutions();
@@ -809,6 +811,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       useElapsed, timeLimit, startTime);
     if (!feasible) {
       model_->setSpecialOptions(saveModelOptions);
+      // Restore max nodes
+      model_->setMaximumNodes(saveMaxNodes);
       return 2; // infeasible
     }
 #ifdef RINS_CLOSE_DEBUG
@@ -943,6 +947,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     getHistoryStatistics_ = true;
 #endif
     //printf("small no good\n");
+    // Restore max nodes
+    model_->setMaximumNodes(saveMaxNodes);
     return returnCode;
   }
   // Reduce printout
@@ -1848,6 +1854,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   getHistoryStatistics_ = true;
 #endif
   solver->setHintParam(OsiDoReducePrint, takeHint, strength);
+  // Restore max nodes
+  model_->setMaximumNodes(saveMaxNodes);
   return returnCode;
 }
 // Set input solution

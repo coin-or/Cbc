@@ -2014,9 +2014,11 @@ void CbcModel::branchAndBound(int doStatistics)
       CbcDisasterHandler handler(this);
       clpSolver->passInDisasterHandler(&handler);
       // Initialise solvers seed (unless users says not)
-      if ((specialOptions_ & 4194304) == 0)
+      if ((specialOptions_ & 4194304) == 0) 
         clpSolver->getModelPtr()->setRandomSeed(1234567);
+#if CLP_START_FINISH == 0
       if ((moreSpecialOptions2_ & 8388608) != 0) // no crunch
+#endif 
         clpSolver->setSpecialOptions(clpSolver->specialOptions() | 2048);
       // switch off max time in solver
       clpSolver->getModelPtr()->setMaximumSeconds(-1.0);
@@ -4262,7 +4264,27 @@ void CbcModel::branchAndBound(int doStatistics)
 
       Loss of feasibility will result in the deletion of newNode.
     */
-
+#if 0
+  // ranging??
+  if ((specialOptions_&2048)==0) {
+    OsiClpSolverInterface * solver = dynamic_cast<OsiClpSolverInterface*>(solver_);
+    if (solver) {
+      ClpSimplex * clp = solver->getModelPtr();
+      int nMoved = 0;
+      int nFixed = -1;
+      while (nFixed) {
+	clp->setMaximumIterations(8121943);
+	clp->dual(0,1);
+	nFixed =  8121943-clp->maximumIterations();
+	if (nFixed==8121943) {
+	  printf("Problem infeasible?\n");
+	  nFixed=0;
+	}
+      }
+      clp->setMaximumIterations(2147483647);
+    }
+  }
+#endif
   bool resolved = false;
   CbcNode *newNode = NULL;
   double rootObjectiveValue = solver_->getObjValue();
@@ -16266,7 +16288,7 @@ int CbcModel::resolve(OsiSolverInterface *solver)
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
       const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
       if (debugger && solver_->isProvenOptimal()) {
-        printf("On optimal path after resolve\n");
+        printf("On optimal path after resolve\n");//solver_->writeMpsNative("/tmp/ok.mps",NULL,NULL); 
       } else {
         solver_->writeMpsNative("badSolve.mps", NULL, NULL, 2);
         printf("NOT on optimal path after resolve\n");

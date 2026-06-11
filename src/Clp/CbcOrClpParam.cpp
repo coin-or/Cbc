@@ -2601,6 +2601,14 @@ setting some parameters which may help you to think of possibilities.");
     parameters.push_back(p);
   }
   {
+    CbcOrClpParam p("heuristicStats", "Whether to print heuristic statistics at the end of the solve",
+      "off", CBC_PARAM_STR_HEURISTICSTATS);
+    p.append("on");
+    p.setLonghelp(
+      "This switches the printing of heuristic statistics summary at the end of the solve on or off.");
+    parameters.push_back(p);
+  }
+  {
     CbcOrClpParam p("clique!Cuts", "Whether to use Clique cuts",
       "off", CBC_PARAM_STR_CLIQUECUTS);
     p.append("on");

@@ -1504,8 +1504,15 @@ int CbcHeuristicDive::solution(double &solutionValue,
   int returnCode = solution(solutionValue, numberNodes, numberCuts,
     NULL, nodes,
     newSolution);
-  if (returnCode == 1)
+  if (returnCode == 1) {
     memcpy(betterSolution, newSolution, numberColumns * sizeof(double));
+  } else {
+    if (lastReasonToStop_ >= 100) {
+      numIterationLimit_++;
+    } else if (lastReasonToStop_ % 10 == 1) {
+      numInfeasible_++;
+    }
+  }
 
   delete[] newSolution;
   return returnCode;

@@ -637,5 +637,46 @@ void CoinPresolveMatrix::statistics()
 #include "CoinPresolvePsdebug.cpp"
 #endif
 
+#include <string>
+#include <vector>
+
+struct PresolveStageStats {
+    std::string name;
+    int rows, cols, nz;
+};
+
+static thread_local std::vector<PresolveStageStats> threadPresolveStats;
+
+extern "C" void CoinAddPresolveStats(const char* name, int rows, int cols, int nz) {
+    if (rows == 0 && cols == 0 && nz == 0) return;
+    for (size_t i=0; i<threadPresolveStats.size(); i++) {
+        if (threadPresolveStats[i].name == name) {
+            threadPresolveStats[i].rows += rows;
+            threadPresolveStats[i].cols += cols;
+            threadPresolveStats[i].nz += nz;
+            return;
+        }
+    }
+    PresolveStageStats st = {name, rows, cols, nz};
+    threadPresolveStats.push_back(st);
+}
+
+extern "C" void CoinPrintPresolveStats() {
+    if (!threadPresolveStats.empty()) {
+        printf("----------------------------------------------------------\n");
+        printf("%-25s %10s %10s %10s\n", "Presolve Stage", "Rows", "Cols", "Nonzeros");
+        printf("----------------------------------------------------------\n");
+        for (size_t i=0; i<threadPresolveStats.size(); i++) {
+            printf("%-25s %10d %10d %10d\n", threadPresolveStats[i].name.c_str(), threadPresolveStats[i].rows, threadPresolveStats[i].cols, threadPresolveStats[i].nz);
+        }
+        printf("----------------------------------------------------------\n");
+        threadPresolveStats.clear();
+    }
+}
+
+extern "C" void CoinClearPresolveStats() {
+    threadPresolveStats.clear();
+}
+
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

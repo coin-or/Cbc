@@ -101,6 +101,9 @@ int debugNumberColumns = -1;
    that this is the less common case. The more common situation is to apply
    presolve before optimising.
 */
+static thread_local int lastPresolveRows = 0;
+static thread_local int lastPresolveCols = 0;
+
 OsiSolverInterface *
 OsiPresolve::presolvedModel(OsiSolverInterface &si,
   double feasibilityTolerance,
@@ -111,6 +114,11 @@ OsiPresolve::presolvedModel(OsiSolverInterface &si,
   const char *rowProhibited,
   const double * scLower)
 {
+  int newRows = si.getNumRows();
+  int newCols = si.getNumCols();
+  if (newCols > lastPresolveCols) {
+    CoinClearPresolveStats();
+  }
 
 
   ncols_ = si.getNumCols();
@@ -430,6 +438,14 @@ OsiPresolve::presolvedModel(OsiSolverInterface &si,
     gutsOfDestroy();
     delete presolvedModel_;
     presolvedModel_ = NULL;
+  }
+
+  if (presolvedModel_) {
+    lastPresolveRows = presolvedModel_->getNumRows();
+    lastPresolveCols = presolvedModel_->getNumCols();
+  } else {
+    lastPresolveRows = 0;
+    lastPresolveCols = 0;
   }
 
   return presolvedModel_;

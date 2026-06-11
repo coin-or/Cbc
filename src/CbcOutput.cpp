@@ -8,6 +8,7 @@
 extern "C" {
 #endif
 void CoinPrintPresolveStats();
+void CoinClearPresolveStats();
 #ifdef __cplusplus
 }
 #endif
@@ -184,6 +185,7 @@ CbcPreprocHandler::CbcPreprocHandler(FILE *fp, bool utf8, int logLevel)
   , phaseStartTime_(CoinWallclockTime())
 {
   setLogLevel(logLevel);
+  CoinClearPresolveStats();
 }
 
 CbcPreprocHandler::~CbcPreprocHandler()

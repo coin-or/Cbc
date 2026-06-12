@@ -3674,10 +3674,15 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
       OsiHintStrength saveStrength;
       presolvedModel->getHintParam(OsiDoDualInInitial,
         saveTakeHint, saveStrength);
-      //if (iPass)
-      presolvedModel->setHintParam(OsiDoDualInInitial, false, OsiHintTry);
       double inspectLpStart1 = inspect_ ? CoinWallclockTime() : 0.0;
-      presolvedModel->initialSolve();
+      if (lpSolver_) {
+        // Delegate to caller-provided strategy (racing, LPAuto, etc.).
+        // Hint and strategy are the responsibility of lpSolver_.
+        lpSolver_(presolvedModel);
+      } else {
+        presolvedModel->setHintParam(OsiDoDualInInitial, false, OsiHintTry);
+        presolvedModel->initialSolve();
+      }
       numberIterationsPre_ += presolvedModel->getIterationCount();
       if (inspect_) {
         FILE *fp = handler_->filePointer();
@@ -3692,7 +3697,8 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
           fflush(fp);
         }
       }
-      presolvedModel->setHintParam(OsiDoDualInInitial, saveTakeHint, saveStrength);
+      if (!lpSolver_)
+        presolvedModel->setHintParam(OsiDoDualInInitial, saveTakeHint, saveStrength);
       if (!presolvedModel->isProvenOptimal()) {
         writeDebugMps(presolvedModel, "bad2", NULL);
         CoinWarmStartBasis *slack = dynamic_cast< CoinWarmStartBasis * >(presolvedModel->getEmptyWarmStart());
@@ -8901,6 +8907,7 @@ CglPreProcess::CglPreProcess()
   , timeLimit_(COIN_DBL_MAX)
   , keepColumnNames_(false)
   , inspect_(false)
+  , lpSolver_(nullptr)
 {
   handler_ = new CoinMessageHandler();
   handler_->setLogLevel(2);
@@ -8923,6 +8930,7 @@ CglPreProcess::CglPreProcess(const CglPreProcess &rhs)
   , timeLimit_(COIN_DBL_MAX)
   , keepColumnNames_(false)
   , inspect_(rhs.inspect_)
+  , lpSolver_(rhs.lpSolver_)
 {
   if (defaultHandler_) {
     handler_ = new CoinMessageHandler();
@@ -8998,6 +9006,7 @@ CglPreProcess::operator=(const CglPreProcess &rhs)
     numberRowType_ = rhs.numberRowType_;
     options_ = rhs.options_;
     inspect_ = rhs.inspect_;
+    lpSolver_ = rhs.lpSolver_;
     if (defaultHandler_) {
       handler_ = new CoinMessageHandler();
       handler_->setLogLevel(rhs.handler_->logLevel());

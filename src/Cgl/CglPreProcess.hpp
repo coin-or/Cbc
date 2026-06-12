@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 
 #include "CoinMessageHandler.hpp"
 #include "OsiSolverInterface.hpp"
@@ -353,6 +354,16 @@ public:
   /// Returns true if verbose preprocessing diagnostics are enabled.
   inline bool getInspect() const { return inspect_; }
 
+  /** Optional LP solver for cold-start LP solves inside preprocessing.
+      When set, this function is called instead of \c initialSolve() on
+      each fresh presolved model.  The function receives the
+      \c OsiSolverInterface* for the presolved model and is responsible
+      for solving it.  If not set, plain \c initialSolve() is used.
+      The warm-start check (skip if basis already available) should be
+      performed inside the function. */
+  using LpSolveFn = std::function<void(OsiSolverInterface *)>;
+  inline void setLpSolver(LpSolveFn fn) { lpSolver_ = fn; }
+
   //@}
 private:
   ///@name private methods
@@ -468,6 +479,7 @@ private:
 
   /// When true, print per-pass dimension and timing diagnostics during preprocessing.
   bool inspect_;
+  LpSolveFn lpSolver_;
 
   /// current elapsed or cpu time
   double getCurrentCPUTime() const;

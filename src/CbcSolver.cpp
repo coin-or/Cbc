@@ -1110,6 +1110,70 @@ parseLpParamTag(const char *tag)
   return s;
 }
 
+void CbcSolver::applyLpColdStart(ClpSimplex *clp, OsiSolverInterface *osi)
+{
+  const bool racingLP = parameters_.getRacingLP();
+  const int threadsParam = parameters_[CbcParam::THREADS]->intVal();
+  const int racingThreads = std::min(3, std::max(2, threadsParam));
+  const bool autoLpMode =
+    (parameters_.getLpMethod() == CbcParameters::LPAuto) && !racingLP;
+
+  // Compute LP settings: ML recommendation (LPAuto) or current parameter values.
+  LpAutoSettings autoS;
+  if (autoLpMode && osi) {
+    double feats[OFCount];
+    OsiFeatures::compute(feats, osi);
+    const char *tag = cbcRecommendLpParam(feats);
+    autoS = parseLpParamTag(tag);
+  } else {
+    ClpParameters &clpP = parameters_.clpParameters();
+    autoS.method      = parameters_.getLpMethod();
+    autoS.idiot       = doIdiot_;
+    autoS.sprint      = doSprint_;
+    autoS.psi         = clpP[ClpParam::PSI]->dblVal();
+    autoS.pertValue   = clpP[ClpParam::PERTVALUE]->intVal();
+    autoS.pesteep     = false;
+    autoS.scalingMode = -1;
+  }
+
+  // Apply model-level settings (pivot algorithm, PSI, perturbation, scaling).
+  if (autoS.pesteep) {
+    ClpDualRowSteepest steep(3);
+    clp->setDualRowPivotAlgorithm(steep);
+  }
+  if (autoS.scalingMode >= 0)
+    clp->scaling(autoS.scalingMode);
+  applyPositiveEdge(clp, autoS.psi);
+  clp->setPerturbation(autoS.pertValue);
+
+  // Racing: first winner takes the solution; fall through if all fail.
+  if (racingLP) {
+    ClpRacingSolver racer(clp, racingThreads);
+    racer.solve(); // auto-adds default K=racingThreads portfolio
+    if (racer.winnerIndex() >= 0)
+      return;
+  }
+
+  // Standard single-threaded solve with configured method.
+  // No Clp-level presolve, no dualization — suitable for preprocessing
+  // LP cold starts where OsiPresolve has already been applied.
+  ClpSolve solveOptions;
+  solveOptions.setPresolveType(ClpSolve::presolveOff, 0);
+  const CbcParameters::LPMethod lpMethod = autoS.method;
+  if (lpMethod == CbcParameters::LPPrimal) {
+    solveOptions.setSolveType(ClpSolve::usePrimalorSprint);
+    if (autoS.sprint > 0)
+      solveOptions.setSpecialOption(1, 3, autoS.sprint);
+    else if (autoS.idiot > 0)
+      solveOptions.setSpecialOption(1, 2, autoS.idiot);
+  } else {
+    solveOptions.setSolveType(ClpSolve::useDual);
+    if (autoS.idiot)
+      solveOptions.setSpecialOption(0, 2, autoS.idiot);
+  }
+  clp->initialSolve(solveOptions);
+}
+
 // Unified LP-solve entry point: bound propagation → clique merging "before"
 // → model-level LP settings → racing → full ClpSolve with all user options.
 //
@@ -3832,6 +3896,27 @@ int CbcSolver::preprocess(
         babModel_->setKeepNamesPreproc(1);
       if (parameters_[CbcParam::INSPECTPREPROCESSING]->modeVal())
         process.setInspect(true);
+
+      // Wire cold-start LP solver for preprocessing when racing or LPAuto is enabled.
+      if (parameters_.getRacingLP() || parameters_.getLpMethod() == CbcParameters::LPAuto) {
+        process.setLpSolver([this](OsiSolverInterface *osi) {
+          OsiClpSolverInterface *clpOsi = dynamic_cast< OsiClpSolverInterface * >(osi);
+          ClpSimplex *clp = clpOsi ? clpOsi->getModelPtr() : nullptr;
+          if (clp && clp->status() == 0) {
+            // Valid warm-start basis: standard re-optimisation is fastest.
+            osi->setHintParam(OsiDoDualInInitial, false, OsiHintTry);
+            osi->initialSolve();
+            return;
+          }
+          if (clp)
+            applyLpColdStart(clp, osi);
+          else {
+            osi->setHintParam(OsiDoDualInInitial, false, OsiHintTry);
+            osi->initialSolve();
+          }
+        });
+      }
+
       setPreProcessingMode(saveSolver_, 1);
 
       // Install preprocessing output handler

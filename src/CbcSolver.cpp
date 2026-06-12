@@ -1114,9 +1114,23 @@ void CbcSolver::applyLpColdStart(ClpSimplex *clp, OsiSolverInterface *osi)
 {
   const bool racingLP = parameters_.getRacingLP();
   const int threadsParam = parameters_[CbcParam::THREADS]->intVal();
+  // Racing requires at least 2 threads; fall through to LPAuto when
+  // racingLP is on but only 1 thread is available.
+  const bool canRace = racingLP && (threadsParam >= 2);
   const int racingThreads = std::min(3, std::max(2, threadsParam));
   const bool autoLpMode =
-    (parameters_.getLpMethod() == CbcParameters::LPAuto) && !racingLP;
+    (parameters_.getLpMethod() == CbcParameters::LPAuto) && !canRace;
+
+  // Warn once if user requested racing but only 1 thread is available.
+  if (racingLP && !canRace) {
+    static bool warnedColdStart = false;
+    if (!warnedColdStart) {
+      warnedColdStart = true;
+      model_.messageHandler()->message(0, "", "Warning: racingLP is on but threads<2 — "
+        "LP racing disabled in preprocessing; using LPAuto instead.", '!')
+        << CoinMessageEol;
+    }
+  }
 
   // Compute LP settings: ML recommendation (LPAuto) or current parameter values.
   LpAutoSettings autoS;
@@ -1147,7 +1161,7 @@ void CbcSolver::applyLpColdStart(ClpSimplex *clp, OsiSolverInterface *osi)
   clp->setPerturbation(autoS.pertValue);
 
   // Racing: first winner takes the solution; fall through if all fail.
-  if (racingLP) {
+  if (canRace) {
     ClpRacingSolver racer(clp, racingThreads);
     racer.solve(); // auto-adds default K=racingThreads portfolio
     if (racer.winnerIndex() >= 0)
@@ -1280,11 +1294,20 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   // Clamp to [2,3] since only those portfolios are implemented.
   const int threadsParam = parameters_[CbcParam::THREADS]->intVal();
   const int racingThreads = std::min(3, std::max(2, threadsParam));
+  // Racing requires at least 2 threads; with fewer threads, LPAuto takes over.
+  const bool canRace = racingLP && (threadsParam >= 2);
+
+  // Warn if the user requested racing but only 1 thread is available.
+  if (racingLP && !canRace) {
+    model_.messageHandler()->message(0, "", "Warning: racingLP is on but threads<2 — "
+      "LP racing disabled; using LPAuto instead.", '!')
+      << CoinMessageEol;
+  }
 
   LpAutoSettings autoS;
   const bool autoLpMode =
     (parameters_.getLpMethod() == CbcParameters::LPAuto) && (clp != nullptr)
-    && !racingLP;
+    && !canRace;
   if (autoLpMode) {
     double feats[OFCount];
     OsiFeatures::compute(feats, solver);
@@ -1312,7 +1335,7 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   if (clp) {
     ClpParameters &clpP = parameters_.clpParameters();
 
-    if (!racingLP) {
+    if (!canRace) {
       // When auto mode picked a steepest-edge pivot, install it before the PSI
       // wrapper so that applyPositiveEdge() can wrap it correctly.
       if (autoS.pesteep) {
@@ -1358,7 +1381,7 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   // per-config setup function (pivot algorithm, perturbation, idiot passes, etc.)
   // applied before solving. Global model settings (objScale, vector mode) from
   // step 3 are already baked in and inherited by all clones.
-  if (racingLP && clp) {
+  if (canRace && clp) {
     ClpRacingSolver racer(clp, racingThreads);
     racer.solve();
     if (racer.winnerIndex() >= 0) {

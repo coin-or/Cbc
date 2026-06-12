@@ -3676,8 +3676,19 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
         saveTakeHint, saveStrength);
       //if (iPass)
       presolvedModel->setHintParam(OsiDoDualInInitial, false, OsiHintTry);
+      double inspectLpStart1 = inspect_ ? CoinWallclockTime() : 0.0;
       presolvedModel->initialSolve();
       numberIterationsPre_ += presolvedModel->getIterationCount();
+      if (inspect_) {
+        FILE *fp = handler_->filePointer();
+        if (fp) {
+          fprintf(fp, "  [Preproc LP pass %d] initialSolve: %.2fs  iters=%d\n",
+            iPass - doInitialPresolve + 1,
+            CoinWallclockTime() - inspectLpStart1,
+            presolvedModel->getIterationCount());
+          fflush(fp);
+        }
+      }
       presolvedModel->setHintParam(OsiDoDualInInitial, saveTakeHint, saveStrength);
       if (!presolvedModel->isProvenOptimal()) {
         writeDebugMps(presolvedModel, "bad2", NULL);
@@ -3781,7 +3792,18 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
 	 newModel->getHintParam(OsiDoDualInResolve,
 				saveTakeHint, saveStrength);
 	 newModel->setHintParam(OsiDoDualInResolve, true, OsiHintTry);
+	 double inspectLpStart2 = inspect_ ? CoinWallclockTime() : 0.0;
 	 newModel->resolve();
+	 if (inspect_) {
+	   FILE *fp = handler_->filePointer();
+	   if (fp) {
+	     fprintf(fp, "  [Preproc LP pass %d] resolve after cuts: %.2fs  iters=%d\n",
+	       iPass - doInitialPresolve + 1,
+	       CoinWallclockTime() - inspectLpStart2,
+	       newModel->getIterationCount());
+	     fflush(fp);
+	   }
+	 }
 	 newModel->setHintParam(OsiDoDualInResolve, saveTakeHint, saveStrength);
        }
       if (!newModel->isProvenOptimal()) {
@@ -7843,7 +7865,18 @@ CglPreProcess::modified(OsiSolverInterface *model,
 	      newModel->getHintParam(OsiDoDualInResolve,
 				     saveTakeHint, saveStrength);
 	      newModel->setHintParam(OsiDoDualInResolve, solveWithDual, OsiHintTry);
+	      double inspectLpStartM = inspect_ ? CoinWallclockTime() : 0.0;
 	      newModel->resolve();
+	      if (inspect_) {
+		FILE *fp = handler_->filePointer();
+		if (fp) {
+		  fprintf(fp, "  [Preproc LP pass %d.%d] resolve (row drop): %.2fs  iters=%d\n",
+		    iBigPass, iPass,
+		    CoinWallclockTime() - inspectLpStartM,
+		    newModel->getIterationCount());
+		  fflush(fp);
+		}
+	      }
 	      newModel->setHintParam(OsiDoDualInResolve, saveTakeHint, saveStrength);
 	      solveWithDual = true;
 	    }

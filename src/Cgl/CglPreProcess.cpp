@@ -3801,17 +3801,21 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
 	 newModel->getHintParam(OsiDoDualInResolve,
 				saveTakeHint, saveStrength);
 	 newModel->setHintParam(OsiDoDualInResolve, true, OsiHintTry);
-	 // Before resolve: capture dual infeasibilities introduced by the new cuts.
-	 // This tells us how "far" the basis is from dual feasibility after applyCuts.
+	 // Before resolve: capture infeasibility counts after applyCuts().
+	 // dualInfBefore=0 + large iters → pure primal degeneracy (dual simplex
+	 // restoring primal feasibility of violated cuts with tiny pivots).
+	 // primalInfBefore tells us how many of the added cuts are violated.
 	 int dualInfBefore = 0;
+	 int primalInfBefore = 0;
 	 int perturbBefore = 0;
 #ifdef CBC_HAS_CLP
 	 if (inspect_) {
 	   OsiClpSolverInterface *clpOsi = dynamic_cast< OsiClpSolverInterface * >(newModel);
 	   if (clpOsi) {
 	     ClpSimplex *clp = clpOsi->getModelPtr();
-	     dualInfBefore  = clp->numberDualInfeasibilities();
-	     perturbBefore  = clp->perturbation();
+	     dualInfBefore   = clp->numberDualInfeasibilities();
+	     primalInfBefore = clp->numberPrimalInfeasibilities();
+	     perturbBefore   = clp->perturbation();
 	   }
 	 }
 #endif
@@ -3823,12 +3827,12 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
 	     const char *stat = newModel->isProvenOptimal() ? "optimal"
 	       : newModel->isProvenPrimalInfeasible() ? "infeasible" : "not optimal";
 	     fprintf(fp, "  [Preproc LP pass %d] resolve after cuts: %.2fs  iters=%d  obj=%.6g  (%s)"
-	       "  dualInfBefore=%d  perturb=%d\n",
+	       "  dualInfBefore=%d  primalInfBefore=%d  perturb=%d\n",
 	       iPass - doInitialPresolve + 1,
 	       CoinWallclockTime() - inspectLpStart2,
 	       newModel->getIterationCount(),
 	       newModel->getObjValue(), stat,
-	       dualInfBefore, perturbBefore);
+	       dualInfBefore, primalInfBefore, perturbBefore);
 	     fflush(fp);
 	   }
 	 }

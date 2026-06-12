@@ -725,6 +725,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::DOHEURISTIC]->setTopic("Heuristics");
   parameters_[CbcParam::USESOLUTION]->setTopic("Heuristics");
   parameters_[CbcParam::HEURISTICSTATS]->setTopic("Output");
+  parameters_[CbcParam::INSPECTPREPROCESSING]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::MESSAGES]->setTopic("Output");
   parameters_[CbcParam::ERRORSALLOWED]->setTopic("I/O");
 
@@ -889,6 +890,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
      parameters_[CbcParam::DOHEURISTIC]->setDefault("off");
      parameters_[CbcParam::HEURISTICSTATS]->setDefault("off");
+     parameters_[CbcParam::INSPECTPREPROCESSING]->setDefault("off");
      parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
      parameters_[CbcParam::MESSAGES]->setDefault("off");
      parameters_[CbcParam::PREPROCNAMES]->setDefault("on");
@@ -2764,6 +2766,15 @@ void CbcParameters::addCbcSolverBoolParams() {
   parameters_[CbcParam::HEURISTICSTATS]->setup(
       "heuristicStats", "Whether to print heuristic statistics at the end of the solve",
       "This switches the printing of heuristic statistics summary at the end of the solve on or off.");
+
+  parameters_[CbcParam::INSPECTPREPROCESSING]->setup(
+      "inspectPreProcessing",
+      "Print detailed timing and dimension info for each preprocessing pass",
+      "When on, prints per-pass diagnostics during CglPreProcess: problem dimensions "
+      "(rows, cols, integers, NZ) at the start of each major pass, probing settings "
+      "(maxProbe, maxPass, maxLook, maxElements), per-generator wall-clock time, "
+      "and cut/fix/tighten counts per minor pass. Useful for diagnosing slow preprocessing "
+      "on instances where probing takes a long time.");
 
   parameters_[CbcParam::SINGLETONBOUNDS]->setup(
       "singleton!Bounds",

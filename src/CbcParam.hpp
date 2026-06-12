@@ -186,6 +186,7 @@ public:
       SOS,
       USESOLUTION,
       HEURISTICSTATS,
+      INSPECTPREPROCESSING,
       LASTBOOLPARAM,
 
       // Keyword Parameters

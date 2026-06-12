@@ -3489,6 +3489,22 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
     }
 #endif
     for (int iPass = doInitialPresolve; ((iPass < numberSolvers_) && ((getCurrentCPUTime() - ppstart) < timeLimit_)); iPass++) {
+      if (inspect_) {
+        int nR = oldModel->getNumRows();
+        int nC = oldModel->getNumCols();
+        int nNZ = oldModel->getNumElements();
+        int nInts = 0;
+        for (int i = 0; i < nC; i++)
+          if (oldModel->isInteger(i))
+            nInts++;
+        char buf[256];
+        snprintf(buf, sizeof(buf),
+          "[Preproc major pass %d/%d] %d rows, %d cols (%d integer), %d NZ  (t=%.2fs)",
+          iPass - doInitialPresolve + 1, numberSolvers_ - doInitialPresolve,
+          nR, nC, nInts, nNZ, getCurrentCPUTime() - ppstart);
+        FILE *fp = handler_->filePointer();
+        if (fp) { fprintf(fp, "  %s\n", buf); fflush(fp); }
+      }
       // Look at Vubs
       {
         const double *columnLower = oldModel->getColLower();
@@ -6591,6 +6607,18 @@ CglPreProcess::modified(OsiSolverInterface *model,
   printf("At beginning of modified %d rows and %d columns (pass %d - doing %d minor passes)\n",
     numberRows, numberColumns, iBigPass, numberPasses);
 #endif
+  if (inspect_) {
+    int nInts = 0;
+    for (int i = 0; i < numberColumns; i++)
+      if (newModel->isInteger(i))
+        nInts++;
+    char buf[256];
+    snprintf(buf, sizeof(buf),
+      "[Preproc major pass %d] modified(): %d rows, %d cols (%d integer), %d NZ, %d minor passes",
+      iBigPass, numberRows, numberColumns, nInts, newModel->getNumElements(), numberPasses);
+    FILE *fp = handler_->filePointer();
+    if (fp) { fprintf(fp, "  %s\n", buf); fflush(fp); }
+  }
   OsiRowCut **whichCut = new OsiRowCut *[numberRows + 1];
   memset(whichCut, 0, (numberRows + 1) * sizeof(OsiRowCut *));
   numberChanges = 0;
@@ -7609,6 +7637,35 @@ CglPreProcess::modified(OsiSolverInterface *model,
 #if CBC_USEFUL_PRINTING > 0
         double time1 = CoinCpuTime();
 #endif
+        double inspectTime1 = inspect_ ? CoinWallclockTime() : 0.0;
+        if (inspect_) {
+          char buf[256];
+          FILE *fp = handler_->filePointer();
+          if (fp) {
+            if (probingCut) {
+              snprintf(buf, sizeof(buf),
+                "[Preproc pass %d.%d] Probing: maxProbe=%d, maxPass=%d, maxLook=%d, maxElem=%d (minor pass %d/%d)",
+                iBigPass, iPass,
+                probingCut->getMaxProbeRoot(), probingCut->getMaxPassRoot(),
+                probingCut->getMaxLookRoot(), probingCut->getMaxElementsRoot(),
+                iPass + 1, numberPasses);
+            } else if (cliqueGen || bkCliqueGen) {
+              snprintf(buf, sizeof(buf),
+                "[Preproc pass %d.%d] Clique separator (minor pass %d/%d)",
+                iBigPass, iPass, iPass + 1, numberPasses);
+            } else if (dupRow) {
+              snprintf(buf, sizeof(buf),
+                "[Preproc pass %d.%d] DuplicateRow (minor pass %d/%d)",
+                iBigPass, iPass, iPass + 1, numberPasses);
+            } else {
+              snprintf(buf, sizeof(buf),
+                "[Preproc pass %d.%d] Generator %d (minor pass %d/%d)",
+                iBigPass, iPass, iGenerator, iPass + 1, numberPasses);
+            }
+            fprintf(fp, "  %s\n", buf);
+            fflush(fp);
+          }
+        }
         if (!probingCut) {
           generator_[iGenerator]->generateCuts(*newModel, cs, info);
         } else {
@@ -7637,6 +7694,20 @@ CglPreProcess::modified(OsiSolverInterface *model,
             probingCut->setMaxProbeRoot(probingCut->getMaxProbe());
             probingCut->setMaxLookRoot(probingCut->getMaxLook());
           }
+          if (inspect_) {
+            char buf[256];
+            FILE *fp = handler_->filePointer();
+            if (fp) {
+              snprintf(buf, sizeof(buf),
+                "[Preproc pass %d.%d] Probing actual: maxProbe=%d, maxPass=%d, maxLook=%d, maxElem=%d  cols=%d, rows=%d",
+                iBigPass, iPass,
+                probingCut->getMaxProbeRoot(), probingCut->getMaxPassRoot(),
+                probingCut->getMaxLookRoot(), probingCut->getMaxElementsRoot(),
+                numberColumns, numberRows);
+              fprintf(fp, "  %s\n", buf);
+              fflush(fp);
+            }
+          }
           probingCut->generateCutsAndModify(*newModel, cs, &info);
           probingCut->setMaxElementsRoot(saveMaxElements);
           probingCut->setMaxProbeRoot(saveMaxProbe);
@@ -7650,6 +7721,22 @@ CglPreProcess::modified(OsiSolverInterface *model,
         printf("After probing1 %d row cuts and %d column cuts\n",
           cs.sizeRowCuts(), cs.sizeColCuts());
 #endif
+        if (inspect_) {
+          char buf[256];
+          FILE *fp = handler_->filePointer();
+          if (fp) {
+            double elapsed = CoinWallclockTime() - inspectTime1;
+            int nR = newModel->getNumRows();
+            int nC = newModel->getNumCols();
+            snprintf(buf, sizeof(buf),
+              "[Preproc pass %d.%d] Generator done: %.2fs  row cuts=%d  col cuts=%d  "
+              "model now: %d rows, %d cols",
+              iBigPass, iPass, elapsed,
+              cs.sizeRowCuts(), cs.sizeColCuts(), nR, nC);
+            fprintf(fp, "  %s\n", buf);
+            fflush(fp);
+          }
+        }
         if (cs.sizeColCuts() && iPass < numberPasses - 100 && !iBigPass) {
           // delete all row cuts for now????
           int n = cs.sizeRowCuts();
@@ -8757,6 +8844,7 @@ CglPreProcess::CglPreProcess()
   , useElapsedTime_(true)
   , timeLimit_(COIN_DBL_MAX)
   , keepColumnNames_(false)
+  , inspect_(false)
 {
   handler_ = new CoinMessageHandler();
   handler_->setLogLevel(2);
@@ -8778,6 +8866,7 @@ CglPreProcess::CglPreProcess(const CglPreProcess &rhs)
   , useElapsedTime_(true)
   , timeLimit_(COIN_DBL_MAX)
   , keepColumnNames_(false)
+  , inspect_(rhs.inspect_)
 {
   if (defaultHandler_) {
     handler_ = new CoinMessageHandler();
@@ -8852,6 +8941,7 @@ CglPreProcess::operator=(const CglPreProcess &rhs)
     numberIterationsPost_ = rhs.numberIterationsPost_;
     numberRowType_ = rhs.numberRowType_;
     options_ = rhs.options_;
+    inspect_ = rhs.inspect_;
     if (defaultHandler_) {
       handler_ = new CoinMessageHandler();
       handler_->setLogLevel(rhs.handler_->logLevel());

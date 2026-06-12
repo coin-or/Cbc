@@ -2903,7 +2903,7 @@ static void cbcSetupDefaults(CbcModel &model, CbcParameters &parameters)
   parameters[CbcParam::USECGRAPH]->setVal("on");
   parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
   parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
-  parameters[CbcParam::CLQSTRENGTHENING]->setVal("before");
+  parameters[CbcParam::CLQSTRENGTHENING]->setVal("both");
   parameters[CbcParam::AGGREGATEMIXED]->setVal(1);
   parameters[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
   parameters[CbcParam::BKMAXCALLS]->setVal(1000);

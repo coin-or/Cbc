@@ -3682,10 +3682,13 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
       if (inspect_) {
         FILE *fp = handler_->filePointer();
         if (fp) {
-          fprintf(fp, "  [Preproc LP pass %d] initialSolve: %.2fs  iters=%d\n",
+          const char *stat = presolvedModel->isProvenOptimal() ? "optimal"
+            : presolvedModel->isProvenPrimalInfeasible() ? "infeasible" : "not optimal";
+          fprintf(fp, "  [Preproc LP pass %d] initialSolve: %.2fs  iters=%d  obj=%.6g  (%s)\n",
             iPass - doInitialPresolve + 1,
             CoinWallclockTime() - inspectLpStart1,
-            presolvedModel->getIterationCount());
+            presolvedModel->getIterationCount(),
+            presolvedModel->getObjValue(), stat);
           fflush(fp);
         }
       }
@@ -3797,10 +3800,13 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
 	 if (inspect_) {
 	   FILE *fp = handler_->filePointer();
 	   if (fp) {
-	     fprintf(fp, "  [Preproc LP pass %d] resolve after cuts: %.2fs  iters=%d\n",
+	     const char *stat = newModel->isProvenOptimal() ? "optimal"
+	       : newModel->isProvenPrimalInfeasible() ? "infeasible" : "not optimal";
+	     fprintf(fp, "  [Preproc LP pass %d] resolve after cuts: %.2fs  iters=%d  obj=%.6g  (%s)\n",
 	       iPass - doInitialPresolve + 1,
 	       CoinWallclockTime() - inspectLpStart2,
-	       newModel->getIterationCount());
+	       newModel->getIterationCount(),
+	       newModel->getObjValue(), stat);
 	     fflush(fp);
 	   }
 	 }
@@ -7744,18 +7750,32 @@ CglPreProcess::modified(OsiSolverInterface *model,
           cs.sizeRowCuts(), cs.sizeColCuts());
 #endif
         if (inspect_) {
-          char buf[256];
           FILE *fp = handler_->filePointer();
           if (fp) {
             double elapsed = CoinWallclockTime() - inspectTime1;
             int nR = newModel->getNumRows();
             int nC = newModel->getNumCols();
-            snprintf(buf, sizeof(buf),
-              "[Preproc pass %d.%d] Generator done: %.2fs  row cuts=%d  col cuts=%d  "
-              "model now: %d rows, %d cols",
-              iBigPass, iPass, elapsed,
-              cs.sizeRowCuts(), cs.sizeColCuts(), nR, nC);
-            fprintf(fp, "  %s\n", buf);
+            int nNZ = newModel->getNumElements();
+            // cut pool NZ stats
+            int nRowCuts = cs.sizeRowCuts();
+            int cutNZtotal = 0, cutNZmax = 0;
+            for (int ci = 0; ci < nRowCuts; ci++) {
+              int n = cs.rowCut(ci).row().getNumElements();
+              cutNZtotal += n;
+              if (n > cutNZmax) cutNZmax = n;
+            }
+            double cutNZavg = nRowCuts > 0 ? (double)cutNZtotal / nRowCuts : 0.0;
+            if (nRowCuts > 0)
+              fprintf(fp, "  [Preproc pass %d.%d] Generator done: %.2fs  "
+                "row cuts=%d (NZ: total=%d avg=%.1f max=%d)  col cuts=%d  "
+                "model now: %d rows, %d cols, %d NZ\n",
+                iBigPass, iPass, elapsed,
+                nRowCuts, cutNZtotal, cutNZavg, cutNZmax,
+                cs.sizeColCuts(), nR, nC, nNZ);
+            else
+              fprintf(fp, "  [Preproc pass %d.%d] Generator done: %.2fs  "
+                "row cuts=0  col cuts=%d  model now: %d rows, %d cols, %d NZ\n",
+                iBigPass, iPass, elapsed, cs.sizeColCuts(), nR, nC, nNZ);
             fflush(fp);
           }
         }
@@ -7870,10 +7890,13 @@ CglPreProcess::modified(OsiSolverInterface *model,
 	      if (inspect_) {
 		FILE *fp = handler_->filePointer();
 		if (fp) {
-		  fprintf(fp, "  [Preproc LP pass %d.%d] resolve (row drop): %.2fs  iters=%d\n",
+		  const char *stat = newModel->isProvenOptimal() ? "optimal"
+		    : newModel->isProvenPrimalInfeasible() ? "infeasible" : "not optimal";
+		  fprintf(fp, "  [Preproc LP pass %d.%d] resolve (row drop): %.2fs  iters=%d  obj=%.6g  (%s)\n",
 		    iBigPass, iPass,
 		    CoinWallclockTime() - inspectLpStartM,
-		    newModel->getIterationCount());
+		    newModel->getIterationCount(),
+		    newModel->getObjValue(), stat);
 		  fflush(fp);
 		}
 	      }

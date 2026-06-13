@@ -1,16 +1,18 @@
 Minimize
   x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12
 Subject To
-  row1: x1 + x2 + x3 - 2 y1 = 1
-  row2: x2 + x3 + x4 - 2 y2 = 0
-  row3: x3 + x4 + x5 - 2 y3 = 1
-  row4: x4 + x5 + x6 - 2 y4 = 0
-  row5: x5 + x6 + x7 - 2 y5 = 1
-  row6: x6 + x7 + x8 - 2 y6 = 0
-  row7: x7 + x8 + x9 - 2 y7 = 1
-  row8: x8 + x9 + x10 - 2 y8 = 0
-  row9: x9 + x10 + x11 - 2 y9 = 1
-  row10: x10 + x11 + x12 - 2 y10 = 0
+  row1: x1 - 2 y1 = 1
+  row2: x1 + x2 - 2 y2 = 0
+  row3: x2 + x3 - 2 y3 = 1
+  row4: x3 + x4 - 2 y4 = 0
+  row5: x4 + x5 - 2 y5 = 1
+  row6: x5 + x6 - 2 y6 = 0
+  row7: x6 + x7 - 2 y7 = 1
+  row8: x7 + x8 - 2 y8 = 0
+  row9: x8 + x9 - 2 y9 = 1
+  row10: x9 + x10 - 2 y10 = 0
+  non_parity1: 3 x11 + x12 >= 1
+  non_parity2: x10 + x11 - x12 <= 1
 Bounds
   0 <= x1 <= 1
   0 <= x2 <= 1

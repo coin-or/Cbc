@@ -2771,10 +2771,12 @@ void CbcParameters::addCbcSolverBoolParams() {
       "inspectPreProcessing",
       "Print detailed timing and dimension info for each preprocessing pass",
       "When on, prints per-pass diagnostics during CglPreProcess: problem dimensions "
-      "(rows, cols, integers, NZ) at the start of each major pass, probing settings "
-      "(maxProbe, maxPass, maxLook, maxElements), per-generator wall-clock time, "
-      "and cut/fix/tighten counts per minor pass. Useful for diagnosing slow preprocessing "
-      "on instances where probing takes a long time.");
+      "(rows, cols, integers, NZ) at the start of each major pass; probing settings "
+      "(maxProbe, maxPass, maxLook, maxElements) and per-generator wall-clock time "
+      "with cut pool statistics (total/avg/max NZ per cut); LP solve timing and "
+      "iteration counts for initialSolve, resolve-after-cuts, and resolve-after-row-drop "
+      "with LP objective value and basis infeasibility counts. Useful for diagnosing "
+      "slow preprocessing on instances where LP re-optimisation dominates.");
 
   parameters_[CbcParam::SINGLETONBOUNDS]->setup(
       "singleton!Bounds",

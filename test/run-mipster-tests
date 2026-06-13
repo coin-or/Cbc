@@ -130,9 +130,8 @@ TESTS=(
   CInterfaceTest_jssp_fixtures
   CInterfaceTest_steiner
   CInterfaceTest_fcnf_fixtures
+  CInterfaceTest_upms
 )
-
-TOTAL=${#TESTS[@]}
 PASS=0
 FAIL=0
 FAILURES=()
@@ -172,9 +171,8 @@ FIXTURE_TESTS=(
   CInterfaceTest_jssp_fixtures
   CInterfaceTest_steiner
   CInterfaceTest_fcnf_fixtures
+  CInterfaceTest_upms
 )
-
-# Phase 1: launch all tests in background
 for i in "${!TESTS[@]}"; do
   name="${TESTS[$i]}"
   bin=$(find_bin "$name")

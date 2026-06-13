@@ -158,6 +158,12 @@ static int test_jssp(const char *fixture_dir, const JsspTestCase *tc)
       mip_diag_debug_cuts(jssp_builder, (void *)path,
                           tc->expected_makespan, tc->timeout_sec,
                           sol, "nodeBoundProp", "on");
+      /* Probing-only pass: isolates probing column cuts from other cut
+       * generators.  With no-probing → OK, this pass catches the bad
+       * column bound that probing generates in the preprocessed problem. */
+      mip_diag_debug_cuts(jssp_builder, (void *)path,
+                          tc->expected_makespan, tc->timeout_sec,
+                          sol, "probing", "forceonbutstrong");
     } else {
       printf("    [DIAG] no reference .sol for %s — skipping debugCuts pass\n",
              tc->name);

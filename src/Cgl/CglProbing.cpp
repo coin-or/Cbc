@@ -287,40 +287,39 @@ public:
   }
 };
 // Adds in cut to list
-#ifdef CGL_DEBUG
-// Checks bounds okay against debugger
+// Checks bounds okay against debugger — always compiled so it fires when
+// -debugCuts is active (OsiRowCutDebugger loaded), without requiring CGL_DEBUG.
 static void checkBounds(const OsiRowCutDebugger *debugger, OsiColCut &cut)
 {
-  if (debugger) {
-    // on optimal path
-    const double *optimal = debugger->optimalSolution();
-    int i;
-    int nIndex;
-    const double *values;
-    const int *index;
-    const CoinPackedVector &lbs = cut.lbs();
-    values = lbs.getElements();
-    nIndex = lbs.getNumElements();
-    index = lbs.getIndices();
-    for (i = 0; i < nIndex; i++) {
-      double value = values[i];
-      int iColumn = index[i];
-      printf("%d optimal %g lower %g\n", iColumn, optimal[iColumn], value);
-      assert(value <= optimal[iColumn] + 1.0e-5);
-    }
-    const CoinPackedVector &ubs = cut.ubs();
-    values = ubs.getElements();
-    nIndex = ubs.getNumElements();
-    index = ubs.getIndices();
-    for (i = 0; i < nIndex; i++) {
-      double value = values[i];
-      int iColumn = index[i];
-      printf("%d optimal %g upper %g\n", iColumn, optimal[iColumn], value);
-      assert(value >= optimal[iColumn] - 1.0e-5);
-    }
+  if (!debugger)
+    return;
+  const double *optimal = debugger->optimalSolution();
+  int i, nIndex;
+  const double *values;
+  const int *index;
+  const CoinPackedVector &lbs = cut.lbs();
+  values = lbs.getElements();
+  nIndex = lbs.getNumElements();
+  index = lbs.getIndices();
+  for (i = 0; i < nIndex; i++) {
+    double value = values[i];
+    int iColumn = index[i];
+    if (value > optimal[iColumn] + 1.0e-5)
+      printf("bad col cut lb: col %d lb=%.10g but optimal=%.10g\n",
+             iColumn, value, optimal[iColumn]);
+  }
+  const CoinPackedVector &ubs = cut.ubs();
+  values = ubs.getElements();
+  nIndex = ubs.getNumElements();
+  index = ubs.getIndices();
+  for (i = 0; i < nIndex; i++) {
+    double value = values[i];
+    int iColumn = index[i];
+    if (value < optimal[iColumn] - 1.0e-5)
+      printf("bad col cut ub: col %d ub=%.10g but optimal=%.10g\n",
+             iColumn, value, optimal[iColumn]);
   }
 }
-#endif
 #define CGL_REASONABLE_INTEGER_BOUND 1.23456789e10
 // This tightens column bounds (and can declare infeasibility)
 // It may also declare rows to be redundant
@@ -1380,11 +1379,12 @@ void CglProbing::generateCuts(const OsiSolverInterface &si, OsiCuts &cs,
     rc.setLb(COIN_DBL_MAX);
     rc.setUb(0.0);
     cs.insert(rc);
-#ifdef CGL_DEBUG
-    const OsiRowCutDebugger *debugger = si.getRowCutDebugger();
-    if (debugger && debugger->onOptimalPath(si))
-      assert(!debugger->invalidCut(rc));
-#endif
+    {
+      const OsiRowCutDebugger *dbgInf = si.getRowCutDebugger();
+      if (dbgInf && dbgInf->onOptimalPath(si) && dbgInf->invalidCut(rc))
+        printf("bad probing infeasibility cut in generateCuts:"
+               " probing wrongly declared problem infeasible\n");
+    }
   }
   delete[] rowLower;
   delete[] rowUpper;
@@ -1462,6 +1462,13 @@ int CglProbing::generateCutsAndModify(const OsiSolverInterface &si,
     const OsiRowCutDebugger *debugger = si.getRowCutDebugger();
     if (debugger && debugger->onOptimalPath(si))
       assert(!debugger->invalidCut(rc));
+#else
+    {
+      const OsiRowCutDebugger *dbgInf = si.getRowCutDebugger();
+      if (dbgInf && dbgInf->onOptimalPath(si) && dbgInf->invalidCut(rc))
+        printf("bad probing infeasibility cut in generateCutsAndModify:"
+               " probing wrongly declared problem infeasible\n");
+    }
 #endif
   }
   rowCuts_ = saveRowCuts;
@@ -2168,7 +2175,10 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
   if (debugger && !debugger->onOptimalPath(si))
     debugger = NULL;
 #else
-  const OsiRowCutDebugger *debugger = NULL;
+  // Always fetch the debugger so checkBounds() fires when -debugCuts is active.
+  const OsiRowCutDebugger *debugger = si.getRowCutDebugger();
+  if (debugger && !debugger->onOptimalPath(si))
+    debugger = NULL;
 #endif
 
   const int *column = rowCopy->getIndices();
@@ -2330,9 +2340,7 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
           } else {
             cc.setEffectiveness(1.0e-5);
           }
-#ifdef CGL_DEBUG
           checkBounds(debugger, cc);
-#endif
           cs.insert(cc);
         }
       }
@@ -3572,11 +3580,7 @@ static void writeMps(int j, int iway, const OsiSolverInterface *solver,
 #endif
 // Does probing and adding cuts
 int CglProbing::probe(const OsiSolverInterface &si,
-  const OsiRowCutDebugger *
-#ifdef CGL_DEBUG
-    debugger
-#endif
-  ,
+  const OsiRowCutDebugger *debugger,
   OsiCuts &cs,
   double *COIN_RESTRICT colLower, double *COIN_RESTRICT colUpper,
   CoinPackedMatrix *rowCopy,
@@ -5681,9 +5685,7 @@ int CglProbing::probe(const OsiSolverInterface &si,
             } else {
               cc->setEffectiveness(1.0e-5);
             }
-#ifdef CGL_DEBUG
             checkBounds(debugger, *cc);
-#endif
             cs.insert(cc);
           } else {
             delete cc;
@@ -6354,9 +6356,7 @@ int CglProbing::probe(const OsiSolverInterface &si,
                 } else {
                   cc->setEffectiveness(1.0e-5);
                 }
-#ifdef CGL_DEBUG
                 checkBounds(debugger, *cc);
-#endif
                 cs.insert(cc);
               } else {
                 delete cc;
@@ -7094,11 +7094,7 @@ int CglProbing::probe(const OsiSolverInterface &si,
 }
 // Does probing and adding cuts
 int CglProbing::probeCliques(const OsiSolverInterface &si,
-  const OsiRowCutDebugger *
-#ifdef CGL_DEBUG
-    debugger
-#endif
-  ,
+  const OsiRowCutDebugger *debugger,
   OsiCuts &cs,
   double *colLower, double *colUpper,
   CoinPackedMatrix *rowCopy,
@@ -7944,9 +7940,7 @@ int CglProbing::probeCliques(const OsiSolverInterface &si,
                 } else {
                   cc.setEffectiveness(1.0e-5);
                 }
-#ifdef CGL_DEBUG
                 checkBounds(debugger, cc);
-#endif
                 cs.insert(cc);
               }
             }

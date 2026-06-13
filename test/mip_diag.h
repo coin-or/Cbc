@@ -105,8 +105,21 @@ static const MipDiagConfig MIP_DIAG_CONFIGS[] = {
    */
   { "tight-cutoff-inc",  "increment",       "1.0",   NULL,            NULL,  NULL,           NULL  },
   { "no-fake-obj",       "more2!MipOptions","lessused", NULL,         NULL,  NULL,           NULL  },
+  /* Probing-specific isolation passes (since no-probing → OK):
+   *
+   * probing-only: all other cut generators off, probing active at default
+   *   intensity.  Confirms probing alone (+ preprocess) reproduces the bug.
+   * probing-colfix-only: probing=forceonbutstrong forces probing at every
+   *   node but does ONLY column bound fixing — no row cuts / strengthening.
+   *   If WRONG: the bug is in probing's column fixing code.
+   *   If OK:    the bug is in probing's row-strengthening code.
+   * probing-forceonbut: probing at every node, probing only (no row
+   *   strengthening), higher pressure than default.
+   */
+  { "probing-only",       "cuts",    "off",        "probing",  "ifmove",          NULL,   NULL  },
+  { "probing-colfix-only","probing", "forceonbutstrong", NULL, NULL,              NULL,   NULL  },
+  { "probing-forceonbut", "probing", "forceonbut", NULL,       NULL,              NULL,   NULL  },
 };
-
 #define MIP_N_DIAG_CONFIGS \
   ((int)(sizeof(MIP_DIAG_CONFIGS) / sizeof(MIP_DIAG_CONFIGS[0])))
 
@@ -227,7 +240,8 @@ static void mip_diag_wrong_optimal(
 
   printf("\n  [DIAG] OK = feature not responsible for the bug.\n"
          "  [DIAG] WRONG = bug present without this feature too.\n"
-         "  [DIAG] LEAD = found correct obj (not proven): this feature is suspect.\n");
+         "  [DIAG] LEAD = found correct obj (not proven): this feature is suspect.\n"
+         "  [DIAG] See debugCuts pass for 'bad row'/'bad col cut' details.\n");
 }
 
 /* Run a solve with OsiRowCutDebugger active to identify exactly which cut
@@ -269,9 +283,13 @@ static void mip_diag_debug_cuts(
     printf("\n  [DIAG] debugCuts pass (default config) — reference solution:"
            " %s\n", ref_sol_path);
   printf("  [DIAG] time_limit=%ds  no node limit"
-         " — any invalid cut will be flagged below.\n", time_limit_sec);
-  printf("  [DIAG] If no 'bad row' lines appear: row-cut generators are NOT"
-         " the source of the bug.\n\n");
+         " — any invalid row or column cut will be flagged below.\n", time_limit_sec);
+  printf("  [DIAG] 'bad row' lines: a row cut that excludes the certified optimum.\n");
+  printf("  [DIAG] 'bad col cut lb/ub' lines: a probing column cut that wrongly"
+         " restricts a variable bound.\n");
+  printf("  [DIAG] 'bad probing infeasibility cut' lines: probing wrongly"
+         " declared the problem infeasible.\n");
+  printf("  [DIAG] If none of these appear: the bug is not in cut generators.\n\n");
   fflush(stdout);
 
   Cbc_Model *m = builder(userdata);

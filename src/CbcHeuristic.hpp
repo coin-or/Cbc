@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <climits>
 #include "CoinPackedMatrix.hpp"
 #include "OsiCuts.hpp"
 #include "CoinHelperFunctions.hpp"
@@ -348,6 +349,95 @@ public:
   {
     return numCouldRun_;
   }
+  /// Total time spent in the heuristic (seconds)
+  inline double totalTime() const
+  {
+    return totalTime_;
+  }
+  /// How many times the heuristic was executed
+  inline int numExecutions() const
+  {
+    return numExecutions_;
+  }
+  /// How many times it failed due to infeasibility
+  inline int numInfeasible() const
+  {
+    return numInfeasible_;
+  }
+  /// How many times it failed due to iteration limit
+  inline int numIterationLimit() const
+  {
+    return numIterationLimit_;
+  }
+  /// Cumulative sub-MIP nodes solved by this heuristic
+  inline int totalNodesSubMIP() const
+  {
+    return totalNodesSubMIP_;
+  }
+  /// Increment sub-MIP nodes solved
+  inline void incrementSubMIPNodes(int nodes) const
+  {
+    totalNodesSubMIP_ += nodes;
+  }
+  /// Record heuristic execution time
+  inline void recordExecution(double time)
+  {
+    numExecutions_++;
+    totalTime_ += time;
+  }
+  /// Record failure due to infeasibility
+  inline void recordInfeasible()
+  {
+    numInfeasible_++;
+  }
+  /// Record failure due to iteration limit
+  inline void recordIterationLimit()
+  {
+    numIterationLimit_++;
+  }
+  /// Set number of infeasible failures directly
+  inline void setNumInfeasible(int value) const
+  {
+    numInfeasible_ = value;
+  }
+  /// Set number of iteration limit failures directly
+  inline void setNumIterationLimit(int value) const
+  {
+    numIterationLimit_ = value;
+  }
+  /// Add an improvement
+  inline void addImprovement(const std::string &imp) const
+  {
+    improvements_.push_back(imp);
+  }
+  /// Get improvements
+  inline const std::vector<std::string> &improvements() const
+  {
+    return improvements_;
+  }
+  /// Clear improvements
+  inline void clearImprovements() const
+  {
+    improvements_.clear();
+  }
+  /// Record the B&B depth at which this heuristic was applied
+  inline void recordDepth(int depth)
+  {
+    if (depth < minDepthRan_)
+      minDepthRan_ = depth;
+    if (depth > maxDepthRan_)
+      maxDepthRan_ = depth;
+  }
+  /// Minimum B&B depth at which this heuristic was applied (-1 if never run)
+  inline int minDepthRan() const
+  {
+    return minDepthRan_ == INT_MAX ? -1 : minDepthRan_;
+  }
+  /// Maximum B&B depth at which this heuristic was applied (-1 if never run)
+  inline int maxDepthRan() const
+  {
+    return maxDepthRan_;
+  }
   /// Return objective function value with sign corrected
   inline double trueObjValue(double value) const
   {
@@ -451,6 +541,23 @@ protected:
 
   // Input solution - so can be used as seed
   double *inputSolution_;
+
+  /// Total time spent in the heuristic (seconds)
+  mutable double totalTime_;
+  /// How many times the heuristic was executed
+  mutable int numExecutions_;
+  /// How many times it failed due to infeasibility
+  mutable int numInfeasible_;
+  /// How many times it failed due to iteration limit
+  mutable int numIterationLimit_;
+  /// Cumulative sub-MIP nodes solved by this heuristic
+  mutable int totalNodesSubMIP_;
+  /// List of improvements made by this heuristic
+  mutable std::vector<std::string> improvements_;
+  /// Minimum B&B depth at which this heuristic was applied
+  int minDepthRan_;
+  /// Maximum B&B depth at which this heuristic was applied
+  int maxDepthRan_;
 
 #ifdef JJF_ZERO
   /// Lower bounds of last node where the heuristic found a solution

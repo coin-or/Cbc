@@ -1193,6 +1193,21 @@ int CbcOutputHandler::print()
       return 0;
     }
 
+    // ext=45: Heuristic performance summary — "Heuristic X: executed Y times..."
+    if (ext == 45 && std::strstr(buf, "Heuristic ") && std::strstr(buf, ": executed ")) {
+      const char *p = buf;
+      if (std::strncmp(p, "Cbc", 3) == 0) {
+        while (*p && *p != ' ') ++p;
+        if (*p == ' ') ++p;
+      }
+      FILE *fp = filePointer();
+      if (fp && *p) {
+        fprintf(fp, "  %s\n", p);
+        fflush(fp);
+      }
+      return 0;
+    }
+
     // ext=39 (CBC_FPUMP2): diagnostic messages during heuristic runs (level=2 only).
     // Examples: "Infeasible on initial solve", "Pre-processing says infeasible",
     // "Strong branching on all N unfixed variables..."

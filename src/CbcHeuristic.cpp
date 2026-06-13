@@ -10,6 +10,7 @@
 #include "CbcConfig.h"
 
 #include <cassert>
+#include <climits>
 #include <cstdlib>
 #include <cmath>
 #include <cfloat>
@@ -117,6 +118,13 @@ CbcHeuristic::CbcHeuristic()
   , numberSolutionsFound_(0)
   , numberNodesDone_(0)
   , inputSolution_(NULL)
+  , totalTime_(0.0)
+  , numExecutions_(0)
+  , numInfeasible_(0)
+  , numIterationLimit_(0)
+  , totalNodesSubMIP_(0)
+  , minDepthRan_(INT_MAX)
+  , maxDepthRan_(-1)
 {
   // As CbcHeuristic virtual need to modify .cpp if above change
 }
@@ -145,6 +153,13 @@ CbcHeuristic::CbcHeuristic(CbcModel &model)
   , numberSolutionsFound_(0)
   , numberNodesDone_(0)
   , inputSolution_(NULL)
+  , totalTime_(0.0)
+  , numExecutions_(0)
+  , numInfeasible_(0)
+  , numIterationLimit_(0)
+  , totalNodesSubMIP_(0)
+  , minDepthRan_(INT_MAX)
+  , maxDepthRan_(-1)
 {
 }
 
@@ -172,6 +187,14 @@ void CbcHeuristic::gutsOfCopy(const CbcHeuristic &rhs)
   runNodes_ = rhs.runNodes_;
   numberSolutionsFound_ = rhs.numberSolutionsFound_;
   numberNodesDone_ = rhs.numberNodesDone_;
+  totalTime_ = rhs.totalTime_;
+  numExecutions_ = rhs.numExecutions_;
+  numInfeasible_ = rhs.numInfeasible_;
+  numIterationLimit_ = rhs.numIterationLimit_;
+  totalNodesSubMIP_ = rhs.totalNodesSubMIP_;
+  improvements_ = rhs.improvements_;
+  minDepthRan_ = rhs.minDepthRan_;
+  maxDepthRan_ = rhs.maxDepthRan_;
   if (rhs.inputSolution_) {
     int numberColumns = model_->getNumCols();
     setInputSolution(rhs.inputSolution_, rhs.inputSolution_[numberColumns]);
@@ -1641,6 +1664,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           solverD->setHintParam(OsiDoDualInResolve, takeHint, strength);
 #endif
           numberNodesDone_ = model.getNodeCount();
+          totalNodesSubMIP_ += model.getNodeCount();
 #ifdef COIN_DEVELOP
           printf("sub branch %d nodes, %d iterations - max %d\n",
             model.getNodeCount(), model.getIterationCount(),
@@ -1745,6 +1769,17 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         } else {
           // no good
           returnCode = model.isProvenInfeasible() ? 2 : 0; // so will be infeasible
+          if (returnCode == 0) {
+            bool iterationLimitReached = false;
+            if (model.status() == 1 && model.secondaryStatus() == 8) {
+              iterationLimitReached = true;
+            } else if (model.solver() && model.solver()->isIterationLimitReached()) {
+              iterationLimitReached = true;
+            }
+            if (iterationLimitReached) {
+              numIterationLimit_++;
+            }
+          }
         }
         int totalNumberIterations = model.getIterationCount() + process.numberIterationsPre() + process.numberIterationsPost();
         if (totalNumberIterations > 100 * (numberNodes + 10)
@@ -1837,6 +1872,9 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 #ifdef HISTORY_STATISTICS
   getHistoryStatistics_ = true;
 #endif
+  if (returnCode == 2) {
+    numInfeasible_++;
+  }
   solver->setHintParam(OsiDoReducePrint, takeHint, strength);
   return returnCode;
 }

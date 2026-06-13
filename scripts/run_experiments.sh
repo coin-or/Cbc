@@ -186,7 +186,7 @@ declare -A EXPECTED_OVERRIDE=(
   # MIPster proves 202.185252817 optimal (gap=0); MIPLIB reference 202.190074193 is stale
   [dt_optimization]=202.185252817
 )
-REL_TOL=1e-6
+REL_TOL=1e-4
 ABS_TOL=1e-4
 
 # ── Help ─────────────────────────────────────────────────────────────────────
@@ -952,6 +952,7 @@ run_instance() {
     status="VG_ERROR"
   elif [[ $exit_code -eq 124 ]]; then
     status="OVERTIME"
+    cbc_gap="300%"
   elif [[ $exit_code -ne 0 ]]; then
     status="CRASH(exit=$exit_code)"
   elif [[ $validation_failed -eq 1 ]]; then

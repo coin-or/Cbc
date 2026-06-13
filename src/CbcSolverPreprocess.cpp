@@ -458,6 +458,8 @@ int CbcSolver::preprocess(int preProcess, int cbcParamCode,
         process.setKeepColumnNames(true);
       if (keepPPN)
         babModel_->setKeepNamesPreproc(1);
+      if (parameters[CbcParam::INSPECTPREPROCESSING]->modeVal())
+        process.setInspect(true);
       setPreProcessingMode(saveSolver, 1);
 
       // Install preprocessing output handler

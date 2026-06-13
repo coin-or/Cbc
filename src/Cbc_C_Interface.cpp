@@ -5264,7 +5264,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->dbl_param[DBL_PARAM_TIME_LIMIT]             =  COIN_DBL_MAX;
   model->dbl_param[DBL_PARAM_PSI]                    =          -1.0;
   model->dbl_param[DBL_PARAM_CUTOFF]                 =  COIN_DBL_MAX;
-  model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]          =         1e-10;
+  model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]          =          1e-6;
   model->dbl_param[DBL_PARAM_GAP_RATIO]              =        0.0001;
   model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] =  COIN_DBL_MAX;
 }

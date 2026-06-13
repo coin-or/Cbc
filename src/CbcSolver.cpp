@@ -1110,6 +1110,84 @@ parseLpParamTag(const char *tag)
   return s;
 }
 
+void CbcSolver::applyLpColdStart(ClpSimplex *clp, OsiSolverInterface *osi)
+{
+  const bool racingLP = parameters_.getRacingLP();
+  const int threadsParam = parameters_[CbcParam::THREADS]->intVal();
+  // Racing requires at least 2 threads; fall through to LPAuto when
+  // racingLP is on but only 1 thread is available.
+  const bool canRace = racingLP && (threadsParam >= 2);
+  const int racingThreads = std::min(3, std::max(2, threadsParam));
+  const bool autoLpMode =
+    (parameters_.getLpMethod() == CbcParameters::LPAuto) && !canRace;
+
+  // Warn once if user requested racing but only 1 thread is available.
+  if (racingLP && !canRace) {
+    static bool warnedColdStart = false;
+    if (!warnedColdStart) {
+      warnedColdStart = true;
+      model_.messageHandler()->message(0, "", "Warning: racingLP is on but threads<2 — "
+        "LP racing disabled in preprocessing; using LPAuto instead.", '!')
+        << CoinMessageEol;
+    }
+  }
+
+  // Compute LP settings: ML recommendation (LPAuto) or current parameter values.
+  LpAutoSettings autoS;
+  if (autoLpMode && osi) {
+    double feats[OFCount];
+    OsiFeatures::compute(feats, osi);
+    const char *tag = cbcRecommendLpParam(feats);
+    autoS = parseLpParamTag(tag);
+  } else {
+    ClpParameters &clpP = parameters_.clpParameters();
+    autoS.method      = parameters_.getLpMethod();
+    autoS.idiot       = doIdiot_;
+    autoS.sprint      = doSprint_;
+    autoS.psi         = clpP[ClpParam::PSI]->dblVal();
+    autoS.pertValue   = clpP[ClpParam::PERTVALUE]->intVal();
+    autoS.pesteep     = false;
+    autoS.scalingMode = -1;
+  }
+
+  // Apply model-level settings (pivot algorithm, PSI, perturbation, scaling).
+  if (autoS.pesteep) {
+    ClpDualRowSteepest steep(3);
+    clp->setDualRowPivotAlgorithm(steep);
+  }
+  if (autoS.scalingMode >= 0)
+    clp->scaling(autoS.scalingMode);
+  applyPositiveEdge(clp, autoS.psi);
+  clp->setPerturbation(autoS.pertValue);
+
+  // Racing: first winner takes the solution; fall through if all fail.
+  if (canRace) {
+    ClpRacingSolver racer(clp, racingThreads);
+    racer.solve(); // auto-adds default K=racingThreads portfolio
+    if (racer.winnerIndex() >= 0)
+      return;
+  }
+
+  // Standard single-threaded solve with configured method.
+  // No Clp-level presolve, no dualization — suitable for preprocessing
+  // LP cold starts where OsiPresolve has already been applied.
+  ClpSolve solveOptions;
+  solveOptions.setPresolveType(ClpSolve::presolveOff, 0);
+  const CbcParameters::LPMethod lpMethod = autoS.method;
+  if (lpMethod == CbcParameters::LPPrimal) {
+    solveOptions.setSolveType(ClpSolve::usePrimalorSprint);
+    if (autoS.sprint > 0)
+      solveOptions.setSpecialOption(1, 3, autoS.sprint);
+    else if (autoS.idiot > 0)
+      solveOptions.setSpecialOption(1, 2, autoS.idiot);
+  } else {
+    solveOptions.setSolveType(ClpSolve::useDual);
+    if (autoS.idiot)
+      solveOptions.setSpecialOption(0, 2, autoS.idiot);
+  }
+  clp->initialSolve(solveOptions);
+}
+
 // Unified LP-solve entry point: bound propagation → clique merging "before"
 // → model-level LP settings → racing → full ClpSolve with all user options.
 //
@@ -1216,11 +1294,20 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   // Clamp to [2,3] since only those portfolios are implemented.
   const int threadsParam = parameters_[CbcParam::THREADS]->intVal();
   const int racingThreads = std::min(3, std::max(2, threadsParam));
+  // Racing requires at least 2 threads; with fewer threads, LPAuto takes over.
+  const bool canRace = racingLP && (threadsParam >= 2);
+
+  // Warn if the user requested racing but only 1 thread is available.
+  if (racingLP && !canRace) {
+    model_.messageHandler()->message(0, "", "Warning: racingLP is on but threads<2 — "
+      "LP racing disabled; using LPAuto instead.", '!')
+      << CoinMessageEol;
+  }
 
   LpAutoSettings autoS;
   const bool autoLpMode =
     (parameters_.getLpMethod() == CbcParameters::LPAuto) && (clp != nullptr)
-    && !racingLP;
+    && !canRace;
   if (autoLpMode) {
     double feats[OFCount];
     OsiFeatures::compute(feats, solver);
@@ -1248,7 +1335,7 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   if (clp) {
     ClpParameters &clpP = parameters_.clpParameters();
 
-    if (!racingLP) {
+    if (!canRace) {
       // When auto mode picked a steepest-edge pivot, install it before the PSI
       // wrapper so that applyPositiveEdge() can wrap it correctly.
       if (autoS.pesteep) {
@@ -1294,7 +1381,7 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   // per-config setup function (pivot algorithm, perturbation, idiot passes, etc.)
   // applied before solving. Global model settings (objScale, vector mode) from
   // step 3 are already baked in and inherited by all clones.
-  if (racingLP && clp) {
+  if (canRace && clp) {
     ClpRacingSolver racer(clp, racingThreads);
     racer.solve();
     if (racer.winnerIndex() >= 0) {
@@ -2269,8 +2356,6 @@ CbcSolver::~CbcSolver()
   delete[] knapsackRow_;
   delete[] debugValues_;
   delete[] lotsize_;
-  delete[] statistics_.number_cuts;
-  delete[] statistics_.name_generators;
 }
 
 //###########################################################################
@@ -2712,10 +2797,6 @@ void CbcSolver::resetRunState()
   debugValues_ = nullptr;
   delete[] lotsize_;
   lotsize_ = nullptr;
-  delete[] statistics_.number_cuts;
-  statistics_.number_cuts = nullptr;
-  delete[] statistics_.name_generators;
-  statistics_.name_generators = nullptr;
 
   // Reset scalars to defaults
   goodModel_ = false;
@@ -2909,7 +2990,7 @@ static void cbcSetupDefaults(CbcModel &model, CbcParameters &parameters)
   parameters[CbcParam::USECGRAPH]->setVal("on");
   parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
   parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
-  parameters[CbcParam::CLQSTRENGTHENING]->setVal("before");
+  parameters[CbcParam::CLQSTRENGTHENING]->setVal("both");
   parameters[CbcParam::AGGREGATEMIXED]->setVal(1);
   parameters[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
   parameters[CbcParam::BKMAXCALLS]->setVal(1000);
@@ -3836,6 +3917,29 @@ int CbcSolver::preprocess(
         process.setKeepColumnNames(true);
       if (keepPPN)
         babModel_->setKeepNamesPreproc(1);
+      if (parameters_[CbcParam::INSPECTPREPROCESSING]->modeVal())
+        process.setInspect(true);
+
+      // Wire cold-start LP solver for preprocessing when racing or LPAuto is enabled.
+      if (parameters_.getRacingLP() || parameters_.getLpMethod() == CbcParameters::LPAuto) {
+        process.setLpSolver([this](OsiSolverInterface *osi) {
+          OsiClpSolverInterface *clpOsi = dynamic_cast< OsiClpSolverInterface * >(osi);
+          ClpSimplex *clp = clpOsi ? clpOsi->getModelPtr() : nullptr;
+          if (clp && clp->status() == 0) {
+            // Valid warm-start basis: standard re-optimisation is fastest.
+            osi->setHintParam(OsiDoDualInInitial, false, OsiHintTry);
+            osi->initialSolve();
+            return;
+          }
+          if (clp)
+            applyLpColdStart(clp, osi);
+          else {
+            osi->setHintParam(OsiDoDualInInitial, false, OsiHintTry);
+            osi->initialSolve();
+          }
+        });
+      }
+
       setPreProcessingMode(saveSolver_, 1);
 
       // Install preprocessing output handler
@@ -7817,6 +7921,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           // break;
         case CbcParam::SOS:
           doSOS = mode;
+          break;
+        case CbcParam::HEURISTICSTATS:
+          model_.setPrintHeuristicsSummary(mode != 0);
           break;
         case CbcParam::CLQSTRENGTHENING:
           clqstrMode = field;
@@ -12281,31 +12388,29 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             printGeneralMessage(model_, buffer.str());
           }
           int numberGenerators = babModel_->numberCutGenerators();
-          if (statistics.number_cuts != NULL)
-            delete[] statistics.number_cuts;
-          statistics.number_cuts = new int[numberGenerators];
+          statistics.cutStats.clear();
+          statistics.cutStats.resize(numberGenerators);
 
-          if (statistics.name_generators != NULL)
-            delete[] statistics.name_generators;
-          statistics.name_generators = new const char *[numberGenerators];
-
-          statistics.number_generators = numberGenerators;
-
-          char timing[30];
           for (int iGenerator = 0; iGenerator < numberGenerators;
             iGenerator++) {
             CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);
-            statistics.name_generators[iGenerator] = generator->cutGeneratorName();
-            statistics.number_cuts[iGenerator] = generator->numberCutsInTotal();
+            CutGeneratorStats &cs = statistics.cutStats[iGenerator];
+            cs.name = generator->cutGeneratorName();
+            cs.nCuts = generator->numberCutsInTotal();
+            cs.nCalls = generator->numberTimesEntered();
+            cs.nColumnCuts = generator->numberColumnCuts();
+            cs.minDepth = generator->minDepthRan();
+            cs.maxDepth = generator->maxDepthRan();
+            if (generator->timing()) {
+              cs.time = generator->timeInCutGenerator();
+              statistics.cut_time += cs.time;
+            }
             buffer.str("");
             buffer << generator->cutGeneratorName() << " was tried "
-                   << generator->numberTimesEntered() << " times and created "
-                   << generator->numberCutsInTotal() + generator->numberColumnCuts()
-                   << " cuts";
-            if (generator->timing()) {
-              buffer << " (" << generator->timeInCutGenerator() << " seconds)";
-              statistics.cut_time += generator->timeInCutGenerator();
-            }
+                   << cs.nCalls << " times and created "
+                   << cs.nCuts + cs.nColumnCuts << " cuts";
+            if (generator->timing())
+              buffer << " (" << cs.time << " seconds)";
             CglStored *stored = dynamic_cast< CglStored * >(generator->generator());
             if (stored && !generator->numberCutsInTotal()) {
               continue;
@@ -12318,6 +12423,24 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             if (!suppressCutStats)
               printGeneralMessage(model_, buffer.str());
           }
+
+          // Collect heuristic statistics
+          {
+            int nHeur = babModel_->numberHeuristics();
+            statistics.heuristicStats.clear();
+            statistics.heuristicStats.resize(nHeur);
+            for (int i = 0; i < nHeur; i++) {
+              CbcHeuristic *h = babModel_->heuristic(i);
+              HeuristicStats &hs = statistics.heuristicStats[i];
+              hs.name = h->heuristicName();
+              hs.nExecutions = h->numExecutions();
+              hs.totalTime = h->totalTime();
+              hs.nSolutions = h->numberSolutionsFound();
+              hs.minDepth = h->minDepthRan();
+              hs.maxDepth = h->maxDepthRan();
+            }
+          }
+
           // Capture cgraph stats if built lazily by cut generators
           // (only if not already captured from explicit buildConflictGraph calls)
           if (statistics.cgraph_time == 0.0 && statistics.cgraph_density == 0.0) {
@@ -12327,12 +12450,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 #ifdef COIN_DEVELOP
           printf("%d solutions found by heuristics\n",
             babModel_->getNumberHeuristicSolutions());
-          // Not really generator but I am feeling lazy
-          for (iGenerator = 0; iGenerator < babModel_->numberHeuristics();
-            iGenerator++) {
-            CbcHeuristic *heuristic = babModel_->heuristic(iGenerator);
+          for (int iH = 0; iH < babModel_->numberHeuristics(); iH++) {
+            CbcHeuristic *heuristic = babModel_->heuristic(iH);
             if (heuristic->numRuns()) {
-              // Need to bring others inline
               buffer.str("");
               buffer << heuristic->heuristicName() << " was tried "
                      << heuristic->numRuns() << " times out of "
@@ -13455,13 +13575,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 #endif
   delete[] lotsize_;
   lotsize_ = NULL;
-  if (statistics_.number_cuts != NULL)
-    delete[] statistics_.number_cuts;
-
-  if (statistics_.name_generators != NULL)
-    delete[] statistics_.name_generators;
-  statistics_.number_cuts = NULL;
-  statistics_.name_generators = NULL;
   // By now all memory should be freed
 #ifdef DMALLOC
   // dmalloc_log_unfreed();

@@ -556,6 +556,16 @@ private:
   */
   int applyLpMethod(bool applyPreprocessing = true);
 
+  /** Apply the configured cold-start LP strategy (LPAuto recommendation,
+      racing, or standard) to \a clp.  Does NOT check for a warm-start
+      basis — call this only when the model has no valid basis.
+      No Clp-level presolve, no dualization, no CbcModel time limits;
+      suitable for preprocessing LP cold starts as well as root LP.
+      \param clp  The ClpSimplex model to solve.
+      \param osi  The OsiClpSolverInterface wrapping \a clp (used for
+                  OsiFeatures when LPAuto is active; may be nullptr).  */
+  void applyLpColdStart(ClpSimplex *clp, OsiSolverInterface *osi);
+
   /** Solve the root LP relaxation.
       Called from the BAB action when !miplib.
       \return 0=success, 1=break BAB, 2=continue loop, 3=return from run()

@@ -3489,6 +3489,22 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
     }
 #endif
     for (int iPass = doInitialPresolve; ((iPass < numberSolvers_) && ((getCurrentCPUTime() - ppstart) < timeLimit_)); iPass++) {
+      if (inspect_) {
+        int nR = oldModel->getNumRows();
+        int nC = oldModel->getNumCols();
+        int nNZ = oldModel->getNumElements();
+        int nInts = 0;
+        for (int i = 0; i < nC; i++)
+          if (oldModel->isInteger(i))
+            nInts++;
+        char buf[256];
+        snprintf(buf, sizeof(buf),
+          "[Preproc major pass %d/%d] %d rows, %d cols (%d integer), %d NZ  (t=%.2fs)",
+          iPass - doInitialPresolve + 1, numberSolvers_ - doInitialPresolve,
+          nR, nC, nInts, nNZ, getCurrentCPUTime() - ppstart);
+        FILE *fp = handler_->filePointer();
+        if (fp) { fprintf(fp, "  %s\n", buf); fflush(fp); }
+      }
       // Look at Vubs
       {
         const double *columnLower = oldModel->getColLower();
@@ -3658,11 +3674,31 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
       OsiHintStrength saveStrength;
       presolvedModel->getHintParam(OsiDoDualInInitial,
         saveTakeHint, saveStrength);
-      //if (iPass)
-      presolvedModel->setHintParam(OsiDoDualInInitial, false, OsiHintTry);
-      presolvedModel->initialSolve();
+      double inspectLpStart1 = inspect_ ? CoinWallclockTime() : 0.0;
+      if (lpSolver_) {
+        // Delegate to caller-provided strategy (racing, LPAuto, etc.).
+        // Hint and strategy are the responsibility of lpSolver_.
+        lpSolver_(presolvedModel);
+      } else {
+        presolvedModel->setHintParam(OsiDoDualInInitial, false, OsiHintTry);
+        presolvedModel->initialSolve();
+      }
       numberIterationsPre_ += presolvedModel->getIterationCount();
-      presolvedModel->setHintParam(OsiDoDualInInitial, saveTakeHint, saveStrength);
+      if (inspect_) {
+        FILE *fp = handler_->filePointer();
+        if (fp) {
+          const char *stat = presolvedModel->isProvenOptimal() ? "optimal"
+            : presolvedModel->isProvenPrimalInfeasible() ? "infeasible" : "not optimal";
+          fprintf(fp, "  [Preproc LP pass %d] initialSolve: %.2fs  iters=%d  obj=%.6g  (%s)\n",
+            iPass - doInitialPresolve + 1,
+            CoinWallclockTime() - inspectLpStart1,
+            presolvedModel->getIterationCount(),
+            presolvedModel->getObjValue(), stat);
+          fflush(fp);
+        }
+      }
+      if (!lpSolver_)
+        presolvedModel->setHintParam(OsiDoDualInInitial, saveTakeHint, saveStrength);
       if (!presolvedModel->isProvenOptimal()) {
         writeDebugMps(presolvedModel, "bad2", NULL);
         CoinWarmStartBasis *slack = dynamic_cast< CoinWarmStartBasis * >(presolvedModel->getEmptyWarmStart());
@@ -3765,7 +3801,41 @@ CglPreProcess::preProcessNonDefault(OsiSolverInterface &model,
 	 newModel->getHintParam(OsiDoDualInResolve,
 				saveTakeHint, saveStrength);
 	 newModel->setHintParam(OsiDoDualInResolve, true, OsiHintTry);
+	 // Before resolve: capture infeasibility counts after applyCuts().
+	 // dualInfBefore=0 + large iters → pure primal degeneracy (dual simplex
+	 // restoring primal feasibility of violated cuts with tiny pivots).
+	 // primalInfBefore tells us how many of the added cuts are violated.
+	 int dualInfBefore = 0;
+	 int primalInfBefore = 0;
+	 int perturbBefore = 0;
+#ifdef CBC_HAS_CLP
+	 if (inspect_) {
+	   OsiClpSolverInterface *clpOsi = dynamic_cast< OsiClpSolverInterface * >(newModel);
+	   if (clpOsi) {
+	     ClpSimplex *clp = clpOsi->getModelPtr();
+	     dualInfBefore   = clp->numberDualInfeasibilities();
+	     primalInfBefore = clp->numberPrimalInfeasibilities();
+	     perturbBefore   = clp->perturbation();
+	   }
+	 }
+#endif
+	 double inspectLpStart2 = inspect_ ? CoinWallclockTime() : 0.0;
 	 newModel->resolve();
+	 if (inspect_) {
+	   FILE *fp = handler_->filePointer();
+	   if (fp) {
+	     const char *stat = newModel->isProvenOptimal() ? "optimal"
+	       : newModel->isProvenPrimalInfeasible() ? "infeasible" : "not optimal";
+	     fprintf(fp, "  [Preproc LP pass %d] resolve after cuts: %.2fs  iters=%d  obj=%.6g  (%s)"
+	       "  dualInfBefore=%d  primalInfBefore=%d  perturb=%d\n",
+	       iPass - doInitialPresolve + 1,
+	       CoinWallclockTime() - inspectLpStart2,
+	       newModel->getIterationCount(),
+	       newModel->getObjValue(), stat,
+	       dualInfBefore, primalInfBefore, perturbBefore);
+	     fflush(fp);
+	   }
+	 }
 	 newModel->setHintParam(OsiDoDualInResolve, saveTakeHint, saveStrength);
        }
       if (!newModel->isProvenOptimal()) {
@@ -6591,6 +6661,18 @@ CglPreProcess::modified(OsiSolverInterface *model,
   printf("At beginning of modified %d rows and %d columns (pass %d - doing %d minor passes)\n",
     numberRows, numberColumns, iBigPass, numberPasses);
 #endif
+  if (inspect_) {
+    int nInts = 0;
+    for (int i = 0; i < numberColumns; i++)
+      if (newModel->isInteger(i))
+        nInts++;
+    char buf[256];
+    snprintf(buf, sizeof(buf),
+      "[Preproc major pass %d] modified(): %d rows, %d cols (%d integer), %d NZ, %d minor passes",
+      iBigPass, numberRows, numberColumns, nInts, newModel->getNumElements(), numberPasses);
+    FILE *fp = handler_->filePointer();
+    if (fp) { fprintf(fp, "  %s\n", buf); fflush(fp); }
+  }
   OsiRowCut **whichCut = new OsiRowCut *[numberRows + 1];
   memset(whichCut, 0, (numberRows + 1) * sizeof(OsiRowCut *));
   numberChanges = 0;
@@ -7609,6 +7691,35 @@ CglPreProcess::modified(OsiSolverInterface *model,
 #if CBC_USEFUL_PRINTING > 0
         double time1 = CoinCpuTime();
 #endif
+        double inspectTime1 = inspect_ ? CoinWallclockTime() : 0.0;
+        if (inspect_) {
+          char buf[256];
+          FILE *fp = handler_->filePointer();
+          if (fp) {
+            if (probingCut) {
+              snprintf(buf, sizeof(buf),
+                "[Preproc pass %d.%d] Probing: maxProbe=%d, maxPass=%d, maxLook=%d, maxElem=%d (minor pass %d/%d)",
+                iBigPass, iPass,
+                probingCut->getMaxProbeRoot(), probingCut->getMaxPassRoot(),
+                probingCut->getMaxLookRoot(), probingCut->getMaxElementsRoot(),
+                iPass + 1, numberPasses);
+            } else if (cliqueGen || bkCliqueGen) {
+              snprintf(buf, sizeof(buf),
+                "[Preproc pass %d.%d] Clique separator (minor pass %d/%d)",
+                iBigPass, iPass, iPass + 1, numberPasses);
+            } else if (dupRow) {
+              snprintf(buf, sizeof(buf),
+                "[Preproc pass %d.%d] DuplicateRow (minor pass %d/%d)",
+                iBigPass, iPass, iPass + 1, numberPasses);
+            } else {
+              snprintf(buf, sizeof(buf),
+                "[Preproc pass %d.%d] Generator %d (minor pass %d/%d)",
+                iBigPass, iPass, iGenerator, iPass + 1, numberPasses);
+            }
+            fprintf(fp, "  %s\n", buf);
+            fflush(fp);
+          }
+        }
         if (!probingCut) {
           generator_[iGenerator]->generateCuts(*newModel, cs, info);
         } else {
@@ -7637,6 +7748,20 @@ CglPreProcess::modified(OsiSolverInterface *model,
             probingCut->setMaxProbeRoot(probingCut->getMaxProbe());
             probingCut->setMaxLookRoot(probingCut->getMaxLook());
           }
+          if (inspect_) {
+            char buf[256];
+            FILE *fp = handler_->filePointer();
+            if (fp) {
+              snprintf(buf, sizeof(buf),
+                "[Preproc pass %d.%d] Probing actual: maxProbe=%d, maxPass=%d, maxLook=%d, maxElem=%d  cols=%d, rows=%d",
+                iBigPass, iPass,
+                probingCut->getMaxProbeRoot(), probingCut->getMaxPassRoot(),
+                probingCut->getMaxLookRoot(), probingCut->getMaxElementsRoot(),
+                numberColumns, numberRows);
+              fprintf(fp, "  %s\n", buf);
+              fflush(fp);
+            }
+          }
           probingCut->generateCutsAndModify(*newModel, cs, &info);
           probingCut->setMaxElementsRoot(saveMaxElements);
           probingCut->setMaxProbeRoot(saveMaxProbe);
@@ -7650,6 +7775,36 @@ CglPreProcess::modified(OsiSolverInterface *model,
         printf("After probing1 %d row cuts and %d column cuts\n",
           cs.sizeRowCuts(), cs.sizeColCuts());
 #endif
+        if (inspect_) {
+          FILE *fp = handler_->filePointer();
+          if (fp) {
+            double elapsed = CoinWallclockTime() - inspectTime1;
+            int nR = newModel->getNumRows();
+            int nC = newModel->getNumCols();
+            int nNZ = newModel->getNumElements();
+            // cut pool NZ stats
+            int nRowCuts = cs.sizeRowCuts();
+            int cutNZtotal = 0, cutNZmax = 0;
+            for (int ci = 0; ci < nRowCuts; ci++) {
+              int n = cs.rowCut(ci).row().getNumElements();
+              cutNZtotal += n;
+              if (n > cutNZmax) cutNZmax = n;
+            }
+            double cutNZavg = nRowCuts > 0 ? (double)cutNZtotal / nRowCuts : 0.0;
+            if (nRowCuts > 0)
+              fprintf(fp, "  [Preproc pass %d.%d] Generator done: %.2fs  "
+                "row cuts=%d (NZ: total=%d avg=%.1f max=%d)  col cuts=%d  "
+                "model now: %d rows, %d cols, %d NZ\n",
+                iBigPass, iPass, elapsed,
+                nRowCuts, cutNZtotal, cutNZavg, cutNZmax,
+                cs.sizeColCuts(), nR, nC, nNZ);
+            else
+              fprintf(fp, "  [Preproc pass %d.%d] Generator done: %.2fs  "
+                "row cuts=0  col cuts=%d  model now: %d rows, %d cols, %d NZ\n",
+                iBigPass, iPass, elapsed, cs.sizeColCuts(), nR, nC, nNZ);
+            fflush(fp);
+          }
+        }
         if (cs.sizeColCuts() && iPass < numberPasses - 100 && !iBigPass) {
           // delete all row cuts for now????
           int n = cs.sizeRowCuts();
@@ -7756,7 +7911,21 @@ CglPreProcess::modified(OsiSolverInterface *model,
 	      newModel->getHintParam(OsiDoDualInResolve,
 				     saveTakeHint, saveStrength);
 	      newModel->setHintParam(OsiDoDualInResolve, solveWithDual, OsiHintTry);
+	      double inspectLpStartM = inspect_ ? CoinWallclockTime() : 0.0;
 	      newModel->resolve();
+	      if (inspect_) {
+		FILE *fp = handler_->filePointer();
+		if (fp) {
+		  const char *stat = newModel->isProvenOptimal() ? "optimal"
+		    : newModel->isProvenPrimalInfeasible() ? "infeasible" : "not optimal";
+		  fprintf(fp, "  [Preproc LP pass %d.%d] resolve (row drop): %.2fs  iters=%d  obj=%.6g  (%s)\n",
+		    iBigPass, iPass,
+		    CoinWallclockTime() - inspectLpStartM,
+		    newModel->getIterationCount(),
+		    newModel->getObjValue(), stat);
+		  fflush(fp);
+		}
+	      }
 	      newModel->setHintParam(OsiDoDualInResolve, saveTakeHint, saveStrength);
 	      solveWithDual = true;
 	    }
@@ -8616,7 +8785,19 @@ CglPreProcess::modified(OsiSolverInterface *model,
           if ((numberFixed + numberTwo) * 4 > numberColumns)
             newModel->setHintParam(OsiDoPresolveInInitial, true, OsiHintTry);
           newModel->setHintParam(OsiDoDualInInitial, true, OsiHintTry);
+          double inspectLpStartNR = inspect_ ? CoinWallclockTime() : 0.0;
           newModel->initialSolve();
+          if (inspect_) {
+            FILE *fp = handler_->filePointer();
+            if (fp) {
+              const char *stat = newModel->isProvenOptimal() ? "optimal"
+                : newModel->isProvenPrimalInfeasible() ? "infeasible" : "not optimal";
+              fprintf(fp, "  [Preproc pass %d.%d] needResolve (rebuilt) initialSolve: %.2fs  iters=%d  (%s)\n",
+                iBigPass, iPass, CoinWallclockTime() - inspectLpStartNR,
+                newModel->getIterationCount(), stat);
+              fflush(fp);
+            }
+          }
           newModel->setHintParam(OsiDoPresolveInInitial, saveHint, saveStrength);
         } else {
 	  bool saveTakeHint;
@@ -8624,7 +8805,26 @@ CglPreProcess::modified(OsiSolverInterface *model,
 	  newModel->getHintParam(OsiDoDualInResolve,
 				 saveTakeHint, saveStrength);
 	  newModel->setHintParam(OsiDoDualInResolve, solveWithDual, OsiHintTry);
+	  int dualInfNR = 0;
+#ifdef CBC_HAS_CLP
+	  if (inspect_) {
+	    OsiClpSolverInterface *clpOsi = dynamic_cast< OsiClpSolverInterface * >(newModel);
+	    if (clpOsi) dualInfNR = clpOsi->getModelPtr()->numberDualInfeasibilities();
+	  }
+#endif
+	  double inspectLpStartNR = inspect_ ? CoinWallclockTime() : 0.0;
 	  newModel->resolve();
+	  if (inspect_) {
+	    FILE *fp = handler_->filePointer();
+	    if (fp) {
+	      const char *stat = newModel->isProvenOptimal() ? "optimal"
+	        : newModel->isProvenPrimalInfeasible() ? "infeasible" : "not optimal";
+	      fprintf(fp, "  [Preproc pass %d.%d] needResolve resolve: %.2fs  iters=%d  dualInfBefore=%d  useDual=%d  (%s)\n",
+	        iBigPass, iPass, CoinWallclockTime() - inspectLpStartNR,
+	        newModel->getIterationCount(), dualInfNR, (int)solveWithDual, stat);
+	      fflush(fp);
+	    }
+	  }
 	  newModel->setHintParam(OsiDoDualInResolve, saveTakeHint, saveStrength);
 	  solveWithDual = true;
         }
@@ -8757,6 +8957,8 @@ CglPreProcess::CglPreProcess()
   , useElapsedTime_(true)
   , timeLimit_(COIN_DBL_MAX)
   , keepColumnNames_(false)
+  , inspect_(false)
+  , lpSolver_(nullptr)
 {
   handler_ = new CoinMessageHandler();
   handler_->setLogLevel(2);
@@ -8778,6 +8980,8 @@ CglPreProcess::CglPreProcess(const CglPreProcess &rhs)
   , useElapsedTime_(true)
   , timeLimit_(COIN_DBL_MAX)
   , keepColumnNames_(false)
+  , inspect_(rhs.inspect_)
+  , lpSolver_(rhs.lpSolver_)
 {
   if (defaultHandler_) {
     handler_ = new CoinMessageHandler();
@@ -8852,6 +9056,8 @@ CglPreProcess::operator=(const CglPreProcess &rhs)
     numberIterationsPost_ = rhs.numberIterationsPost_;
     numberRowType_ = rhs.numberRowType_;
     options_ = rhs.options_;
+    inspect_ = rhs.inspect_;
+    lpSolver_ = rhs.lpSolver_;
     if (defaultHandler_) {
       handler_ = new CoinMessageHandler();
       handler_->setLogLevel(rhs.handler_->logLevel());

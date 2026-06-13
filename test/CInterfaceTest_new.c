@@ -1,6 +1,6 @@
 /* Test for new C interface functions: Cbc_setParam, Cbc_getParam, Cbc_resolve,
    LP reoptimization, and the knapsack problem with parameter control.
-   
+
    All data is embedded — no file I/O needed. */
 
 #include "Cbc_C_Interface.h"
@@ -10,14 +10,15 @@
 #include <string.h>
 
 /* ── Test 1: Knapsack with Cbc_setParam ────────────────────────────── */
-void testKnapsackWithParams() {
+void testKnapsackWithParams()
+{
   printf("Test 1: Knapsack with Cbc_setParam\n");
 
   /* max 10x0 + 13x1 + 18x2 + 31x3 + 7x4 + 15x5
      s.t. 11x0 + 15x1 + 20x2 + 35x3 + 10x4 + 33x5 <= 47
           xi in {0,1} */
-  double p[] = {10, 13, 18, 31, 7, 15};
-  double w[] = {11, 15, 20, 35, 10, 33};
+  double p[] = { 10, 13, 18, 31, 7, 15 };
+  double w[] = { 11, 15, 20, 35, 10, 33 };
   int n = 6;
   double cap = 47;
 
@@ -32,7 +33,7 @@ void testKnapsackWithParams() {
   }
 
   /* capacity constraint */
-  int idx[] = {0, 1, 2, 3, 4, 5};
+  int idx[] = { 0, 1, 2, 3, 4, 5 };
   Cbc_addRow(m, "cap", n, idx, w, 'L', cap);
 
   /* Set parameters using the new Cbc_setParam */
@@ -59,7 +60,8 @@ void testKnapsackWithParams() {
 }
 
 /* ── Test 2: LP reoptimization with Cbc_resolve ───────────────────── */
-void testLPReoptimization() {
+void testLPReoptimization()
+{
   printf("Test 2: LP reoptimization with Cbc_resolve\n");
 
   /* Simple LP: max 5x + 4y
@@ -72,11 +74,11 @@ void testLPReoptimization() {
   Cbc_addCol(m, "x", 0.0, 1e30, 5.0, 0, 0, NULL, NULL);
   Cbc_addCol(m, "y", 0.0, 1e30, 4.0, 0, 0, NULL, NULL);
 
-  int idx0[] = {0, 1};
-  double coef0[] = {6.0, 4.0};
+  int idx0[] = { 0, 1 };
+  double coef0[] = { 6.0, 4.0 };
   Cbc_addRow(m, "c1", 2, idx0, coef0, 'L', 24.0);
 
-  double coef1[] = {1.0, 2.0};
+  double coef1[] = { 1.0, 2.0 };
   Cbc_addRow(m, "c2", 2, idx0, coef1, 'L', 6.0);
 
   Cbc_setParam(m, "log", "0");
@@ -97,7 +99,7 @@ void testLPReoptimization() {
   assert(obj2 < obj1 - 1e-6); /* should be worse */
 
   /* Add constraint: x + y <= 3 */
-  double coef2[] = {1.0, 1.0};
+  double coef2[] = { 1.0, 1.0 };
   Cbc_addRow(m, "c3", 2, idx0, coef2, 'L', 3.0);
   rc = Cbc_resolve(m);
   assert(rc == 0);
@@ -123,7 +125,8 @@ void testLPReoptimization() {
 }
 
 /* ── Test 3: MIP with solution pool ──────────────────────────────── */
-void testSolutionPool() {
+void testSolutionPool()
+{
   printf("Test 3: MIP with solution pool\n");
 
   /* Small knapsack with multiple optimal solutions */
@@ -136,8 +139,8 @@ void testSolutionPool() {
     snprintf(name, sizeof(name), "x%d", i);
     Cbc_addCol(m, name, 0.0, 1.0, 1.0, 1, 0, NULL, NULL);
   }
-  int idx[] = {0, 1, 2};
-  double coef[] = {1.0, 1.0, 1.0};
+  int idx[] = { 0, 1, 2 };
+  double coef[] = { 1.0, 1.0, 1.0 };
   Cbc_addRow(m, "cap", 3, idx, coef, 'L', 2.0);
 
   Cbc_setParam(m, "log", "0");
@@ -157,12 +160,13 @@ void testSolutionPool() {
 }
 
 /* ── Test 4: MIP start ───────────────────────────────────────────── */
-void testMIPStart() {
+void testMIPStart()
+{
   printf("Test 4: MIP start\n");
 
   /* Knapsack: provide a feasible starting solution */
-  double p[] = {10, 13, 18, 31, 7, 15};
-  double w[] = {11, 15, 20, 35, 10, 33};
+  double p[] = { 10, 13, 18, 31, 7, 15 };
+  double w[] = { 11, 15, 20, 35, 10, 33 };
   int n = 6;
 
   Cbc_Model *m = Cbc_newModel();
@@ -173,12 +177,12 @@ void testMIPStart() {
     snprintf(name, sizeof(name), "x%d", i);
     Cbc_addCol(m, name, 0.0, 1.0, p[i], 1, 0, NULL, NULL);
   }
-  int idx[] = {0, 1, 2, 3, 4, 5};
+  int idx[] = { 0, 1, 2, 3, 4, 5 };
   Cbc_addRow(m, "cap", n, idx, w, 'L', 47.0);
 
   /* Provide MIP start: x0=1, x2=1 (weight=31, profit=28) */
-  int startIdx[] = {0, 2};
-  double startVal[] = {1.0, 1.0};
+  int startIdx[] = { 0, 2 };
+  double startVal[] = { 1.0, 1.0 };
   Cbc_setMIPStartI(m, 2, startIdx, startVal);
 
   Cbc_setParam(m, "log", "0");
@@ -192,12 +196,95 @@ void testMIPStart() {
   printf("  PASSED\n\n");
 }
 
-int main() {
+static int heuristic_stats_printed = 0;
+
+static void CBC_LINKAGE_CB stats_callback(Cbc_Model *model, int msgno, int ndouble,
+  const double *dvec, int nint, const int *ivec,
+  int nchar, char **cvec)
+{
+  if (msgno == 45 && nchar > 0 && cvec && cvec[0]) {
+    if (strstr(cvec[0], "Heuristic") != NULL) {
+      heuristic_stats_printed = 1;
+    }
+  }
+}
+
+/* ── Test 5: Heuristic stats flag (-heuristicStats) ─────────────────── */
+void testHeuristicStats()
+{
+  printf("Test 5: Heuristic stats flag (-heuristicStats)\n");
+
+  /* Small knapsack problem */
+  double p[] = { 10, 13, 18, 31, 7, 15 };
+  double w[] = { 11, 15, 20, 35, 10, 33 };
+  int n = 6;
+  double cap = 47;
+
+  // Case 1: heuristicStats = off (default)
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_setObjSense(m, -1.0); /* maximize */
+
+    for (int i = 0; i < n; i++) {
+      char name[8];
+      snprintf(name, sizeof(name), "x%d", i);
+      Cbc_addCol(m, name, 0.0, 1.0, p[i], 1, 0, NULL, NULL);
+    }
+    int idx[] = { 0, 1, 2, 3, 4, 5 };
+    Cbc_addRow(m, "cap", n, idx, w, 'L', cap);
+
+    heuristic_stats_printed = 0;
+    Cbc_registerCallBack(m, stats_callback);
+
+    Cbc_setParam(m, "log", "1");
+    Cbc_setParam(m, "heuristicStats", "off");
+
+    Cbc_solve(m);
+
+    assert(Cbc_isProvenOptimal(m));
+    assert(heuristic_stats_printed == 0);
+
+    Cbc_deleteModel(m);
+  }
+
+  // Case 2: heuristicStats = on
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_setObjSense(m, -1.0); /* maximize */
+
+    for (int i = 0; i < n; i++) {
+      char name[8];
+      snprintf(name, sizeof(name), "x%d", i);
+      Cbc_addCol(m, name, 0.0, 1.0, p[i], 1, 0, NULL, NULL);
+    }
+    int idx[] = { 0, 1, 2, 3, 4, 5 };
+    Cbc_addRow(m, "cap", n, idx, w, 'L', cap);
+
+    heuristic_stats_printed = 0;
+    Cbc_registerCallBack(m, stats_callback);
+
+    Cbc_setParam(m, "log", "1");
+    Cbc_setParam(m, "heuristicStats", "on");
+
+    Cbc_solve(m);
+
+    assert(Cbc_isProvenOptimal(m));
+    assert(heuristic_stats_printed == 1);
+
+    Cbc_deleteModel(m);
+  }
+
+  printf("  PASSED\n\n");
+}
+
+int main()
+{
   printf("=== CBC C Interface Tests ===\n\n");
   testKnapsackWithParams();
   testLPReoptimization();
   testSolutionPool();
   testMIPStart();
+  testHeuristicStats();
   printf("All tests PASSED!\n");
   return 0;
 }

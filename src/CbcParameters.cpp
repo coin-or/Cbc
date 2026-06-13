@@ -492,6 +492,7 @@ CbcParameters &CbcParameters::operator=(const CbcParameters &rhs)
   preProcNamesMode_ = rhs.preProcNamesMode_;
   SOSMode_ = rhs.SOSMode_;
   useSolutionMode_ = rhs.useSolutionMode_;
+  heuristicStatsMode_ = rhs.heuristicStatsMode_;
   cur_lang_ = rhs.cur_lang_;
   logLvl_ = rhs.logLvl_;
   lpLogLvl_ = rhs.lpLogLvl_;
@@ -723,6 +724,8 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::PREPROCNAMES]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::DOHEURISTIC]->setTopic("Heuristics");
   parameters_[CbcParam::USESOLUTION]->setTopic("Heuristics");
+  parameters_[CbcParam::HEURISTICSTATS]->setTopic("Output");
+  parameters_[CbcParam::INSPECTPREPROCESSING]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::MESSAGES]->setTopic("Output");
   parameters_[CbcParam::ERRORSALLOWED]->setTopic("I/O");
 
@@ -886,6 +889,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
      parameters_[CbcParam::DOHEURISTIC]->setDefault("off");
+     parameters_[CbcParam::HEURISTICSTATS]->setDefault("off");
+     parameters_[CbcParam::INSPECTPREPROCESSING]->setDefault("off");
      parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
      parameters_[CbcParam::MESSAGES]->setDefault("off");
      parameters_[CbcParam::PREPROCNAMES]->setDefault("on");
@@ -942,7 +947,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::RINS]->setDefault("on");
      parameters_[CbcParam::ROUNDING]->setDefault("on");
      parameters_[CbcParam::VND]->setDefault("off");
-     parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-12);
+     parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-6);
      parameters_[CbcParam::CUTOFF]->setDefault(1.0e50);
      parameters_[CbcParam::DIRECTION]->setDefault("min!imize");
      parameters_[CbcParam::INCREMENT]->setDefault(1.0e-4);
@@ -963,7 +968,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::NUMBERANALYZE]->setDefault(0);
      parameters_[CbcParam::REVERSE]->setType(CoinParam::paramAct);
      parameters_[CbcParam::CUTPASS]->setDefault(100);
-     parameters_[CbcParam::GAPRATIO]->setDefault(0.0);
+     parameters_[CbcParam::GAPRATIO]->setDefault(1.0e-4);
      parameters_[CbcParam::TIMELIMIT]->setDefault( 1.0e11);
      parameters_[CbcParam::STRONGBRANCHING]->setDefault(0);
      parameters_[CbcParam::NUMBERBEFORE]->setDefault(10);
@@ -2757,6 +2762,21 @@ void CbcParameters::addCbcSolverBoolParams() {
       "sos!Options", "Whether to use SOS from AMPL",
       "Normally if AMPL says there are SOS variables they should be used, but "
       "sometimes they should be turned off - this does so.");
+
+  parameters_[CbcParam::HEURISTICSTATS]->setup(
+      "heuristicStats", "Whether to print heuristic statistics at the end of the solve",
+      "This switches the printing of heuristic statistics summary at the end of the solve on or off.");
+
+  parameters_[CbcParam::INSPECTPREPROCESSING]->setup(
+      "inspectPreProcessing",
+      "Print detailed timing and dimension info for each preprocessing pass",
+      "When on, prints per-pass diagnostics during CglPreProcess: problem dimensions "
+      "(rows, cols, integers, NZ) at the start of each major pass; probing settings "
+      "(maxProbe, maxPass, maxLook, maxElements) and per-generator wall-clock time "
+      "with cut pool statistics (total/avg/max NZ per cut); LP solve timing and "
+      "iteration counts for initialSolve, resolve-after-cuts, and resolve-after-row-drop "
+      "with LP objective value and basis infeasibility counts. Useful for diagnosing "
+      "slow preprocessing on instances where LP re-optimisation dominates.");
 
   parameters_[CbcParam::SINGLETONBOUNDS]->setup(
       "singleton!Bounds",

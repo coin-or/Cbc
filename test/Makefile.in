@@ -126,7 +126,7 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_jssp_fixtures$(EXEEXT) \
 	CInterfaceTest_steiner$(EXEEXT) \
 	CInterfaceTest_fcnf_fixtures$(EXEEXT) \
-	CInterfaceTest_upms$(EXEEXT)
+	CInterfaceTest_upms$(EXEEXT) CInterfaceTest_gap$(EXEEXT)
 noinst_PROGRAMS = gen_miclsp_solutions$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -206,6 +206,10 @@ am_CInterfaceTest_fl_random_OBJECTS =  \
 CInterfaceTest_fl_random_OBJECTS =  \
 	$(am_CInterfaceTest_fl_random_OBJECTS)
 CInterfaceTest_fl_random_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_gap_OBJECTS =  \
+	CInterfaceTest_gap-CInterfaceTest_gap.$(OBJEXT)
+CInterfaceTest_gap_OBJECTS = $(am_CInterfaceTest_gap_OBJECTS)
+CInterfaceTest_gap_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_graphdraw_OBJECTS =  \
 	CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.$(OBJEXT)
 CInterfaceTest_graphdraw_OBJECTS =  \
@@ -376,6 +380,8 @@ am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Po \
 	./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_fl_random.Po \
+	./$(DEPDIR)/CInterfaceTest_gap-CInterfaceTest_gap.Po \
+	./$(DEPDIR)/CInterfaceTest_gap-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po \
 	./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po \
@@ -477,6 +483,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_fcnf_fixtures_SOURCES) \
 	$(CInterfaceTest_fl_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_fl_random_SOURCES) \
+	$(CInterfaceTest_gap_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_gap_SOURCES) \
 	$(CInterfaceTest_graphdraw_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_graphdraw_SOURCES) \
 	$(CInterfaceTest_j3041_1_SOURCES) \
@@ -834,7 +842,18 @@ dist_pkgtestfixture_DATA = \
   fixtures/upms_n9_m3_int_cmax_s137.mps.gz \
   fixtures/upms_n8_m3_frac_cmax_s42.mps.gz \
   fixtures/upms_n9_m2_lgset_cmax_s137.mps.gz \
-  fixtures/upms_n7_m3_int_wct_s137.mps.gz
+  fixtures/upms_n7_m3_int_wct_s137.mps.gz \
+  fixtures/gap_4a35t_sd42_tight_anticorr_uniform.mps.gz \
+  fixtures/gap_6a30t_sd42_tight_anticorr_uniform.mps.gz \
+  fixtures/gap_4a35t_sd137_tight_anticorr_uniform.mps.gz \
+  fixtures/gap_4a40t_sd42_tight_anticorr_variable.mps.gz \
+  fixtures/gap_6a35t_sd42_tight_anticorr_uniform.mps.gz \
+  fixtures/gap_5a30t_sd42_tight_anticorr_variable.mps.gz \
+  fixtures/gap_6a30t_sd137_tight_anticorr_heavy.mps.gz \
+  fixtures/gap_5a35t_sd137_tight_anticorr_variable.mps.gz \
+  fixtures/gap_5a20t_sd42_tight_uniform_uniform.mps.gz \
+  fixtures/gap_5a20t_sd137_tight_structured_uniform.mps.gz \
+  fixtures/gap_10a30t_sd42_medium_uniform_uniform.mps.gz
 
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
@@ -1087,6 +1106,14 @@ CInterfaceTest_upms_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)
 CInterfaceTest_upms_LDADD = ../src/libmipster.la
 
 ########################################################################
+#   GAP: Generalized Assignment Problem                                #
+########################################################################
+CInterfaceTest_gap_SOURCES = CInterfaceTest_gap.c
+nodist_EXTRA_CInterfaceTest_gap_SOURCES = dummy.cpp
+CInterfaceTest_gap_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_gap_LDADD = ../src/libmipster.la
+
+########################################################################
 #             gen_miclsp_solutions — reference solution generator      #
 ########################################################################
 gen_miclsp_solutions_SOURCES = gen_miclsp_solutions.c
@@ -1217,6 +1244,10 @@ CInterfaceTest_fcnf_fixtures$(EXEEXT): $(CInterfaceTest_fcnf_fixtures_OBJECTS) $
 CInterfaceTest_fl_random$(EXEEXT): $(CInterfaceTest_fl_random_OBJECTS) $(CInterfaceTest_fl_random_DEPENDENCIES) $(EXTRA_CInterfaceTest_fl_random_DEPENDENCIES) 
 	@rm -f CInterfaceTest_fl_random$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_fl_random_OBJECTS) $(CInterfaceTest_fl_random_LDADD) $(LIBS)
+
+CInterfaceTest_gap$(EXEEXT): $(CInterfaceTest_gap_OBJECTS) $(CInterfaceTest_gap_DEPENDENCIES) $(EXTRA_CInterfaceTest_gap_DEPENDENCIES) 
+	@rm -f CInterfaceTest_gap$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_gap_OBJECTS) $(CInterfaceTest_gap_LDADD) $(LIBS)
 
 CInterfaceTest_graphdraw$(EXEEXT): $(CInterfaceTest_graphdraw_OBJECTS) $(CInterfaceTest_graphdraw_DEPENDENCIES) $(EXTRA_CInterfaceTest_graphdraw_DEPENDENCIES) 
 	@rm -f CInterfaceTest_graphdraw$(EXEEXT)
@@ -1383,6 +1414,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_fl_random.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_gap-CInterfaceTest_gap.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_gap-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po@am__quote@ # am--include-marker
@@ -1526,6 +1559,20 @@ CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.obj: CInterfaceTest_fc
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_fcnf_fixtures.c' object='CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_fcnf_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.obj `if test -f 'CInterfaceTest_fcnf_fixtures.c'; then $(CYGPATH_W) 'CInterfaceTest_fcnf_fixtures.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_fcnf_fixtures.c'; fi`
+
+CInterfaceTest_gap-CInterfaceTest_gap.o: CInterfaceTest_gap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_gap_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_gap-CInterfaceTest_gap.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_gap-CInterfaceTest_gap.Tpo -c -o CInterfaceTest_gap-CInterfaceTest_gap.o `test -f 'CInterfaceTest_gap.c' || echo '$(srcdir)/'`CInterfaceTest_gap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_gap-CInterfaceTest_gap.Tpo $(DEPDIR)/CInterfaceTest_gap-CInterfaceTest_gap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_gap.c' object='CInterfaceTest_gap-CInterfaceTest_gap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_gap_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_gap-CInterfaceTest_gap.o `test -f 'CInterfaceTest_gap.c' || echo '$(srcdir)/'`CInterfaceTest_gap.c
+
+CInterfaceTest_gap-CInterfaceTest_gap.obj: CInterfaceTest_gap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_gap_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_gap-CInterfaceTest_gap.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_gap-CInterfaceTest_gap.Tpo -c -o CInterfaceTest_gap-CInterfaceTest_gap.obj `if test -f 'CInterfaceTest_gap.c'; then $(CYGPATH_W) 'CInterfaceTest_gap.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_gap.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_gap-CInterfaceTest_gap.Tpo $(DEPDIR)/CInterfaceTest_gap-CInterfaceTest_gap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_gap.c' object='CInterfaceTest_gap-CInterfaceTest_gap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_gap_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_gap-CInterfaceTest_gap.obj `if test -f 'CInterfaceTest_gap.c'; then $(CYGPATH_W) 'CInterfaceTest_gap.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_gap.c'; fi`
 
 CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o: CInterfaceTest_graphdraw.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Tpo -c -o CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o `test -f 'CInterfaceTest_graphdraw.c' || echo '$(srcdir)/'`CInterfaceTest_graphdraw.c
@@ -1830,6 +1877,20 @@ CInterfaceTest_fcnf_fixtures-dummy.obj: dummy.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_fcnf_fixtures-dummy.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_fcnf_fixtures_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_fcnf_fixtures-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
+CInterfaceTest_gap-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_gap_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_gap-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_gap-dummy.Tpo -c -o CInterfaceTest_gap-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_gap-dummy.Tpo $(DEPDIR)/CInterfaceTest_gap-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_gap-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_gap_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_gap-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_gap-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_gap_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_gap-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_gap-dummy.Tpo -c -o CInterfaceTest_gap-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_gap-dummy.Tpo $(DEPDIR)/CInterfaceTest_gap-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_gap-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_gap_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_gap-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
 
 CInterfaceTest_graphdraw-dummy.o: dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_graphdraw-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_graphdraw-dummy.Tpo -c -o CInterfaceTest_graphdraw-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
@@ -2220,6 +2281,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_gap-CInterfaceTest_gap.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_gap-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po
@@ -2325,6 +2388,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-CInterfaceTest_fcnf_fixtures.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fcnf_fixtures-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_gap-CInterfaceTest_gap.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_gap-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po

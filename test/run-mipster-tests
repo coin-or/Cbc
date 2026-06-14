@@ -176,7 +176,8 @@ FIXTURE_TESTS=(
   CInterfaceTest_fcnf_fixtures
   CInterfaceTest_upms
   CInterfaceTest_gap
-); do
+)
+for i in "${!TESTS[@]}"; do
   name="${TESTS[$i]}"
   bin=$(find_bin "$name")
   tmpfile=$(mktemp)

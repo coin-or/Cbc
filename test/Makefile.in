@@ -126,7 +126,8 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_bpc$(EXEEXT) CInterfaceTest_mis$(EXEEXT) \
 	CInterfaceTest_jssp_fixtures$(EXEEXT) \
 	CInterfaceTest_steiner$(EXEEXT) \
-	CInterfaceTest_fcnf_fixtures$(EXEEXT)
+	CInterfaceTest_fcnf_fixtures$(EXEEXT) \
+	CInterfaceTest_upms$(EXEEXT)
 noinst_PROGRAMS = gen_miclsp_solutions$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -300,6 +301,10 @@ am_CInterfaceTest_tsp_random_OBJECTS =  \
 CInterfaceTest_tsp_random_OBJECTS =  \
 	$(am_CInterfaceTest_tsp_random_OBJECTS)
 CInterfaceTest_tsp_random_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_upms_OBJECTS =  \
+	CInterfaceTest_upms-CInterfaceTest_upms.$(OBJEXT)
+CInterfaceTest_upms_OBJECTS = $(am_CInterfaceTest_upms_OBJECTS)
+CInterfaceTest_upms_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_vrp_OBJECTS = CInterfaceTest_vrp.$(OBJEXT)
 CInterfaceTest_vrp_OBJECTS = $(am_CInterfaceTest_vrp_OBJECTS)
 CInterfaceTest_vrp_DEPENDENCIES = ../src/libmipster.la
@@ -410,6 +415,8 @@ am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po \
 	./$(DEPDIR)/CInterfaceTest_tsp_random.Po \
+	./$(DEPDIR)/CInterfaceTest_upms-CInterfaceTest_upms.Po \
+	./$(DEPDIR)/CInterfaceTest_upms-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_vrp.Po \
 	./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po \
 	./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po \
@@ -519,6 +526,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_tsp_cuts_SOURCES) \
 	$(CInterfaceTest_tsp_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_tsp_random_SOURCES) \
+	$(CInterfaceTest_upms_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_upms_SOURCES) \
 	$(CInterfaceTest_vrp_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_vrp_SOURCES) \
 	$(CInterfaceTest_yue20013_SOURCES) \
@@ -825,7 +834,13 @@ dist_pkgtestfixture_DATA = \
   fixtures/steiner_complete10_unit_t4.mps.gz \
   fixtures/steiner_complete12_rand_t3.mps.gz \
   fixtures/steiner_sparse20_p03_t4.mps.gz \
-  fixtures/steiner_sparse25_p025_t6.mps.gz
+  fixtures/steiner_sparse25_p025_t6.mps.gz \
+  fixtures/upms_n8_m2_int_cmax_s42.mps.gz \
+  fixtures/upms_n8_m3_int_wct_s42.mps.gz \
+  fixtures/upms_n9_m3_int_cmax_s137.mps.gz \
+  fixtures/upms_n8_m3_frac_cmax_s42.mps.gz \
+  fixtures/upms_n9_m2_lgset_cmax_s137.mps.gz \
+  fixtures/upms_n7_m3_int_wct_s137.mps.gz
 
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
@@ -1076,6 +1091,14 @@ CInterfaceTest_fcnf_fixtures_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE
 CInterfaceTest_fcnf_fixtures_LDADD = ../src/libmipster.la
 
 ########################################################################
+#   UPMSP-ST: Unrelated Parallel Machine Scheduling + Setup Times      #
+########################################################################
+CInterfaceTest_upms_SOURCES = CInterfaceTest_upms.c
+nodist_EXTRA_CInterfaceTest_upms_SOURCES = dummy.cpp
+CInterfaceTest_upms_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_upms_LDADD = ../src/libmipster.la
+
+########################################################################
 #             gen_miclsp_solutions — reference solution generator      #
 ########################################################################
 gen_miclsp_solutions_SOURCES = gen_miclsp_solutions.c
@@ -1295,6 +1318,10 @@ CInterfaceTest_tsp_random$(EXEEXT): $(CInterfaceTest_tsp_random_OBJECTS) $(CInte
 	@rm -f CInterfaceTest_tsp_random$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_tsp_random_OBJECTS) $(CInterfaceTest_tsp_random_LDADD) $(LIBS)
 
+CInterfaceTest_upms$(EXEEXT): $(CInterfaceTest_upms_OBJECTS) $(CInterfaceTest_upms_DEPENDENCIES) $(EXTRA_CInterfaceTest_upms_DEPENDENCIES) 
+	@rm -f CInterfaceTest_upms$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_upms_OBJECTS) $(CInterfaceTest_upms_LDADD) $(LIBS)
+
 CInterfaceTest_vrp$(EXEEXT): $(CInterfaceTest_vrp_OBJECTS) $(CInterfaceTest_vrp_DEPENDENCIES) $(EXTRA_CInterfaceTest_vrp_DEPENDENCIES) 
 	@rm -f CInterfaceTest_vrp$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_vrp_OBJECTS) $(CInterfaceTest_vrp_LDADD) $(LIBS)
@@ -1407,6 +1434,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_tsp_random.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_upms-CInterfaceTest_upms.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_upms-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_vrp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po@am__quote@ # am--include-marker
@@ -1696,6 +1725,20 @@ CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.obj: CInterfaceTest_trdta5581.
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_trdta5581.c' object='CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_trdta5581_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.obj `if test -f 'CInterfaceTest_trdta5581.c'; then $(CYGPATH_W) 'CInterfaceTest_trdta5581.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_trdta5581.c'; fi`
+
+CInterfaceTest_upms-CInterfaceTest_upms.o: CInterfaceTest_upms.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_upms_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_upms-CInterfaceTest_upms.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_upms-CInterfaceTest_upms.Tpo -c -o CInterfaceTest_upms-CInterfaceTest_upms.o `test -f 'CInterfaceTest_upms.c' || echo '$(srcdir)/'`CInterfaceTest_upms.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_upms-CInterfaceTest_upms.Tpo $(DEPDIR)/CInterfaceTest_upms-CInterfaceTest_upms.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_upms.c' object='CInterfaceTest_upms-CInterfaceTest_upms.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_upms_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_upms-CInterfaceTest_upms.o `test -f 'CInterfaceTest_upms.c' || echo '$(srcdir)/'`CInterfaceTest_upms.c
+
+CInterfaceTest_upms-CInterfaceTest_upms.obj: CInterfaceTest_upms.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_upms_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_upms-CInterfaceTest_upms.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_upms-CInterfaceTest_upms.Tpo -c -o CInterfaceTest_upms-CInterfaceTest_upms.obj `if test -f 'CInterfaceTest_upms.c'; then $(CYGPATH_W) 'CInterfaceTest_upms.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_upms.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_upms-CInterfaceTest_upms.Tpo $(DEPDIR)/CInterfaceTest_upms-CInterfaceTest_upms.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_upms.c' object='CInterfaceTest_upms-CInterfaceTest_upms.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_upms_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_upms-CInterfaceTest_upms.obj `if test -f 'CInterfaceTest_upms.c'; then $(CYGPATH_W) 'CInterfaceTest_upms.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_upms.c'; fi`
 
 CInterfaceTest_yue20013-CInterfaceTest_yue20013.o: CInterfaceTest_yue20013.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_yue20013_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_yue20013-CInterfaceTest_yue20013.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Tpo -c -o CInterfaceTest_yue20013-CInterfaceTest_yue20013.o `test -f 'CInterfaceTest_yue20013.c' || echo '$(srcdir)/'`CInterfaceTest_yue20013.c
@@ -1987,6 +2030,20 @@ CInterfaceTest_trdta5581-dummy.obj: dummy.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_trdta5581_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_trdta5581-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
 
+CInterfaceTest_upms-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_upms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_upms-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_upms-dummy.Tpo -c -o CInterfaceTest_upms-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_upms-dummy.Tpo $(DEPDIR)/CInterfaceTest_upms-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_upms-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_upms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_upms-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_upms-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_upms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_upms-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_upms-dummy.Tpo -c -o CInterfaceTest_upms-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_upms-dummy.Tpo $(DEPDIR)/CInterfaceTest_upms-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_upms-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_upms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_upms-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
 CInterfaceTest_yue20013-dummy.o: dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_yue20013_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_yue20013-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_yue20013-dummy.Tpo -c -o CInterfaceTest_yue20013-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_yue20013-dummy.Tpo $(DEPDIR)/CInterfaceTest_yue20013-dummy.Po
@@ -2215,6 +2272,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_upms-CInterfaceTest_upms.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_upms-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_vrp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po
@@ -2319,6 +2378,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_upms-CInterfaceTest_upms.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_upms-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_vrp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po

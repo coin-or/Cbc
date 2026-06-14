@@ -105,8 +105,43 @@ static const MipDiagConfig MIP_DIAG_CONFIGS[] = {
    */
   { "tight-cutoff-inc",  "increment",       "1.0",   NULL,            NULL,  NULL,           NULL  },
   { "no-fake-obj",       "more2!MipOptions","lessused", NULL,         NULL,  NULL,           NULL  },
+  /* Probing-specific isolation passes (since no-probing → OK):
+   *
+   * probing-only: all other cut generators off, probing active at default
+   *   intensity.  Confirms probing alone (+ preprocess) reproduces the bug.
+   * probing-colfix-only: probing=forceonbutstrong forces probing at every
+   *   node but does ONLY column bound fixing — no row cuts / strengthening.
+   *   If WRONG: the bug is in probing's column fixing code.
+   *   If OK:    the bug is in probing's row-strengthening code.
+   * probing-forceonbut: probing at every node, probing only (no row
+   *   strengthening), higher pressure than default.
+   */
+  { "probing-only",       "cuts",    "off",        "probing",  "ifmove",          NULL,   NULL  },
+  { "probing-colfix-only","probing", "forceonbutstrong", NULL, NULL,              NULL,   NULL  },
+  { "probing-forceonbut", "probing", "forceonbut", NULL,       NULL,              NULL,   NULL  },
+  /* Minimum-reproducer passes — determine which row-cut family, paired with
+   * probing column fixing and preprocessing, is the minimal trigger.
+   *
+   * Background: probing-colfix-only → WRONG and probing-only → OK, so the
+   * bug requires probing column fixing + at least one row-cut generator.
+   * These passes test each candidate (Gomory, MIR, TwoMIR) individually:
+   *   WRONG: that single row-cut family + probing colfix + preprocess suffices.
+   *   OK:    that family alone is not sufficient; the bug requires a different
+   *          combination.
+   *
+   * Config: cuts=off (disables all), named cut re-enabled at ifmove,
+   *         probing=forceonbutstrong (column-fixing only, no row cuts).
+   * Preprocessing remains at its default (on). */
+  { "probing+gomory",     "cuts",    "off",        "gomory",   "ifmove",          "probing", "forceonbutstrong" },
+  { "probing+mir",        "cuts",    "off",        "mixed",    "ifmove",          "probing", "forceonbutstrong" },
+  { "probing+twomir",     "cuts",    "off",        "two",      "ifmove",          "probing", "forceonbutstrong" },
+  /* LP scaling isolation — Clp's matrix scaling changes the numerical
+   * representation of the LP and interacts with FMA rounding on Apple Silicon
+   * (clang generates fused-multiply-add instructions for AArch64 by default
+   * whereas gcc/Linux aarch64 does not).  If disabling scaling fixes the bug,
+   * the root cause is in scaled-LP bound drift, not in the cut logic itself. */
+  { "scaling-off",        "scaling", "off",        NULL,       NULL,              NULL,   NULL  },
 };
-
 #define MIP_N_DIAG_CONFIGS \
   ((int)(sizeof(MIP_DIAG_CONFIGS) / sizeof(MIP_DIAG_CONFIGS[0])))
 
@@ -227,7 +262,8 @@ static void mip_diag_wrong_optimal(
 
   printf("\n  [DIAG] OK = feature not responsible for the bug.\n"
          "  [DIAG] WRONG = bug present without this feature too.\n"
-         "  [DIAG] LEAD = found correct obj (not proven): this feature is suspect.\n");
+         "  [DIAG] LEAD = found correct obj (not proven): this feature is suspect.\n"
+         "  [DIAG] See debugCuts pass for 'bad row'/'bad col cut' details.\n");
 }
 
 /* Run a solve with OsiRowCutDebugger active to identify exactly which cut
@@ -239,13 +275,24 @@ static void mip_diag_wrong_optimal(
  *                 Every cut generated during the solve will be checked
  *                 against this solution; any cut that excludes it prints a
  *                 diagnostic message to stdout.
+ *                 When preprocessing is active, CbcSolver maps the solution
+ *                 into the preprocessed variable space automatically (via an
+ *                 LP re-solve with integers fixed).
  *
  * extra_param / extra_value : optional extra parameter to set before solving
  *                 (e.g. "nodeBoundProp", "on").  Pass NULL for default config.
  *
- * If no "bad row" lines appear in the output the row-cut generators are NOT
- * the source of the bug; the problem likely lies in bound propagation
- * (column-bound changes / node pruning) rather than in row cuts.
+ * If no "bad row" lines appear in the output, the row-cut generators are NOT
+ * producing classically-invalid cuts (cuts that exclude the certified optimum).
+ * This does NOT rule out a numerical/FP bug: the solver may still produce a
+ * wrong result because the LP relaxation bound is slightly inflated by
+ * floating-point rounding (e.g. FMA on Apple Silicon) rather than by any
+ * single cut being wrong.  In that case, the fathoming check
+ *   node->objectiveValue() > bestObj - cutoffIncrement
+ * prunes the node containing the optimal solution because the LP bound is a
+ * few ULPs above the threshold.  To diagnose that scenario, use the
+ * mip_diag_wrong_optimal() sweep (look for 'scaling-off', 'tight-prim-tol',
+ * and the minimum-reproducer 'probing+gomory/mir/twomir' configs).
  */
 static void mip_diag_debug_cuts(
     Cbc_Model *(*builder)(void *userdata),
@@ -269,9 +316,17 @@ static void mip_diag_debug_cuts(
     printf("\n  [DIAG] debugCuts pass (default config) — reference solution:"
            " %s\n", ref_sol_path);
   printf("  [DIAG] time_limit=%ds  no node limit"
-         " — any invalid cut will be flagged below.\n", time_limit_sec);
-  printf("  [DIAG] If no 'bad row' lines appear: row-cut generators are NOT"
-         " the source of the bug.\n\n");
+         " — any invalid row or column cut will be flagged below.\n", time_limit_sec);
+  printf("  [DIAG] 'bad row' lines: a row cut that excludes the certified optimum.\n");
+  printf("  [DIAG] 'bad col cut lb/ub' lines: a probing column cut that wrongly"
+         " restricts a variable bound.\n");
+  printf("  [DIAG] 'bad probing infeasibility cut' lines: probing wrongly"
+         " declared the problem infeasible.\n");
+  printf("  [DIAG] If none appear: no individual cut is classically invalid.\n"
+         "  [DIAG] The bug may be LP bound inflation (FP rounding pushes the\n"
+         "  [DIAG] LP relaxation bound above the fathoming threshold) rather\n"
+         "  [DIAG] than any single cut excluding the optimum.  See the\n"
+         "  [DIAG] min-reproducer and scaling-off configs in the feature sweep.\n\n");
   fflush(stdout);
 
   Cbc_Model *m = builder(userdata);

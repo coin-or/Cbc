@@ -30,6 +30,7 @@
 #include "CglLandP.hpp"
 #include "CglMixedIntegerRounding2.hpp"
 #include "CglOddWheel.hpp"
+#include "CglPathAggregation.hpp"
 #include "CglProbing.hpp"
 #include "CglRedSplit.hpp"
 #include "CglRedSplit2.hpp"
@@ -775,6 +776,18 @@ public:
 
   /*! \brief Obtain a prototype for a probing cut generator. */
   CbcParameters::CGMode getProbing(CglCutGenerator *&gen);
+
+  /*! \brief Obtain a prototype for a path aggregation cut generator. */
+  CbcParameters::CGMode getPathAggr(CglCutGenerator *&gen);
+
+  /*! \brief Set mode for use of path aggregation cut generator. */
+  inline void setPathAggrMode(CbcParameters::CGMode mode) {
+    pathAggr_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of path aggregation cut generator. */
+  inline CbcParameters::CGMode getPathAggrMode() { return (pathAggr_.mode_); }
+
 
   /*! \brief Set mode for use of probing cut generator. */
   inline void setProbingMode(CbcParameters::CGMode mode) {
@@ -2346,6 +2359,9 @@ private:
 
   /*! \brief Control variable and prototype for odd hole cut generator */
   CGSettings<CglOddWheel> oddWheel_;
+
+  /*! \brief Control variable and prototype for path aggregation cut generator */
+  CGSettings<CglPathAggregation> pathAggr_;
 
   /*! \brief Control variable and prototype for probing cut generator */
   struct probing_struct : CGSettings<CglProbing> {

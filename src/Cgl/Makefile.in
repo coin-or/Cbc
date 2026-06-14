@@ -133,7 +133,8 @@ am_libCgl_la_OBJECTS = Cgl012cut.lo CglAllDifferent.lo CglBKClique.lo \
 	CglParam.lo CglPreProcess.lo CglProbing.lo CglRedSplit.lo \
 	CglRedSplitParam.lo CglRedSplit2.lo CglRedSplit2Param.lo \
 	CglResidualCapacity.lo CglSimpleRounding.lo CglStored.lo \
-	CglTreeInfo.lo CglTwomir.lo CglZeroHalf.lo
+	CglTreeInfo.lo CglTwomir.lo CglPathAggregation.lo \
+	CglZeroHalf.lo
 libCgl_la_OBJECTS = $(am_libCgl_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -170,9 +171,10 @@ am__depfiles_remade = ./$(DEPDIR)/Cgl012cut.Plo \
 	./$(DEPDIR)/CglMixedIntegerRounding.Plo \
 	./$(DEPDIR)/CglMixedIntegerRounding2.Plo \
 	./$(DEPDIR)/CglOddHole.Plo ./$(DEPDIR)/CglOddWheel.Plo \
-	./$(DEPDIR)/CglParam.Plo ./$(DEPDIR)/CglPreProcess.Plo \
-	./$(DEPDIR)/CglProbing.Plo ./$(DEPDIR)/CglRedSplit.Plo \
-	./$(DEPDIR)/CglRedSplit2.Plo ./$(DEPDIR)/CglRedSplit2Param.Plo \
+	./$(DEPDIR)/CglParam.Plo ./$(DEPDIR)/CglPathAggregation.Plo \
+	./$(DEPDIR)/CglPreProcess.Plo ./$(DEPDIR)/CglProbing.Plo \
+	./$(DEPDIR)/CglRedSplit.Plo ./$(DEPDIR)/CglRedSplit2.Plo \
+	./$(DEPDIR)/CglRedSplit2Param.Plo \
 	./$(DEPDIR)/CglRedSplitParam.Plo \
 	./$(DEPDIR)/CglResidualCapacity.Plo \
 	./$(DEPDIR)/CglSimpleRounding.Plo ./$(DEPDIR)/CglStored.Plo \
@@ -465,6 +467,7 @@ libCgl_la_SOURCES = \
 	CglStored.cpp CglStored.hpp \
 	CglTreeInfo.cpp CglTreeInfo.hpp \
 	CglTwomir.cpp CglTwomir.hpp \
+	CglPathAggregation.cpp CglPathAggregation.hpp \
 	CglZeroHalf.cpp CglZeroHalf.hpp
 
 
@@ -511,6 +514,7 @@ includecoin_HEADERS = \
 	CglStored.hpp \
 	CglTreeInfo.hpp \
 	CglTwomir.hpp \
+	CglPathAggregation.hpp \
 	CglZeroHalf.hpp
 
 all: all-am
@@ -591,6 +595,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglOddHole.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglOddWheel.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglParam.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglPathAggregation.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglPreProcess.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglProbing.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglRedSplit.Plo@am__quote@ # am--include-marker
@@ -781,6 +786,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CglOddHole.Plo
 	-rm -f ./$(DEPDIR)/CglOddWheel.Plo
 	-rm -f ./$(DEPDIR)/CglParam.Plo
+	-rm -f ./$(DEPDIR)/CglPathAggregation.Plo
 	-rm -f ./$(DEPDIR)/CglPreProcess.Plo
 	-rm -f ./$(DEPDIR)/CglProbing.Plo
 	-rm -f ./$(DEPDIR)/CglRedSplit.Plo
@@ -864,6 +870,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CglOddHole.Plo
 	-rm -f ./$(DEPDIR)/CglOddWheel.Plo
 	-rm -f ./$(DEPDIR)/CglParam.Plo
+	-rm -f ./$(DEPDIR)/CglPathAggregation.Plo
 	-rm -f ./$(DEPDIR)/CglPreProcess.Plo
 	-rm -f ./$(DEPDIR)/CglProbing.Plo
 	-rm -f ./$(DEPDIR)/CglRedSplit.Plo

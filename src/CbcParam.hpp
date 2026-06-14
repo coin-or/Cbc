@@ -139,6 +139,7 @@ public:
       MIRCUTS,
       //ODDHOLECUTS, // Not used
       ODDWHEELCUTS,
+      PATHAGGRCUTS,
       PROBINGCUTS,
       REDSPLITCUTS,
       REDSPLIT2CUTS,

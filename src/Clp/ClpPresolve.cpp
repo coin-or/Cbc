@@ -39,6 +39,7 @@
 #include "CoinPresolveDupcol.hpp"
 #include "CoinPresolveImpliedFree.hpp"
 #include "CoinPresolveIsolated.hpp"
+#include "CoinPresolveParity.hpp"
 #include "CoinMessage.hpp"
 
 ClpPresolve::ClpPresolve()
@@ -927,6 +928,14 @@ const CoinPresolveAction *ClpPresolve::presolve(CoinPresolveMatrix *prob)
   printProgress('A', 0);
   paction_ = make_fixed(prob, paction_);
   paction_ = testRedundant(prob, paction_);
+  // GF(2) parity reduction — run early, before the main loop,
+  // since it is a one-shot detection that can fix many binaries
+  // and remove equality rows in bulk.
+  if (prob->anyInteger() && !prob->status_) {
+    paction_ = parity_action::presolve(prob, paction_);
+    if (prob->status_)
+      return (paction_);
+  }
   printProgress('B', 0);
   // if integers then switch off dual stuff
   // later just do individually

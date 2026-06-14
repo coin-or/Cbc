@@ -158,13 +158,15 @@ cd test && make -j$(nproc) test
 
 Individual test binaries: `test/CInterfaceTest`, `test/CbcSolverLpTest`, etc. They can be run directly.
 
-**Writing integration tests?** See `doc/testing-guide.md` for comprehensive guidance on:
-- Choosing diverse test instances
-- Validating objectives and solution feasibility (C API and external tools)
-- Solution pool validation (`Cbc_checkFeasibility`, `Cbc_savedSolution`)
-- Cross-solver validation
-- Automated debugging with `mip_diag`
-- CI integration
+**Writing integration tests?** See `doc/testing-guide.md` for comprehensive guidance.
+
+**Stopping criteria:**
+- **MIP tests**: `Cbc_setMaximumNodes` is the primary stop (deterministic); `Cbc_setMaximumSeconds` is a loose wall-clock fallback only. Never rely on time as primary.
+- **LP tests**: no limits — LP solves always finish quickly.
+
+**Solution validation (required for every test):**
+1. Call `validate_all_saved_solutions()` — checks feasibility, computed `c·x` vs reported obj, and bound against certified optimum for every solution in the pool.
+2. If `Cbc_isProvenOptimal()` is true and a certified value is known, verify the objective matches within `mip_obj_tol()`.
 
 **Critical gotchas when adding a new test** (both caught by real CI failures):
 1. `test/run-mipster-tests` has **two** arrays: `TESTS` (all tests) and `FIXTURE_TESTS` (tests that take `<fixture-dir>` as first arg). A test taking `argv[1]` must be in **both**.

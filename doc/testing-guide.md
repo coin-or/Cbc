@@ -92,7 +92,11 @@ const char *fixture_path(const char *fname);      // e.g. "my_inst.mps.gz"
 /* Locate a reference solution file (fixtures/solutions/<base>.sol) */
 const char *solution_path(const char *base);      // NULL if file absent
 
-/* Validate every solution in the pool; returns failure count */
+/* Validate every solution in the pool — three checks per solution:
+ *   1. Feasibility (bounds, integrality, rows via Cbc_checkFeasibility)
+ *   2. Objective consistency: computed c·x must match Cbc_savedSolutionObj
+ *   3. Bound: pool obj must not beat certified_opt (within obj_tol)
+ * Pass NAN for known_opt to skip checks 2b/3. Returns failure count. */
 int validate_all_saved_solutions(Cbc_Model *m, double known_opt,
                                  double obj_tol, const char *tag);
 
@@ -429,15 +433,15 @@ by existing tests (`CInterfaceTest_upms.c`, `CInterfaceTest_jssp_fixtures.c`):
 typedef struct {
   const char *name;
   double certified_opt;   /* known optimal; NaN if unknown */
-  int max_nodes;          /* PRIMARY stop — keeps tests deterministic */
-  int timeout_sec;        /* wall-clock fallback only */
+  int max_nodes;          /* MIP primary stop — deterministic across platforms */
+  int timeout_sec;        /* loose wall-clock fallback only */
 } TestCase;
 
 static const TestCase test_cases[] = {
   /* name                certified_opt  max_nodes  timeout_sec */
   { "my_easy",           100.0,         500000,    60  },
   { "my_medium",         250.5,         500000,    120 },
-  { "my_hard",           NAN,           500000,    300 },  /* NAN = accept any feasible */
+  { "my_hard",           NAN,           500000,    300 },  /* NAN = any feasible */
 };
 #define N_TESTS ((int)(sizeof(test_cases)/sizeof(test_cases[0])))
 
@@ -457,8 +461,11 @@ int main(int argc, char **argv)
       printf("  FAIL: cannot read %s\n", tc->name); fail++; continue;
     }
 
-    /* Node limit is the primary deterministic stop.
-     * Time limit is a loose wall-clock fallback only. */
+    /* MIP stopping criteria:
+     *   - max nodes: PRIMARY deterministic stop (same result on all platforms)
+     *   - time limit: loose wall-clock fallback only (never rely on it for
+     *     correctness; it exists only to guard against pathological slowdowns)
+     * LP tests (CbcSolverLpTest etc.): no limits — LP solves always finish. */
     Cbc_setMaximumNodes(m, tc->max_nodes);
     Cbc_setMaximumSeconds(m, tc->timeout_sec);
     Cbc_solve(m);
@@ -467,27 +474,21 @@ int main(int argc, char **argv)
     int is_optimal = Cbc_isProvenOptimal(m);
     double obj = Cbc_getObjValue(m);
 
-    /* 1. Always check feasibility of best solution and entire solution pool */
-    double maxViolRow, maxViolCol; int rowIdx, colIdx;
-    if (!Cbc_checkFeasibility(m, Cbc_getColSolution(m),
-                              &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
-      printf("  FAIL: %s best solution infeasible  "
-             "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
-             tc->name, maxViolRow, rowIdx, maxViolCol, colIdx);
-      ok = 0;
-    }
+    /* 1. Validate entire solution pool:
+     *    - feasibility (bounds, integrality, rows)
+     *    - objective consistency (computed c·x == reported obj)
+     *    - bound check (no pool solution may beat certified_opt) */
     ok &= (validate_all_saved_solutions(m, tc->certified_opt,
                                         mip_obj_tol(m, tc->certified_opt, 1e-4),
                                         tc->name) == 0);
 
-    /* 2. If solver claims optimality, verify against certified value */
+    /* 2. If solver claims proven optimality, verify against certified value */
     if (is_optimal && !isnan(tc->certified_opt)) {
       double tol = mip_obj_tol(m, tc->certified_opt, 1e-6);
       if (fabs(obj - tc->certified_opt) > tol) {
         printf("  FAIL: %s proven opt=%.6g expected=%.6g (tol=%.4g)\n",
                tc->name, obj, tc->certified_opt, tol);
         ok = 0;
-        /* Automated diagnostics: identify culprit cut/feature */
         mip_diag_wrong_optimal(build_mps_model, (void *)path,
                                tc->certified_opt, tc->timeout_sec);
         const char *sol = solution_path(tc->name);
@@ -639,17 +640,38 @@ CI has a global 2-hour job timeout. Keep test suites under 15 minutes total.
 - Include 1000+ large instances (use experiment scripts instead)
 - Duplicate coverage (many instances with identical characteristics)
 
-### Objective Value Tolerances
+### Stopping Criteria
 
-| Value Range | Relative Tolerance |
-|---|---|
-| Obj > 1e6 | 1e-4 |
-| Obj in [1, 1e6] | 1e-3 |
-| Obj < 1 | 1e-2 or absolute 1e-6 |
+| Test type | Primary stop | Secondary stop |
+|---|---|---|
+| **MIP** | `Cbc_setMaximumNodes(m, N)` | `Cbc_setMaximumSeconds(m, T)` (loose fallback) |
+| **LP** | none — LP solves always finish | none |
 
-Always use **relative error** for non-zero objectives:
+**Why max nodes for MIP:** node count is deterministic across platforms (same branching decisions → same nodes explored). Time limits produce different results on different machines and sanitizer builds.
+
+**Never** use time as the primary MIP stop in CI tests. A reasonable node budget is 500 000 — enough to find and verify optimal for small-to-medium fixtures; accepting "not proven" as a valid outcome when the node limit is hit.
+
+### Solution Validation (all test types)
+
+Every test must validate **all solutions in the pool**, not just the best incumbent:
+
 ```c
-rel_err = fabs(actual - expected) / fmax(fabs(expected), 1e-6)
+/* validate_all_saved_solutions checks per solution:
+ *   1. feasibility (bounds, integrality, all rows)
+ *   2. objective consistency: computed c·x == Cbc_savedSolutionObj()
+ *   3. bound: pool obj does not beat certified_opt
+ * Returns number of failures. */
+ok &= (validate_all_saved_solutions(m, certified_opt,
+                                    mip_obj_tol(m, certified_opt, 1e-4),
+                                    instance_name) == 0);
+
+/* Additionally: if solver claims proven optimality, check the value */
+if (Cbc_isProvenOptimal(m) && !isnan(certified_opt)) {
+  double tol = mip_obj_tol(m, certified_opt, 1e-6);
+  if (fabs(Cbc_getObjValue(m) - certified_opt) > tol) {
+    /* wrong-optimal bug — run mip_diag */
+  }
+}
 ```
 
 ### Test Independence

@@ -62,13 +62,16 @@ static const char *solution_path(const char *base)
 /* validate_all_saved_solutions — check every solution in CBC's pool.
  *
  * For each solution i in [0, Cbc_numberSavedSolutions(m)):
- *   1. Verifies integer feasibility via Cbc_checkFeasibility().
- *   2. If known_optimal is not NaN, verifies the solution objective is on the
- *      correct side of known_optimal (within obj_tol):
+ *   1. Feasibility: Cbc_checkFeasibility() — bounds, integrality, rows.
+ *   2. Objective consistency: computed c·x must match the stored
+ *      Cbc_savedSolutionObj() within a relative tolerance of 1e-6.
+ *      Catches internal inconsistencies (solver stores a wrong obj value).
+ *   3. Bound check (if known_optimal is not NaN): stored obj must not be
+ *      better than the certified optimum (within obj_tol):
  *        - minimisation (ObjSense > 0): obj >= known_optimal - obj_tol
  *        - maximisation (ObjSense < 0): obj <= known_optimal + obj_tol
  *
- * tag: short label printed in diagnostic messages (e.g., the instance name).
+ * tag: short label for diagnostic messages (e.g., the instance name).
  * Returns the number of failures (0 = all solutions passed). */
 static int validate_all_saved_solutions(
     Cbc_Model *m,
@@ -79,18 +82,19 @@ static int validate_all_saved_solutions(
   int n = Cbc_numberSavedSolutions(m);
   int failures = 0;
   double sense = Cbc_getObjSense(m); /* +1 min, -1 max */
-  int check_obj = !isnan(known_optimal);
+  int check_bound = !isnan(known_optimal);
+  int ncols = Cbc_getNumCols(m);
+  const double *objCoef = Cbc_getObjCoefficients(m);
 
   for (int i = 0; i < n; i++) {
     const double *x = Cbc_savedSolution(m, i);
-    double obj = Cbc_savedSolutionObj(m, i);
+    double reported_obj = Cbc_savedSolutionObj(m, i);
 
+    /* 1. Feasibility */
     double maxViolRow, maxViolCol;
     int rowIdx, colIdx;
-    char feas = Cbc_checkFeasibility(m, x,
-                                     &maxViolRow, &rowIdx,
-                                     &maxViolCol, &colIdx);
-    if (!feas) {
+    if (!Cbc_checkFeasibility(m, x, &maxViolRow, &rowIdx,
+                                    &maxViolCol, &colIdx)) {
       fprintf(stderr,
               "[%s] FAIL saved sol %d infeasible: "
               "maxViolRow=%g (row %d)  maxViolCol=%g (col %d)\n",
@@ -98,16 +102,31 @@ static int validate_all_saved_solutions(
       failures++;
     }
 
-    if (check_obj) {
-      if (sense > 0 && obj < known_optimal - obj_tol) {
+    /* 2. Objective consistency: computed c·x vs reported obj */
+    double computed_obj = 0.0;
+    for (int j = 0; j < ncols; j++)
+      computed_obj += objCoef[j] * x[j];
+    double obj_rel_tol = 1e-6 * fmax(1.0, fabs(reported_obj));
+    if (fabs(computed_obj - reported_obj) > obj_rel_tol) {
+      fprintf(stderr,
+              "[%s] FAIL saved sol %d: computed obj %g != reported obj %g"
+              " (diff=%g)\n",
+              tag, i, computed_obj, reported_obj,
+              computed_obj - reported_obj);
+      failures++;
+    }
+
+    /* 3. Bound check: pool solution must not beat the certified optimum */
+    if (check_bound) {
+      if (sense > 0 && reported_obj < known_optimal - obj_tol) {
         fprintf(stderr,
                 "[%s] FAIL saved sol %d: obj %g < known_optimal %g (tol %g)\n",
-                tag, i, obj, known_optimal, obj_tol);
+                tag, i, reported_obj, known_optimal, obj_tol);
         failures++;
-      } else if (sense < 0 && obj > known_optimal + obj_tol) {
+      } else if (sense < 0 && reported_obj > known_optimal + obj_tol) {
         fprintf(stderr,
                 "[%s] FAIL saved sol %d: obj %g > known_optimal %g (tol %g)\n",
-                tag, i, obj, known_optimal, obj_tol);
+                tag, i, reported_obj, known_optimal, obj_tol);
         failures++;
       }
     }

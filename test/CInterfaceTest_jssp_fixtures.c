@@ -158,6 +158,26 @@ static int test_jssp(const char *fixture_dir, const JsspTestCase *tc)
       mip_diag_debug_cuts(jssp_builder, (void *)path,
                           tc->expected_makespan, tc->timeout_sec,
                           sol, "nodeBoundProp", "on");
+      /* Probing-only pass: isolates probing column cuts from other cut
+       * generators.  With no-probing → OK, this pass catches the bad
+       * column bound that probing generates in the preprocessed problem. */
+      mip_diag_debug_cuts(jssp_builder, (void *)path,
+                          tc->expected_makespan, tc->timeout_sec,
+                          sol, "probing", "forceonbutstrong");
+      /* Scaling-off pass: if LP scaling + FMA rounding inflates the LP
+       * bound above the fathoming threshold, disabling scaling may expose
+       * it via a bad row or (more likely) cause the result to flip to
+       * proven-optimal-correct. */
+      mip_diag_debug_cuts(jssp_builder, (void *)path,
+                          tc->expected_makespan, tc->timeout_sec,
+                          sol, "scaling", "off");
+      printf("\n  [DIAG] Note: if all debugCuts passes above show no 'bad row'\n"
+             "  [DIAG] or 'bad col cut' lines but the bug is still proven-wrong,\n"
+             "  [DIAG] the culprit is LP bound inflation (FP rounding from FMA\n"
+             "  [DIAG] on Apple Silicon pushes the LP relaxation above the\n"
+             "  [DIAG] fathoming cutoff), NOT an individual invalid cut.\n"
+             "  [DIAG] See the 'probing+gomory/mir/twomir' and 'scaling-off'\n"
+             "  [DIAG] entries in the feature sweep above for the min reproducer.\n");
     } else {
       printf("    [DIAG] no reference .sol for %s — skipping debugCuts pass\n",
              tc->name);

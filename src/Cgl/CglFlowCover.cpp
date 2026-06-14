@@ -1125,6 +1125,15 @@ CglFlowCover::generateOneFlowCut( const OsiSolverInterface & si,
   if(CGLFLOW_DEBUG) {
     std::cout << "violation = " << violation << std::endl;
   }
+
+  // Guard: if C- lifting drove cutRHS below zero and the all-zero solution
+  // is feasible for this (possibly flipped) row (rhs >= 0), the cut is
+  // invalid — it would separate a point (x=0, y=0) that satisfies the row.
+  // This can occur due to floating-point boundary errors in liftMinus when
+  // z = up[C-] is numerically equal to M[t] - lambda.
+  if (cutRHS < -EPSILON_ && rhs >= -EPSILON_) {
+    violation = 0.0;
+  }
     
   int     cutLen     = 0;
   int*    cutInd     = 0;

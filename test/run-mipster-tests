@@ -132,6 +132,7 @@ TESTS=(
   CInterfaceTest_fcnf_fixtures
   CInterfaceTest_upms
   CInterfaceTest_gap
+  CInterfaceTest_parity
 )
 
 TOTAL=${#TESTS[@]}
@@ -176,7 +177,10 @@ FIXTURE_TESTS=(
   CInterfaceTest_fcnf_fixtures
   CInterfaceTest_upms
   CInterfaceTest_gap
+  CInterfaceTest_parity
 )
+
+# Phase 1: launch all tests in background
 for i in "${!TESTS[@]}"; do
   name="${TESTS[$i]}"
   bin=$(find_bin "$name")

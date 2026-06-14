@@ -46,6 +46,7 @@ libCgl_la_SOURCES = \
 	CglStored.cpp CglStored.hpp \
 	CglTreeInfo.cpp CglTreeInfo.hpp \
 	CglTwomir.cpp CglTwomir.hpp \
+	CglPathAggregation.cpp CglPathAggregation.hpp \
 	CglZeroHalf.cpp CglZeroHalf.hpp
 
 # Use same flags as the rest of the Cbc build (includes CoinUtils plus
@@ -93,6 +94,7 @@ includecoin_HEADERS = \
 	CglStored.hpp \
 	CglTreeInfo.hpp \
 	CglTwomir.hpp \
+	CglPathAggregation.hpp \
 	CglZeroHalf.hpp
 
 install-exec-local:

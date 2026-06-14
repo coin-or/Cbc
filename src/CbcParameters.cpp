@@ -133,6 +133,7 @@ void CbcParameters::init(int strategy){
   clique_.minViolation_ = 0.1;
 
   flow_.mode_ = CbcParameters::CGIfMove;
+  pathAggr_.mode_ = CbcParameters::CGIfMove;
   flow_.proto_ = 0;
 
   gomory_.mode_ = CbcParameters::CGIfMove;
@@ -246,6 +247,8 @@ CbcParameters::~CbcParameters() {
     delete knapsack_.proto_;
   if (mir_.proto_)
     delete mir_.proto_;
+  if (pathAggr_.proto_)
+    delete pathAggr_.proto_;
 #if 0
   if (oddHole_.proto_)
     delete oddHole_.proto_;
@@ -397,6 +400,7 @@ CbcParameters &CbcParameters::operator=(const CbcParameters &rhs)
   landP_ = rhs.landP_;
   laTwomir_ = rhs.laTwomir_;
   oddWheel_ = rhs.oddWheel_;
+  pathAggr_ = rhs.pathAggr_;
   residCap_ = rhs.residCap_;
   redSplit2_ = rhs.redSplit2_;
   zeroHalf_ = rhs.zeroHalf_;
@@ -907,6 +911,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::LATWOMIRCUTS]->setDefault("off");
      parameters_[CbcParam::MIRCUTS]->setDefault("ifmove");
      parameters_[CbcParam::ODDWHEELCUTS]->setDefault("off");
+     parameters_[CbcParam::PATHAGGRCUTS]->setDefault("root");
      parameters_[CbcParam::PROBINGCUTS]->setDefault("ifmove");
      parameters_[CbcParam::REDSPLITCUTS]->setDefault("off");
      parameters_[CbcParam::REDSPLIT2CUTS]->setDefault("ifmove");
@@ -2818,6 +2823,12 @@ void CbcParameters::addCbcSolverCutParams() {
       CUTS_LONGHELP
       " Reference: https://github.com/coin-or/Cgl/wiki/CglFlowCover");
 
+  parameters_[CbcParam::PATHAGGRCUTS]->setup(
+      "pathAggr!Cuts", "Whether to use Path Aggregation cuts",
+      CUTS_LONGHELP
+      " Aggregates rows along paths of continuous variables to generate strong"
+      " multi-row MIR cuts. Particularly effective on network-flow models.");
+
   parameters_[CbcParam::GMICUTS]->setup(
       "GMI!Cuts", "Whether to use alternative Gomory cuts",
       CUTS_LONGHELP " This version is by Giacomo Nannicini and may be more "
@@ -2922,6 +2933,7 @@ void CbcParameters::addCbcSolverCutParams() {
      case CbcParam::LANDPCUTS:
      case CbcParam::MIRCUTS:
      case CbcParam::ODDWHEELCUTS:
+     case CbcParam::PATHAGGRCUTS:
      case CbcParam::PROBINGCUTS:
      case CbcParam::REDSPLITCUTS:
      case CbcParam::RESIDCAPCUTS:
@@ -3609,6 +3621,15 @@ CbcParameters::CGMode CbcParameters::getProbing(CglCutGenerator *&gen) {
   gen = dynamic_cast<CglCutGenerator *>(probing_.proto_);
 
   return (probing_.mode_);
+}
+
+CbcParameters::CGMode CbcParameters::getPathAggr(CglCutGenerator *&gen) {
+  if (pathAggr_.mode_ != CbcParameters::CGOff && pathAggr_.proto_ == 0) {
+    pathAggr_.proto_ = new CglPathAggregation();
+  }
+  gen = dynamic_cast<CglCutGenerator *>(pathAggr_.proto_);
+
+  return (pathAggr_.mode_);
 }
 
 CbcParameters::CGMode CbcParameters::getRedSplit(CglCutGenerator *&gen)

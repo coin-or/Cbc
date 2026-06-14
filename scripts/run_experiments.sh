@@ -761,7 +761,7 @@ run_instance() {
   local csv_statsfile="$OUTDIR/${name}.stats.csv"
   local zh_reportfile="$OUTDIR/${name}.zh-constraints.csv"
   local solutionfile="$OUTDIR/${name}.sol"
-  rm -f "$csv_statsfile"
+  rm -f "$csv_statsfile" "$solutionfile" "$logfile" "$errfile" "$vg_logfile" "$resultfile" "$OUTDIR/${name}.validate.log"
 
   # Reconstruct VG command from exported scalars
   local vg_cmd=()
@@ -908,7 +908,7 @@ run_instance() {
   # ── Validate solution file if present ────────────────────────────────────────
   local validation_failed=0
   local validation_msg=""
-  if [[ -f "$solutionfile" ]]; then
+  if [[ $solution_found -eq 1 && -f "$solutionfile" ]]; then
     # Derive path to mipster_validate_sol from CBC_BIN (same directory)
     local validate_bin="$(dirname "$CBC_BIN")/mipster_validate_sol"
     if [[ -x "$validate_bin" ]]; then

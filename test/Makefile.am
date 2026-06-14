@@ -121,7 +121,7 @@ dist_pkgtestfixture_DATA = \
   fixtures/steiner_complete12_rand_t3.mps.gz \
   fixtures/steiner_sparse20_p03_t4.mps.gz \
   fixtures/steiner_sparse25_p025_t6.mps.gz \
-  fixtures/parity_test.lp
+  fixtures/parity_test.lp \
   fixtures/upms_n8_m2_int_cmax_s42.mps.gz \
   fixtures/upms_n8_m3_int_wct_s42.mps.gz \
   fixtures/upms_n9_m3_int_cmax_s137.mps.gz \
@@ -192,7 +192,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis CInterfaceTest_jssp_fixtures CInterfaceTest_steiner CInterfaceTest_fcnf_fixtures CInterfaceTest_parity CInterfaceTest_upms CInterfaceTest_gap
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CglPathAggregationTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis CInterfaceTest_jssp_fixtures CInterfaceTest_steiner CInterfaceTest_fcnf_fixtures CInterfaceTest_parity CInterfaceTest_upms CInterfaceTest_gap
 
 noinst_PROGRAMS = gen_miclsp_solutions
 
@@ -260,6 +260,13 @@ CInterfaceTest_mdkp_random_LDADD = ../src/libmipster.la
 
 CbcSolverLpTest_SOURCES = CbcSolverLpTest.cpp
 CbcSolverLpTest_LDADD = ../src/libmipster.la
+
+########################################################################
+#              CglPathAggregation unit tests                            #
+########################################################################
+
+CglPathAggregationTest_SOURCES = CglPathAggregationTest.cpp
+CglPathAggregationTest_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   Nursesched MPS-file tests (LP+BP, MIP)             #

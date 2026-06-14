@@ -9,9 +9,12 @@
 int main(int argc, char *argv[]) {
   printf("=== GF(2) Parity Presolve Test ===\n");
 
-  const char *lp_path = "fixtures/parity_test.lp";
+  char lp_path_buf[4096];
+  const char *lp_path = lp_path_buf;
   if (argc > 1) {
-    lp_path = argv[1];
+    snprintf(lp_path_buf, sizeof(lp_path_buf), "%s/parity_test.lp", argv[1]);
+  } else {
+    lp_path = "fixtures/parity_test.lp";
   }
 
   // 1. Solve with preprocessing OFF (baseline)

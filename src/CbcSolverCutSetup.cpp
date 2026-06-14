@@ -31,6 +31,7 @@
 #include "CglResidualCapacity.hpp"
 #include "CglStored.hpp"
 #include "CglTwomir.hpp"
+#include "CglPathAggregation.hpp"
 #include "CglZeroHalf.hpp"
 
 // Register all cut generators on babModel based on parameter settings,
@@ -369,7 +370,15 @@ void installCutGenerators(
     switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN * lagrangeanFlag);
   }
 
-  // --- TwoMir ---
+  // --- PathAggregation ---
+  int pathAggrMode = parameters[CbcParam::PATHAGGRCUTS]->modeVal();
+  if (pathAggrMode) {
+    CglPathAggregation pathAggrGen;
+    babModel.addCutGenerator(&pathAggrGen, translate[pathAggrMode], "PathAggregation");
+    accuracyFlag[numberGenerators] = 2;
+    switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN * lagrangeanFlag);
+  }
+
   int twomirMode = parameters[CbcParam::TWOMIRCUTS]->modeVal();
   if (twomirMode && (complicatedInteger != 1 || (twomirMode == CbcParameters::CGOn || twomirMode >= CbcParameters::CGForceOn))) {
     CglTwomir twomirGen;

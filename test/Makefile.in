@@ -111,6 +111,7 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_yue20013$(EXEEXT) \
 	CInterfaceTest_etDecsi$(EXEEXT) \
 	CInterfaceTest_attfInst1$(EXEEXT) CbcSolverLpTest$(EXEEXT) \
+	CglPathAggregationTest$(EXEEXT) \
 	CInterfaceTest_advanced$(EXEEXT) \
 	CInterfaceTest_colgen$(EXEEXT) \
 	CInterfaceTest_construction$(EXEEXT) \
@@ -126,8 +127,8 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_jssp_fixtures$(EXEEXT) \
 	CInterfaceTest_steiner$(EXEEXT) \
 	CInterfaceTest_fcnf_fixtures$(EXEEXT) \
-	CInterfaceTest_parity$(EXEEXT)
-	CInterfaceTest_upms$(EXEEXT) CInterfaceTest_gap$(EXEEXT)
+	CInterfaceTest_parity$(EXEEXT) CInterfaceTest_upms$(EXEEXT) \
+	CInterfaceTest_gap$(EXEEXT)
 noinst_PROGRAMS = gen_miclsp_solutions$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -324,6 +325,9 @@ CInterfaceTest_yue20013_DEPENDENCIES = ../src/libmipster.la
 am_CbcSolverLpTest_OBJECTS = CbcSolverLpTest.$(OBJEXT)
 CbcSolverLpTest_OBJECTS = $(am_CbcSolverLpTest_OBJECTS)
 CbcSolverLpTest_DEPENDENCIES = ../src/libmipster.la
+am_CglPathAggregationTest_OBJECTS = CglPathAggregationTest.$(OBJEXT)
+CglPathAggregationTest_OBJECTS = $(am_CglPathAggregationTest_OBJECTS)
+CglPathAggregationTest_DEPENDENCIES = ../src/libmipster.la
 am_gen_miclsp_solutions_OBJECTS = gen_miclsp_solutions.$(OBJEXT)
 gen_miclsp_solutions_OBJECTS = $(am_gen_miclsp_solutions_OBJECTS)
 gen_miclsp_solutions_DEPENDENCIES = ../src/libmipster.la
@@ -429,7 +433,8 @@ am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_vrp.Po \
 	./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po \
 	./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po \
-	./$(DEPDIR)/CbcSolverLpTest.Po ./$(DEPDIR)/dummy.Po \
+	./$(DEPDIR)/CbcSolverLpTest.Po \
+	./$(DEPDIR)/CglPathAggregationTest.Po ./$(DEPDIR)/dummy.Po \
 	./$(DEPDIR)/gen_miclsp_solutions.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -544,7 +549,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_vrp_SOURCES) \
 	$(CInterfaceTest_yue20013_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_yue20013_SOURCES) \
-	$(CbcSolverLpTest_SOURCES) $(gen_miclsp_solutions_SOURCES) \
+	$(CbcSolverLpTest_SOURCES) $(CglPathAggregationTest_SOURCES) \
+	$(gen_miclsp_solutions_SOURCES) \
 	$(nodist_EXTRA_gen_miclsp_solutions_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -846,7 +852,7 @@ dist_pkgtestfixture_DATA = \
   fixtures/steiner_complete12_rand_t3.mps.gz \
   fixtures/steiner_sparse20_p03_t4.mps.gz \
   fixtures/steiner_sparse25_p025_t6.mps.gz \
-  fixtures/parity_test.lp
+  fixtures/parity_test.lp \
   fixtures/upms_n8_m2_int_cmax_s42.mps.gz \
   fixtures/upms_n8_m3_int_wct_s42.mps.gz \
   fixtures/upms_n9_m3_int_cmax_s137.mps.gz \
@@ -955,6 +961,12 @@ CInterfaceTest_mdkp_random_LDADD = ../src/libmipster.la
 ########################################################################
 CbcSolverLpTest_SOURCES = CbcSolverLpTest.cpp
 CbcSolverLpTest_LDADD = ../src/libmipster.la
+
+########################################################################
+#              CglPathAggregation unit tests                            #
+########################################################################
+CglPathAggregationTest_SOURCES = CglPathAggregationTest.cpp
+CglPathAggregationTest_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   Nursesched MPS-file tests (LP+BP, MIP)             #
@@ -1375,6 +1387,10 @@ CbcSolverLpTest$(EXEEXT): $(CbcSolverLpTest_OBJECTS) $(CbcSolverLpTest_DEPENDENC
 	@rm -f CbcSolverLpTest$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CbcSolverLpTest_OBJECTS) $(CbcSolverLpTest_LDADD) $(LIBS)
 
+CglPathAggregationTest$(EXEEXT): $(CglPathAggregationTest_OBJECTS) $(CglPathAggregationTest_DEPENDENCIES) $(EXTRA_CglPathAggregationTest_DEPENDENCIES) 
+	@rm -f CglPathAggregationTest$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CglPathAggregationTest_OBJECTS) $(CglPathAggregationTest_LDADD) $(LIBS)
+
 gen_miclsp_solutions$(EXEEXT): $(gen_miclsp_solutions_OBJECTS) $(gen_miclsp_solutions_DEPENDENCIES) $(EXTRA_gen_miclsp_solutions_DEPENDENCIES) 
 	@rm -f gen_miclsp_solutions$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(gen_miclsp_solutions_OBJECTS) $(gen_miclsp_solutions_LDADD) $(LIBS)
@@ -1481,6 +1497,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolverLpTest.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglPathAggregationTest.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gen_miclsp_solutions.Po@am__quote@ # am--include-marker
 
@@ -2378,6 +2395,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po
 	-rm -f ./$(DEPDIR)/CbcSolverLpTest.Po
+	-rm -f ./$(DEPDIR)/CglPathAggregationTest.Po
 	-rm -f ./$(DEPDIR)/dummy.Po
 	-rm -f ./$(DEPDIR)/gen_miclsp_solutions.Po
 	-rm -f Makefile
@@ -2487,6 +2505,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po
 	-rm -f ./$(DEPDIR)/CbcSolverLpTest.Po
+	-rm -f ./$(DEPDIR)/CglPathAggregationTest.Po
 	-rm -f ./$(DEPDIR)/dummy.Po
 	-rm -f ./$(DEPDIR)/gen_miclsp_solutions.Po
 	-rm -f Makefile

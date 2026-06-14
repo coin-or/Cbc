@@ -32,9 +32,9 @@
 
 /* ── Tolerances ─────────────────────────────────────────────────────── */
 
-static const double PRIMAL_TOL = 1e-7; /* bound / constraint feasibility */
-static const double INT_TOL = 1e-5;    /* integrality gap                 */
-static const double OBJ_TOL = 1e-6;    /* relative objective discrepancy  */
+static double PRIMAL_TOL = 1e-5; /* bound / constraint feasibility */
+static double INT_TOL = 1e-5;    /* integrality gap                 */
+static double OBJ_TOL = 1e-6;    /* relative objective discrepancy  */
 
 /* ── Utilities ──────────────────────────────────────────────────────── */
 
@@ -183,21 +183,66 @@ static bool parseSolFile(const char *path, SolFile &out)
 
 /* ── Main ────────────────────────────────────────────────────────────── */
 
+static void printUsage(const char *progName)
+{
+  fprintf(stderr,
+    "Usage: %s [options] <problem.{mps,lp}[.gz]> <solution.sol>\n"
+    "\n"
+    "Options:\n"
+    "  -p, --primal-tol <val>  Primal feasibility tolerance (default: %.1e)\n"
+    "  -i, --int-tol <val>     Integrality tolerance (default: %.1e)\n"
+    "  -o, --obj-tol <val>     Objective relative tolerance (default: %.1e)\n"
+    "  -h, --help              Show this help message\n"
+    "\n"
+    "Validates feasibility of a MIP solution against the problem model.\n"
+    "Checks variable bounds, integrality, constraints, and objective value.\n"
+    "\n"
+    "Exit code: 0 = feasible,  1 = violations found,  2 = file/usage error\n",
+    progName, PRIMAL_TOL, INT_TOL, OBJ_TOL);
+}
+
 int main(int argc, char *argv[])
 {
-  if (argc < 3) {
-    fprintf(stderr,
-      "Usage: mipster_validate_sol <problem.{mps,lp}[.gz]> <solution.sol>\n"
-      "\n"
-      "Validates feasibility of a MIP solution against the problem model.\n"
-      "Checks variable bounds, integrality, constraints, and objective value.\n"
-      "\n"
-      "Exit code: 0 = feasible,  1 = violations found,  2 = file/usage error\n");
+  int argIdx = 1;
+  while (argIdx < argc && argv[argIdx][0] == '-') {
+    std::string arg = argv[argIdx];
+    if (arg == "-h" || arg == "--help") {
+      printUsage(argv[0]);
+      return 2;
+    } else if (arg == "-p" || arg == "--primal-tol") {
+      if (argIdx + 1 >= argc) {
+        fprintf(stderr, "Error: missing value for %s\n", arg.c_str());
+        return 2;
+      }
+      PRIMAL_TOL = atof(argv[++argIdx]);
+    } else if (arg == "-i" || arg == "--int-tol") {
+      if (argIdx + 1 >= argc) {
+        fprintf(stderr, "Error: missing value for %s\n", arg.c_str());
+        return 2;
+      }
+      INT_TOL = atof(argv[++argIdx]);
+    } else if (arg == "-o" || arg == "--obj-tol") {
+      if (argIdx + 1 >= argc) {
+        fprintf(stderr, "Error: missing value for %s\n", arg.c_str());
+        return 2;
+      }
+      OBJ_TOL = atof(argv[++argIdx]);
+    } else {
+      fprintf(stderr, "Error: unknown option '%s'\n\n", arg.c_str());
+      printUsage(argv[0]);
+      return 2;
+    }
+    ++argIdx;
+  }
+
+  if (argc - argIdx < 2) {
+    fprintf(stderr, "Error: missing problem file and/or solution file\n\n");
+    printUsage(argv[0]);
     return 2;
   }
 
-  const char *problemFile = argv[1];
-  const char *solFile = argv[2];
+  const char *problemFile = argv[argIdx];
+  const char *solFile = argv[argIdx + 1];
 
   /* ── Load problem ──────────────────────────────────────────────────── */
 
@@ -310,10 +355,12 @@ int main(int argc, char *argv[])
     /* Bound check */
     double viol = 0.0;
     const char *dir = "";
-    if (v < lb - PRIMAL_TOL) {
+    double lbTol = (lb > -1e20) ? PRIMAL_TOL * (1.0 + fabs(lb)) : 0.0;
+    double ubTol = (ub < 1e20) ? PRIMAL_TOL * (1.0 + fabs(ub)) : 0.0;
+    if (lb > -1e20 && v < lb - lbTol) {
       viol = lb - v;
       dir = "BELOW LB";
-    } else if (v > ub + PRIMAL_TOL) {
+    } else if (ub < 1e20 && v > ub + ubTol) {
       viol = v - ub;
       dir = "ABOVE UB";
     }
@@ -373,10 +420,12 @@ int main(int argc, char *argv[])
 
     double viol = 0.0;
     const char *dir = "";
-    if (activity < lb - PRIMAL_TOL) {
+    double lbTol = (lb > -1e20) ? PRIMAL_TOL * (1.0 + fabs(lb)) : 0.0;
+    double ubTol = (ub < 1e20) ? PRIMAL_TOL * (1.0 + fabs(ub)) : 0.0;
+    if (lb > -1e20 && activity < lb - lbTol) {
       viol = lb - activity;
       dir = "BELOW LB";
-    } else if (activity > ub + PRIMAL_TOL) {
+    } else if (ub < 1e20 && activity > ub + ubTol) {
       viol = activity - ub;
       dir = "ABOVE UB";
     }

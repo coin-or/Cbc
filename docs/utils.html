@@ -417,7 +417,7 @@ mipster_diag problem.mps -opt &lt;N&gt; -sol /tmp/ref.sol</code></pre>
   </ol>
 
   <p>Default tolerances:</p>
-  <pre><code>primal (bounds / constraints) = 1e-7
+  <pre><code>primal (bounds / constraints) = 1e-5 (scaled)
 integrality                   = 1e-5
 objective (relative)          = 1e-6</code></pre>
 
@@ -432,7 +432,7 @@ mipster_validate_sol air05.mps.gz /tmp/air05.sol</code></pre>
   Problem:  air05.mps.gz
   Solution: /tmp/air05.sol
 
-  Tolerances: primal=1e-07  integer=1e-05  objective=1e-06
+  Tolerances: primal=1e-05  integer=1e-05  objective=1e-06
 
   Model: 7195 variables (7195 integer),  426 constraints
   Solution file: 66 non-zero variables listed

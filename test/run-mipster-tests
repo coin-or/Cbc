@@ -132,6 +132,8 @@ TESTS=(
   CInterfaceTest_fcnf_fixtures
   CInterfaceTest_upms
 )
+
+TOTAL=${#TESTS[@]}
 PASS=0
 FAIL=0
 FAILURES=()

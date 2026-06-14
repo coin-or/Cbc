@@ -2480,6 +2480,23 @@ void OsiClpSolverInterface::solveFromHotStart()
     int status = (static_cast< ClpSimplexDual * >(modelPtr_))->fastDual(alwaysFinish);
     (static_cast< ClpSimplexDual * >(modelPtr_))->numberFake_ = saveNumberFake;
 
+    // When LP is optimal, recompute objective accurately from external activities.
+    // The running sum in objectiveValue_ can accumulate FP errors from non-power-of-2
+    // scale factors (geometric mean scaling), especially on platforms with FMA instructions.
+    // This mirrors what fastDual2 does ("be on safe side").
+    if (!modelPtr_->problemStatus()) {
+      double *sol = modelPtr_->primalColumnSolution();
+      const double *solI = modelPtr_->solutionRegion();
+      if (!columnScale) {
+        for (iColumn = 0; iColumn < numberColumns; iColumn++)
+          sol[iColumn] = solI[iColumn];
+      } else {
+        for (iColumn = 0; iColumn < numberColumns; iColumn++)
+          sol[iColumn] = solI[iColumn] * columnScale[iColumn];
+      }
+      modelPtr_->computeObjectiveValue();
+    }
+
     int problemStatus = modelPtr_->problemStatus();
     double objectiveValue = modelPtr_->objectiveValue() * modelPtr_->optimizationDirection();
     CoinAssert(modelPtr_->problemStatus() || modelPtr_->objectiveValue() < 1.0e50);

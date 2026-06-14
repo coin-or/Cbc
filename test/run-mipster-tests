@@ -131,6 +131,7 @@ TESTS=(
   CInterfaceTest_steiner
   CInterfaceTest_fcnf_fixtures
   CInterfaceTest_upms
+  CInterfaceTest_gap
 )
 
 TOTAL=${#TESTS[@]}
@@ -174,8 +175,8 @@ FIXTURE_TESTS=(
   CInterfaceTest_steiner
   CInterfaceTest_fcnf_fixtures
   CInterfaceTest_upms
-)
-for i in "${!TESTS[@]}"; do
+  CInterfaceTest_gap
+); do
   name="${TESTS[$i]}"
   bin=$(find_bin "$name")
   tmpfile=$(mktemp)

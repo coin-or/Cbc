@@ -126,7 +126,18 @@ dist_pkgtestfixture_DATA = \
   fixtures/upms_n9_m3_int_cmax_s137.mps.gz \
   fixtures/upms_n8_m3_frac_cmax_s42.mps.gz \
   fixtures/upms_n9_m2_lgset_cmax_s137.mps.gz \
-  fixtures/upms_n7_m3_int_wct_s137.mps.gz
+  fixtures/upms_n7_m3_int_wct_s137.mps.gz \
+  fixtures/gap_4a35t_sd42_tight_anticorr_uniform.mps.gz \
+  fixtures/gap_6a30t_sd42_tight_anticorr_uniform.mps.gz \
+  fixtures/gap_4a35t_sd137_tight_anticorr_uniform.mps.gz \
+  fixtures/gap_4a40t_sd42_tight_anticorr_variable.mps.gz \
+  fixtures/gap_6a35t_sd42_tight_anticorr_uniform.mps.gz \
+  fixtures/gap_5a30t_sd42_tight_anticorr_variable.mps.gz \
+  fixtures/gap_6a30t_sd137_tight_anticorr_heavy.mps.gz \
+  fixtures/gap_5a35t_sd137_tight_anticorr_variable.mps.gz \
+  fixtures/gap_5a20t_sd42_tight_uniform_uniform.mps.gz \
+  fixtures/gap_5a20t_sd137_tight_structured_uniform.mps.gz \
+  fixtures/gap_10a30t_sd42_medium_uniform_uniform.mps.gz
 
 # Reference optimal solution files (for -debugCuts diagnostic pass)
 pkgtestsoldir = $(datadir)/mipster/test/fixtures/solutions
@@ -180,7 +191,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CglPathAggregationTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis CInterfaceTest_jssp_fixtures CInterfaceTest_steiner CInterfaceTest_fcnf_fixtures CInterfaceTest_upms
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_mescn CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CglPathAggregationTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_vrp CInterfaceTest_miplib CInterfaceTest_qap CInterfaceTest_setcover CInterfaceTest_setpacking CInterfaceTest_setpartitioning CInterfaceTest_bpc CInterfaceTest_mis CInterfaceTest_jssp_fixtures CInterfaceTest_steiner CInterfaceTest_fcnf_fixtures CInterfaceTest_upms CInterfaceTest_gap
 
 noinst_PROGRAMS = gen_miclsp_solutions
 
@@ -446,6 +457,15 @@ CInterfaceTest_upms_SOURCES = CInterfaceTest_upms.c
 nodist_EXTRA_CInterfaceTest_upms_SOURCES = dummy.cpp
 CInterfaceTest_upms_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_upms_LDADD = ../src/libmipster.la
+
+########################################################################
+#   GAP: Generalized Assignment Problem                                #
+########################################################################
+
+CInterfaceTest_gap_SOURCES = CInterfaceTest_gap.c
+nodist_EXTRA_CInterfaceTest_gap_SOURCES = dummy.cpp
+CInterfaceTest_gap_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_gap_LDADD = ../src/libmipster.la
 
 ########################################################################
 #             gen_miclsp_solutions — reference solution generator      #

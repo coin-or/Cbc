@@ -80,8 +80,28 @@ int main(int argc, char **argv) {
 |---|---|
 | `Cbc_C_Interface.h` | C API for loading/solving MIPs |
 | `mip_diag.h` | Automated diagnostic passes for wrong-optimal failures |
-| `test_utils.h` | Utility functions (timing, tolerances, assertions) |
+| `test_utils.h` | Shared helpers: `fixture_path()`, `solution_path()`, `validate_all_saved_solutions()`, `mip_obj_tol()`, `build_mps_model()`, `print_perf_summary()` |
 | `mipster_validate_sol` | External utility for solution feasibility checking |
+
+#### `test_utils.h` — key helpers
+
+```c
+/* Locate a fixture MPS file (honours $MIPSTER_FIXTURE_DIR env var) */
+const char *fixture_path(const char *fname);      // e.g. "my_inst.mps.gz"
+
+/* Locate a reference solution file (fixtures/solutions/<base>.sol) */
+const char *solution_path(const char *base);      // NULL if file absent
+
+/* Validate every solution in the pool; returns failure count */
+int validate_all_saved_solutions(Cbc_Model *m, double known_opt,
+                                 double obj_tol, const char *tag);
+
+/* Compute effective objective tolerance (ratio gap + abs gap + base_tol) */
+double mip_obj_tol(Cbc_Model *m, double certified_opt, double base_tol);
+
+/* Generic mip_diag builder: reads model from MPS path in userdata */
+Cbc_Model *build_mps_model(void *userdata);   // pass (void*)path_str
+```
 
 ---
 
@@ -296,32 +316,52 @@ When a test reports **wrong-optimal** (claims optimal at an incorrect objective)
 
 ### How It Works
 
-`mip_diag_wrong_optimal(mps_file, certified_obj, timeout)` runs two diagnostic passes:
+`mip_diag_wrong_optimal(builder, userdata, certified_obj, timeout)` runs:
 
-1. **Feature sweep** (13 configs): Disables cut families and features one-by-one to isolate the cause
-2. **Debug cuts pass**: Activates `OsiRowCutDebugger` against a reference solution
+1. **Feature sweep** (27 configs): Disables cut families, preprocessing, tolerances, and platform-specific options one-by-one to isolate the cause
+2. **Debug cuts pass**: Activates `OsiRowCutDebugger` against a reference solution to catch individually-invalid cuts
 
 ### Integration in Tests
 
 ```c
-if (test_failed && expected_obj > 0.0) {
-  printf("    Running diagnostic...\n");
-  mip_diag_wrong_optimal(mps_file, expected_obj, timeout_sec);
+/* mip_diag requires a builder function — not a path string directly */
+static Cbc_Model *my_builder(void *ud) {
+  const char *path = (const char *)ud;
+  Cbc_Model *m = Cbc_newModel();
+  if (Cbc_readMps(m, path) != 0) { Cbc_deleteModel(m); return NULL; }
+  return m;
+}
+
+/* On failure, call with builder + path + certified opt + time limit */
+if (is_proven_optimal && fabs(obj - certified_opt) > tol) {
+  mip_diag_wrong_optimal(my_builder, (void *)path,
+                         certified_opt, timeout_sec);
+  /* Optional: if a reference solution file exists, also run debugCuts */
+  const char *sol = solution_path(tc->name);
+  if (sol)
+    mip_diag_debug_cuts(my_builder, (void *)path,
+                        certified_opt, timeout_sec, sol, NULL, NULL);
 }
 ```
+
+> **Tip:** `test_utils.h` provides `build_mps_model()` which is exactly the builder above. Pass it directly: `mip_diag_wrong_optimal(build_mps_model, (void *)path, ...)`
 
 ### Reading Diagnostic Output
 
 From CI logs, look for:
 
 ```
-[DIAG  8/13] no-flow      → not proven  obj=8181  bound=8050  gap=1.6%  *** LEAD ***
-[DIAG 12/13] no-twomir    → WRONG       obj=8204  (same wrong result)
+[DIAG  8/27] no-mir        → OK  obj=55 certified=55
+[DIAG 12/27] no-probing    → OK  obj=55 certified=55
+[DIAG 24/27] probing+mir   → WRONG opt=56 (expected 55) — BUG ALSO PRESENT
 ```
 
-- `LEAD` = this feature, when disabled, finds the correct objective (strong signal)
-- `WRONG` = same wrong result persists (not the cause)
-- `OK` = disabling this feature fixed the bug (it was the cause)
+- `OK` = disabling this feature fixed the bug (it is the cause, or at least a co-trigger)
+- `WRONG` = same wrong result persists (not the sole cause)
+- `LEAD` = found the correct obj without proving optimality (strong suspect)
+- `*** LEAD ***` = confirmed correct obj — highest-priority suspect
+
+**If debugCuts shows no `bad row` lines:** The culprit is not an individually-invalid cut. Instead, suspect **LP bound inflation** — floating-point rounding (especially FMA on Apple Silicon/clang) inflates the LP relaxation bound by a few ULPs above the fathoming threshold. Look for `OK` results on `tight-prim-tol`, `scaling-off`, or `tight-cutoff-inc` configs; these pinpoint precision-sensitive code paths.
 
 Then run `debugCuts` pass to find the exact invalid cut:
 
@@ -364,130 +404,182 @@ Generate or collect MPS files with known solutions:
 ```sh
 cd test
 
-# Generate instances
+# Generate instances with a Python generator script
 python3 gen_my_problem_fixtures.py
 
 # Compress for CI
 gzip -c my_instance.mps > fixtures/my_instance.mps.gz
+
+# If the test needs reference solutions for debugCuts, store them in:
+#   fixtures/solutions/my_instance.sol
 ```
 
 ### Step 2: Write Test Binary
 
-Create `test/CInterfaceTest_my_problem.c`:
+Create `test/CInterfaceTest_my_problem.c`. Follow the canonical pattern used
+by existing tests (`CInterfaceTest_upms.c`, `CInterfaceTest_jssp_fixtures.c`):
 
 ```c
+#include <math.h>
 #include <stdio.h>
 #include "Cbc_C_Interface.h"
 #include "mip_diag.h"
+#include "test_utils.h"
 
 typedef struct {
   const char *name;
-  double expected_obj;
-  int timeout_sec;
+  double certified_opt;   /* known optimal; NaN if unknown */
+  int max_nodes;          /* PRIMARY stop — keeps tests deterministic */
+  int timeout_sec;        /* wall-clock fallback only */
 } TestCase;
 
 static const TestCase test_cases[] = {
-  {"my_easy",   100.0,  10},
-  {"my_medium", 250.5,  30},
-  {"my_hard",     0.0,  60},  // 0.0 = just check solvability
+  /* name                certified_opt  max_nodes  timeout_sec */
+  { "my_easy",           100.0,         500000,    60  },
+  { "my_medium",         250.5,         500000,    120 },
+  { "my_hard",           NAN,           500000,    300 },  /* NAN = accept any feasible */
 };
+#define N_TESTS ((int)(sizeof(test_cases)/sizeof(test_cases[0])))
 
-int main(int argc, char **argv) {
-  if (argc < 2) {
-    fprintf(stderr, "Usage: %s <fixture-dir>\n", argv[0]);
-    return 1;
-  }
+int main(int argc, char **argv)
+{
+  if (argc < 2) { fprintf(stderr, "Usage: %s <fixture-dir>\n", argv[0]); return 1; }
+  int pass = 0, fail = 0;
 
-  const char *fixture_dir = argv[1];
-  int passed = 0, failed = 0;
-
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < N_TESTS; i++) {
     const TestCase *tc = &test_cases[i];
     char path[512];
-    snprintf(path, sizeof(path), "%s/%s.mps", fixture_dir, tc->name);
+    snprintf(path, sizeof(path), "%s/%s.mps.gz", argv[1], tc->name);
 
-    Cbc_Model *model = Cbc_newModel();
-    if (Cbc_readMps(model, path) != 0) {
-      printf("FAIL: cannot read %s\n", tc->name);
-      failed++;
-      continue;
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_setLogLevel(m, 0);
+    if (Cbc_readMps(m, path) != 0) {
+      printf("  FAIL: cannot read %s\n", tc->name); fail++; continue;
     }
 
-    Cbc_setMaximumSeconds(model, tc->timeout_sec);
-    Cbc_solve(model);
+    /* Node limit is the primary deterministic stop.
+     * Time limit is a loose wall-clock fallback only. */
+    Cbc_setMaximumNodes(m, tc->max_nodes);
+    Cbc_setMaximumSeconds(m, tc->timeout_sec);
+    Cbc_solve(m);
 
-    int is_optimal = Cbc_isProvenOptimal(model);
-    double obj = Cbc_getObjValue(model);
+    int ok = 1;
+    int is_optimal = Cbc_isProvenOptimal(m);
+    double obj = Cbc_getObjValue(m);
 
-    if (tc->expected_obj > 0.0) {
-      double rel_err = fabs(obj - tc->expected_obj) / tc->expected_obj;
-      if (is_optimal && rel_err < 1e-3) {
-        printf("PASS: %s obj=%.2f\n", tc->name, obj);
-        passed++;
-      } else {
-        printf("FAIL: %s obj=%.2f expected=%.2f\n", tc->name, obj, tc->expected_obj);
-        failed++;
-        mip_diag_wrong_optimal(path, tc->expected_obj, tc->timeout_sec);
-      }
-    } else {
-      // Just check solvability
-      if (is_optimal || Cbc_numberSolutions(model) > 0) {
-        printf("PASS: %s (feasible)\n", tc->name);
-        passed++;
-      } else {
-        printf("FAIL: %s (no solution)\n", tc->name);
-        failed++;
+    /* 1. Always check feasibility of best solution and entire solution pool */
+    double maxViolRow, maxViolCol; int rowIdx, colIdx;
+    if (!Cbc_checkFeasibility(m, Cbc_getColSolution(m),
+                              &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+      printf("  FAIL: %s best solution infeasible  "
+             "maxViolRow=%.2e (row %d)  maxViolCol=%.2e (col %d)\n",
+             tc->name, maxViolRow, rowIdx, maxViolCol, colIdx);
+      ok = 0;
+    }
+    ok &= (validate_all_saved_solutions(m, tc->certified_opt,
+                                        mip_obj_tol(m, tc->certified_opt, 1e-4),
+                                        tc->name) == 0);
+
+    /* 2. If solver claims optimality, verify against certified value */
+    if (is_optimal && !isnan(tc->certified_opt)) {
+      double tol = mip_obj_tol(m, tc->certified_opt, 1e-6);
+      if (fabs(obj - tc->certified_opt) > tol) {
+        printf("  FAIL: %s proven opt=%.6g expected=%.6g (tol=%.4g)\n",
+               tc->name, obj, tc->certified_opt, tol);
+        ok = 0;
+        /* Automated diagnostics: identify culprit cut/feature */
+        mip_diag_wrong_optimal(build_mps_model, (void *)path,
+                               tc->certified_opt, tc->timeout_sec);
+        const char *sol = solution_path(tc->name);
+        if (sol)
+          mip_diag_debug_cuts(build_mps_model, (void *)path,
+                              tc->certified_opt, tc->timeout_sec,
+                              sol, NULL, NULL);
       }
     }
 
-    Cbc_deleteModel(model);
+    if (ok) { printf("  PASS %s\n", tc->name); pass++; } else { fail++; }
+    Cbc_deleteModel(m);
   }
 
-  printf("\n%d passed, %d failed\n", passed, failed);
-  return (failed == 0) ? 0 : 1;
+  printf(fail == 0 ? "=== All %d tests PASSED ===\n"
+                   : "=== %d passed, %d FAILED ===\n", pass, fail);
+  return (fail == 0) ? 0 : 1;
 }
 ```
 
 ### Step 3: Add to Build System
 
-Edit `test/Makefile.am`:
+Edit **four** places in `test/Makefile.am`:
 
 ```makefile
+# 1. Add to bin_PROGRAMS (one long line — append to it)
 bin_PROGRAMS = ... CInterfaceTest_my_problem
 
+# 2. Add sources + LDADD at the end of the file
 CInterfaceTest_my_problem_SOURCES = CInterfaceTest_my_problem.c
 nodist_EXTRA_CInterfaceTest_my_problem_SOURCES = dummy.cpp
+CInterfaceTest_my_problem_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_my_problem_LDADD = ../src/libmipster.la
 
+# 3. Add fixture files to dist_pkgtestfixture_DATA
 dist_pkgtestfixture_DATA = \
   ... \
   fixtures/my_easy.mps.gz \
   fixtures/my_medium.mps.gz \
   fixtures/my_hard.mps.gz
+
+# 4. If you have reference solution files, add them to dist_pkgtestsol_DATA
+dist_pkgtestsol_DATA = \
+  ... \
+  fixtures/solutions/my_easy.sol
+
+# 5. Add to the ctests target (needed for 'make test' without the runner script)
+ctests: ... CInterfaceTest_my_problem$(EXEEXT)
 ```
 
 ### Step 4: Add to Test Runner
 
-Edit `test/run-mipster-tests`:
+Edit **two** arrays in `test/run-mipster-tests`:
 
 ```bash
+# ── Test list ──────────────────────────────────────────────────────────────
 TESTS=(
-  CInterfaceTest
   ...
-  CInterfaceTest_my_problem
+  CInterfaceTest_my_problem    # ← add here
+)
+
+# IMPORTANT: this line MUST immediately follow the closing ) of TESTS.
+# It was the cause of a real CI failure when accidentally deleted.
+TOTAL=${#TESTS[@]}
+
+# ── If your test takes <fixture-dir> as its first argument ─────────────────
+# Add it to FIXTURE_TESTS as well, or it will be run without the fixture path:
+FIXTURE_TESTS=(
+  ...
+  CInterfaceTest_my_problem    # ← add here if your main() takes argv[1]
 )
 ```
+
+> ⚠️ **`TOTAL` gotcha:** `TOTAL=${#TESTS[@]}` must appear right after the `TESTS=(...)` block. If you accidentally delete it while editing the array, all tests will fail with `TOTAL: unbound variable`.
+
+> ⚠️ **`FIXTURE_TESTS` gotcha:** If your binary takes `<fixture-dir>` as its first argument (i.e., `int main(int argc, char **argv)`), it **must** be in `FIXTURE_TESTS` too, or it will be invoked without the fixture path and fail silently.
 
 ### Step 5: Rebuild and Test
 
 ```sh
-# Regenerate Makefile
+# Regenerate Makefile.in from Makefile.am
 autoreconf --install -I BuildTools
 
 # Reconfigure and build
 ./configster --opt --install
 
-# Run your test
+# Run your new test directly
+cd test && ./CInterfaceTest_my_problem fixtures/
+
+# Run the full suite
+./test/run-mipster-tests
+```
 cd test
 ./CInterfaceTest_my_problem fixtures/
 
@@ -618,12 +710,12 @@ int main() {
 
 ### Full-Featured Test
 
-See `test/CInterfaceTest_vrp.c` for:
-- Multiple test cases with varying difficulty
-- Timeout handling
-- Solution feasibility validation via `mipster_validate_sol`
-- Automated diagnostics on failure
-- Structured output for CI parsing
+See `test/CInterfaceTest_upms.c` or `test/CInterfaceTest_jssp_fixtures.c` for the current canonical pattern:
+- Node limit as primary termination, time limit as fallback
+- `validate_all_saved_solutions()` for full pool validation
+- `mip_obj_tol()` for tolerance computation
+- `mip_diag_wrong_optimal()` + `mip_diag_debug_cuts()` on failure
+- `build_mps_model` builder passed to `mip_diag_*` functions
 
 ### Synthetic Instance Generation
 
@@ -649,15 +741,23 @@ See `test/gen_vrp_fixtures.py` for:
 
 When adding a new test:
 
-- [ ] Test fixtures generated and compressed (`.mps.gz`)
-- [ ] Test binary written (`CInterfaceTest_<name>.c`)
-- [ ] Added to `test/Makefile.am` (`bin_PROGRAMS`, sources, fixtures)
-- [ ] Added to `test/run-mipster-tests` (`TESTS` array)
+- [ ] Test fixtures generated and compressed (`.mps.gz`) in `test/fixtures/`
+- [ ] Reference solutions (if any) in `test/fixtures/solutions/<name>.sol`
+- [ ] Test binary written (`CInterfaceTest_<name>.c`) — uses node limit as primary stop, validates full solution pool, calls `mip_diag_wrong_optimal` on failure
+- [ ] `test/Makefile.am` updated in **five** places:
+  - [ ] `bin_PROGRAMS` — append binary name
+  - [ ] Binary sources + `_CPPFLAGS` + `_LDADD` block
+  - [ ] `dist_pkgtestfixture_DATA` — list `.mps.gz` files
+  - [ ] `dist_pkgtestsol_DATA` — list `.sol` files (if any)
+  - [ ] `ctests` target — append `CInterfaceTest_<name>$(EXEEXT)`
+- [ ] `test/run-mipster-tests` updated in **two** places:
+  - [ ] `TESTS=(...)` array — append binary name
+  - [ ] `TOTAL=${#TESTS[@]}` line is intact right after the closing `)` ← easy to accidentally delete
+  - [ ] `FIXTURE_TESTS=(...)` array — append name **if binary takes `<fixture-dir>` as first arg**
 - [ ] Rebuild: `autoreconf --install -I BuildTools && ./configster --opt --install`
 - [ ] Local test: `cd test && ./CInterfaceTest_<name> fixtures/`
-- [ ] Full suite: `./run-mipster-tests`
+- [ ] Full suite: `./test/run-mipster-tests`
 - [ ] CI verification: push and check GitHub Actions
-- [ ] Documentation: add entry to this guide if introducing new patterns
 
 ---
 

@@ -166,6 +166,10 @@ Individual test binaries: `test/CInterfaceTest`, `test/CbcSolverLpTest`, etc. Th
 - Automated debugging with `mip_diag`
 - CI integration
 
+**Critical gotchas when adding a new test** (both caught by real CI failures):
+1. `test/run-mipster-tests` has **two** arrays: `TESTS` (all tests) and `FIXTURE_TESTS` (tests that take `<fixture-dir>` as first arg). A test taking `argv[1]` must be in **both**.
+2. `TOTAL=${#TESTS[@]}` must appear immediately after the closing `)` of `TESTS`. If accidentally deleted, all tests fail with `TOTAL: unbound variable`.
+
 ### Test Validation Priorities
 
 **Feasibility is paramount** — an infeasible solution is always wrong, regardless of objective or optimality status.

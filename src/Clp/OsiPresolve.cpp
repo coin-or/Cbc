@@ -45,6 +45,7 @@
 #include "CoinPresolveDupcol.hpp"
 #include "CoinPresolveImpliedFree.hpp"
 #include "CoinPresolveIsolated.hpp"
+#include "CoinPresolveParity.hpp"
 #include "CoinMessage.hpp"
 
 OsiPresolve::OsiPresolve()
@@ -100,6 +101,9 @@ int debugNumberColumns = -1;
    that this is the less common case. The more common situation is to apply
    presolve before optimising.
 */
+static thread_local int lastPresolveRows = 0;
+static thread_local int lastPresolveCols = 0;
+
 OsiSolverInterface *
 OsiPresolve::presolvedModel(OsiSolverInterface &si,
   double feasibilityTolerance,
@@ -110,6 +114,13 @@ OsiPresolve::presolvedModel(OsiSolverInterface &si,
   const char *rowProhibited,
   const double * scLower)
 {
+  int newRows = si.getNumRows();
+  int newCols = si.getNumCols();
+  if (newCols > lastPresolveCols) {
+    CoinClearPresolveStats();
+  }
+
+
   ncols_ = si.getNumCols();
   nrows_ = si.getNumRows();
   nelems_ = si.getNumElements();
@@ -427,6 +438,14 @@ OsiPresolve::presolvedModel(OsiSolverInterface &si,
     gutsOfDestroy();
     delete presolvedModel_;
     presolvedModel_ = NULL;
+  }
+
+  if (presolvedModel_) {
+    lastPresolveRows = presolvedModel_->getNumRows();
+    lastPresolveCols = presolvedModel_->getNumCols();
+  } else {
+    lastPresolveRows = 0;
+    lastPresolveCols = 0;
   }
 
   return presolvedModel_;
@@ -815,6 +834,24 @@ bool break2(CoinPresolveMatrix *prob)
 // It is a separate virtual function so that it can be easily
 // customized by subclassing CoinPresolve.
 
+
+#include "CoinPresolveMatrix.hpp"
+#define TRACK_PRESOLVE(NAME, STMT) \
+  do { \
+    int rB=0, cB=0, nzB=0; \
+    for (int _i=0; _i<prob->nrows_; _i++) if (prob->hinrow_[_i]>0) { rB++; nzB+=prob->hinrow_[_i]; } \
+    for (int _j=0; _j<prob->ncols_; _j++) if (prob->hincol_[_j]>0) cB++; \
+    STMT; \
+    if (prob->status_==0) { \
+      int rA=0, cA=0, nzA=0; \
+      for (int _i=0; _i<prob->nrows_; _i++) if (prob->hinrow_[_i]>0) { rA++; nzA+=prob->hinrow_[_i]; } \
+      for (int _j=0; _j<prob->ncols_; _j++) if (prob->hincol_[_j]>0) cA++; \
+      if (rB!=rA || cB!=cA || nzB!=nzA) { \
+        CoinAddPresolveStats(NAME, rB-rA, cB-cA, nzB-nzA); \
+      } \
+    } \
+  } while(0)
+
 const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 {
   paction_ = 0;
@@ -844,8 +881,15 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
   /*
   Fix variables before we get into the main transform loop.
 */
-  paction_ = make_fixed(prob, paction_);
-  paction_ = testRedundant(prob, paction_);
+  TRACK_PRESOLVE("make_fixed", paction_ = make_fixed(prob, paction_););
+  TRACK_PRESOLVE("testRedundant", paction_ = testRedundant(prob, paction_););
+
+  // GF(2) parity reduction — run early, before the main loop
+  if (prob->anyInteger() && !prob->status_) {
+    TRACK_PRESOLVE("parity_action", paction_ = parity_action::presolve(prob, paction_););
+    if (prob->status_)
+      return (paction_);
+  }
 
 #if PRESOLVE_DEBUG > 0
   check_and_tell(prob, paction_, pactiond);
@@ -938,7 +982,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 */
     if (dupcol) {
       possibleSkip;
-      paction_ = dupcol_action::presolve(prob, paction_);
+      TRACK_PRESOLVE("dupcol_action", paction_ = dupcol_action::presolve(prob, paction_););
       possibleSkip;
 #ifdef CBC_PREPROCESS_EXPERIMENT
       //paction_ = twoxtwo_action::presolve(prob, paction_);
@@ -950,7 +994,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
     }
     if (duprow) {
       possibleSkip;
-      paction_ = duprow_action::presolve(prob, paction_);
+      TRACK_PRESOLVE("duprow_action", paction_ = duprow_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
       if (monitor)
         monitor->checkAndTell(prob);
@@ -1012,7 +1056,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
           bool notFinished = true;
           while (notFinished) {
             possibleBreak;
-            paction_ = slack_doubleton_action::presolve(prob, paction_, notFinished);
+            TRACK_PRESOLVE("slack_doubleton_action", paction_ = slack_doubleton_action::presolve(prob, paction_, notFinished););
           }
 #if PRESOLVE_DEBUG > 0
           check_and_tell(prob, paction_, pactiond);
@@ -1025,7 +1069,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 
         if (zerocost) {
           possibleBreak;
-          paction_ = do_tighten_action::presolve(prob, paction_);
+          TRACK_PRESOLVE("do_tighten_action", paction_ = do_tighten_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
           check_and_tell(prob, paction_, pactiond);
           if (monitor)
@@ -1038,7 +1082,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
         if (dual && whichPass == 1) {
           possibleBreak;
           // this can also make E rows so do one bit here
-          paction_ = remove_dual_action::presolve(prob, paction_);
+          TRACK_PRESOLVE("remove_dual_action", paction_ = remove_dual_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
           check_and_tell(prob, paction_, pactiond);
           if (monitor)
@@ -1050,7 +1094,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 
         if (doubleton) {
           possibleBreak;
-          paction_ = doubleton_action::presolve(prob, paction_);
+          TRACK_PRESOLVE("doubleton_action", paction_ = doubleton_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
           check_and_tell(prob, paction_, pactiond);
           if (monitor)
@@ -1062,7 +1106,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 
         if (tripleton) {
           possibleBreak;
-          paction_ = tripleton_action::presolve(prob, paction_);
+          TRACK_PRESOLVE("tripleton_action", paction_ = tripleton_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
           check_and_tell(prob, paction_, pactiond);
           if (monitor)
@@ -1074,7 +1118,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 
         if (forcing) {
           possibleBreak;
-          paction_ = forcing_constraint_action::presolve(prob, paction_);
+          TRACK_PRESOLVE("forcing_constraint_action", paction_ = forcing_constraint_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
           check_and_tell(prob, paction_, pactiond);
           if (monitor)
@@ -1086,7 +1130,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 
         if (ifree && (whichPass % 5) == 1) {
           possibleBreak;
-          paction_ = implied_free_action::presolve(prob, paction_, fill_level);
+          TRACK_PRESOLVE("implied_free_action", paction_ = implied_free_action::presolve(prob, paction_, fill_level););
 #if PRESOLVE_DEBUG > 0
           check_and_tell(prob, paction_, pactiond);
           if (monitor)
@@ -1178,7 +1222,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
         for (int itry = 0; itry < 5; itry++) {
           const CoinPresolveAction *const paction2 = paction_;
           possibleBreak;
-          paction_ = remove_dual_action::presolve(prob, paction_);
+          TRACK_PRESOLVE("remove_dual_action", paction_ = remove_dual_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
           check_and_tell(prob, paction_, pactiond);
           if (monitor)
@@ -1196,7 +1240,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 #endif
             if ((itry & 1) == 0) {
               possibleBreak;
-              paction_ = implied_free_action::presolve(prob, paction_, fill_level);
+              TRACK_PRESOLVE("implied_free_action", paction_ = implied_free_action::presolve(prob, paction_, fill_level););
             }
 #if PRESOLVE_DEBUG > 0
             check_and_tell(prob, paction_, pactiond);
@@ -1221,7 +1265,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 #endif
 #endif
         possibleBreak;
-        paction_ = implied_free_action::presolve(prob, paction_, fill_level);
+        TRACK_PRESOLVE("implied_free_action", paction_ = implied_free_action::presolve(prob, paction_, fill_level););
 #if PRESOLVE_DEBUG > 0
         check_and_tell(prob, paction_, pactiond);
         if (monitor)
@@ -1235,7 +1279,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 */
       if (dupcol) {
         possibleBreak;
-        paction_ = dupcol_action::presolve(prob, paction_);
+        TRACK_PRESOLVE("dupcol_action", paction_ = dupcol_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
         check_and_tell(prob, paction_, pactiond);
         if (monitor)
@@ -1246,7 +1290,19 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
       }
       if (duprow) {
         possibleBreak;
-        paction_ = duprow_action::presolve(prob, paction_);
+        TRACK_PRESOLVE("duprow_action", paction_ = duprow_action::presolve(prob, paction_););
+#if PRESOLVE_DEBUG > 0
+        check_and_tell(prob, paction_, pactiond);
+        if (monitor)
+          monitor->checkAndTell(prob);
+#endif
+        if (prob->status_)
+          break;
+      }
+
+      if (prob->anyInteger()) {
+        possibleBreak;
+        TRACK_PRESOLVE("parity_action", paction_ = parity_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
         check_and_tell(prob, paction_, pactiond);
         if (monitor)
@@ -1258,7 +1314,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
       // Will trigger abort due to unimplemented postsolve  -- lh, 110605 --
       if ((presolveActions_ & 0x20) != 0) {
         possibleBreak;
-        paction_ = gubrow_action::presolve(prob, paction_);
+        TRACK_PRESOLVE("gubrow_action", paction_ = gubrow_action::presolve(prob, paction_););
       }
       /*
   Count the number of empty rows and see if we've made progress in this pass.
@@ -1292,7 +1348,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
 */
       if (slackSingleton) {
         possibleBreak;
-        paction_ = slack_singleton_action::presolve(prob, paction_, NULL);
+        TRACK_PRESOLVE("slack_singleton_action", paction_ = slack_singleton_action::presolve(prob, paction_, NULL););
 #if PRESOLVE_DEBUG > 0
         check_and_tell(prob, paction_, pactiond);
         if (monitor)
@@ -1309,7 +1365,7 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
     } // End of major pass loop
   }
   if (!prob->status_) {
-    paction_ = duprow3_action::presolve(prob, paction_);
+    TRACK_PRESOLVE("duprow3_action", paction_ = duprow3_action::presolve(prob, paction_););
   }
   /*
   Final cleanup: drop zero coefficients from the matrix, then drop empty rows
@@ -1323,12 +1379,12 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
       monitor->checkAndTell(prob);
 #endif
 
-    paction_ = drop_empty_cols_action::presolve(prob, paction_);
+    TRACK_PRESOLVE("drop_empty_cols_action", paction_ = drop_empty_cols_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
     check_and_tell(prob, paction_, pactiond);
 #endif
 
-    paction_ = drop_empty_rows_action::presolve(prob, paction_);
+    TRACK_PRESOLVE("drop_empty_rows_action", paction_ = drop_empty_rows_action::presolve(prob, paction_););
 #if PRESOLVE_DEBUG > 0
     check_and_tell(prob, paction_, pactiond);
 #endif

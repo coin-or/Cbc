@@ -143,12 +143,13 @@ am_libCoinUtils_la_OBJECTS = CoinAdjacencyVector.lo CoinAlloc.lo \
 	CoinPresolveFixed.lo CoinPresolveForcing.lo \
 	CoinPresolveHelperFunctions.lo CoinPresolveImpliedFree.lo \
 	CoinPresolveIsolated.lo CoinPresolveMatrix.lo \
-	CoinPresolveMonitor.lo CoinPresolvePsdebug.lo \
-	CoinPresolveSingleton.lo CoinPresolveSubst.lo \
-	CoinPresolveTighten.lo CoinPresolveTripleton.lo \
-	CoinPresolveUseless.lo CoinPresolveZeros.lo CoinRational.lo \
-	CoinSearchTree.lo CoinShallowPackedVector.lo \
-	CoinShortestPath.lo CoinSimpFactorization.lo CoinSnapshot.lo \
+	CoinPresolveMonitor.lo CoinPresolveParity.lo \
+	CoinPresolvePsdebug.lo CoinPresolveSingleton.lo \
+	CoinPresolveSubst.lo CoinPresolveTighten.lo \
+	CoinPresolveTripleton.lo CoinPresolveUseless.lo \
+	CoinPresolveZeros.lo CoinRational.lo CoinSearchTree.lo \
+	CoinShallowPackedVector.lo CoinShortestPath.lo \
+	CoinSimpFactorization.lo CoinSnapshot.lo \
 	CoinStaticConflictGraph.lo CoinStructuredModel.lo CoinTable.lo \
 	CoinTerm.lo CoinWarmStartBasis.lo CoinWarmStartDual.lo \
 	CoinWarmStartPrimalDual.lo CoinWarmStartVector.lo
@@ -212,6 +213,7 @@ am__depfiles_remade = ./$(DEPDIR)/CoinAdjacencyVector.Plo \
 	./$(DEPDIR)/CoinPresolveIsolated.Plo \
 	./$(DEPDIR)/CoinPresolveMatrix.Plo \
 	./$(DEPDIR)/CoinPresolveMonitor.Plo \
+	./$(DEPDIR)/CoinPresolveParity.Plo \
 	./$(DEPDIR)/CoinPresolvePsdebug.Plo \
 	./$(DEPDIR)/CoinPresolveSingleton.Plo \
 	./$(DEPDIR)/CoinPresolveSubst.Plo \
@@ -533,6 +535,7 @@ libCoinUtils_la_SOURCES = \
 	CoinPresolveIsolated.cpp \
 	CoinPresolveMatrix.cpp \
 	CoinPresolveMonitor.cpp \
+	CoinPresolveParity.cpp \
 	CoinPresolvePsdebug.cpp \
 	CoinPresolveSingleton.cpp \
 	CoinPresolveSubst.cpp \
@@ -601,6 +604,7 @@ libCoinUtils_la_SOURCES = \
 	CoinPresolveIsolated.hpp \
 	CoinPresolveMatrix.hpp \
 	CoinPresolveMonitor.hpp \
+	CoinPresolveParity.hpp \
 	CoinPresolvePsdebug.hpp \
 	CoinPresolveSingleton.hpp \
 	CoinPresolveSubst.hpp \
@@ -679,6 +683,7 @@ includecoin_HEADERS = \
 	CoinPresolveIsolated.hpp \
 	CoinPresolveMatrix.hpp \
 	CoinPresolveMonitor.hpp \
+	CoinPresolveParity.hpp \
 	CoinPresolvePsdebug.hpp \
 	CoinPresolveSingleton.hpp \
 	CoinPresolveSubst.hpp \
@@ -833,6 +838,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinPresolveIsolated.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinPresolveMatrix.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinPresolveMonitor.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinPresolveParity.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinPresolvePsdebug.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinPresolveSingleton.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinPresolveSubst.Plo@am__quote@ # am--include-marker
@@ -1058,6 +1064,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CoinPresolveIsolated.Plo
 	-rm -f ./$(DEPDIR)/CoinPresolveMatrix.Plo
 	-rm -f ./$(DEPDIR)/CoinPresolveMonitor.Plo
+	-rm -f ./$(DEPDIR)/CoinPresolveParity.Plo
 	-rm -f ./$(DEPDIR)/CoinPresolvePsdebug.Plo
 	-rm -f ./$(DEPDIR)/CoinPresolveSingleton.Plo
 	-rm -f ./$(DEPDIR)/CoinPresolveSubst.Plo
@@ -1176,6 +1183,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CoinPresolveIsolated.Plo
 	-rm -f ./$(DEPDIR)/CoinPresolveMatrix.Plo
 	-rm -f ./$(DEPDIR)/CoinPresolveMonitor.Plo
+	-rm -f ./$(DEPDIR)/CoinPresolveParity.Plo
 	-rm -f ./$(DEPDIR)/CoinPresolvePsdebug.Plo
 	-rm -f ./$(DEPDIR)/CoinPresolveSingleton.Plo
 	-rm -f ./$(DEPDIR)/CoinPresolveSubst.Plo

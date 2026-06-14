@@ -1925,6 +1925,16 @@ void coin_init_random_vec(double *work, int n);
 
 //@}
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+void CoinAddPresolveStats(const char* name, int rows, int cols, int nz);
+void CoinPrintPresolveStats();
+void CoinClearPresolveStats();
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2

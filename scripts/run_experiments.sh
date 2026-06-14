@@ -761,7 +761,7 @@ run_instance() {
   local csv_statsfile="$OUTDIR/${name}.stats.csv"
   local zh_reportfile="$OUTDIR/${name}.zh-constraints.csv"
   local solutionfile="$OUTDIR/${name}.sol"
-  rm -f "$csv_statsfile"
+  rm -f "$csv_statsfile" "$solutionfile" "$logfile" "$errfile" "$vg_logfile" "$resultfile" "$OUTDIR/${name}.validate.log"
 
   # Reconstruct VG command from exported scalars
   local vg_cmd=()

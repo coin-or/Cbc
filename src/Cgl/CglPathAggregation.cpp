@@ -52,7 +52,7 @@ enum RowType { kUnusable = 0,
 CglPathAggregation::CglPathAggregation()
   : CglCutGenerator()
   , maxPathLength_(6)
-  , maxCuts_(200)
+  , maxCuts_(50)
   , feasibilityTolerance_(1.0e-7)
   , minViolation_(1.0e-6)
 {
@@ -319,7 +319,7 @@ void CglPathAggregation::generateCuts(const OsiSolverInterface &si,
       }
     }
     // return the rhs contribution
-    return sc * rhs_delta;
+    return scale * rhs_delta;
   };
 
   // tryMirCut lambda removed (now generateMirCutFromRow is called directly)
@@ -455,12 +455,12 @@ void CglPathAggregation::generateCuts(const OsiSolverInterface &si,
       // Unpack seed row
       double aggrRhs = addRowScaled(seedRow, seedScale);
       usedRows[seedRow] = 1;
+      int numAggregatedRows = 1;
 
       // Now extend the path step by step
       for (int depth = 0; depth < maxPathLength_ && generated < maxCuts_; ++depth) {
 
         // First: apply all free substitutions (equality rows with single continuous)
-        bool appliedFreeSubst = false;
         for (int ci = 0; ci < (int)activeList.size(); ++ci) {
           int c = activeList[ci];
           if (fabs(dense[c]) <= feastol)
@@ -478,16 +478,18 @@ void CglPathAggregation::generateCuts(const OsiSolverInterface &si,
             continue;
           aggrRhs += addRowScaled(sr, w);
           usedRows[sr] = 1;
-          appliedFreeSubst = true;
+          numAggregatedRows++;
         }
 
-        // Try a cut at this aggregation level
-        OsiRowCut cut;
-        bool cutMade = generateMirCutFromRow(si, activeList, dense, aggrRhs, xlp, cut);
-        if (cutMade) {
-          cs.insertIfNotDuplicate(cut);
-          ++generated;
-          break;
+        // Try a cut at this aggregation level (only if the row is modified/aggregated)
+        if (numAggregatedRows > 1) {
+          OsiRowCut cut;
+          bool cutMade = generateMirCutFromRow(si, activeList, dense, aggrRhs, xlp, cut);
+          if (cutMade) {
+            cs.insertIfNotDuplicate(cut);
+            ++generated;
+            break;
+          }
         }
 
         // Check whether any fractional continuous variable remains that has arc rows
@@ -503,6 +505,7 @@ void CglPathAggregation::generateCuts(const OsiSolverInterface &si,
 
         aggrRhs += addRowScaled(arcRow, weight);
         usedRows[arcRow] = 1;
+        numAggregatedRows++;
       }
     }
   }
@@ -594,7 +597,7 @@ bool CglPathAggregation::generateMirCutFromRow(const OsiSolverInterface &si,
   // 2. Collect delta candidates for scaling
   std::vector< double > deltas;
   for (const auto &tv : tVars) {
-    if (tv.is_integer) {
+    if (tv.is_integer && tv.y_val > feastol) {
       double d = fabs(tv.a_trans);
       if (d > 1e-4) {
         deltas.push_back(d);

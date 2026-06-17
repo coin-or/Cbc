@@ -971,6 +971,13 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     }
   }
   solver->initialSolve();
+  if (!solver->isProvenOptimal()&&numberNodes<0) {
+    // odd - try again
+    CoinWarmStartBasis *slack = dynamic_cast< CoinWarmStartBasis * >(solver->getEmptyWarmStart());
+    solver->setWarmStart(slack);
+    delete slack;
+    solver->initialSolve();
+  }
   if (solver->isProvenOptimal()) {
     CglPreProcess process;
     OsiSolverInterface *solver2 = NULL;

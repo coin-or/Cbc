@@ -12165,6 +12165,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             {
               BabHandlerGuard handlerGuard(*babModel_, model_, parameters, cbcLogLevel);
               babModel_->branchAndBound(doStatistics);
+	      OsiClpSolverInterface *solver = dynamic_cast<OsiClpSolverInterface*>(babModel_->solver());
+	      if (solver)
+		lpSolver = solver->getModelPtr();
             }
 #ifdef CBC_HAS_NAUTY
             if (nautyAdded) {
@@ -12516,6 +12519,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               originalSolver, statistics, time1, time1Elapsed,
               returnCode, callBack, info);
             if (ppStatus == 3) return returnCode;
+	    lpSolver = originalSolver->getModelPtr();
           }
         } break;
         case CbcParam::IMPORT: {
@@ -13782,7 +13786,20 @@ static void clpStatistics(ClpSimplex *originalModel, ClpSimplex *model) {
   const double *rowLower = model->rowLower();
   const double *rowUpper = model->rowUpper();
   const double *objective = model->objective();
+  // see if all fixed
+  bool hasIntegers = false;
   if (model->integerInformation()) {
+    const char *integerInformation = model->integerInformation();
+    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+      if (columnUpper[iColumn] > columnLower[iColumn]) {
+        if (integerInformation[iColumn]) {
+          hasIntegers = true;
+	  break;
+	}
+      }
+    }
+  }
+  if (hasIntegers) {
     const char *integerInformation = model->integerInformation();
     int numberIntegers = 0;
     int numberBinary = 0;
@@ -13969,8 +13986,8 @@ static void clpStatistics(ClpSimplex *originalModel, ClpSimplex *model) {
   const int *columnLength = matrix->getVectorLengths();
   // const CoinBigIndex * columnStart = matrix->getVectorStarts();
   const double *elementByColumn = matrix->getElements();
-  int *number = new int[numberRows + 1];
-  memset(number, 0, (numberRows + 1) * sizeof(int));
+  int *number = new int[numberRows + 2];
+  memset(number, 0, (numberRows + 2) * sizeof(int));
   int numberObjSingletons = 0;
   /* cType
         0 0/inf, 1 0/up, 2 lo/inf, 3 lo/up, 4 free, 5 fix, 6 -inf/0, 7 -inf/up,

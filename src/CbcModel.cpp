@@ -14142,8 +14142,10 @@ double CbcModel::checkSolution(double cutoff, double *solution,
       const double *columnLower = solver_->getColLower();
       const double *columnUpper = solver_->getColUpper();
       bool looksGood = true;
+      double primalTolerance;
+      solver_->getDblParam(OsiPrimalTolerance, primalTolerance);
       for (int i = 0; i < numberColumns; i++) {
-        if (columnUpper[i] < columnLower[i])
+        if (columnUpper[i] < columnLower[i]-primalTolerance)
           looksGood = false;
       }
       if (!looksGood) {
@@ -16733,7 +16735,7 @@ double CbcModel::getCurrentSeconds() const
 /* Encapsulates choosing a variable -
    anyAction: -2 infeasible
               -1 round again
-               0 done
+               0 done 
 
    At the point where chooseBranch is called, we've decided that this problem
    will need to be placed in the live set and we need to choose a branching

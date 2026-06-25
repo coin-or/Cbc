@@ -15106,6 +15106,7 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
       if (how == CBC_ROUNDING)
         numberHeuristicSolutions_++;
       numberSolutions_++;
+      handler_->clearBuffer();
       if (how != CBC_ROUNDING) {
         handler_->message(how, messages_)
           << trueBestObjValue() << numberIterations_ << numberNodes

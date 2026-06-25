@@ -20,12 +20,12 @@ static Cbc_message us_english[] = {
 #ifndef CBC_MANY_NODE_COUNTS
   { CBC_END_GOOD, 1, 1, "Search completed - best objective %.16g, took %d iterations and %d nodes (%.2f seconds)" },
   { CBC_MAXNODES, 3, 1, "Exiting on maximum nodes" },
-  { CBC_SOLUTION, 4, 1, "Integer solution of %g found after %d iterations and %d nodes (%.2f seconds)" },
+  { CBC_SOLUTION, 4, 1, "Integer solution of %.13g found after %d iterations and %d nodes %d depth %d ontree (%.2f seconds)" },
   { CBC_END, 5, 1, "Partial search - best objective %g (best possible %g), took %d iterations and %d nodes (%.2f seconds)" },
 #else
   { CBC_END_GOOD, 1, 1, "Search completed - best objective %.16g, took %ld iterations and %ld nodes (%.2f seconds)" },
   { CBC_MAXNODES, 3, 1, "Exiting on maximum nodes" },
-  { CBC_SOLUTION, 4, 1, "Integer solution of %g found after %ld iterations and %ld nodes (%.2f seconds)" },
+  { CBC_SOLUTION, 4, 1, "Integer solution of %.13g found after %ld iterations and %ld nodes %d depth %d ontree (%.2f seconds)" },
   { CBC_END, 5, 1, "Partial search - best objective %g (best possible %g), took %ld iterations and %ld nodes (%.2f seconds)" },
 #endif
   { CBC_INFEAS, 6, 1, "The LP relaxation is infeasible or too expensive" },

@@ -1,0 +1,247 @@
+name: Next branch release builds
+
+# Builds highly-compatible, dependency-bundled Cbc binaries whenever `next`
+# is pushed. This is intentionally separate from linux-ci.yml/windows-ci.yml
+# (which continue to cover master/stable/* exactly as before): `next` tracks
+# CoinUtils/Osi/Clp/Cgl at their own `next` branches (see h-g-s/cbc-workspace),
+# not the `master`-pinned versions coinbrew resolves for the stable workflows.
+#
+# Build engine: this workflow reuses the `config` (configure+build+install)
+# and `package` (relocatable bundling) scripts from h-g-s/cbc-workspace,
+# rather than reimplementing build/bundling logic here. See that repo's
+# AGENTS.md for full documentation of both scripts.
+#
+# Linux jobs build inside quay.io/pypa/manylinux_2_34 containers (glibc 2.34,
+# GCC 14) for maximum binary compatibility with older distros, and bundle all
+# non-baseline runtime dependencies (OpenBLAS, SuiteSparse AMD/CHOLMOD, zlib,
+# libgfortran, ...) via `package`, so the resulting tarball runs without any
+# `-devel` packages installed on the target machine.
+
+on:
+  push:
+    branches: [next]
+  workflow_dispatch:
+
+concurrency:
+  group: next-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Branch of the sibling COIN-OR repos to build Cbc `next` against.
+  DEP_REF: next
+  # h-g-s/cbc-workspace ref providing the `config`/`package` scripts.
+  WORKSPACE_REF: main
+
+jobs:
+  linux-x86_64:
+    name: Linux x86_64 (manylinux_2_34)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: work/Cbc
+
+      - name: Checkout sibling COIN-OR repos + cbc-workspace scripts
+        run: |
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/CoinUtils work/CoinUtils
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Osi work/Osi
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Clp work/Clp
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Cgl work/Cgl
+          git clone --depth 1 --branch "$WORKSPACE_REF" https://github.com/h-g-s/cbc-workspace work/cbc-workspace
+          cp work/cbc-workspace/config work/cbc-workspace/package work/
+
+      - name: Build + package inside manylinux_2_34
+        run: |
+          for i in 1 2 3; do
+            docker pull quay.io/pypa/manylinux_2_34_x86_64 && break
+            echo "Attempt $i failed, retrying in 30s..."; sleep 30
+          done
+          docker run --rm -v "$PWD/work:/work" -w /work quay.io/pypa/manylinux_2_34_x86_64 bash -c '
+            set -euo pipefail
+            source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
+            dnf install -y --setopt=install_weak_deps=False \
+              openblas-devel suitesparse-devel zlib-devel gcc-gfortran \
+              patchelf rsync pkgconfig >/dev/null
+            ./config --opt --arch=generic --install --prefix=/work/install --jobs="$(nproc)" \
+              --lapack --amd --zlib --no-bz2 --no-nauty
+            ./package --prefix=/work/install --name=cbc-linux-x86_64-next --out=/work/dist
+          '
+          sudo chown -R "$USER:$USER" work/dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbc-linux-x86_64-next
+          path: work/dist/cbc-linux-x86_64-next.tar.gz
+
+  linux-aarch64:
+    name: Linux aarch64 (manylinux_2_34)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: work/Cbc
+
+      - name: Checkout sibling COIN-OR repos + cbc-workspace scripts
+        run: |
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/CoinUtils work/CoinUtils
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Osi work/Osi
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Clp work/Clp
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Cgl work/Cgl
+          git clone --depth 1 --branch "$WORKSPACE_REF" https://github.com/h-g-s/cbc-workspace work/cbc-workspace
+          cp work/cbc-workspace/config work/cbc-workspace/package work/
+
+      - name: Build + package inside manylinux_2_34_aarch64
+        run: |
+          for i in 1 2 3; do
+            docker pull quay.io/pypa/manylinux_2_34_aarch64 && break
+            echo "Attempt $i failed, retrying in 30s..."; sleep 30
+          done
+          docker run --rm -v "$PWD/work:/work" -w /work quay.io/pypa/manylinux_2_34_aarch64 bash -c '
+            set -euo pipefail
+            source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
+            dnf install -y --setopt=install_weak_deps=False \
+              openblas-devel suitesparse-devel zlib-devel gcc-gfortran \
+              patchelf rsync pkgconfig >/dev/null
+            ./config --opt --arch=generic --install --prefix=/work/install --jobs="$(nproc)" \
+              --lapack --amd --zlib --no-bz2 --no-nauty
+            ./package --prefix=/work/install --name=cbc-linux-aarch64-next --out=/work/dist
+          '
+          sudo chown -R "$USER:$USER" work/dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbc-linux-aarch64-next
+          path: work/dist/cbc-linux-aarch64-next.tar.gz
+
+  macos-arm64:
+    name: macOS arm64 (Apple Silicon)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: work/Cbc
+
+      - name: Checkout sibling COIN-OR repos + cbc-workspace scripts
+        run: |
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/CoinUtils work/CoinUtils
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Osi work/Osi
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Clp work/Clp
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Cgl work/Cgl
+          git clone --depth 1 --branch "$WORKSPACE_REF" https://github.com/h-g-s/cbc-workspace work/cbc-workspace
+          cp work/cbc-workspace/config work/cbc-workspace/package work/
+
+      - name: Install Homebrew build deps
+        run: |
+          brew install gcc openblas suite-sparse pkg-config
+
+      - name: Build + package
+        working-directory: work
+        run: |
+          # Use Homebrew's gcc/gfortran so config's Homebrew-aware detection
+          # picks Homebrew's OpenBLAS/SuiteSparse instead of Apple clang's.
+          GCC_PREFIX="$(brew --prefix gcc)"
+          GCC_BIN="$(ls "$GCC_PREFIX"/bin/gcc-* | head -1)"
+          GXX_BIN="$(ls "$GCC_PREFIX"/bin/g++-* | head -1)"
+          FC_BIN="$(ls "$GCC_PREFIX"/bin/gfortran* | head -1)"
+          export CC="$GCC_BIN" CXX="$GXX_BIN" FC="$FC_BIN"
+          ./config --opt --arch=generic --install --prefix="$PWD/install" --jobs="$(sysctl -n hw.ncpu)" \
+            --lapack --amd --zlib --no-bz2 --no-nauty
+          ./package --prefix="$PWD/install" --name=cbc-macos-arm64-next --out=dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbc-macos-arm64-next
+          path: work/dist/cbc-macos-arm64-next.tar.gz
+
+  macos-x86_64:
+    name: macOS x86_64 (Intel)
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: work/Cbc
+
+      - name: Checkout sibling COIN-OR repos + cbc-workspace scripts
+        run: |
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/CoinUtils work/CoinUtils
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Osi work/Osi
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Clp work/Clp
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Cgl work/Cgl
+          git clone --depth 1 --branch "$WORKSPACE_REF" https://github.com/h-g-s/cbc-workspace work/cbc-workspace
+          cp work/cbc-workspace/config work/cbc-workspace/package work/
+
+      - name: Install Homebrew build deps
+        run: |
+          brew install gcc openblas suite-sparse pkg-config
+
+      - name: Build + package
+        working-directory: work
+        run: |
+          GCC_PREFIX="$(brew --prefix gcc)"
+          GCC_BIN="$(ls "$GCC_PREFIX"/bin/gcc-* | head -1)"
+          GXX_BIN="$(ls "$GCC_PREFIX"/bin/g++-* | head -1)"
+          FC_BIN="$(ls "$GCC_PREFIX"/bin/gfortran* | head -1)"
+          export CC="$GCC_BIN" CXX="$GXX_BIN" FC="$FC_BIN"
+          ./config --opt --arch=generic --install --prefix="$PWD/install" --jobs="$(sysctl -n hw.ncpu)" \
+            --lapack --amd --zlib --no-bz2 --no-nauty
+          ./package --prefix="$PWD/install" --name=cbc-macos-x86_64-next --out=dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbc-macos-x86_64-next
+          path: work/dist/cbc-macos-x86_64-next.tar.gz
+
+  windows-x86_64:
+    name: Windows x86_64 (MinGW64)
+    runs-on: windows-latest
+    # MSYSTEM=MINGW64 makes config.guess return x86_64-w64-mingw32 (instead of
+    # x86_64-pc-msys), so libtool/configure produce genuine Windows DLLs linked
+    # only against system DLLs — not msys-2.0.dll-dependent cygwin-style ones.
+    env:
+      MSYSTEM: MINGW64
+      CHERE_INVOKING: "1"
+      DEP_REF: next
+      WORKSPACE_REF: main
+    defaults:
+      run:
+        shell: C:\msys64\usr\bin\bash.exe -l {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: work/Cbc
+
+      - name: Install MinGW64 toolchain + deps
+        run: |
+          pacman-key --init
+          pacman-key --populate msys2
+          pacman -Sy --noconfirm
+          pacman -S --needed --noconfirm \
+            mingw-w64-x86_64-gcc \
+            mingw-w64-x86_64-gcc-fortran \
+            mingw-w64-x86_64-openblas \
+            mingw-w64-x86_64-suitesparse \
+            mingw-w64-x86_64-zlib \
+            mingw-w64-x86_64-pkg-config \
+            make git rsync zip
+
+      - name: Checkout sibling COIN-OR repos + cbc-workspace scripts
+        run: |
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/CoinUtils work/CoinUtils
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Osi work/Osi
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Clp work/Clp
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Cgl work/Cgl
+          git clone --depth 1 --branch "$WORKSPACE_REF" https://github.com/h-g-s/cbc-workspace work/cbc-workspace
+          cp work/cbc-workspace/config work/cbc-workspace/package work/
+
+      - name: Build + package
+        run: |
+          export PATH="/mingw64/bin:/usr/bin:$PATH"
+          cd work
+          ./config --opt --arch=generic --install --prefix="$PWD/install" --jobs="$(nproc)" \
+            --lapack --amd --zlib --no-bz2 --no-nauty
+          ./package --prefix="$PWD/install" --name=cbc-windows-x86_64-next --out=dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbc-windows-x86_64-next
+          path: work/dist/cbc-windows-x86_64-next.zip

@@ -169,23 +169,29 @@ echo
 # ── 5. Per-instance runner ───────────────────────────────────────────────────
 # Both are exported so GNU parallel workers (separate bash processes) can call them.
 
-# Pulls a short one-line human summary out of a cbc log: status text, claimed
-# objective, bound/gap (if the run didn't fully close the gap), and node count.
-# Cbc always prints classic "Result - ...\nObjective value: ...\nEnumerated
-# nodes: ..." lines (optionally "Lower bound:"/"Gap:" when a gap remains) —
+# Parses a cbc log for both a human-readable one-line summary and the
+# machine-readable fields needed for suite-wide statistics. Cbc always prints
+# classic "Result - ...\nObjective value: ...\nEnumerated nodes: ..." lines
+# (optionally "Lower bound:"/"Gap:" when a gap remains) for every outcome
+# except infeasible/unbounded detected during presolve/root (handled below) —
 # these are more robust to parse than cbc's fancier colored summary line,
 # which is omitted entirely for instances solved during presolve/root.
-extract_cbc_summary() {
+#
+# Prints one pipe-delimited record: status_text|obj|bound|gap_pct|nodes|is_optimal|has_solution
+#   is_optimal   = 1 if Cbc's own claimed status is an optimality proof
+#   has_solution = 1 if an integer-feasible incumbent was reported at all
+#                  (0 for proven-infeasible/unbounded and "Integer infeasible")
+parse_cbc_log() {
   local log="$1"
   local result_line status_text obj nodes bound gap
   result_line="$(grep "^Result - " "$log" 2>/dev/null | tail -1)"
   if [[ -z "$result_line" ]]; then
     if grep -q "Problem is infeasible" "$log" 2>/dev/null; then
-      echo "Infeasible (detected in presolve/root)"
+      echo "Infeasible (detected in presolve/root)||||0|0|0"
     elif grep -q "Problem is unbounded" "$log" 2>/dev/null; then
-      echo "Unbounded (detected in presolve/root)"
+      echo "Unbounded (detected in presolve/root)||||0|0|0"
     else
-      echo ""
+      echo "||||0|0|0"
     fi
     return
   fi
@@ -195,18 +201,18 @@ extract_cbc_summary() {
   bound="$(grep "^Lower bound:" "$log" 2>/dev/null | tail -1 | awk '{print $NF}')"
   gap="$(grep "^Gap:" "$log" 2>/dev/null | tail -1 | awk '{print $NF}')"
 
-  local out="$status_text"
-  [[ -n "$obj" ]] && out="${out}  obj=${obj}"
-  [[ -n "$bound" ]] && out="${out}  bound=${bound}"
+  local gap_pct=""
   if [[ -n "$gap" ]]; then
-    local gap_pct
-    gap_pct="$(awk -v g="$gap" 'BEGIN{printf "%.2f", g*100}' 2>/dev/null)"
-    [[ -n "$gap_pct" ]] && out="${out}  gap=${gap_pct}%"
+    gap_pct="$(awk -v g="$gap" 'BEGIN{printf "%.4f", g*100}' 2>/dev/null)"
   fi
-  [[ -n "$nodes" ]] && out="${out}  nodes=${nodes}"
-  echo "$out"
+
+  local is_optimal=0 has_solution=1
+  [[ "$status_text" == Optimal* ]] && is_optimal=1
+  [[ "$status_text" == "Integer infeasible" ]] && has_solution=0
+
+  echo "${status_text}|${obj}|${bound}|${gap_pct}|${nodes:-0}|${is_optimal}|${has_solution}"
 }
-export -f extract_cbc_summary
+export -f parse_cbc_log
 
 run_one() {
   local name="$1"
@@ -247,7 +253,7 @@ run_one() {
   # entries from an earlier/broader run) so the "[n/total]" prefix is exact.
   emit() {
     local kind="$1" note="$2"
-    echo "$kind|$elapsed|$note|$summary" >"$status_file"
+    echo "$kind|$elapsed|$note|$summary|$is_optimal|$gap_metric|$nodes" >"$status_file"
 
     local done_count
     done_count=$( { flock -x 9
@@ -261,7 +267,7 @@ run_one() {
     local icon color
     case "$kind" in
       PASS) icon="✔"; color="$GREEN" ;;
-      TIMEOUT) icon="⏱"; color="$YELLOW" ;;
+      OVERTIME) icon="⏱"; color="$YELLOW" ;;
       *) icon="✗"; color="$RED" ;;
     esac
 
@@ -280,11 +286,38 @@ run_one() {
   end_ts=$(date +%s.%N)
   elapsed="$(awk -v a="$start_ts" -v b="$end_ts" 'BEGIN{printf "%.1f", b-a}')"
 
-  local summary
-  summary="$(extract_cbc_summary "$cbc_log")"
+  # ── parse the log once: human summary line + machine fields for stats ──────
+  local parsed status_text obj bound gap_pct nodes is_optimal has_solution
+  parsed="$(parse_cbc_log "$cbc_log")"
+  IFS='|' read -r status_text obj bound gap_pct nodes is_optimal has_solution <<<"$parsed"
+  nodes="${nodes:-0}"
+
+  local summary=""
+  if [[ -n "$status_text" ]]; then
+    summary="$status_text"
+    [[ -n "$obj" ]] && summary="${summary}  obj=${obj}"
+    [[ -n "$bound" ]] && summary="${summary}  bound=${bound}"
+    if [[ -n "$gap_pct" ]]; then
+      summary="${summary}  gap=$(awk -v g="$gap_pct" 'BEGIN{printf "%.2f", g}')%"
+    fi
+    [[ -n "$nodes" ]] && summary="${summary}  nodes=${nodes}"
+  fi
+
+  # ── gap metric for suite-wide averaging: optimal=0, feasible=min(gap,100),
+  #     no feasible solution at all=200 ───────────────────────────────────────
+  local gap_metric
+  if [[ "$is_optimal" == "1" ]]; then
+    gap_metric=0
+  elif [[ "$has_solution" == "1" && -n "$gap_pct" ]]; then
+    gap_metric="$(awk -v g="$gap_pct" 'BEGIN{v=g; if(v<0) v=-v; if(v>100) v=100; printf "%.4f", v}')"
+  elif [[ "$has_solution" == "1" ]]; then
+    gap_metric=100   # solution found but gap/bound unavailable — conservative cap
+  else
+    gap_metric=200   # no integer-feasible solution at all (or run never completed)
+  fi
 
   if [[ $cbc_rc -eq 124 || $cbc_rc -eq 137 ]]; then
-    emit TIMEOUT "hard-kill (${hard_kill}s) triggered — cbc did not respect its own -sec limit"
+    emit OVERTIME "hard-kill (${hard_kill}s) triggered — cbc did not respect its own -sec limit"
     return
   fi
   if [[ ! -f "$sol" ]]; then
@@ -328,33 +361,93 @@ printf '%s\n' "${instances[@]}" | parallel --will-cite -j "$JOBS" --line-buffer 
 echo
 
 # ── 7. Aggregate results from the .status files already printed above ──────
-declare -a pass_list=() fail_list=() timeout_list=() error_list=()
+declare -a pass_list=() fail_list=() overtime_list=() error_list=()
+STATS_FILE="$(mktemp "${RESULTS_DIR}/.run-stats.XXXXXX")"
+trap 'rm -f "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK" "$STATS_FILE"' EXIT
+: >"$STATS_FILE"
 for name in "${instances[@]}"; do
   status_file="$RESULTS_DIR/$name.status"
   if [[ ! -f "$status_file" ]]; then
     echo "  ${RED}✗ ${name}${RESET}  ${DIM}(no status file — run_one crashed?)${RESET}"
     error_list+=("$name")
+    printf '%s\t%s\t%s\t%s\t%s\n' "$name" "0" "0" "200" "0" >>"$STATS_FILE"
     continue
   fi
-  IFS='|' read -r kind elapsed detail summary <"$status_file"
+  IFS='|' read -r kind elapsed detail summary is_optimal gap_metric nodes <"$status_file"
   case "$kind" in
     PASS) pass_list+=("$name") ;;
     FAIL) fail_list+=("$name") ;;
-    TIMEOUT) timeout_list+=("$name") ;;
+    OVERTIME) overtime_list+=("$name") ;;
     ERROR) error_list+=("$name") ;;
     *)
       echo "  ${RED}✗ ${name}${RESET}  ${DIM}(unrecognized status: $kind)${RESET}"
       error_list+=("$name")
       ;;
   esac
+  # "optimal solutions found" only counts claimed-optimal runs that also
+  # passed validation (a claimed-optimal FAIL, e.g. an infeasible "optimal",
+  # is not a real solution).
+  is_optimal_confirmed=0
+  [[ "$kind" == "PASS" && "$is_optimal" == "1" ]] && is_optimal_confirmed=1
+  printf '%s\t%s\t%s\t%s\t%s\n' "$name" "${elapsed:-0}" "${nodes:-0}" "${gap_metric:-200}" "$is_optimal_confirmed" >>"$STATS_FILE"
 done
+
+# One pass over the per-instance stats file to compute suite-wide aggregates:
+# total runtime/nodes, average gap (see the per-instance gap_metric rule in
+# run_one), how many were solved to a confirmed optimum, and which instance
+# was slowest / processed the most nodes.
+read -r total_runtime total_nodes avg_gap n_optimal slowest_name slowest_time maxnodes_name maxnodes_val <<<"$(
+  awk -F'\t' '
+    BEGIN { tot_time=0; tot_nodes=0; tot_gap=0; n=0; n_opt=0; slow_t=-1; slow_n="-"; maxnode_v=-1; maxnode_n="-" }
+    {
+      tot_time += $2; tot_nodes += $3; tot_gap += $4; n_opt += $5; n++
+      if ($2+0 > slow_t)   { slow_t=$2+0;   slow_n=$1 }
+      if ($3+0 > maxnode_v) { maxnode_v=$3+0; maxnode_n=$1 }
+    }
+    END {
+      avg = (n > 0) ? tot_gap / n : 0
+      printf "%.1f %d %.2f %d %s %.1f %s %d\n", tot_time, tot_nodes, avg, n_opt, slow_n, slow_t, maxnode_n, maxnode_v
+    }
+  ' "$STATS_FILE"
+)"
+
+# Adds thousands separators to a plain (non-negative) integer, e.g. 12345 -> 12,345.
+with_commas() {
+  echo "$1" | rev | sed -E 's/([0-9]{3})/\1,/g' | rev | sed -E 's/^,//'
+}
+
+# Prints one plain (uncolored) two-column row; colored by wrapping the whole
+# line afterwards, since padding a colored substring with %-Ns miscounts the
+# invisible ANSI escape bytes.
+row() { printf "  %-26s %14s" "$1" "$2"; }
+rule() { printf "  %s" "$(printf -- '─%.0s' $(seq 1 40))"; }
 
 echo
 echo "${BOLD}=== Summary ===${RESET}"
-echo "  ${GREEN}Passed:   ${#pass_list[@]}${RESET}"
-echo "  ${RED}Failed:   ${#fail_list[@]}${RESET}"
-echo "  ${YELLOW}Timeout:  ${#timeout_list[@]}${RESET}"
-echo "  ${RED}Error:    ${#error_list[@]}${RESET}"
+echo "${BOLD}$(row "Result" "Count")${RESET}"
+rule; echo
+echo "${GREEN}$(row "Passed" "${#pass_list[@]}")${RESET}"
+echo "${RED}$(row "Failed" "${#fail_list[@]}")${RESET}"
+echo "${YELLOW}$(row "Overtime" "${#overtime_list[@]}")${RESET}"
+echo "${RED}$(row "Error" "${#error_list[@]}")${RESET}"
+rule; echo
+echo "${BOLD}$(row "Total" "${#instances[@]}")${RESET}"
+echo
+
+echo "${BOLD}=== Solve statistics ===${RESET}"
+echo "${BOLD}$(row "Metric" "Value")${RESET}"
+rule; echo
+echo "$(row "Optimal solutions found" "$n_optimal / ${#instances[@]}")"
+echo "$(row "Total runtime" "${total_runtime}s")"
+echo "$(row "Total nodes processed" "$(with_commas "$total_nodes")")"
+echo "$(row "Average gap" "${avg_gap}%")"
+echo
+if [[ "$slowest_name" != "-" ]]; then
+  echo "  Slowest instance:          ${slowest_name}  (${slowest_time}s)"
+fi
+if [[ "$maxnodes_name" != "-" ]]; then
+  echo "  Most nodes processed:      ${maxnodes_name}  ($(with_commas "$maxnodes_val") nodes)"
+fi
 echo
 
 # ── 8. Full details for anything that didn't pass ───────────────────────────
@@ -378,9 +471,9 @@ if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 ]]; then
   done
 fi
 
-if [[ ${#timeout_list[@]} -gt 0 ]]; then
-  echo "${BOLD}${YELLOW}=== Instances that hit the hard-kill timeout (limits.tsv may need adjusting) ===${RESET}"
-  for name in "${timeout_list[@]}"; do
+if [[ ${#overtime_list[@]} -gt 0 ]]; then
+  echo "${BOLD}${YELLOW}=== Instances that went overtime (hard-kill triggered; limits.tsv may need adjusting) ===${RESET}"
+  for name in "${overtime_list[@]}"; do
     echo "  - $name"
   done
   echo

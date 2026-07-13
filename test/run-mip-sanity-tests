@@ -1,0 +1,313 @@
+#!/usr/bin/env bash
+# run-mip-sanity-tests — mip-sanity-data regression suite for Cbc.
+#
+# Self-contained in the Cbc repository (works from a standalone `Cbc` clone,
+# on the `next` branch, once Cbc itself has been configured/built): solves
+# every instance in the `test/mip-sanity-data` submodule with `cbc` (one
+# thread per run), applying the suggested node/time limits from
+# `limits.tsv`, running up to `--jobs` instances in parallel (default:
+# number of processors). Each run's best solution is saved to a `.sol` file
+# and then checked by `cbc_validate_sol` (built from
+# test/cbc_validate_sol.cpp) for:
+#   - primal feasibility (variable bounds, integrality, constraint activity)
+#   - objective value consistency (recomputed vs claimed, within tolerance)
+#   - optimality claims cross-checked against `bks.tsv` best-known values
+#   - infeasibility claims cross-checked against `bks.tsv`
+#
+# Usage (from the `test/` directory, or via `make test` / `make -C test test`):
+#   ./run-mip-sanity-tests [OPTIONS] [instance-glob ...]
+#
+# Options:
+#   --jobs=N            Parallel jobs (default: nproc)
+#   --cbc=PATH           Path to the cbc executable (default: ../src/cbc built
+#                        in-tree, falling back to $PREFIX/bin/cbc and $PATH)
+#   --prefix=PATH        Install prefix to look for cbc in (default: ~/prog/cbc)
+#   --data-dir=PATH      mip-sanity-data checkout (default: ./mip-sanity-data,
+#                        i.e. the test/mip-sanity-data submodule)
+#   --results-dir=PATH   Where to write logs/.sol files (default: ./sanity-results)
+#   --update-data        Force `git submodule update` for mip-sanity-data before running
+#   --no-color           Disable ANSI colors
+#   -h, --help           Show this help
+#
+# Positional arguments (optional): one or more glob patterns to select a
+# subset of instances by name (e.g. `./run-mip-sanity-tests 'jssp_*' 'cvrp_*'`).
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+JOBS="$(nproc)"
+PREFIX="${PREFIX:-$HOME/prog/cbc}"
+DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
+RESULTS_DIR="$SCRIPT_DIR/sanity-results"
+CBC_BIN_OVERRIDE=""
+UPDATE_DATA=0
+FORCE_COLOR=1
+PATTERNS=()
+
+for arg in "$@"; do
+  case "$arg" in
+    --jobs=*) JOBS="${arg#*=}" ;;
+    --cbc=*) CBC_BIN_OVERRIDE="${arg#*=}" ;;
+    --prefix=*) PREFIX="${arg#*=}" ;;
+    --data-dir=*) DATA_DIR="${arg#*=}" ;;
+    --results-dir=*) RESULTS_DIR="${arg#*=}" ;;
+    --update-data) UPDATE_DATA=1 ;;
+    --no-color) FORCE_COLOR=0 ;;
+    -h|--help)
+      sed -n '2,29p' "$0"
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $arg" >&2
+      exit 1
+      ;;
+    *) PATTERNS+=("$arg") ;;
+  esac
+done
+
+# ── ANSI colours (auto-disabled when not a terminal) ────────────────────────
+if [[ -t 1 && $FORCE_COLOR -eq 1 ]]; then
+  BOLD=$'\e[1m';  RESET=$'\e[0m';   DIM=$'\e[2m'
+  RED=$'\e[31m';  GREEN=$'\e[32m';  YELLOW=$'\e[33m'
+  CYAN=$'\e[36m'; MAGENTA=$'\e[35m'; BLUE=$'\e[34m'
+else
+  BOLD=''; RESET=''; DIM=''; RED=''; GREEN=''
+  YELLOW=''; CYAN=''; MAGENTA=''; BLUE=''
+fi
+
+echo "${BOLD}=== Cbc mip-sanity-data regression suite (jobs=$JOBS) ===${RESET}"
+
+# ── 1. Ensure mip-sanity-data is available (clone once, reuse afterwards) ───
+if [[ ! -f "$REPO_ROOT/.gitmodules" ]] || ! grep -q "mip-sanity-data" "$REPO_ROOT/.gitmodules"; then
+  echo "${RED}Error: test/mip-sanity-data submodule not declared in .gitmodules.${RESET}" >&2
+  exit 1
+fi
+
+if [[ ! -f "$DATA_DIR/bks.tsv" ]]; then
+  echo "${YELLOW}mip-sanity-data not yet checked out — cloning (one-time)...${RESET}"
+  git -C "$REPO_ROOT" submodule update --init "test/mip-sanity-data"
+elif [[ $UPDATE_DATA -eq 1 ]]; then
+  echo "${CYAN}Updating mip-sanity-data submodule...${RESET}"
+  git -C "$REPO_ROOT" submodule update "test/mip-sanity-data"
+else
+  echo "${DIM}mip-sanity-data already checked out at $DATA_DIR (reusing; use --update-data to refresh)${RESET}"
+fi
+
+if [[ ! -f "$DATA_DIR/bks.tsv" ]]; then
+  echo "${RED}Error: $DATA_DIR/bks.tsv not found after checkout.${RESET}" >&2
+  exit 1
+fi
+
+# ── 2. Locate the cbc executable ────────────────────────────────────────────
+CBC_BIN=""
+if [[ -n "$CBC_BIN_OVERRIDE" ]]; then
+  CBC_BIN="$CBC_BIN_OVERRIDE"
+elif [[ -x "$SCRIPT_DIR/../src/cbc" ]]; then
+  CBC_BIN="$SCRIPT_DIR/../src/cbc"          # in-tree build (preferred: always current)
+elif [[ -x "$PREFIX/bin/cbc" ]]; then
+  CBC_BIN="$PREFIX/bin/cbc"
+elif command -v cbc >/dev/null 2>&1; then
+  CBC_BIN="$(command -v cbc)"
+fi
+if [[ -z "$CBC_BIN" || ! -x "$CBC_BIN" ]]; then
+  echo "${RED}Error: cbc executable not found (looked in ../src/cbc, $PREFIX/bin, \$PATH).${RESET}" >&2
+  echo "       Build Cbc first (e.g. 'make' at the repo root, or via cbc-workspace's ./config)." >&2
+  exit 1
+fi
+echo "${DIM}Using cbc: $CBC_BIN${RESET}"
+
+# ── 3. Locate/build the validator ───────────────────────────────────────────
+VALIDATOR="$SCRIPT_DIR/cbc_validate_sol"
+if [[ ! -x "$VALIDATOR" ]]; then
+  echo "${CYAN}Building cbc_validate_sol...${RESET}"
+  if [[ ! -f "$SCRIPT_DIR/Makefile" ]]; then
+    echo "${RED}Error: test/Makefile missing — configure Cbc first ('./configure' at the repo root).${RESET}" >&2
+    exit 1
+  fi
+  make -C "$SCRIPT_DIR" cbc_validate_sol || {
+    echo "${RED}Error: failed to build cbc_validate_sol.${RESET}" >&2
+    exit 1
+  }
+fi
+echo "${DIM}Using validator: $VALIDATOR${RESET}"
+
+# ── 4. Build the instance list ──────────────────────────────────────────────
+mkdir -p "$RESULTS_DIR"
+shopt -s nullglob
+all_instances=()
+for f in "$DATA_DIR"/mips/*.mps.gz; do
+  name="$(basename "$f" .mps.gz)"
+  all_instances+=("$name")
+done
+shopt -u nullglob
+
+if [[ ${#all_instances[@]} -eq 0 ]]; then
+  echo "${RED}Error: no instances found under $DATA_DIR/mips.${RESET}" >&2
+  exit 1
+fi
+
+instances=()
+if [[ ${#PATTERNS[@]} -eq 0 ]]; then
+  instances=("${all_instances[@]}")
+else
+  for name in "${all_instances[@]}"; do
+    for pat in "${PATTERNS[@]}"; do
+      # shellcheck disable=SC2053
+      if [[ "$name" == $pat ]]; then
+        instances+=("$name")
+        break
+      fi
+    done
+  done
+fi
+
+echo "${BOLD}${#instances[@]} instance(s) selected (of ${#all_instances[@]} total).${RESET}"
+echo
+
+# ── 5. Per-instance runner ───────────────────────────────────────────────────
+# Exported so GNU parallel workers can call it.
+run_one() {
+  local name="$1"
+  local data_dir="$2" results_dir="$3" cbc_bin="$4" validator="$5"
+
+  local mps="$data_dir/mips/$name.mps.gz"
+  local sol="$results_dir/$name.sol"
+  local cbc_log="$results_dir/$name.cbc.log"
+  local val_log="$results_dir/$name.validate.log"
+  local status_file="$results_dir/$name.status"
+
+  # ── read suggested limits (default: unlimited nodes, 120s/180s hard-kill) ──
+  local node_limit=0 time_limit=120 hard_kill=180
+  local limits_row
+  limits_row="$(awk -F'\t' -v n="$name" '$1==n{print $3"\t"$4"\t"$5; found=1} END{if(!found) exit 1}' "$data_dir/limits.tsv" 2>/dev/null)"
+  if [[ -n "$limits_row" ]]; then
+    IFS=$'\t' read -r node_limit time_limit hard_kill <<<"$limits_row"
+  fi
+
+  # ── read bks (expected status/objective) ───────────────────────────────────
+  local bks_row expected_status="" expected_obj=""
+  bks_row="$(awk -F'\t' -v n="$name" '$1==n{print $2"\t"$3; found=1} END{if(!found) exit 1}' "$data_dir/bks.tsv" 2>/dev/null)"
+  if [[ -n "$bks_row" ]]; then
+    IFS=$'\t' read -r expected_status expected_obj <<<"$bks_row"
+  fi
+
+  local node_args=()
+  if [[ "$node_limit" != "0" ]]; then
+    node_args=(-maxNodes "$node_limit")
+  fi
+
+  local start_ts end_ts elapsed
+  start_ts=$(date +%s.%N)
+  timeout -k 10 "${hard_kill}s" "$cbc_bin" "$mps" -threads 1 -sec "$time_limit" \
+    "${node_args[@]}" -solve -solu "$sol" >"$cbc_log" 2>&1
+  local cbc_rc=$?
+  end_ts=$(date +%s.%N)
+  elapsed="$(awk -v a="$start_ts" -v b="$end_ts" 'BEGIN{printf "%.1f", b-a}')"
+
+  if [[ $cbc_rc -eq 124 || $cbc_rc -eq 137 ]]; then
+    echo "TIMEOUT|$elapsed|hard-kill (${hard_kill}s) triggered — cbc did not respect its own -sec limit" >"$status_file"
+    return
+  fi
+  if [[ ! -f "$sol" ]]; then
+    echo "ERROR|$elapsed|cbc exited (rc=$cbc_rc) without writing a .sol file" >"$status_file"
+    return
+  fi
+
+  local val_args=(-p 1e-4 -i 1e-4 -o 1e-4 --bks-abs-tol 1e-4 --bks-pct-tol 0.01)
+  if [[ -n "$expected_status" ]]; then
+    val_args+=(--expected-status "$expected_status")
+  fi
+  if [[ -n "$expected_obj" && "$expected_obj" != "NA" ]]; then
+    val_args+=(--expected-obj "$expected_obj")
+  fi
+
+  "$validator" "${val_args[@]}" "$mps" "$sol" >"$val_log" 2>&1
+  local val_rc=$?
+
+  if [[ $val_rc -eq 0 ]]; then
+    echo "PASS|$elapsed|" >"$status_file"
+  else
+    echo "FAIL|$elapsed|validator exit=$val_rc" >"$status_file"
+  fi
+}
+export -f run_one
+
+# ── 6. Dispatch in parallel ──────────────────────────────────────────────────
+printf '%s\n' "${instances[@]}" | parallel --will-cite -j "$JOBS" --line-buffer \
+  run_one {} "$DATA_DIR" "$RESULTS_DIR" "$CBC_BIN" "$VALIDATOR"
+
+# ── 7. Collect results, print colored progress + summary ───────────────────
+declare -a pass_list=() fail_list=() timeout_list=() error_list=()
+for name in "${instances[@]}"; do
+  status_file="$RESULTS_DIR/$name.status"
+  if [[ ! -f "$status_file" ]]; then
+    echo "  ${RED}✗ ${name}${RESET}  ${DIM}(no status file — run_one crashed?)${RESET}"
+    error_list+=("$name")
+    continue
+  fi
+  IFS='|' read -r kind elapsed detail <"$status_file"
+  case "$kind" in
+    PASS)
+      echo "  ${GREEN}✔ ${name}${RESET}  ${DIM}(${elapsed}s)${RESET}"
+      pass_list+=("$name")
+      ;;
+    FAIL)
+      echo "  ${RED}✗ ${name}${RESET}  ${DIM}(${elapsed}s)${RESET}  ${RED}${detail}${RESET}"
+      fail_list+=("$name")
+      ;;
+    TIMEOUT)
+      echo "  ${YELLOW}⏱ ${name}${RESET}  ${DIM}(${elapsed}s)${RESET}  ${YELLOW}${detail}${RESET}"
+      timeout_list+=("$name")
+      ;;
+    ERROR)
+      echo "  ${RED}✗ ${name}${RESET}  ${DIM}(${elapsed}s)${RESET}  ${RED}${detail}${RESET}"
+      error_list+=("$name")
+      ;;
+    *)
+      echo "  ${RED}✗ ${name}${RESET}  ${DIM}(unrecognized status: $kind)${RESET}"
+      error_list+=("$name")
+      ;;
+  esac
+done
+
+echo
+echo "${BOLD}=== Summary ===${RESET}"
+echo "  ${GREEN}Passed:   ${#pass_list[@]}${RESET}"
+echo "  ${RED}Failed:   ${#fail_list[@]}${RESET}"
+echo "  ${YELLOW}Timeout:  ${#timeout_list[@]}${RESET}"
+echo "  ${RED}Error:    ${#error_list[@]}${RESET}"
+echo
+
+# ── 8. Full details for anything that didn't pass ───────────────────────────
+report_failure() {
+  local name="$1"
+  echo "${BOLD}${RED}─── $name ─────────────────────────────────────────────${RESET}"
+  echo "${CYAN}-- cbc log ($RESULTS_DIR/$name.cbc.log) --${RESET}"
+  tail -n 60 "$RESULTS_DIR/$name.cbc.log" 2>/dev/null
+  echo
+  if [[ -f "$RESULTS_DIR/$name.validate.log" ]]; then
+    echo "${CYAN}-- validator output ($RESULTS_DIR/$name.validate.log) --${RESET}"
+    cat "$RESULTS_DIR/$name.validate.log"
+  fi
+  echo
+}
+
+if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 ]]; then
+  echo "${BOLD}${RED}=== Failure details ===${RESET}"
+  for name in "${fail_list[@]}" "${error_list[@]}"; do
+    report_failure "$name"
+  done
+fi
+
+if [[ ${#timeout_list[@]} -gt 0 ]]; then
+  echo "${BOLD}${YELLOW}=== Instances that hit the hard-kill timeout (limits.tsv may need adjusting) ===${RESET}"
+  for name in "${timeout_list[@]}"; do
+    echo "  - $name"
+  done
+  echo
+fi
+
+if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 ]]; then
+  exit 1
+fi
+exit 0

@@ -96,14 +96,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@COIN_HAS_CLP_TRUE@am__append_1 = test_cbc ctests
-#  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_SAMPLE_TRUE@am__append_2 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_MIPLIB3_TRUE@am__append_3 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
-#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-@COIN_HAS_NETLIB_TRUE@am__append_4 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
-bin_PROGRAMS = gamsTest$(EXEEXT) osiUnitTest$(EXEEXT) \
-	CInterfaceTest$(EXEEXT)
+noinst_PROGRAMS = cbc_validate_sol$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -116,24 +109,14 @@ CONFIG_HEADER = $(top_builddir)/src/config.h \
 	$(top_builddir)/src/OsiCbc/config_osicbc.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
-PROGRAMS = $(bin_PROGRAMS)
-am_CInterfaceTest_OBJECTS = CInterfaceTest.$(OBJEXT)
-CInterfaceTest_OBJECTS = $(am_CInterfaceTest_OBJECTS)
-CInterfaceTest_DEPENDENCIES = ../src/libCbc.la
+PROGRAMS = $(noinst_PROGRAMS)
+am_cbc_validate_sol_OBJECTS = cbc_validate_sol.$(OBJEXT)
+cbc_validate_sol_OBJECTS = $(am_cbc_validate_sol_OBJECTS)
+cbc_validate_sol_DEPENDENCIES = ../src/libCbc.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_gamsTest_OBJECTS = gamsTest.$(OBJEXT)
-gamsTest_OBJECTS = $(am_gamsTest_OBJECTS)
-gamsTest_DEPENDENCIES = ../src/libCbc.la
-am_osiUnitTest_OBJECTS = osiUnitTest.$(OBJEXT) \
-	OsiCbcSolverInterfaceTest.$(OBJEXT)
-osiUnitTest_OBJECTS = $(am_osiUnitTest_OBJECTS)
-am__DEPENDENCIES_1 =
-osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -149,28 +132,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/OsiCbc
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
-	./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po ./$(DEPDIR)/dummy.Po \
-	./$(DEPDIR)/gamsTest.Po ./$(DEPDIR)/osiUnitTest.Po
+am__depfiles_remade = ./$(DEPDIR)/cbc_validate_sol.Po
 am__mv = mv -f
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_@AM_V@)
-am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
-CCLD = $(CC)
-LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_@AM_V@)
-am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -189,9 +152,7 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(CInterfaceTest_SOURCES) \
-	$(nodist_EXTRA_CInterfaceTest_SOURCES) $(gamsTest_SOURCES) \
-	$(osiUnitTest_SOURCES)
+SOURCES = $(cbc_validate_sol_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -381,32 +342,12 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 AM_LDFLAGS = $(LT_LDFLAGS)
-
-########################################################################
-#                         unitTest for Cbc                             #
-########################################################################
-CBC_TEST_TGTS = gamstests ositests $(am__append_1)
-cbcflags = $(am__append_3)
-ositestsflags = $(am__append_2) $(am__append_4)
-gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbc.la
-
-########################################################################
-#                         unitTest for OsiCbc                          #
-########################################################################
-osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
-osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la $(CBCUNITTEST_LFLAGS)
-
-########################################################################
-#                         unitTest for CbcCInterface                   #
-########################################################################
-CInterfaceTest_SOURCES = CInterfaceTest.c
-nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
-CInterfaceTest_LDADD = ../src/libCbc.la
+cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
+cbc_validate_sol_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .cpp .lo .o .obj
+.SUFFIXES: .cpp .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -436,62 +377,14 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-install-binPROGRAMS: $(bin_PROGRAMS)
-	@$(NORMAL_INSTALL)
-	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(bindir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(bindir)" || exit 1; \
-	fi; \
-	for p in $$list; do echo "$$p $$p"; done | \
-	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p \
-	 || test -f $$p1 \
-	  ; then echo "$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n;h' \
-	    -e 's|.*|.|' \
-	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
-	sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
-	    else { print "f", $$3 "/" $$4, $$1; } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	    test -z "$$files" || { \
-	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
-	    } \
-	; done
 
-uninstall-binPROGRAMS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
-	      -e 's/$$/$(EXEEXT)/' \
-	`; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(bindir)" && $(am__rm_f) $$files
+clean-noinstPROGRAMS:
+	$(am__rm_f) $(noinst_PROGRAMS)
+	test -z "$(EXEEXT)" || $(am__rm_f) $(noinst_PROGRAMS:$(EXEEXT)=)
 
-clean-binPROGRAMS:
-	$(am__rm_f) $(bin_PROGRAMS)
-	test -z "$(EXEEXT)" || $(am__rm_f) $(bin_PROGRAMS:$(EXEEXT)=)
-
-CInterfaceTest$(EXEEXT): $(CInterfaceTest_OBJECTS) $(CInterfaceTest_DEPENDENCIES) $(EXTRA_CInterfaceTest_DEPENDENCIES) 
-	@rm -f CInterfaceTest$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_OBJECTS) $(CInterfaceTest_LDADD) $(LIBS)
-
-gamsTest$(EXEEXT): $(gamsTest_OBJECTS) $(gamsTest_DEPENDENCIES) $(EXTRA_gamsTest_DEPENDENCIES) 
-	@rm -f gamsTest$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(gamsTest_OBJECTS) $(gamsTest_LDADD) $(LIBS)
-
-osiUnitTest$(EXEEXT): $(osiUnitTest_OBJECTS) $(osiUnitTest_DEPENDENCIES) $(EXTRA_osiUnitTest_DEPENDENCIES) 
-	@rm -f osiUnitTest$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(osiUnitTest_OBJECTS) $(osiUnitTest_LDADD) $(LIBS)
+cbc_validate_sol$(EXEEXT): $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_DEPENDENCIES) $(EXTRA_cbc_validate_sol_DEPENDENCIES) 
+	@rm -f cbc_validate_sol$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -499,41 +392,13 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gamsTest.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osiUnitTest.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc_validate_sol.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
 	@: >>$@
 
 am--depfiles: $(am__depfiles_remade)
-
-.c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
-
-.c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
-@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -620,9 +485,6 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
-	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
-	done
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -655,14 +517,11 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
+	mostlyclean-am
 
 distclean: distclean-am
-	-rm -f ./$(DEPDIR)/CInterfaceTest.Po
-	-rm -f ./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po
-	-rm -f ./$(DEPDIR)/dummy.Po
-	-rm -f ./$(DEPDIR)/gamsTest.Po
-	-rm -f ./$(DEPDIR)/osiUnitTest.Po
+	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -685,7 +544,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS
+install-exec-am:
 
 install-html: install-html-am
 
@@ -708,11 +567,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -f ./$(DEPDIR)/CInterfaceTest.Po
-	-rm -f ./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po
-	-rm -f ./$(DEPDIR)/dummy.Po
-	-rm -f ./$(DEPDIR)/gamsTest.Po
-	-rm -f ./$(DEPDIR)/osiUnitTest.Po
+	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -729,48 +584,45 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS
+uninstall-am:
 
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-binPROGRAMS clean-generic clean-libtool cscopelist-am \
+	clean-generic clean-libtool clean-noinstPROGRAMS cscopelist-am \
 	ctags ctags-am distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags dvi dvi-am html html-am info \
-	info-am install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS
+	info-am install install-am install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am
 
 .PRECIOUS: Makefile
 
 
-# We are using the solver executables to do the unit test
+########################################################################
+#              mip-sanity-data regression suite for Cbc                #
+########################################################################
+#
+# Self-contained regression suite: solves every instance in the
+# test/mip-sanity-data submodule (one Cbc thread per instance, suggested
+# node/time limits from limits.tsv, up to nproc instances in parallel via
+# GNU parallel) and validates each saved solution with cbc_validate_sol
+# (feasibility, integrality, objective, optimality/infeasibility vs the
+# best-known reference). See run-mip-sanity-tests for full documentation
+# and options (`./run-mip-sanity-tests --help`). `make test` builds the
+# validator and runs the whole suite; from cbc-workspace, `./test` is a
+# convenience symlink to run-mip-sanity-tests.
 
-test: $(CBC_TEST_TGTS)
-
-test_cbc: ../src/cbc$(EXEEXT)
-	RUNNING_TEST="test_cbc" ../src/cbc$(EXEEXT) $(cbcflags)
-
-@COIN_HAS_SAMPLE_TRUE@test_cbc_generic: ../src/cbc-generic$(EXEEXT)
-@COIN_HAS_SAMPLE_TRUE@	@echo "A minimal test is all that cbc-generic can manage just yet."
-@COIN_HAS_SAMPLE_TRUE@	RUNNING_TEST="cbc-generic" ../src/cbc-generic$(EXEEXT) -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
-
-gamstests: gamsTest$(EXEEXT)
-	export RUNNING_TEST="gamsTest" ; ./gamsTest$(EXEEXT)
+test: cbc_validate_sol$(EXEEXT)
+	$(srcdir)/run-mip-sanity-tests
 
 .PHONY: test
-
-ositests: osiUnitTest$(EXEEXT)
-	export RUNNING_TEST="osiUnitTest" ; ./osiUnitTest$(EXEEXT) $(ositestsflags)
-
-ctests: CInterfaceTest$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -9,71 +9,26 @@ AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 AM_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
-#                         unitTest for Cbc                             #
+#              mip-sanity-data regression suite for Cbc                #
 ########################################################################
+#
+# Self-contained regression suite: solves every instance in the
+# test/mip-sanity-data submodule (one Cbc thread per instance, suggested
+# node/time limits from limits.tsv, up to nproc instances in parallel via
+# GNU parallel) and validates each saved solution with cbc_validate_sol
+# (feasibility, integrality, objective, optimality/infeasibility vs the
+# best-known reference). See run-mip-sanity-tests for full documentation
+# and options (`./run-mip-sanity-tests --help`). `make test` builds the
+# validator and runs the whole suite; from cbc-workspace, `./test` is a
+# convenience symlink to run-mip-sanity-tests.
 
-CBC_TEST_TGTS = gamstests ositests
-
-if COIN_HAS_CLP
-  CBC_TEST_TGTS += test_cbc ctests
-endif
-
-cbcflags =
-ositestsflags =
-if COIN_HAS_SAMPLE
-#  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-  ositestsflags += -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
-endif
-if COIN_HAS_MIPLIB3
-  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
-#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-endif
-if COIN_HAS_NETLIB
-  ositestsflags += -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
-endif
-
-# We are using the solver executables to do the unit test
-
-test: $(CBC_TEST_TGTS)
-
-test_cbc: ../src/cbc$(EXEEXT)
-	RUNNING_TEST="test_cbc" ../src/cbc$(EXEEXT) $(cbcflags)
-
-if COIN_HAS_SAMPLE
-test_cbc_generic: ../src/cbc-generic$(EXEEXT)
-	@echo "A minimal test is all that cbc-generic can manage just yet."
-	RUNNING_TEST="cbc-generic" ../src/cbc-generic$(EXEEXT) -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
-endif
-
-gamstests: gamsTest$(EXEEXT)
-	export RUNNING_TEST="gamsTest" ; ./gamsTest$(EXEEXT)
+test: cbc_validate_sol$(EXEEXT)
+	$(srcdir)/run-mip-sanity-tests
 
 .PHONY: test
 
-bin_PROGRAMS = gamsTest osiUnitTest CInterfaceTest
+noinst_PROGRAMS = cbc_validate_sol
 
-gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbc.la
+cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
-########################################################################
-#                         unitTest for OsiCbc                          #
-########################################################################
-
-osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
-
-osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la $(CBCUNITTEST_LFLAGS)
-
-ositests: osiUnitTest$(EXEEXT)
-	export RUNNING_TEST="osiUnitTest" ; ./osiUnitTest$(EXEEXT) $(ositestsflags)
-
-########################################################################
-#                         unitTest for CbcCInterface                   #
-########################################################################
-
-CInterfaceTest_SOURCES = CInterfaceTest.c
-nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
-
-CInterfaceTest_LDADD = ../src/libCbc.la
-
-ctests: CInterfaceTest$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
+cbc_validate_sol_LDADD = ../src/libCbc.la

@@ -30,3 +30,7 @@ dist
 **/MSVisualStudio/**/*.mps
 **/MSVisualStudio/**/*.lp
 **/MSVisualStudio/**/*.out
+
+# mip-sanity-data regression suite (test/)
+/test/cbc_validate_sol
+/test/sanity-results/

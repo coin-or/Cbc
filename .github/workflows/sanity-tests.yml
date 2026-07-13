@@ -1,0 +1,71 @@
+name: mip-sanity-data regression suite
+
+# Solves every instance in the `test/mip-sanity-data` submodule with the
+# freshly-built `cbc`, validates each saved solution (feasibility,
+# integrality, objective, optimality/infeasibility vs the trusted
+# best-known-solution reference) via `test/cbc_validate_sol`, and fails the
+# build on any violation. Runs whenever `next` changes (push or PR), so
+# regressions are caught immediately after a build.
+#
+# Build engine: reuses the `config` (configure+build+install) script from
+# h-g-s/cbc-workspace, same convention as next-release.yml. The actual test
+# orchestration (`test/run-mip-sanity-tests`) is self-contained in this repo.
+
+on:
+  push:
+    branches: [next]
+  pull_request:
+    branches: [next]
+  workflow_dispatch:
+
+concurrency:
+  group: sanity-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Branch of the sibling COIN-OR repos to build Cbc `next` against.
+  DEP_REF: next
+  # h-g-s/cbc-workspace ref providing the `config` script.
+  WORKSPACE_REF: main
+
+jobs:
+  sanity:
+    name: Solve + validate mip-sanity-data instances
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: work/Cbc
+          submodules: true   # fetches test/mip-sanity-data
+
+      - name: Checkout sibling COIN-OR repos + cbc-workspace scripts
+        run: |
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/CoinUtils work/CoinUtils
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Osi work/Osi
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Clp work/Clp
+          git clone --depth 1 --branch "$DEP_REF" https://github.com/coin-or/Cgl work/Cgl
+          git clone --depth 1 --branch "$WORKSPACE_REF" https://github.com/h-g-s/cbc-workspace work/cbc-workspace
+          cp work/cbc-workspace/config work/
+
+      - name: Install build + test dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gfortran liblapack-dev libsuitesparse-dev \
+            zlib1g-dev libbz2-dev libnauty-dev parallel
+
+      - name: Configure + build + install
+        working-directory: work
+        run: ./config --opt --install --prefix="$PWD/install" --jobs="$(nproc)"
+
+      - name: Run mip-sanity-data regression suite
+        working-directory: work/Cbc/test
+        run: |
+          ./run-mip-sanity-tests --jobs="$(nproc)" --no-color \
+            --prefix="$GITHUB_WORKSPACE/work/install"
+
+      - name: Upload logs/solutions on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-test-results
+          path: work/Cbc/test/sanity-results/

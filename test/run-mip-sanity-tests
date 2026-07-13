@@ -74,6 +74,8 @@ else
   BOLD=''; RESET=''; DIM=''; RED=''; GREEN=''
   YELLOW=''; CYAN=''; MAGENTA=''; BLUE=''
 fi
+# Exported so GNU parallel workers (separate bash processes) see them too.
+export BOLD RESET DIM RED GREEN YELLOW CYAN MAGENTA BLUE
 
 echo "${BOLD}=== Cbc mip-sanity-data regression suite (jobs=$JOBS) ===${RESET}"
 
@@ -165,10 +167,51 @@ echo "${BOLD}${#instances[@]} instance(s) selected (of ${#all_instances[@]} tota
 echo
 
 # ── 5. Per-instance runner ───────────────────────────────────────────────────
-# Exported so GNU parallel workers can call it.
+# Both are exported so GNU parallel workers (separate bash processes) can call them.
+
+# Pulls a short one-line human summary out of a cbc log: status text, claimed
+# objective, bound/gap (if the run didn't fully close the gap), and node count.
+# Cbc always prints classic "Result - ...\nObjective value: ...\nEnumerated
+# nodes: ..." lines (optionally "Lower bound:"/"Gap:" when a gap remains) —
+# these are more robust to parse than cbc's fancier colored summary line,
+# which is omitted entirely for instances solved during presolve/root.
+extract_cbc_summary() {
+  local log="$1"
+  local result_line status_text obj nodes bound gap
+  result_line="$(grep "^Result - " "$log" 2>/dev/null | tail -1)"
+  if [[ -z "$result_line" ]]; then
+    if grep -q "Problem is infeasible" "$log" 2>/dev/null; then
+      echo "Infeasible (detected in presolve/root)"
+    elif grep -q "Problem is unbounded" "$log" 2>/dev/null; then
+      echo "Unbounded (detected in presolve/root)"
+    else
+      echo ""
+    fi
+    return
+  fi
+  status_text="${result_line#Result - }"
+  obj="$(grep "^Objective value:" "$log" 2>/dev/null | tail -1 | awk '{print $NF}')"
+  nodes="$(grep "^Enumerated nodes:" "$log" 2>/dev/null | tail -1 | awk '{print $NF}')"
+  bound="$(grep "^Lower bound:" "$log" 2>/dev/null | tail -1 | awk '{print $NF}')"
+  gap="$(grep "^Gap:" "$log" 2>/dev/null | tail -1 | awk '{print $NF}')"
+
+  local out="$status_text"
+  [[ -n "$obj" ]] && out="${out}  obj=${obj}"
+  [[ -n "$bound" ]] && out="${out}  bound=${bound}"
+  if [[ -n "$gap" ]]; then
+    local gap_pct
+    gap_pct="$(awk -v g="$gap" 'BEGIN{printf "%.2f", g*100}' 2>/dev/null)"
+    [[ -n "$gap_pct" ]] && out="${out}  gap=${gap_pct}%"
+  fi
+  [[ -n "$nodes" ]] && out="${out}  nodes=${nodes}"
+  echo "$out"
+}
+export -f extract_cbc_summary
+
 run_one() {
   local name="$1"
-  local data_dir="$2" results_dir="$3" cbc_bin="$4" validator="$5"
+  local data_dir="$2" results_dir="$3" cbc_bin="$4" validator="$5" total="$6"
+  local progress_count_file="$7" progress_lock="$8"
 
   local mps="$data_dir/mips/$name.mps.gz"
   local sol="$results_dir/$name.sol"
@@ -196,6 +239,39 @@ run_one() {
     node_args=(-maxNodes "$node_limit")
   fi
 
+  # Prints one progress line as soon as this instance is done (visible while
+  # the rest of the suite is still running) and records the outcome for the
+  # final summary/failure-detail pass. $summary is filled in below, once the
+  # cbc log exists. done_count is tracked via a dedicated per-run counter file
+  # (not by globbing *.status in results_dir, which may still hold stale
+  # entries from an earlier/broader run) so the "[n/total]" prefix is exact.
+  emit() {
+    local kind="$1" note="$2"
+    echo "$kind|$elapsed|$note|$summary" >"$status_file"
+
+    local done_count
+    done_count=$( { flock -x 9
+      local c
+      c=$(<"$progress_count_file")
+      c=$((c + 1))
+      echo "$c" >"$progress_count_file"
+      echo "$c"
+    } 9>"$progress_lock" )
+
+    local icon color
+    case "$kind" in
+      PASS) icon="✔"; color="$GREEN" ;;
+      TIMEOUT) icon="⏱"; color="$YELLOW" ;;
+      *) icon="✗"; color="$RED" ;;
+    esac
+
+    local line
+    line="${DIM}[$(printf '%3d' "$done_count")/${total}]${RESET} ${color}${icon} ${name}${RESET}  ${DIM}(${elapsed}s)${RESET}"
+    [[ -n "$summary" ]] && line="${line}  ${summary}"
+    [[ -n "$note" ]] && line="${line}  ${color}${note}${RESET}"
+    printf '%s\n' "$line"
+  }
+
   local start_ts end_ts elapsed
   start_ts=$(date +%s.%N)
   timeout -k 10 "${hard_kill}s" "$cbc_bin" "$mps" -threads 1 -sec "$time_limit" \
@@ -204,12 +280,15 @@ run_one() {
   end_ts=$(date +%s.%N)
   elapsed="$(awk -v a="$start_ts" -v b="$end_ts" 'BEGIN{printf "%.1f", b-a}')"
 
+  local summary
+  summary="$(extract_cbc_summary "$cbc_log")"
+
   if [[ $cbc_rc -eq 124 || $cbc_rc -eq 137 ]]; then
-    echo "TIMEOUT|$elapsed|hard-kill (${hard_kill}s) triggered — cbc did not respect its own -sec limit" >"$status_file"
+    emit TIMEOUT "hard-kill (${hard_kill}s) triggered — cbc did not respect its own -sec limit"
     return
   fi
   if [[ ! -f "$sol" ]]; then
-    echo "ERROR|$elapsed|cbc exited (rc=$cbc_rc) without writing a .sol file" >"$status_file"
+    emit ERROR "cbc exited (rc=$cbc_rc) without writing a .sol file"
     return
   fi
 
@@ -225,18 +304,30 @@ run_one() {
   local val_rc=$?
 
   if [[ $val_rc -eq 0 ]]; then
-    echo "PASS|$elapsed|" >"$status_file"
+    emit PASS ""
   else
-    echo "FAIL|$elapsed|validator exit=$val_rc" >"$status_file"
+    local fail_reason
+    fail_reason="$(grep -m1 -E "MISMATCH|^  BOUND:|^  INTEG:|^  ROW:|^  OBJ:" "$val_log")"
+    fail_reason="${fail_reason#"${fail_reason%%[![:space:]]*}"}"  # ltrim
+    [[ -z "$fail_reason" ]] && fail_reason="validation FAILED (exit=$val_rc)"
+    emit FAIL "${fail_reason} — full details below"
   fi
 }
 export -f run_one
 
-# ── 6. Dispatch in parallel ──────────────────────────────────────────────────
-printf '%s\n' "${instances[@]}" | parallel --will-cite -j "$JOBS" --line-buffer \
-  run_one {} "$DATA_DIR" "$RESULTS_DIR" "$CBC_BIN" "$VALIDATOR"
+# ── 6. Dispatch in parallel (each job prints its own progress line live) ────
+PROGRESS_COUNT_FILE="$(mktemp "${RESULTS_DIR}/.progress-count.XXXXXX")"
+PROGRESS_LOCK="$(mktemp "${RESULTS_DIR}/.progress-lock.XXXXXX")"
+echo 0 >"$PROGRESS_COUNT_FILE"
+trap 'rm -f "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK"' EXIT
 
-# ── 7. Collect results, print colored progress + summary ───────────────────
+echo "${DIM}Running... (results stream in as instances finish; order is by completion, not by name)${RESET}"
+printf '%s\n' "${instances[@]}" | parallel --will-cite -j "$JOBS" --line-buffer \
+  run_one {} "$DATA_DIR" "$RESULTS_DIR" "$CBC_BIN" "$VALIDATOR" "${#instances[@]}" \
+  "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK"
+echo
+
+# ── 7. Aggregate results from the .status files already printed above ──────
 declare -a pass_list=() fail_list=() timeout_list=() error_list=()
 for name in "${instances[@]}"; do
   status_file="$RESULTS_DIR/$name.status"
@@ -245,24 +336,12 @@ for name in "${instances[@]}"; do
     error_list+=("$name")
     continue
   fi
-  IFS='|' read -r kind elapsed detail <"$status_file"
+  IFS='|' read -r kind elapsed detail summary <"$status_file"
   case "$kind" in
-    PASS)
-      echo "  ${GREEN}✔ ${name}${RESET}  ${DIM}(${elapsed}s)${RESET}"
-      pass_list+=("$name")
-      ;;
-    FAIL)
-      echo "  ${RED}✗ ${name}${RESET}  ${DIM}(${elapsed}s)${RESET}  ${RED}${detail}${RESET}"
-      fail_list+=("$name")
-      ;;
-    TIMEOUT)
-      echo "  ${YELLOW}⏱ ${name}${RESET}  ${DIM}(${elapsed}s)${RESET}  ${YELLOW}${detail}${RESET}"
-      timeout_list+=("$name")
-      ;;
-    ERROR)
-      echo "  ${RED}✗ ${name}${RESET}  ${DIM}(${elapsed}s)${RESET}  ${RED}${detail}${RESET}"
-      error_list+=("$name")
-      ;;
+    PASS) pass_list+=("$name") ;;
+    FAIL) fail_list+=("$name") ;;
+    TIMEOUT) timeout_list+=("$name") ;;
+    ERROR) error_list+=("$name") ;;
     *)
       echo "  ${RED}✗ ${name}${RESET}  ${DIM}(unrecognized status: $kind)${RESET}"
       error_list+=("$name")

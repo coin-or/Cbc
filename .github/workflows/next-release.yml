@@ -154,8 +154,17 @@ jobs:
           path: work/dist/cbc-macos-arm64-next.tar.gz
 
   macos-x86_64:
-    name: macOS x86_64 (Intel)
-    runs-on: macos-13
+    name: macOS x86_64 (Intel, via Rosetta)
+    # GitHub-hosted dedicated Intel macOS runners (macos-13) have become
+    # extremely capacity-constrained (jobs can sit queued for hours and never
+    # get scheduled). Instead, run on a plentiful Apple Silicon runner and
+    # cross-build for x86_64 under Rosetta 2, same approach as
+    # ~/dev/mipster's build-macos-x86_64.sh. Since we need Homebrew's
+    # OpenBLAS/SuiteSparse/gcc for x86_64 specifically (not just Apple's
+    # universal clang + Accelerate framework), this requires its own,
+    # separate x86_64 Homebrew prefix under /usr/local (the arm64 runner's
+    # native Homebrew lives under /opt/homebrew and only has arm64 bottles).
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
         with:
@@ -170,13 +179,20 @@ jobs:
           git clone --depth 1 --branch "$WORKSPACE_REF" https://github.com/h-g-s/cbc-workspace work/cbc-workspace
           cp work/cbc-workspace/config work/cbc-workspace/package work/
 
-      - name: Install Homebrew build deps
+      - name: Install Rosetta 2 + x86_64 Homebrew
         run: |
-          brew install gcc openblas suite-sparse pkg-config
+          softwareupdate --install-rosetta --agree-to-license || true
+          if [[ ! -x /usr/local/bin/brew ]]; then
+            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null
+          fi
+          arch -x86_64 /usr/local/bin/brew install gcc openblas suite-sparse pkg-config
 
-      - name: Build + package
+      - name: Build + package (under Rosetta)
         working-directory: work
         run: |
+          arch -x86_64 /bin/bash <<'ROSETTA'
+          set -euo pipefail
+          eval "$(/usr/local/bin/brew shellenv)"
           GCC_PREFIX="$(brew --prefix gcc)"
           GCC_BIN="$(ls "$GCC_PREFIX"/bin/gcc-* | head -1)"
           GXX_BIN="$(ls "$GCC_PREFIX"/bin/g++-* | head -1)"
@@ -185,6 +201,7 @@ jobs:
           ./config --opt --arch=generic --install --prefix="$PWD/install" --jobs="$(sysctl -n hw.ncpu)" \
             --lapack --amd --zlib --no-bz2 --no-nauty
           ./package --prefix="$PWD/install" --name=cbc-macos-x86_64-next --out=dist
+          ROSETTA
 
       - uses: actions/upload-artifact@v4
         with:

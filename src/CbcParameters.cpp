@@ -66,7 +66,7 @@ void CbcParameters::init(int strategy){
   printMode_ = 0;
   printMask_ = "";
 #ifndef CLP_OUTPUT_FORMAT
-  outputPrecision_ = "%15.8g";
+  outputPrecision_ = "%15.15g";
 #else
   outputPrecision_ = "CLP_OUTPUT_FORMAT";
 #endif
@@ -766,7 +766,7 @@ void CbcParameters::setDefaults(int strategy) {
   parameters_[CbcParam::MODELFILE]->setDefault(std::string("prob.mod"));
   parameters_[CbcParam::NEXTSOLFILE]->setDefault(std::string("next.sol"));
   parameters_[CbcParam::PRINTMASK]->setDefault("");
-  parameters_[CbcParam::OUTPUTPRECISION]->setDefault("%15.8g");
+  parameters_[CbcParam::OUTPUTPRECISION]->setDefault("%15.15g");
   parameters_[CbcParam::PRIORITYFILE]->setDefault(std::string("priorities.txt"));
   parameters_[CbcParam::SOLUTIONFILE]->setDefault(std::string("opt.sol"));
   parameters_[CbcParam::SOLUTIONBINARYFILE]->setDefault(std::string("solution.file"));

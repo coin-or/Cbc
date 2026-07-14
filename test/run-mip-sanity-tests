@@ -25,6 +25,13 @@
 #   --data-dir=PATH      mip-sanity-data checkout (default: ./mip-sanity-data,
 #                        i.e. the test/mip-sanity-data submodule)
 #   --results-dir=PATH   Where to write logs/.sol files (default: ./sanity-results)
+#   --results-tsv=PATH   Where to save a per-instance results table (tab-separated:
+#                        instance, status, elapsed_s, nodes, gap_pct, is_optimal,
+#                        obj, bound) for later comparison across runs (default:
+#                        <results-dir>/results.tsv). Pass a different path (e.g.
+#                        --results-tsv=after-change.tsv) to keep a baseline around
+#                        and compare it against a later run, e.g.:
+#                          diff <(sort baseline.tsv) <(sort after-change.tsv)
 #   --update-data        Force `git submodule update` for mip-sanity-data before running
 #   --no-color           Disable ANSI colors
 #   -h, --help           Show this help
@@ -39,6 +46,7 @@ JOBS="$(nproc)"
 PREFIX="${PREFIX:-$HOME/prog/cbc}"
 DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
 RESULTS_DIR="$SCRIPT_DIR/sanity-results"
+RESULTS_TSV=""
 CBC_BIN_OVERRIDE=""
 UPDATE_DATA=0
 FORCE_COLOR=1
@@ -51,10 +59,11 @@ for arg in "$@"; do
     --prefix=*) PREFIX="${arg#*=}" ;;
     --data-dir=*) DATA_DIR="${arg#*=}" ;;
     --results-dir=*) RESULTS_DIR="${arg#*=}" ;;
+    --results-tsv=*) RESULTS_TSV="${arg#*=}" ;;
     --update-data) UPDATE_DATA=1 ;;
     --no-color) FORCE_COLOR=0 ;;
     -h|--help)
-      sed -n '2,29p' "$0"
+      sed -n '2,40p' "$0"
       exit 0
       ;;
     -*)
@@ -135,6 +144,7 @@ echo "${DIM}Using validator: $VALIDATOR${RESET}"
 
 # ── 4. Build the instance list ──────────────────────────────────────────────
 mkdir -p "$RESULTS_DIR"
+[[ -z "$RESULTS_TSV" ]] && RESULTS_TSV="$RESULTS_DIR/results.tsv"
 shopt -s nullglob
 all_instances=()
 for f in "$DATA_DIR"/mips/*.mps.gz; do
@@ -253,7 +263,7 @@ run_one() {
   # entries from an earlier/broader run) so the "[n/total]" prefix is exact.
   emit() {
     local kind="$1" note="$2"
-    echo "$kind|$elapsed|$note|$summary|$is_optimal|$gap_metric|$nodes" >"$status_file"
+    echo "$kind|$elapsed|$note|$summary|$is_optimal|$gap_metric|$nodes|$status_text|$obj|$bound|$gap_pct" >"$status_file"
 
     local done_count
     done_count=$( { flock -x 9
@@ -365,15 +375,17 @@ declare -a pass_list=() fail_list=() overtime_list=() error_list=()
 STATS_FILE="$(mktemp "${RESULTS_DIR}/.run-stats.XXXXXX")"
 trap 'rm -f "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK" "$STATS_FILE"' EXIT
 : >"$STATS_FILE"
+printf 'instance\tstatus\telapsed_s\tnodes\tgap_pct\tis_optimal\tobj\tbound\n' >"$RESULTS_TSV"
 for name in "${instances[@]}"; do
   status_file="$RESULTS_DIR/$name.status"
   if [[ ! -f "$status_file" ]]; then
     echo "  ${RED}✗ ${name}${RESET}  ${DIM}(no status file — run_one crashed?)${RESET}"
     error_list+=("$name")
     printf '%s\t%s\t%s\t%s\t%s\n' "$name" "0" "0" "200" "0" >>"$STATS_FILE"
+    printf '%s\tERROR\t0\t0\t\t0\t\t\n' "$name" >>"$RESULTS_TSV"
     continue
   fi
-  IFS='|' read -r kind elapsed detail summary is_optimal gap_metric nodes <"$status_file"
+  IFS='|' read -r kind elapsed detail summary is_optimal gap_metric nodes status_text obj bound gap_pct <"$status_file"
   case "$kind" in
     PASS) pass_list+=("$name") ;;
     FAIL) fail_list+=("$name") ;;
@@ -390,7 +402,10 @@ for name in "${instances[@]}"; do
   is_optimal_confirmed=0
   [[ "$kind" == "PASS" && "$is_optimal" == "1" ]] && is_optimal_confirmed=1
   printf '%s\t%s\t%s\t%s\t%s\n' "$name" "${elapsed:-0}" "${nodes:-0}" "${gap_metric:-200}" "$is_optimal_confirmed" >>"$STATS_FILE"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$name" "$kind" "${elapsed:-0}" "${nodes:-0}" "${gap_pct:-}" "$is_optimal_confirmed" "${obj:-}" "${bound:-}" >>"$RESULTS_TSV"
 done
+echo "${DIM}Per-instance results saved to $RESULTS_TSV${RESET}"
 
 # One pass over the per-instance stats file to compute suite-wide aggregates:
 # total runtime/nodes, average gap (see the per-instance gap_metric rule in

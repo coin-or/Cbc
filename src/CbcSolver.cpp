@@ -5545,7 +5545,17 @@ void CbcSolver::writeSolution(int cbcParamCode,
     return;
   }
   fp = NULL;
-  bool append = true;
+  // Default to overwrite: a plain "-solu <file>"/"writeSolution <file>"
+  // should replace any previous contents of <file>, matching the
+  // parameter's documented behaviour ("writes solution to file"). Append
+  // mode is only meant to be used when the special "append" filename
+  // convention below is invoked (which reuses the previously-set file name
+  // and explicitly asks to append to it). Leaving this true unconditionally
+  // silently accumulated multiple concatenated solution blocks in the same
+  // file across repeated cbc invocations targeting the same output path,
+  // which downstream tools parsing "the solution" in that file could
+  // misinterpret as a corrupt/partial result.
+  bool append = false;
   ClpSimplex *saveLpSolver = NULL;
   canOpen = false;
   if (cbcParamCode == CbcParam::PRINTSOL) {

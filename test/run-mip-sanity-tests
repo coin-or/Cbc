@@ -290,6 +290,13 @@ run_one() {
 
   local start_ts end_ts elapsed
   start_ts=$(date +%s.%N)
+  # cbc's "-solu <file>" appends to an existing file rather than truncating
+  # it, so a stale .sol left over from an earlier run of this same instance
+  # (e.g. a previous ./test invocation against the same results dir) would
+  # otherwise accumulate multiple concatenated solution blocks, which the
+  # validator can misparse as a corrupt/partial solution and report as a
+  # false failure. Always start from a clean file.
+  rm -f "$sol"
   timeout -k 10 "${hard_kill}s" "$cbc_bin" "$mps" -threads 1 -sec "$time_limit" \
     "${node_args[@]}" -solve -solu "$sol" >"$cbc_log" 2>&1
   local cbc_rc=$?

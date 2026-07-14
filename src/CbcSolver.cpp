@@ -29,6 +29,7 @@
 #include "CbcSolverStatistics.hpp"
 #include "CbcInstanceFeatures.hpp"
 #include "CbcBoundPropagation.hpp"
+#include "CbcPostprocessRepair.hpp"
 
 #if defined(NEW_DEBUG_AND_FILL) || defined(CLP_MALLOC_STATISTICS)
 #include <exception>
@@ -4618,6 +4619,15 @@ int CbcSolver::postprocess(
         buffer << numberChanged << " bounds tightened after postprocessing"
                << std::endl;
         printGeneralMessage(model_, buffer.str());
+      }
+      // Repair pass: use original model constraints to fix incorrectly-rounded
+      // integer variables after CglPreProcess back-substitution.  Use the
+      // full pre-LP-presolve model (originalSolver_) when available, because
+      // the LP solve dropping redundant rows from model_.solver() can hide
+      // constraint violations in those rows.
+      {
+        OsiClpSolverInterface *fullModel = originalSolver_ ? originalSolver_ : getClpSolver(originalSolver);
+        CbcRepairPostprocessSolution(saveSolver_, fullModel, babModel_, process);
       }
       // saveSolver_->resolve();
       if (true /*!saveSolver_->isProvenOptimal()*/) {

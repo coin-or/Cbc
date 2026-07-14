@@ -90,6 +90,7 @@ libCbc_la_SOURCES = \
 	CbcSimpleIntegerPseudoCost.cpp \
 	CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp CbcSolution.cpp \
+	CbcPostprocessRepair.cpp CbcPostprocessRepair.hpp \
 	CbcSolver.cpp CbcSolverPreprocess.cpp \
 	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverCutSetup.cpp CbcSolverCutSetup.hpp \
@@ -229,6 +230,7 @@ includecoin_HEADERS = \
 	CbcSolver.hpp \
 	CbcMipStart.hpp \
 	CbcSOS.hpp \
+	CbcPostprocessRepair.hpp \
 	CbcSubProblem.hpp \
 	CbcTree.hpp \
 	CbcLinked.hpp \

@@ -195,9 +195,9 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcSimpleInteger.lo \
 	libCbc_la-CbcSimpleIntegerDynamicPseudoCost.lo \
 	libCbc_la-CbcSimpleIntegerPseudoCost.lo libCbc_la-CbcSOS.lo \
-	libCbc_la-CbcSolution.lo libCbc_la-CbcSolver.lo \
-	libCbc_la-CbcSolverPreprocess.lo libCbc_la-CbcSolverAnalyze.lo \
-	libCbc_la-CbcSolverCutSetup.lo \
+	libCbc_la-CbcSolution.lo libCbc_la-CbcPostprocessRepair.lo \
+	libCbc_la-CbcSolver.lo libCbc_la-CbcSolverPreprocess.lo \
+	libCbc_la-CbcSolverAnalyze.lo libCbc_la-CbcSolverCutSetup.lo \
 	libCbc_la-CbcSolverExpandKnapsack.lo \
 	libCbc_la-CbcSolverHeuristics.lo libCbc_la-CbcParameters.lo \
 	libCbc_la-CbcStatistics.lo libCbc_la-CbcSolverStatistics.lo \
@@ -299,6 +299,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcParameters.Plo \
 	./$(DEPDIR)/libCbc_la-CbcPartialNodeInfo.Plo \
 	./$(DEPDIR)/libCbc_la-CbcPartialSolutionPool.Plo \
+	./$(DEPDIR)/libCbc_la-CbcPostprocessRepair.Plo \
 	./$(DEPDIR)/libCbc_la-CbcRootHeuristicSchedule.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSOS.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSimpleInteger.Plo \
@@ -631,6 +632,7 @@ libCbc_la_SOURCES = \
 	CbcSimpleIntegerPseudoCost.cpp \
 	CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp CbcSolution.cpp \
+	CbcPostprocessRepair.cpp CbcPostprocessRepair.hpp \
 	CbcSolver.cpp CbcSolverPreprocess.cpp \
 	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverCutSetup.cpp CbcSolverCutSetup.hpp \
@@ -757,6 +759,7 @@ includecoin_HEADERS = \
 	CbcSolver.hpp \
 	CbcMipStart.hpp \
 	CbcSOS.hpp \
+	CbcPostprocessRepair.hpp \
 	CbcSubProblem.hpp \
 	CbcTree.hpp \
 	CbcLinked.hpp \
@@ -983,6 +986,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcParameters.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcPartialNodeInfo.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcPartialSolutionPool.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcPostprocessRepair.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcRootHeuristicSchedule.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSOS.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSimpleInteger.Plo@am__quote@ # am--include-marker
@@ -1512,6 +1516,13 @@ libCbc_la-CbcSolution.lo: CbcSolution.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcSolution.lo `test -f 'CbcSolution.cpp' || echo '$(srcdir)/'`CbcSolution.cpp
 
+libCbc_la-CbcPostprocessRepair.lo: CbcPostprocessRepair.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcPostprocessRepair.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcPostprocessRepair.Tpo -c -o libCbc_la-CbcPostprocessRepair.lo `test -f 'CbcPostprocessRepair.cpp' || echo '$(srcdir)/'`CbcPostprocessRepair.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcPostprocessRepair.Tpo $(DEPDIR)/libCbc_la-CbcPostprocessRepair.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcPostprocessRepair.cpp' object='libCbc_la-CbcPostprocessRepair.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcPostprocessRepair.lo `test -f 'CbcPostprocessRepair.cpp' || echo '$(srcdir)/'`CbcPostprocessRepair.cpp
+
 libCbc_la-CbcSolver.lo: CbcSolver.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcSolver.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcSolver.Tpo -c -o libCbc_la-CbcSolver.lo `test -f 'CbcSolver.cpp' || echo '$(srcdir)/'`CbcSolver.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcSolver.Tpo $(DEPDIR)/libCbc_la-CbcSolver.Plo
@@ -1865,6 +1876,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcParameters.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcPartialNodeInfo.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcPartialSolutionPool.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcPostprocessRepair.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcRootHeuristicSchedule.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSOS.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSimpleInteger.Plo
@@ -2001,6 +2013,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcParameters.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcPartialNodeInfo.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcPartialSolutionPool.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcPostprocessRepair.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcRootHeuristicSchedule.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSOS.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSimpleInteger.Plo

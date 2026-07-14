@@ -14,6 +14,13 @@
 // when the symbol is absent and fires automatically when OpenBLAS is linked
 // directly or transitively — regardless of compiler or -DCLP_USE_OPENBLAS.
 // On Windows (MSVC and MinGW) we fall back to the compile-time CLP_USE_OPENBLAS guard.
+// Also cap OpenMP itself: OpenBLAS on this platform is built with an OpenMP
+// threading backend, and SuiteSparse's CHOLMOD/AMD (used for Clp's dense
+// Cholesky) parallelizes its own loops directly via OpenMP too, independent
+// of any BLAS-level thread count. Calling openblas_set_num_threads() alone
+// does not stop those other OpenMP-parallel regions from defaulting to
+// nproc threads (OMP_NUM_THREADS is normally unset), so both calls are
+// needed to fully avoid oversubscription/non-determinism.
 #if !defined(_WIN32)
 #include <dlfcn.h>
 namespace {
@@ -24,9 +31,17 @@ inline void set_openblas_threads(int n)
   if (fn)
     fn(n);
 }
+inline void set_omp_threads(int n)
+{
+  typedef void (*fn_t)(int);
+  static fn_t fn = reinterpret_cast<fn_t>(dlsym(RTLD_DEFAULT, "omp_set_num_threads"));
+  if (fn)
+    fn(n);
+}
 } // namespace
 #elif defined(CLP_USE_OPENBLAS)
 extern "C" void openblas_set_num_threads(int num_threads);
+inline void set_omp_threads(int) {}
 #endif
 
 #include <string>
@@ -1957,8 +1972,9 @@ void CbcModel::branchAndBound(int doStatistics)
   // randomNumberGenerator_.setSeed(987654321);
   if (!parentModel_) {
 #if !defined(_WIN32)
-    // make sure openblas only uses one thread
+    // make sure openblas and any OpenMP-parallel library (e.g. CHOLMOD) only use one thread
     set_openblas_threads(1);
+    set_omp_threads(1);
 #endif
     /*
         Capture a time stamp before we start (unless set).
@@ -4950,6 +4966,7 @@ void CbcModel::branchAndBound(int doStatistics)
   if (!parentModel_) {
     autoSetBLASCap = true;
     set_openblas_threads(1);
+    set_omp_threads(1);
   }
 #endif
   if (feasible) {
@@ -6432,11 +6449,19 @@ void CbcModel::branchAndBound(int doStatistics)
   }
 #endif
 #if !defined(_WIN32)
-  // Restore OpenBLAS to its default thread count after B&B.
-  // Use a high value so it reverts to the system default (OpenBLAS itself
-  // clamps to the actual number of CPUs).
-  if (autoSetBLASCap)
-    set_openblas_threads(64);
+  // Keep OpenBLAS capped at 1 thread after B&B too.  Silently reverting to a
+  // high thread count here is unsafe: postprocessing (CglPreProcess::postProcess,
+  // called right after this function returns) performs further LP resolves,
+  // and letting BLAS go multi-threaded there - without any explicit user
+  // request - reintroduces the same per-call overhead and non-deterministic
+  // floating-point behaviour (differing solve results under CPU contention)
+  // that this cap was introduced to avoid during the B&B tree itself. There is
+  // currently no user-facing option to opt in to multi-threaded BLAS, so stay
+  // at 1 thread unconditionally.
+  if (autoSetBLASCap) {
+    set_openblas_threads(1);
+    set_omp_threads(1);
+  }
 #endif
   return;
 }

@@ -577,6 +577,7 @@ static void printHelp(CbcParameters &cbcParams, ClpParameters &clpParams)
   const char *order[] = {
     "Stopping", "Cuts", "Heuristics",
     "LP Presolve", "MIP Preprocessing", "MIP Preprocessing \u2014 Fast",
+    "MIP Preprocessing \u2014 Bound Propagation",
     "Branching", "Tolerances", "Conflict Graph",
     "Strategy", "Solving",
     "Simplex", "Barrier", "Scaling",
@@ -1101,7 +1102,7 @@ int CbcSolver::applyLpMethod()
             bpLevel, maxRounds, useElapsed, timeLimit, startTime)) {
         if (logLevel >= 1)
           printGeneralMessage(model_,
-            "Bound propagation: infeasibility proved — skipping solve.");
+            "Bound tightening: infeasibility proved — skipping solve.");
         return -1;
       }
     } else if (parameters_[CbcParam::SINGLETONBOUNDS]->modeVal()) {

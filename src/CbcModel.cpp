@@ -18285,15 +18285,43 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
 
     // Node-level bound propagation: propagate bound changes from
     // branching to detect infeasibility or fix additional variables.
-    if (nodeBoundProp_ && feasible) {
+    if (nodeBoundProp_ && feasible && !maximumSecondsReached()) {
       int depth = node->depth();
       if (depth >= nodeBoundPropMinDepth_
         && depth <= nodeBoundPropMaxDepth_
         && (depth % nodeBoundPropDepthInterval_) == 0) {
         CbcBoundPropagation bp;
-        feasible = bp.run(solver_, NULL, 0,
-          CbcBoundPropagation::Fixpoint, 0,
-          true, 1.0e100, 0.0);
+        // Pass remaining wall-clock budget so BP cannot outlast the global
+        // time limit.  (startTime=CoinGetTimeOfDay(); limit=remaining seconds)
+        const double bpRemaining = std::max(getMaximumSeconds() - getCurrentSeconds(), 1.0);
+        const int bpLogLevel = handler_->logLevel();
+        if (bpLogLevel > 1) {
+          fprintf(stdout, "  [nodeBoundProp] START node=%d depth=%d t=%.1fs "
+                           "budget=%.1fs\n",
+            numberNodes_, depth, getCurrentSeconds(), bpRemaining);
+          fflush(stdout);
+        }
+        // Previously logLevel was hardcoded to 0 here, so per-node bound
+        // propagation ran completely silently (no start message, and its
+        // internal end-of-round/end-of-run messages were suppressed too).
+        // This made it impossible to tell from the log whether a stall was
+        // happening inside nodeBoundProp or elsewhere. However, at the
+        // normal solve verbosity (logLevel <= 1) the per-node summary line
+        // ("Bound tightening: N bounds tightened (M fixed) in T s.") is
+        // pure noise since it repeats for every node visited inside B&B.
+        // Only forward the real log level (enabling that summary and the
+        // per-round messages) once the user has asked for the extra detail
+        // (logLevel > 1), matching the threshold used for the START/END
+        // markers above.
+        const int bpRunLogLevel = (bpLogLevel > 1) ? bpLogLevel : 0;
+        feasible = bp.run(solver_, NULL, bpRunLogLevel,
+            CbcBoundPropagation::Fixpoint, 0,
+            true, bpRemaining, CoinGetTimeOfDay());
+        if (bpLogLevel > 1) {
+          fprintf(stdout, "  [nodeBoundProp] END   node=%d depth=%d t=%.1fs\n",
+            numberNodes_, depth, getCurrentSeconds());
+          fflush(stdout);
+        }
       }
     }
 

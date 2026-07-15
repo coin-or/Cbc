@@ -1914,7 +1914,35 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   model->lastOptimization = ContinuousOptimization;
 
-  if (solver->basisIsAvailable()) {
+  // Optional bound propagation before solving (uses integer structure to
+  // tighten bounds; see INT_PARAM_LP_FAST_PREPROCESS).  When BP runs and
+  // changes bounds the current basis becomes stale, so we must cold-start.
+  bool bpChangedBounds = false;
+  const int fppLevel = model->int_param[INT_PARAM_LP_FAST_PREPROCESS];
+  if (fppLevel > 0) {
+    CbcBoundPropagation::Level level;
+    switch (fppLevel) {
+      case 1:  level = CbcBoundPropagation::Singletons; break;
+      case 2:  level = CbcBoundPropagation::MILPbt;     break;
+      default: level = CbcBoundPropagation::Fixpoint;   break;
+    }
+    const double timeLimit = model->dbl_param[DBL_PARAM_TIME_LIMIT];
+    const bool useElapsed = (model->int_param[INT_PARAM_ELAPSED_TIME] == 1);
+    const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+    const int logLevel = model->int_param[INT_PARAM_LOG_LEVEL];
+    CbcBoundPropagation bp;
+    const bool feasible = bp.run(solver, solver->messageHandler(), logLevel,
+                                  level, /*maxRounds=*/100,
+                                  useElapsed, timeLimit, startTime);
+    if (!feasible) {
+      clps->setMaximumSeconds(prevMaxSecs);
+      clps->setMaximumIterations(prevMaxIter);
+      return 2;  // infeasible proved by bound propagation
+    }
+    bpChangedBounds = (bp.nFixed() > 0 || bp.nTightened() > 0);
+  }
+
+  if (!bpChangedBounds && solver->basisIsAvailable()) {
     solver->resolve();
     if (solver->isProvenOptimal()) {
       clps->setMaximumSeconds(prevMaxSecs);

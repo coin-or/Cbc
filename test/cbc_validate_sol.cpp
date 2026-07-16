@@ -159,23 +159,34 @@ static bool parseSolFile(const char *path, SolFile &out)
       continue;
     }
 
-    /* Variable lines: either "idx name value [extra]" or "name value" */
-    char col[4][256];
-    int nread = sscanf(line, "%255s %255s %255s %255s",
-      col[0], col[1], col[2], col[3]);
+    /* Variable lines: "idx name value [extra]" or "name value", optionally
+     * prefixed with a "**" marker that CbcSolver.cpp writes ahead of the
+     * index for rows/columns whose value lies outside its bounds beyond
+     * tolerance (see CbcSolver.cpp's use of "** " before printFormat). That
+     * marker must be skipped, not parsed as the variable name, or the real
+     * name/value one token to the right is silently dropped.               */
+    char col[5][256];
+    int nread = sscanf(line, "%255s %255s %255s %255s %255s",
+      col[0], col[1], col[2], col[3], col[4]);
     if (nread <= 0 || col[0][0] == '#')
       continue;
 
+    int base = 0;
+    if (strcmp(col[0], "**") == 0) {
+      base = 1;
+      --nread;
+    }
+
     const char *name;
     const char *valStr;
-    if (isNumericStr(col[0]) && nread >= 3) {
+    if (isNumericStr(col[base]) && nread >= 3) {
       /* CBC .sol format: index name value */
-      name = col[1];
-      valStr = col[2];
+      name = col[base + 1];
+      valStr = col[base + 2];
     } else if (nread >= 2) {
       /* name value format */
-      name = col[0];
-      valStr = col[1];
+      name = col[base];
+      valStr = col[base + 1];
     } else {
       continue;
     }

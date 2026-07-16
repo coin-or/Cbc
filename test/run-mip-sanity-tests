@@ -18,7 +18,8 @@
 #   ./run-mip-sanity-tests [OPTIONS] [instance-glob ...]
 #
 # Options:
-#   --jobs=N            Parallel jobs (default: nproc)
+#   --jobs=N            Parallel jobs (default: $CBC_TESTS_JOBS env var if set,
+#                        otherwise nproc)
 #   --cbc=PATH           Path to the cbc executable (default: ../src/cbc built
 #                        in-tree, falling back to $PREFIX/bin/cbc and $PATH)
 #   --prefix=PATH        Install prefix to look for cbc in (default: ~/prog/cbc)
@@ -42,7 +43,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-JOBS="$(nproc)"
+JOBS="${CBC_TESTS_JOBS:-$(nproc)}"
 PREFIX="${PREFIX:-$HOME/prog/cbc}"
 DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
 RESULTS_DIR="$SCRIPT_DIR/sanity-results"

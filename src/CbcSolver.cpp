@@ -5341,7 +5341,18 @@ int CbcSolver::solveInitialLp(
             }
             lpMethodResult = applyLpMethod();
             if (lpMethodResult < 0) {
-              // Infeasible — clean up LP progress handler and skip BAB
+              // Infeasible — clean up LP progress handler and skip BAB.
+              // Mark the model infeasible (same pattern used when
+              // pre-processing or tightenPrimalBounds() prove infeasibility)
+              // so the solution writer reports "Integer infeasible" instead
+              // of leaving iStat/iStat2 unset ("Status unknown").
+              integerStatus_ = 6;
+              model_.setProblemStatus(0);
+              model_.setSecondaryStatus(1);
+              if (babModel_) {
+                babModel_->setProblemStatus(0);
+                babModel_->setSecondaryStatus(1);
+              }
 #ifndef CBC_OTHER_SOLVER
               if (lpSavedMsg && si) {
                 ClpSimplex *clpModel = si->getModelPtr();

@@ -1511,11 +1511,6 @@ int CbcSolver::applyLpMethod()
   return 0;
 }
 
-int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
-                   int testSwitch, const double *stuff, std::deque<std::string>,
-                   int callBack(CbcModel *currentSolver, int whereFrom),
-                   CbcParameters &parameters);
-
 //###########################################################################
 // Some debugging routines
 //###########################################################################
@@ -1934,7 +1929,7 @@ CbcSolver::CbcSolver()
       originalSolver_(nullptr), originalCoinModel_(nullptr),
       cutGenerator_(nullptr), numberUserFunctions_(0),
       numberCutGenerators_(0), callBack_(new CbcStopNow()),
-      startTime_(CoinCpuTime()), doMiplib_(false), noPrinting_(false),
+      startTime_(CoinCpuTime()), noPrinting_(false),
       readMode_(1), saveSolver_(nullptr), goodModel_(false),
       interactiveMode_(false), defaultSettings_(true), preSolve_(5),
       preProcess_(4), useStrategy_(false), preSolveFile_(false),
@@ -2061,8 +2056,8 @@ CbcSolver::CbcSolver(const CbcSolver &rhs)
       numberUserFunctions_(rhs.numberUserFunctions_),
       numberCutGenerators_(rhs.numberCutGenerators_),
       callBack_(rhs.callBack_ ? rhs.callBack_->clone() : new CbcStopNow()),
-      startTime_(CoinCpuTime()), doMiplib_(rhs.doMiplib_),
-      noPrinting_(rhs.noPrinting_), readMode_(rhs.readMode_),
+      startTime_(CoinCpuTime()), noPrinting_(rhs.noPrinting_),
+      readMode_(rhs.readMode_),
       saveSolver_(nullptr), goodModel_(rhs.goodModel_),
       interactiveMode_(rhs.interactiveMode_),
       defaultSettings_(rhs.defaultSettings_), preSolve_(rhs.preSolve_),
@@ -2209,8 +2204,6 @@ CbcSolver &CbcSolver::operator=(const CbcSolver &rhs)
     clpParameters_ = rhs.clpParameters_;
     noPrinting_ = rhs.noPrinting_;
     readMode_ = rhs.readMode_;
-    doMiplib_ = rhs.doMiplib_;
-
     userFunction_ = new CbcUser *[numberUserFunctions_];
     for (i = 0; i < numberUserFunctions_; i++)
       userFunction_[i] = rhs.userFunction_[i]->clone();
@@ -2601,9 +2594,6 @@ void CbcSolver::resetRunState()
   saveInputQueue_.clear();
   statistics_ = CbcSolverStatistics();
 }
-#ifdef CLP_OLD_STYLE
-bool unitTestCbc=false;
-#endif
 void CbcSolver::printParamChanges()
 {
   if (paramChanges_.empty())
@@ -6786,7 +6776,7 @@ int CbcSolver::runCheckSolution(CbcParam *cbcParam, std::deque< std::string > &i
 // solveInitialLp() call). Preserves the original control-flow escapes:
 // \return 0=success (fall through), 1=break BAB, 2=continue command loop,
 //         3=return from run() (returnCode is set)
-int CbcSolver::babSetupAndRootLp(bool miplib, int logLevel, int cbcLogLevel,
+int CbcSolver::babSetupAndRootLp(int logLevel, int cbcLogLevel,
   OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
   CglStored &storedAmpl, CoinModel *&coinModel,
   CbcSolverStatistics &statistics, int &returnCode,
@@ -7114,21 +7104,19 @@ int CbcSolver::babSetupAndRootLp(bool miplib, int logLevel, int cbcLogLevel,
     si->setSpecialOptions(0x40000000);
 #endif
   }
-  if (!miplib) {
-    int returnCode2 = 0;
-    int lpStatus = solveInitialLp(logLevel, cbcLogLevel, statistics, returnCode2, callBack);
-    if (lpStatus == 1) return 1;
-    if (lpStatus == 2) return 2;
-    if (lpStatus == 3) {
-      returnCode = returnCode2;
-      return 3;
-    }
+  int returnCode2 = 0;
+  int lpStatus = solveInitialLp(logLevel, cbcLogLevel, statistics, returnCode2, callBack);
+  if (lpStatus == 1) return 1;
+  if (lpStatus == 2) return 2;
+  if (lpStatus == 3) {
+    returnCode = returnCode2;
+    return 3;
   }
   return 0;
 }
 
 
-int CbcSolver::babConfigureBabModel(bool miplib, int logLevel,
+int CbcSolver::babConfigureBabModel(int logLevel,
   OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
   CglStored &storedAmpl,
   double time1, double &time2, double &totalTime,
@@ -7274,7 +7262,7 @@ int CbcSolver::babConfigureBabModel(bool miplib, int logLevel,
   if (logLevel > -1)
     clpSolver2->messageHandler()->setLogLevel(logLevel);
   lpSolver = clpSolver2->getModelPtr();
-  if (lpSolver->factorizationFrequency() == 200 && !miplib) {
+  if (lpSolver->factorizationFrequency() == 200) {
     // User did not touch preset
     int numberRows = lpSolver->numberRows();
     const int cutoff1 = 10000;
@@ -7366,7 +7354,7 @@ int CbcSolver::babConfigureBabModel(bool miplib, int logLevel,
 }
 
 
-int CbcSolver::babPostPreprocessCleanup(bool miplib,
+int CbcSolver::babPostPreprocessCleanup(
   CglPreProcess &process, CglTwomir &twomirGen,
   CbcPreprocHandler *&preprocHandler, double preprocStart,
   CbcSolverStatistics &statistics)
@@ -7442,7 +7430,6 @@ if (preprocHandler) {
 }
 
 // now tighten bounds
-if (!miplib) {
 #ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface *si =getClpSolver(babModel_->solver());
   assert(si != NULL);
@@ -7474,7 +7461,6 @@ if (!miplib) {
   }
 #elif CBC_OTHER_SOLVER == 1
 #endif
-}
 if (debugValues) {
   // for debug
   std::string problemName;
@@ -7491,7 +7477,7 @@ if (debugValues) {
 }
 
 
-void CbcSolver::babConfigureSearchModel(bool miplib, int cbcParamCode,
+void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
   CglPreProcess &process, CglStored &storedAmpl, CoinModel &saveCoinModel,
   CoinModel &saveTightenedModel,
@@ -7629,46 +7615,36 @@ void CbcSolver::babConfigureSearchModel(bool miplib, int cbcParamCode,
             delete[] dsort;
           }
           // Set up heuristics
-          configureHeuristics(babModel_, ((!miplib) ? 1 : 10));
-          if (!miplib) {
-            if (parameters[CbcParam::LOCALTREE]->modeVal()) {
-              CbcTreeLocal localTree(babModel_, NULL, 10, 0, 0, 10000,
-                2000);
-              babModel_->passInTreeHandler(localTree);
-            }
-          }
-          if (cbcParamCode == CbcParam::MIPLIB) {
-            if (babModel_->numberStrong() == 5 && babModel_->numberBeforeTrust() == 5)
-              babModel_->setNumberBeforeTrust(10);
+          configureHeuristics(babModel_, 1);
+          if (parameters[CbcParam::LOCALTREE]->modeVal()) {
+            CbcTreeLocal localTree(babModel_, NULL, 10, 0, 0, 10000,
+              2000);
+            babModel_->passInTreeHandler(localTree);
           }
           int experimentFlag = parameters[CbcParam::EXPERIMENT]->intVal();
           int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
           int bothFlags = std::max(std::min(experimentFlag, 1), strategyFlag);
           // add cut generators if wanted
-          configureCutGenerators(*babModel_, miplib, bkPivotingStrategy);
+          configureCutGenerators(*babModel_, bkPivotingStrategy);
           // Could tune more
-          if (!miplib) {
-            double minimumDrop = fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
-            babModel_->setMinimumDrop(std::min(5.0e-2, minimumDrop));
-            if (cutPass == -1234567) {
-              if (babModel_->getNumCols() < 500)
-                babModel_->setMaximumCutPassesAtRoot(
-                  -100); // always do 100 if possible
-              else if (babModel_->getNumCols() < 5000)
-                babModel_->setMaximumCutPassesAtRoot(
-                  100); // use minimum drop
-              else
-                babModel_->setMaximumCutPassesAtRoot(50);
-            } else {
-              babModel_->setMaximumCutPassesAtRoot(cutPass);
-            }
-            if (cutPassInTree == -1234567)
-              babModel_->setMaximumCutPasses(4);
+          double minimumDrop = fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
+          babModel_->setMinimumDrop(std::min(5.0e-2, minimumDrop));
+          if (cutPass == -1234567) {
+            if (babModel_->getNumCols() < 500)
+              babModel_->setMaximumCutPassesAtRoot(
+                -100); // always do 100 if possible
+            else if (babModel_->getNumCols() < 5000)
+              babModel_->setMaximumCutPassesAtRoot(
+                100); // use minimum drop
             else
-              babModel_->setMaximumCutPasses(cutPassInTree);
-          } else if (cutPass != -1234567) {
+              babModel_->setMaximumCutPassesAtRoot(50);
+          } else {
             babModel_->setMaximumCutPassesAtRoot(cutPass);
           }
+          if (cutPassInTree == -1234567)
+            babModel_->setMaximumCutPasses(4);
+          else
+            babModel_->setMaximumCutPasses(cutPassInTree);
           // Do more strong branching if small
           // if (babModel_->getNumCols()<5000)
           // babModel_->setNumberStrong(20);
@@ -7719,7 +7695,7 @@ void CbcSolver::babConfigureSearchModel(bool miplib, int cbcParamCode,
           ;
           int *changed = NULL;
 #ifdef UNSAFE_FOR_LAZY_CUTS
-          if (!miplib && increment == normalIncrement)
+          if (increment == normalIncrement)
             changed = analyze(osiclp, numberChanged, increment, false,
               generalMessageHandler, parameters.noPrinting());
 #endif
@@ -7794,7 +7770,7 @@ void CbcSolver::babConfigureSearchModel(bool miplib, int cbcParamCode,
           babModel_->setSpecialOptions(babModel_->specialOptions() | 2);
           currentBranchModel = babModel_;
           // OsiSolverInterface * strengthenedModel=NULL;
-          if (cbcParamCode == CbcParam::BAB || cbcParamCode == CbcParam::MIPLIB) {
+          if (cbcParamCode == CbcParam::BAB) {
             if (strategyFlag == 1) {
               // try reduced model
               babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
@@ -7914,7 +7890,6 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
   int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
   int &preProcess = preProcess_;
   bool &useStrategy = useStrategy_;
-  bool &pumpChanged = pumpChanged_;
   bool &strongChanged = strongChanged_;
   double &tightenFactor = tightenFactor_;
   int &nodeStrategy = nodeStrategy_;
@@ -7927,7 +7902,6 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
   int &outputFormat = outputFormat_;
   int &useSolution = useSolution_;
   int &useCosts = useCosts_;
-  bool &dominatedCuts = dominatedCuts_;
   bool &biLinearProblem = biLinearProblem_;
   int &numberSOS = numberSOS_;
   int *&priorities = priorities_;
@@ -7946,7 +7920,6 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
   int *&sosPriority = sosPriority_;
   int *&cut = cut_;
   int &integerStatus = integerStatus_;
-  std::deque< std::string > &saveInputQueue = saveInputQueue_;
   OsiSolverInterface *&saveSolver = saveSolver_;
 
 #ifndef CBC_OTHER_SOLVER
@@ -9840,142 +9813,6 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
             malloc_stats2();
 #endif
             checkSOS(babModel_, babModel_->solver());
-          } else if (cbcParamCode == CbcParam::MIPLIB) {
-            int typeOfCuts = babModel_->numberCutGenerators() ? 1 : -1;
-            CbcStrategyDefault strategy(typeOfCuts,
-              babModel_->numberStrong(),
-              babModel_->numberBeforeTrust());
-            // Set up pre-processing
-            int translate2[] = { 9999, 1, 1, 3, 2, 4, 5, 6, 6 };
-            if (preProcess)
-              strategy.setupPreProcessing(translate2[preProcess]);
-            babModel_->setStrategy(strategy);
-#ifdef CBC_THREAD
-            int numberThreads = parameters[CbcParam::THREADS]->intVal();
-            babModel_->setNumberThreads(numberThreads % 100);
-            babModel_->setThreadMode((numberThreads % 1000) / 100);
-#endif
-#ifndef CBC_OTHER_SOLVER
-            if (outputFormat == 5) {
-              osiclp = getClpSolver(babModel_->solver());
-              lpSolver = osiclp->getModelPtr();
-              lpSolver->setPersistenceFlag(1);
-            }
-#endif
-            if (testOsiOptions >= 0) {
-              printf("Testing OsiObject options %d\n", testOsiOptions);
-              CbcBranchDefaultDecision decision;
-              OsiChooseStrong choose(babModel_->solver());
-              choose.setNumberBeforeTrusted(babModel_->numberBeforeTrust());
-              choose.setNumberStrong(babModel_->numberStrong());
-              choose.setShadowPriceMode(testOsiOptions);
-              // babModel_->deleteObjects(false);
-              decision.setChooseMethod(choose);
-              babModel_->setBranchingMethod(decision);
-            }
-            model_ = *babModel_;
-#ifndef CBC_OTHER_SOLVER
-            {
-              osiclp = getClpSolver(model_.solver());
-              lpSolver = osiclp->getModelPtr();
-              lpSolver->setSpecialOptions(
-                lpSolver->specialOptions() | IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and
-                                                                   // bound)
-              if (lpSolver->factorization()->goOslThreshold() > 1000) {
-                // use osl in gomory (may not if CglGomory decides not to)
-                int numberGenerators = model_.numberCutGenerators();
-                for (int iGenerator = 0; iGenerator < numberGenerators;
-                  iGenerator++) {
-                  CbcCutGenerator *generator = model_.cutGenerator(iGenerator);
-                  CglGomory *gomory = dynamic_cast< CglGomory * >(generator->generator());
-                  if (gomory)
-                    gomory->useAlternativeFactorization();
-                }
-              }
-            }
-#endif
-            /* LL: this was done in CoinSolve.cpp: main(argc, argv).
-                               I have moved it here so that the miplib
-               directory location could be passed to CbcClpUnitTest. */
-            /* JJF: No need to have 777 flag at all - user
-                 says -miplib
-                 */
-            int extra2 = parameters[CbcParam::EXTRA2]->intVal();
-            double stuff[11];
-            stuff[0] = parameters[CbcParam::FAKEINCREMENT]->dblVal();
-            stuff[1] = parameters[CbcParam::FAKECUTOFF]->dblVal();
-            stuff[2] = parameters[CbcParam::DEXTRA3]->dblVal();
-            stuff[3] = parameters[CbcParam::DEXTRA4]->dblVal();
-            stuff[4] = clpParameters[ClpParam::DENSE]->intVal();
-            stuff[5] = parameters[CbcParam::EXTRA1]->intVal();
-            stuff[6] = parameters[CbcParam::EXTRA3]->intVal();
-            stuff[7] = parameters[CbcParam::DEPTHMINIBAB]->intVal();
-            stuff[8] = bothFlags;
-            stuff[9] = doVector;
-            stuff[10] = clpParameters[ClpParam::SMALLFACT]->intVal();
-            if (dominatedCuts) {
-              model_.setSpecialOptions(model_.specialOptions() | 64);
-            }
-            if (parameters[CbcParam::CPX]->modeVal()) {
-              model_.setSpecialOptions(model_.specialOptions() | 16384);
-              // if (model_.fastNodeDepth()==-1)
-              model_.setFastNodeDepth(-2); // Use Cplex at root
-            }
-            int hOp2 = parameters[CbcParam::HEUROPTIONS]->intVal() / 10000;
-            if (hOp2 % 10) {
-              model_.setSpecialOptions(model_.specialOptions() | 16384);
-              if (model_.fastNodeDepth() == -1)
-                model_.setFastNodeDepth(-2); // Use Cplex at root
-            }
-            int multipleRoot = parameters[CbcParam::MULTIPLEROOTS]->intVal();
-            model_.setMultipleRootTries(multipleRoot);
-            int specialOptions = parameters[CbcParam::STRONGSTRATEGY]->intVal();
-            if (specialOptions >= 0)
-              model_.setStrongStrategy(specialOptions);
-            if (!pumpChanged) {
-              // Make more lightweight
-              for (int iHeur = 0; iHeur < model_.numberHeuristics();
-                iHeur++) {
-                CbcHeuristic *heuristic = model_.heuristic(iHeur);
-                CbcHeuristicFPump *pump = dynamic_cast< CbcHeuristicFPump * >(heuristic);
-                if (pump) {
-                  CbcHeuristicFPump heuristic4(model_);
-                  heuristic4.setFractionSmall(0.5);
-                  heuristic4.setMaximumPasses(5);
-                  heuristic4.setFeasibilityPumpOptions(30);
-                  heuristic4.setWhen(13);
-                  heuristic4.setHeuristicName("feasibility pump");
-                  // CbcHeuristicFPump & pump2 = pump;
-                  *pump = heuristic4;
-                }
-              }
-            }
-#ifndef CBC_OTHER_SOLVER
-            {
-              OsiClpSolverInterface *solver = getClpSolver(model_.solver());
-              ClpSimplex *simplex = solver->getModelPtr();
-              // if wanted go back to old printing method
-              double value = printFrequency;//simplex->getMinIntervalProgressUpdate();
-              if (value <= 0.0) {
-                model_.setSecsPrintFrequency(-1.0);
-                if (value < 0.0) {
-                  model_.setPrintFrequency(static_cast< int >(-value));
-                }
-              } else {
-                model_.setSecsPrintFrequency(value);
-              }
-            }
-#endif
-            std::string dirMiplib = parameters[CbcParam::DIRMIPLIB]->dirName();
-            if (dirMiplib != "") {
-              returnCode = CbcClpUnitTest(model_, dirMiplib, extra2, stuff,
-                saveInputQueue, callBack, parameters);
-              babModel_ = NULL;
-              return 3;
-            }
-          } else {
-            abort(); // can't get here
-            // strengthenedModel = babModel_->strengthenedModel();
           }
           currentBranchModel = NULL;
 #ifndef CBC_OTHER_SOLVER
@@ -10102,11 +9939,11 @@ int CbcSolver::configureHeuristics(CbcModel *model, int type)
     initialPumpTune_);
 }
 
-void CbcSolver::configureCutGenerators(CbcModel &babModel, bool miplib,
+void CbcSolver::configureCutGenerators(CbcModel &babModel,
   CoinBronKerbosch::PivotingStrategy bkPivotingStrategy)
 {
   installCutGenerators(babModel, parameters_, complicatedInteger_,
-    dominatedCuts_, miplib, cgraphMode_, oldCliqueMode_, maxCallsBK_,
+    dominatedCuts_, cgraphMode_, oldCliqueMode_, maxCallsBK_,
     bkClqExtMethod_, bkPivotingStrategy, oddWExtMethod_,
     mixedRoundStrategy_);
 }
@@ -12606,15 +12443,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           if (deleteModel2)
             delete model2;
         } break;
-        case CbcParam::MIPLIB:
-          // User can set options - main difference is lack of model and
-          // CglPreProcess
-          goodModel = true;
-          parameters[CbcParam::MULTIPLEROOTS]->setVal(0);
-          /*
-                        Run branch-and-cut. First set a few options -- node
-             comparison, scaling. Print elapsed time at the end.
-                      */
         case CbcParam::BAB: {
           if (!goodModel) {
             printGeneralWarning(model_, "** Current model not valid\n");
@@ -12626,7 +12454,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           parameters.setGoodModel(true);
           parameters.synchronizeModel();
 #endif
-          bool miplib = cbcParamCode == CbcParam::MIPLIB;
           int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
           int cbcLogLevel = parameters[CbcParam::LOGLEVEL]->intVal();
           int truncateColumns = COIN_INT_MAX;
@@ -12637,7 +12464,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           int *newPriorities = NULL;
           int returnCode = 0;
           {
-            int rc = babSetupAndRootLp(miplib, logLevel, cbcLogLevel,
+            int rc = babSetupAndRootLp(logLevel, cbcLogLevel,
               clpSolver, lpSolver, storedAmpl, coinModel, statistics,
               returnCode, callBack);
             if (rc == 1) break;
@@ -12663,7 +12490,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           rankerConfig.rankObjCoeffPowerUntrusted = rankObjCoeffPowerUntrusted;
           rankerConfig.rankConflictMaxPercBin = rankConflictMaxPercBin;
           {
-            int rc = babConfigureBabModel(miplib, logLevel, clpSolver,
+            int rc = babConfigureBabModel(logLevel, clpSolver,
               lpSolver, storedAmpl, time1, time2, totalTime, rankerConfig,
               numberOriginalColumns);
             if (rc == 1) break;
@@ -12869,12 +12696,12 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
 
           {
-            int rc = babPostPreprocessCleanup(miplib, process, twomirGen,
+            int rc = babPostPreprocessCleanup(process, twomirGen,
               preprocHandler, preprocStart, statistics);
             if (rc == 1) break;
           }
           int testOsiOptions = 0;
-          babConfigureSearchModel(miplib, cbcParamCode, clpSolver, lpSolver,
+          babConfigureSearchModel(cbcParamCode, clpSolver, lpSolver,
             process, storedAmpl, saveCoinModel, saveTightenedModel,
             bkPivotingStrategy, newPriorities, testOsiOptions, integersOK,
             info);
@@ -13656,25 +13483,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           while (!inputQueue.empty())
             inputQueue.pop_front();
           break;
-        case CbcParam::UNITTEST: {
-          int returnCode = -1;
-          std::string dirMiplib = parameters[CbcParam::DIRMIPLIB]->dirName();
-          std::string dirSample = parameters[CbcParam::DIRSAMPLE]->dirName();
-          if (dirMiplib != "") {
-            returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL,
-              saveInputQueue, callBack, parameters);
-          } else if (dirSample != "") {
-            returnCode = CbcClpUnitTest(model_, dirSample, -2, NULL,
-              saveInputQueue, callBack, parameters);
-          } else {
-            buffer.str("");
-            buffer << "No directory specified for input files"
-                   << "Please use dirMiplib or dirSample to set directory name";
-            printGeneralMessage(model_, buffer.str());
-          }
-          babModel_ = NULL;
-          return returnCode;
-        }
         case CbcParam::USERCBC: {
 #ifdef USER_HAS_FAKE_CBC
           // Replace the sample code by whatever you want

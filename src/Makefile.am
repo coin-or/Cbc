@@ -109,8 +109,7 @@ libCbc_la_SOURCES = \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
-	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
-	unitTestClp.cpp
+	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp
 
 # List all additionally required libraries
 libCbc_la_LIBADD = $(CBCLIB_LFLAGS)

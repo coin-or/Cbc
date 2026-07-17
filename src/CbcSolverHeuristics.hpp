@@ -32,7 +32,7 @@ fixVubs(CbcModel &model, int skipZero2,
 
 /** 1 - add heuristics to model
         2 - do heuristics (and set cutoff and best solution)
-        3 - for miplib test so skip some
+        3 - legacy reduced-heuristics mode (skip some heuristics)
         (out model later)
     */
 int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,

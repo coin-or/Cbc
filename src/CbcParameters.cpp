@@ -1193,8 +1193,6 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
   parameters_[CbcParam::IMPORT]->setPushFunc(CbcParamUtils::doImportParam);
 
-  parameters_[CbcParam::MIPLIB]->setup("miplib", "Do some of miplib test set", "",
-                            CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::OUTDUPROWS]->setup(
       "outDup!licates", "Takes duplicate rows, etc., out of the integer model",
@@ -1298,9 +1296,6 @@ void CbcParameters::addCbcSolverActionParams() {
       "constraints will be in resulting problem.",
       CoinParam::displayPriorityHigh);
 
-  parameters_[CbcParam::UNITTEST]->setup(
-      "unitTest", "Do unit test", "This exercises the unit test.",
-      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::WRITEGMPLSOL]->setup(
       "writeGSolu!tion", "Puts glpk solution to file",
@@ -1453,12 +1448,6 @@ void CbcParameters::addCbcSolverDirParams() {
       "etc. will use. It is initialized to the current directory.");
   parameters_[CbcParam::DIRECTORY]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
-  parameters_[CbcParam::DIRSAMPLE]->setup(
-      "dirSample", "Set directory where the COIN-OR sample problems are.",
-      "This sets the directory where the COIN-OR sample problems reside. It is "
-      "used only when -unitTest is passed to cbc. cbc will pick up the test "
-      "problems from this directory.", CoinParam::displayPriorityLow);
-  parameters_[CbcParam::DIRSAMPLE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[CbcParam::DIRNETLIB]->setup(
       "dirNetlib", "Set directory where the netlib problems are.",
@@ -1470,15 +1459,6 @@ void CbcParameters::addCbcSolverDirParams() {
       CoinParam::displayPriorityLow);
   parameters_[CbcParam::DIRNETLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
-  parameters_[CbcParam::DIRMIPLIB]->setup(
-      "dirMiplib", "Set directory where the miplib 2003 problems are.",
-      "This sets the directory where the miplib 2003 problems reside. One can "
-      "get the miplib problems from COIN-OR or from the main miplib site. This "
-      "parameter is used only when -miplib is passed to cbc. cbc will pick up "
-      "the miplib problems from this directory. If cbc is built without zlib "
-      "support then the problems must be uncompressed.",
-      CoinParam::displayPriorityLow);
-  parameters_[CbcParam::DIRMIPLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
 }
 

@@ -21,7 +21,6 @@ void installCutGenerators(
   CbcParameters &parameters,
   int complicatedInteger,
   bool dominatedCuts,
-  bool miplib,
   const std::string &cgraphMode,
   int oldCliqueMode,
   int maxCallsBK,

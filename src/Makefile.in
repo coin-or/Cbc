@@ -207,8 +207,7 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcSubProblem.lo libCbc_la-CbcSymmetry.lo \
 	libCbc_la-CbcThread.lo libCbc_la-CbcTree.lo \
 	libCbc_la-CbcTreeLocal.lo libCbc_la-Cbc_C_Interface.lo \
-	libCbc_la-CbcLinked.lo libCbc_la-CbcLinkedUtils.lo \
-	libCbc_la-unitTestClp.lo
+	libCbc_la-CbcLinked.lo libCbc_la-CbcLinkedUtils.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -322,8 +321,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcThread.Plo \
 	./$(DEPDIR)/libCbc_la-CbcTree.Plo \
 	./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo \
-	./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo \
-	./$(DEPDIR)/libCbc_la-unitTestClp.Plo
+	./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -653,8 +651,7 @@ libCbc_la_SOURCES = \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
-	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
-	unitTestClp.cpp
+	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp
 
 
 # List all additionally required libraries
@@ -1012,7 +1009,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcTree.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-unitTestClp.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -1674,13 +1670,6 @@ libCbc_la-CbcLinkedUtils.lo: CbcLinkedUtils.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcLinkedUtils.lo `test -f 'CbcLinkedUtils.cpp' || echo '$(srcdir)/'`CbcLinkedUtils.cpp
 
-libCbc_la-unitTestClp.lo: unitTestClp.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-unitTestClp.lo -MD -MP -MF $(DEPDIR)/libCbc_la-unitTestClp.Tpo -c -o libCbc_la-unitTestClp.lo `test -f 'unitTestClp.cpp' || echo '$(srcdir)/'`unitTestClp.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-unitTestClp.Tpo $(DEPDIR)/libCbc_la-unitTestClp.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='unitTestClp.cpp' object='libCbc_la-unitTestClp.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-unitTestClp.lo `test -f 'unitTestClp.cpp' || echo '$(srcdir)/'`unitTestClp.cpp
-
 cbc-CoinSolve.o: CoinSolve.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cbc_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT cbc-CoinSolve.o -MD -MP -MF $(DEPDIR)/cbc-CoinSolve.Tpo -c -o cbc-CoinSolve.o `test -f 'CoinSolve.cpp' || echo '$(srcdir)/'`CoinSolve.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cbc-CoinSolve.Tpo $(DEPDIR)/cbc-CoinSolve.Po
@@ -1910,7 +1899,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTree.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-unitTestClp.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -2048,7 +2036,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTree.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-unitTestClp.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

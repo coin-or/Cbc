@@ -40,7 +40,6 @@ void installCutGenerators(
   CbcParameters &parameters,
   int complicatedInteger,
   bool dominatedCuts,
-  bool miplib,
   const std::string &cgraphMode,
   int oldCliqueMode,
   int maxCallsBK,
@@ -236,18 +235,6 @@ void installCutGenerators(
       }
     }
   }
-
-#ifdef CLIQUE_ANALYSIS
-  if (miplib) {
-    CglStored storedAmpl;
-    if (!storedAmpl.sizeRowCuts()) {
-      printf("looking at probing\n");
-      babModel.addCutGenerator(&storedAmpl, 1, "Stored");
-      accuracyFlag[numberGenerators] = 0;
-      switches[numberGenerators++] = 0;
-    }
-  }
-#endif
 
   // --- Knapsack ---
   int knapsackMode = parameters[CbcParam::KNAPSACKCUTS]->modeVal();

@@ -192,7 +192,7 @@ public:
       \param model  the CbcModel to configure/run heuristics on
       \param type   1=register heuristics on model for the B&B tree,
                     2=run heuristics now (may set cutoff/best solution),
-                    3=miplib variant (skips some heuristics),
+                    3=legacy reduced-heuristics mode (skips some heuristics),
                     10+=use lastSolution and relax a few variables first
       \return number of heuristic solutions found (type 2), or 0 for
               registration-only calls
@@ -204,12 +204,10 @@ public:
       Thin wrapper exposing the free function installCutGenerators() as a
       class-level call surface.
       \param babModel  the CbcModel to install cut generators on
-      \param miplib    true when running the miplib test variant (some
-                       cut generators are tuned differently)
       \param bkPivotingStrategy  Bron-Kerbosch pivoting strategy for
                        clique/odd-wheel cut generation
   */
-  void configureCutGenerators(CbcModel &babModel, bool miplib,
+  void configureCutGenerators(CbcModel &babModel,
     CoinBronKerbosch::PivotingStrategy bkPivotingStrategy);
   //@}
 
@@ -296,8 +294,6 @@ private:
   /// Parameters
   ClpParameters clpParameters_;
   CbcParameters parameters_;
-  /// Whether to do miplib test
-  bool doMiplib_;
   /// Whether to suppress printing
   bool noPrinting_;
   /// Where to start reading commands
@@ -576,7 +572,7 @@ private:
   int applyLpMethod();
 
   /** Solve the root LP relaxation.
-      Called from the BAB action when !miplib.
+      Called from the BAB action.
       \return 0=success, 1=break BAB, 2=continue loop, 3=return from run()
   */
   int solveInitialLp(
@@ -639,7 +635,7 @@ private:
       \return 0=success (caller continues), 1=break BAB, 2=continue the
               command loop, 3=return from run() (returnCode is set)
   */
-  int babSetupAndRootLp(bool miplib, int logLevel, int cbcLogLevel,
+  int babSetupAndRootLp(int logLevel, int cbcLogLevel,
     OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
     CglStored &storedAmpl, CoinModel *&coinModel,
     CbcSolverStatistics &statistics, int &returnCode,
@@ -679,7 +675,7 @@ private:
       \return 0=success (caller continues), 1=break BAB (tighten bounds
               found the problem infeasible)
   */
-  int babConfigureBabModel(bool miplib, int logLevel,
+  int babConfigureBabModel(int logLevel,
     OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
     CglStored &storedAmpl,
     double time1, double &time2, double &totalTime,
@@ -692,30 +688,30 @@ private:
       \return 0=success (caller continues), 1=break BAB (tighten bounds
               found the problem infeasible)
   */
-  int babPostPreprocessCleanup(bool miplib,
+  int babPostPreprocessCleanup(
     CglPreProcess &process, CglTwomir &twomirGen,
     CbcPreprocHandler *&preprocHandler, double preprocStart,
     CbcSolverStatistics &statistics);
-  /** Handle the common post-preprocess BAB/MIPLIB search setup:
-      linked-model knapsack expansion, cost-based priorities, heuristic/cut
-      setup, repeated-use solver tuning, debug-value mapping, and the shared
-      branch-and-bound option configuration that runs before the BAB-vs-MIPLIB
-      split. Extracted from run() — the first remaining inline block in
+  /** Handle the common post-preprocess BAB search setup: linked-model
+      knapsack expansion, cost-based priorities, heuristic/cut setup,
+      repeated-use solver tuning, debug-value mapping, and the shared
+      branch-and-bound option configuration that runs before search
+      execution. Extracted from run() — the first remaining inline block in
       `case CbcParam::BAB:` following babPostPreprocessCleanup().
   */
-  void babConfigureSearchModel(bool miplib, int cbcParamCode,
+  void babConfigureSearchModel(int cbcParamCode,
     OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
     CglPreProcess &process, CglStored &storedAmpl, CoinModel &saveCoinModel,
     CoinModel &saveTightenedModel,
     CoinBronKerbosch::PivotingStrategy bkPivotingStrategy,
     int *&newPriorities, int &testOsiOptions, bool &integersOK,
     ampl_info *info);
-  /** Execute the remaining BAB/MIPLIB search phase after
+  /** Execute the remaining BAB search phase after
       babConfigureSearchModel(): BAB-specific object/SOS setup, the actual
-      branch-and-bound or MIPLIB execution path, search statistics, and the
-      final postprocess() call. Extracted from run() — the remaining inline
-      tail of `case CbcParam::BAB:` after babConfigureSearchModel().
-      eturn 0=success (caller breaks BAB), 3=return from run()
+      branch-and-bound execution path, search statistics, and the final
+      postprocess() call. Extracted from run() — the remaining inline tail
+      of `case CbcParam::BAB:` after babConfigureSearchModel().
+      \return 0=success (caller breaks BAB), 3=return from run()
               (returnCode is set)
   */
   int babExecuteSearchAndPostprocess(int cbcParamCode, int cbcLogLevel,

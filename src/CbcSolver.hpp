@@ -710,6 +710,25 @@ private:
     CoinBronKerbosch::PivotingStrategy bkPivotingStrategy,
     int *&newPriorities, int &testOsiOptions, bool &integersOK,
     ampl_info *info);
+  /** Execute the remaining BAB/MIPLIB search phase after
+      babConfigureSearchModel(): BAB-specific object/SOS setup, the actual
+      branch-and-bound or MIPLIB execution path, search statistics, and the
+      final postprocess() call. Extracted from run() — the remaining inline
+      tail of `case CbcParam::BAB:` after babConfigureSearchModel().
+      eturn 0=success (caller breaks BAB), 3=return from run()
+              (returnCode is set)
+  */
+  int babExecuteSearchAndPostprocess(int cbcParamCode, int cbcLogLevel,
+    int testOsiOptions, OsiClpSolverInterface *&clpSolver,
+    ClpSimplex *&lpSolver, OsiClpSolverInterface *originalSolver,
+    CglPreProcess &process, CglStored &storedAmpl,
+    CbcSolverStatistics &statistics,
+    double time1, double time1Elapsed, double &time2, double &totalTime,
+    int truncateColumns, int truncateRows, bool redoSOS,
+    double *&truncatedRhsLower, double *&truncatedRhsUpper,
+    int *&newPriorities, bool integersOK, int numberOriginalColumns,
+    int &returnCode, int callBack(CbcModel *currentSolver, int whereFrom),
+    ampl_info *info);
   //@}
 };
 

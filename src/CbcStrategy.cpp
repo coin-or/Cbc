@@ -989,7 +989,7 @@ void setCutAndHeuristicOptions(CbcModel &model)
       // Only look at rows with fewer than this number of elements
       cglProbing->setMaxElements(200);
       cglProbing->setMaxElementsRoot(300);
-      cglProbing->setRowCuts(3);
+      cglProbing->setRowCuts(-3);
     }
 #ifdef JJF_ZERO
     CglGomory *cglGomory = dynamic_cast< CglGomory * >(generator);

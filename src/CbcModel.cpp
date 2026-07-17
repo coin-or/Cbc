@@ -1960,7 +1960,11 @@ void CbcModel::branchAndBound(int doStatistics)
       probe10Depth->setMaxPass(1);
       probe10Depth->setMaxPassRoot(0);
       probe10Depth->setMaxLook(100);
-      probe10Depth->setRowCuts(3);
+      // -3: do both row-cut types at root; in tree, column-bound fixes only.
+      // Using +3 allows in-tree row strengthening cuts derived from
+      // locally-tightened (node-local) bounds, which can cut off the
+      // global optimal solution.
+      probe10Depth->setRowCuts(-3);
       probe10Depth->setMaxElements(300);
       info10->probe10Depth = probe10Depth;
       // probe10Depth->setMaxProbeRoot(solver_->getNumCols());

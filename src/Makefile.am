@@ -92,6 +92,7 @@ libCbc_la_SOURCES = \
 	CbcSOS.cpp CbcSOS.hpp CbcSolution.cpp \
 	CbcPostprocessRepair.cpp CbcPostprocessRepair.hpp \
 	CbcSolver.cpp CbcSolverPreprocess.cpp \
+	CbcLpParamScorer.cpp CbcLpParamScorer.hpp \
 	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverCutSetup.cpp CbcSolverCutSetup.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp \

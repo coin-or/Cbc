@@ -1851,13 +1851,18 @@ void CbcParameters::addCbcSolverKwdParams() {
     "triggers the root LP relaxation.\n"
     "  dual:    dual simplex (default).\n"
     "  primal:  primal simplex.\n"
-    "  barrier: interior-point (barrier) method.");
+    "  barrier: interior-point (barrier) method.\n"
+    "  auto:    ML-based per-instance recommendation, using a classifier "
+    "trained on instance features (see CbcLpParamScorer) to pick the LP "
+    "method/perturbation/scaling settings expected to solve fastest.");
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "dual", CbcParameters::LPDual);
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "primal", CbcParameters::LPPrimal);
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "barrier", CbcParameters::LPBarrier);
+  parameters_[CbcParam::LPMETHOD]->appendKwd(
+    "auto", CbcParameters::LPAuto);
 
   parameters_[CbcParam::RANKCONFLICTTYPE]->setup(
       "rankConflictType",

@@ -86,6 +86,8 @@ void CbcCrashHandler(int sig);
 #include "OsiAuxInfo.hpp"
 #include "OsiChooseVariable.hpp"
 #include "OsiClpSolverInterface.hpp"
+#include "OsiFeatures.hpp"
+#include "CbcLpParamScorer.hpp"
 #ifndef CLP_OLD_STYLE
 #include "ClpRacingSolver.hpp"
 #endif
@@ -1053,6 +1055,79 @@ static void applyVectorMode(ClpSimplex *lpSolver, bool setMode = false)
   }
 }
 
+// ─── LP auto-recommendation ───────────────────────────────────────────────
+// Settings decoded from an LP parameter tag (see CbcLpParamScorer).
+struct LpAutoSettings {
+  CbcParameters::LPMethod method;  ///< LPDual or LPPrimal
+  int    idiot;        ///< idiot-crash iterations; 0 = disabled
+  int    sprint;       ///< sprint flag: -1 = auto/enabled, 0 = disabled
+  double psi;          ///< positive-edge weight; 0 = none
+  int    pertValue;    ///< perturbation value; 100 = Clp default (off)
+  bool   pesteep;      ///< use ClpDualRowSteepest(3) as dual pivot
+  int    scalingMode;  ///< clp->scaling() mode; -1 = leave user setting
+};
+
+// Parse a parameter tag (from CbcLpParamScorer) into a LpAutoSettings struct.
+// Tag format examples:
+//   dual_pesteep_psineg1   primal_idiot30_pertvm1483   primal_sprint
+//   dual_pesteep_scaling_off
+//
+// Scaling modes: 0=off, 1=equilibrium, 2=geometric, 3=automatic (Clp default)
+static LpAutoSettings
+parseLpParamTag(const char *tag)
+{
+  LpAutoSettings s;
+  s.psi         = 0.0;
+  s.pertValue   = 100;
+  s.pesteep     = false;
+  s.scalingMode = -1;  // don't override user setting
+
+  if (strncmp(tag, "primal", 6) == 0) {
+    s.method = CbcParameters::LPPrimal;
+    s.idiot  = 0;
+    s.sprint = 0;
+    const char *p;
+    if ((p = strstr(tag, "_idiot"))) {
+      s.idiot = atoi(p + 6);
+    } else if (strstr(tag, "_sprint")) {
+      s.sprint = -1;  // -1 = enabled/auto
+    }
+    // _pertvm<N> means negative pertValue; _pertv<N> means positive
+    if ((p = strstr(tag, "_pertvm"))) {
+      s.pertValue = -atoi(p + 7);
+    } else if ((p = strstr(tag, "_pertv"))) {
+      s.pertValue = atoi(p + 6);
+    }
+  } else {
+    // dual (includes cbc_default)
+    s.method = CbcParameters::LPDual;
+    s.idiot  = 0;
+    s.sprint = 0;
+    if (strstr(tag, "pesteep"))
+      s.pesteep = true;
+    const char *p;
+    // _psineg<N> must be checked before _psi<N>
+    if ((p = strstr(tag, "_psineg"))) {
+      s.psi = -atof(p + 7);
+    } else if ((p = strstr(tag, "_psi"))) {
+      s.psi = atof(p + 4);
+    }
+    if ((p = strstr(tag, "_pertvm"))) {
+      s.pertValue = -atoi(p + 7);
+    } else if ((p = strstr(tag, "_pertv"))) {
+      s.pertValue = atoi(p + 6);
+    }
+    // _scaling_off=0, _scaling_equi=1, _scaling_geo=2
+    if (strstr(tag, "_scaling_off"))
+      s.scalingMode = 0;
+    else if (strstr(tag, "_scaling_equi"))
+      s.scalingMode = 1;
+    else if (strstr(tag, "_scaling_geo"))
+      s.scalingMode = 2;
+  }
+  return s;
+}
+
 // Unified LP-solve entry point: bound propagation → clique merging "before"
 // → model-level LP settings → racing → full ClpSolve with all user options.
 //
@@ -1150,6 +1225,37 @@ int CbcSolver::applyLpMethod()
     }
   }
 
+  // ─── 2.5 Auto LP param recommendation ────────────────────────────────────
+  // When -lpMethod=auto, extract OsiFeatures and query the ML scorer to pick
+  // the best LP parameter configuration for this specific instance.  The
+  // result is stored in `autoS` and applied in sections 3 and 5 below.
+  // Skipped when racing is active — racing manages its own per-thread configs.
+  const int racingLP = parameters_[CbcParam::RACINGLP]->intVal();
+  const bool canRace = (racingLP > 0) && (clp != nullptr);
+  const bool autoLpMode =
+    (parameters_.getLpMethod() == CbcParameters::LPAuto) && (clp != nullptr)
+    && !canRace;
+
+  LpAutoSettings autoS;
+  if (autoLpMode) {
+    double feats[OFCount];
+    OsiFeatures::compute(feats, solver);
+    const char *tag = cbcRecommendLpParam(feats);
+    if (model_.messageHandler()->logLevel() >= 1)
+      printf("  LP auto: recommended %s\n", tag);
+    autoS = parseLpParamTag(tag);
+  } else {
+    // Fill with current parameter values so section-3/5 code is uniform.
+    ClpParameters &clpP = parameters_.clpParameters();
+    autoS.method      = parameters_.getLpMethod();
+    autoS.idiot       = doIdiot_;
+    autoS.sprint      = doSprint_;
+    autoS.psi         = clpP[ClpParam::PSI]->dblVal();
+    autoS.pertValue   = clpP[ClpParam::PERTVALUE]->intVal();
+    autoS.pesteep     = false;
+    autoS.scalingMode = -1;
+  }
+
   // ─── 3. Model-level LP settings ──────────────────────────────────────────
   // PSI, objective scaling, and vector mode modify the ClpSimplex object in
   // place.  They MUST be applied before racing (step 4) so that every racing
@@ -1160,13 +1266,26 @@ int CbcSolver::applyLpMethod()
     // the redundant CbcSolver::clpParameters_ member (which is never populated).
     ClpParameters &clpP = parameters_.clpParameters();
 
-    applyPositiveEdge(clp, clpP[ClpParam::PSI]->dblVal());
+    if (!canRace) {
+      // When auto mode picked a steepest-edge pivot, install it before the PSI
+      // wrapper so that applyPositiveEdge() can wrap it correctly.
+      if (autoS.pesteep) {
+        ClpDualRowSteepest steep(3);
+        clp->setDualRowPivotAlgorithm(steep);
+      }
 
-    // Apply perturbation value.  PERTVALUE is kept in sync with the
-    // PERTURBATION mode switch (see the kwd handler for ClpParam::PERTURBATION),
-    // so reading it here is always correct: default is 100 (no perturbation),
-    // -perturbation on sets it to 50, and -pertValue X sets it to X.
-    clp->setPerturbation(clpP[ClpParam::PERTVALUE]->intVal());
+      // Auto scaling override (e.g. scaling_off from a classifier recommendation).
+      if (autoS.scalingMode >= 0)
+        clp->scaling(autoS.scalingMode);
+
+      applyPositiveEdge(clp, autoS.psi);
+
+      // Apply perturbation value.  PERTVALUE is kept in sync with the
+      // PERTURBATION mode switch (see the kwd handler for ClpParam::PERTURBATION),
+      // so reading it here is always correct: default is 100 (no perturbation),
+      // -perturbation on sets it to 50, and -pertValue X sets it to X.
+      clp->setPerturbation(autoS.pertValue);
+    }
 
     const double objScale = clpP[ClpParam::OBJSCALE2]->dblVal();
     if (objScale != 1.0) {
@@ -1197,8 +1316,7 @@ int CbcSolver::applyLpMethod()
   // intentionally varied (dual, primal+idiot, sprint) — that is the point
   // of racing.  Model-level settings from step 3 are already baked into the
   // clp model, so every cloned thread inherits PSI, objScale, and vector mode.
-  const int racingLP = parameters_[CbcParam::RACINGLP]->intVal();
-  if (racingLP > 0 && clp) {
+  if (canRace) {
     ClpRacingSolver racer(clp, racingLP);
     racer.solve();
     if (racer.winnerIndex() >= 0) {
@@ -1242,8 +1360,8 @@ int CbcSolver::applyLpMethod()
   // (we must not mutate member variables as side effects of a single solve).
   int dualize  = dualize_;
   int preSolve = preSolve_;
-  int doIdiot  = doIdiot_;
-  int doSprint = doSprint_;
+  int doIdiot  = autoLpMode ? autoS.idiot  : doIdiot_;
+  int doSprint = autoLpMode ? autoS.sprint : doSprint_;
   int doCrash  = doCrash_;
   int slpValue = slpValue_;
 
@@ -1317,7 +1435,8 @@ int CbcSolver::applyLpMethod()
   }
   solveOptions.setPresolveType(presolveType, preSolve);
 
-  const CbcParameters::LPMethod lpMethod = parameters_.getLpMethod();
+  const CbcParameters::LPMethod lpMethod =
+    autoLpMode ? autoS.method : parameters_.getLpMethod();
   ClpSolve::SolveType clpMethod;
   if (lpMethod == CbcParameters::LPPrimal) {
     clpMethod = ClpSolve::usePrimalorSprint;

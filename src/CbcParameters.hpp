@@ -308,11 +308,13 @@ public:
     - LPDual:    dual simplex (default)
     - LPPrimal:  primal simplex
     - LPBarrier: barrier (interior point)
+    - LPAuto:    ML-based per-instance recommendation (see CbcLpParamScorer)
   */
   enum LPMethod {
     LPDual = 0,
     LPPrimal,
     LPBarrier,
+    LPAuto,
     LPEndMarker
   };
 

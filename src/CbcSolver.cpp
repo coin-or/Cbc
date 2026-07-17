@@ -7238,6 +7238,244 @@ int CbcSolver::babSetupAndRootLp(bool miplib, int logLevel, int cbcLogLevel,
 }
 
 
+int CbcSolver::babConfigureBabModel(bool miplib, int logLevel,
+  OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
+  CglStored &storedAmpl,
+  double time1, double &time2, double &totalTime,
+  const RankerConfig &rankerConfig, int &numberOriginalColumns)
+{
+  bool &defaultSettings = defaultSettings_;
+  int &doScaling = doScaling_;
+  int &complicatedInteger = complicatedInteger_;
+  double &tightenFactor = tightenFactor_;
+  int &preProcess = preProcess_;
+  bool &useStrategy = useStrategy_;
+  int &numberLotSizing = numberLotSizing_;
+  typedef struct {
+    double low;
+    double high;
+    int column;
+  } lotStruct;
+  lotStruct *&lotsize = reinterpret_cast<lotStruct *&>(lotsize_);
+  // In run(), cbcParamCode == CbcParam::BAB for this entire block.
+  int cbcParamCode = CbcParam::BAB;
+  const double &rankConflictWeight = rankerConfig.rankConflictWeight;
+  const std::string &rankConflictType = rankerConfig.rankConflictType;
+  const double &rankConflictPowerTrusted = rankerConfig.rankConflictPowerTrusted;
+  const double &rankConflictPowerUntrusted = rankerConfig.rankConflictPowerUntrusted;
+  const double &rankRangeWeight = rankerConfig.rankRangeWeight;
+  const double &rankRangePowerTrusted = rankerConfig.rankRangePowerTrusted;
+  const double &rankRangePowerUntrusted = rankerConfig.rankRangePowerUntrusted;
+  const double &rankRangeMax = rankerConfig.rankRangeMax;
+  const double &rankNzWeight = rankerConfig.rankNzWeight;
+  const double &rankNzPowerTrusted = rankerConfig.rankNzPowerTrusted;
+  const double &rankNzPowerUntrusted = rankerConfig.rankNzPowerUntrusted;
+  const double &rankObjCoeffWeight = rankerConfig.rankObjCoeffWeight;
+  const double &rankObjCoeffPowerTrusted = rankerConfig.rankObjCoeffPowerTrusted;
+  const double &rankObjCoeffPowerUntrusted = rankerConfig.rankObjCoeffPowerUntrusted;
+  const double &rankConflictMaxPercBin = rankerConfig.rankConflictMaxPercBin;
+
+  // If user made settings then use them
+  if (!defaultSettings) {
+    OsiSolverInterface *solver = model_.solver();
+    if (!doScaling)
+      solver->setHintParam(OsiDoScale, false, OsiHintTry);
+#ifndef CBC_OTHER_SOLVER
+    OsiClpSolverInterface *si = getClpSolver(solver);
+    assert(si != NULL);
+    // get clp itself
+    ClpSimplex *modelC = si->getModelPtr();
+    // if (modelC->tightenPrimalBounds()!=0) {
+    // std::cout<<"Problem is infeasible!"<<std::endl;
+    // break;
+    //}
+    // bounds based on continuous
+    if (tightenFactor && !complicatedInteger) {
+      if (modelC->tightenPrimalBounds(tightenFactor) != 0) {
+        printGeneralMessage(model_, "Problem is infeasible!");
+        model_.setProblemStatus(0);
+        model_.setSecondaryStatus(1);
+        // and in babModel if exists
+        if (babModel_) {
+          babModel_->setProblemStatus(0);
+          babModel_->setSecondaryStatus(1);
+        }
+        return 1; // signal caller to break the BAB case
+      }
+    }
+#endif
+  }
+
+  // See if we want preprocessing
+  // FIXME: Why does code break if this is defined here instead of up top?
+  // OsiSolverInterface *saveSolver = NULL;
+  // CglPreProcess process;
+  // Say integers in sync
+  // Build conflict-graph branching ranker if requested, and attach it
+  // to model_ before babModel_ is copy-constructed (so it propagates).
+  if (rankConflictWeight > 0.0 || rankRangeWeight > 0.0 || rankNzWeight > 0.0
+    || rankObjCoeffWeight > 0.0) {
+    // Auto-disable on near-pure-binary instances: the conflict ranker
+    // helps most when not all integer variables are binary. If percBin
+    // of the instance is >= rankConflictMaxPercBin, skip the ranker.
+    bool rankerEnabled = true;
+    if (rankConflictMaxPercBin < 100.0) {
+      const OsiSolverInterface *si = model_.solver();
+      if (si) {
+        int nInt = 0, nBin = 0;
+        const double *lb = si->getColLower();
+        const double *ub = si->getColUpper();
+        for (int j = 0; j < si->getNumCols(); j++) {
+          if (si->isInteger(j)) {
+            nInt++;
+            if (lb[j] == 0.0 && ub[j] == 1.0)
+              nBin++;
+          }
+        }
+        if (nInt > 0) {
+          double percBin = 100.0 * nBin / nInt;
+          if (percBin >= rankConflictMaxPercBin) {
+            rankerEnabled = false;
+            if (model_.messageHandler()->logLevel() >= 2) {
+            char msgBuf[128];
+            std::snprintf(msgBuf, sizeof(msgBuf),
+              "RankConflict: disabled (%.1f%% binary >= maxPercBin=%.1f%%)",
+              percBin, rankConflictMaxPercBin);
+            model_.messageHandler()->message(CBC_GENERAL,
+              *model_.messagesPointer()) << msgBuf << CoinMessageEol;
+            }
+          }
+        }
+      }
+    }
+    if (rankerEnabled) {
+      CbcBranchingRanker *ranker = new CbcBranchingRanker();
+      ranker->weightConflict_ = rankConflictWeight;
+      ranker->scalingPowerTrusted_ = rankConflictPowerTrusted;
+      ranker->scalingPowerUntrusted_ = rankConflictPowerUntrusted;
+      if (rankConflictType == "sum")
+        ranker->formula_ = CbcBranchingRanker::CONFLICT_SUM;
+      else if (rankConflictType == "product")
+        ranker->formula_ = CbcBranchingRanker::CONFLICT_PRODUCT;
+      else
+        ranker->formula_ = CbcBranchingRanker::CONFLICT_MIN;
+      ranker->weightRange_ = rankRangeWeight;
+      ranker->scalingPowerRangeTrusted_ = rankRangePowerTrusted;
+      ranker->scalingPowerRangeUntrusted_ = rankRangePowerUntrusted;
+      ranker->maxRangeForPriority_ = rankRangeMax;
+      ranker->weightNonzeros_ = rankNzWeight;
+      ranker->scalingPowerNzTrusted_ = rankNzPowerTrusted;
+      ranker->scalingPowerNzUntrusted_ = rankNzPowerUntrusted;
+      ranker->weightObjCoeff_ = rankObjCoeffWeight;
+      ranker->scalingPowerObjTrusted_ = rankObjCoeffPowerTrusted;
+      ranker->scalingPowerObjUntrusted_ = rankObjCoeffPowerUntrusted;
+      model_.setBranchingRanker(ranker); // model_ takes ownership
+    }
+  }
+  delete babModel_;
+  babModel_ = new CbcModel(model_);
+#ifndef CBC_OTHER_SOLVER
+  int numberChanged = 0;
+  OsiSolverInterface *solver3 = clpSolver->clone();
+  babModel_->assignSolver(solver3);
+  OsiClpSolverInterface *clpSolver2 = getClpSolver(babModel_->solver());
+  if (clpSolver2->messageHandler()->logLevel())
+    clpSolver2->messageHandler()->setLogLevel(1);
+  if (logLevel > -1)
+    clpSolver2->messageHandler()->setLogLevel(logLevel);
+  lpSolver = clpSolver2->getModelPtr();
+  if (lpSolver->factorizationFrequency() == 200 && !miplib) {
+    // User did not touch preset
+    int numberRows = lpSolver->numberRows();
+    const int cutoff1 = 10000;
+    const int cutoff2 = 100000;
+    const int base = 75;
+    const int freq0 = 50;
+    const int freq1 = 200;
+    const int freq2 = 400;
+    const int maximum = 1000;
+    int frequency;
+    if (numberRows < cutoff1)
+      frequency = base + numberRows / freq0;
+    else if (numberRows < cutoff2)
+      frequency = base + cutoff1 / freq0 + (numberRows - cutoff1) / freq1;
+    else
+      frequency = base + cutoff1 / freq0 + (cutoff2 - cutoff1) / freq1 + (numberRows - cutoff2) / freq2;
+    lpSolver->setFactorizationFrequency(
+      std::min(maximum, frequency));
+  }
+#elif CBC_OTHER_SOLVER == 1
+  OsiSolverInterface *solver3 = model_.solver()->clone();
+  babModel_->assignSolver(solver3);
+#endif
+  time2 = CoinCpuTime();
+  totalTime += time2 - time1;
+  // time1 = time2;
+  double timeLeft = babModel_->getMaximumSeconds();
+  numberOriginalColumns = babModel_->solver()->getNumCols();
+  if (preProcess == 7) {
+    // use strategy instead
+    preProcess = 0;
+    useStrategy = true;
+#ifdef COIN_HAS_LINK
+    // empty out any cuts
+    if (storedAmpl.sizeRowCuts()) {
+      printf(
+        "Emptying ampl stored cuts as internal preprocessing\n");
+      CglStored temp;
+      storedAmpl = temp;
+    }
+#endif
+  }
+  if (preProcess && cbcParamCode == CbcParam::BAB) {
+    // see whether to switch off preprocessing
+    // only allow SOS and integer
+    OsiObject **objects = babModel_->objects();
+    int numberObjects = babModel_->numberObjects();
+    for (int iObj = 0; iObj < numberObjects; iObj++) {
+      CbcSOS *objSOS = dynamic_cast< CbcSOS * >(objects[iObj]);
+      CbcSimpleInteger *objSimpleInteger = dynamic_cast< CbcSimpleInteger * >(objects[iObj]);
+      if (!objSimpleInteger && !objSOS) {
+        // find all integers anyway
+        babModel_->findIntegers(true);
+        preProcess = 0;
+        break;
+      }
+    }
+  }
+  if (cbcParamCode == CbcParam::BAB) {
+    if (preProcess == 0 && numberLotSizing) {
+      if (!babModel_->numberObjects()) {
+        /* model may not have created objects
+                           If none then create
+                        */
+        babModel_->findIntegers(true);
+      }
+      // Lotsizing
+      // int numberColumns = babModel_->solver()->getNumCols();
+      CbcObject **objects = new CbcObject *[numberLotSizing];
+      double points[] = { 0.0, 0.0, 0.0, 0.0 };
+      for (int i = 0; i < numberLotSizing; i++) {
+        int iColumn = lotsize[i].column;
+        points[2] = lotsize[i].low;
+        points[3] = lotsize[i].high;
+        objects[i] = new CbcLotsize(&model_, iColumn, 2, points, true);
+      }
+      babModel_->addObjects(numberLotSizing, objects);
+      for (int i = 0; i < numberLotSizing; i++)
+        delete objects[i];
+      delete[] objects;
+    }
+    double limit;
+    clpSolver->getDblParam(OsiDualObjectiveLimit, limit);
+    if (clpSolver->getObjValue() * clpSolver->getObjSense() >= limit * clpSolver->getObjSense())
+      preProcess = 0;
+  }
+
+  return 0;
+}
+
+
 //###########################################################################
 // CbcMain 1
 // Meaning of whereFrom:
@@ -9830,202 +10068,29 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             if (rc == 2) continue;
             if (rc == 3) return returnCode;
           }
-          // If user made settings then use them
-          if (!defaultSettings) {
-            OsiSolverInterface *solver = model_.solver();
-            if (!doScaling)
-              solver->setHintParam(OsiDoScale, false, OsiHintTry);
-#ifndef CBC_OTHER_SOLVER
-            OsiClpSolverInterface *si = getClpSolver(solver);
-            assert(si != NULL);
-            // get clp itself
-            ClpSimplex *modelC = si->getModelPtr();
-            // if (modelC->tightenPrimalBounds()!=0) {
-            // std::cout<<"Problem is infeasible!"<<std::endl;
-            // break;
-            //}
-            // bounds based on continuous
-            if (tightenFactor && !complicatedInteger) {
-              if (modelC->tightenPrimalBounds(tightenFactor) != 0) {
-                printGeneralMessage(model_, "Problem is infeasible!");
-                model_.setProblemStatus(0);
-                model_.setSecondaryStatus(1);
-                // and in babModel if exists
-                if (babModel_) {
-                  babModel_->setProblemStatus(0);
-                  babModel_->setSecondaryStatus(1);
-                }
-                break;
-              }
-            }
-#endif
-          }
-
-          // See if we want preprocessing
-          // FIXME: Why does code break if this is defined here instead of up top?
-          // OsiSolverInterface *saveSolver = NULL;
-          // CglPreProcess process;
-          // Say integers in sync
+          int numberOriginalColumns = 0;
           bool integersOK = true;
-          // Build conflict-graph branching ranker if requested, and attach it
-          // to model_ before babModel_ is copy-constructed (so it propagates).
-          if (rankConflictWeight > 0.0 || rankRangeWeight > 0.0 || rankNzWeight > 0.0
-            || rankObjCoeffWeight > 0.0) {
-            // Auto-disable on near-pure-binary instances: the conflict ranker
-            // helps most when not all integer variables are binary. If percBin
-            // of the instance is >= rankConflictMaxPercBin, skip the ranker.
-            bool rankerEnabled = true;
-            if (rankConflictMaxPercBin < 100.0) {
-              const OsiSolverInterface *si = model_.solver();
-              if (si) {
-                int nInt = 0, nBin = 0;
-                const double *lb = si->getColLower();
-                const double *ub = si->getColUpper();
-                for (int j = 0; j < si->getNumCols(); j++) {
-                  if (si->isInteger(j)) {
-                    nInt++;
-                    if (lb[j] == 0.0 && ub[j] == 1.0)
-                      nBin++;
-                  }
-                }
-                if (nInt > 0) {
-                  double percBin = 100.0 * nBin / nInt;
-                  if (percBin >= rankConflictMaxPercBin) {
-                    rankerEnabled = false;
-                    if (model_.messageHandler()->logLevel() >= 2) {
-                    char msgBuf[128];
-                    std::snprintf(msgBuf, sizeof(msgBuf),
-                      "RankConflict: disabled (%.1f%% binary >= maxPercBin=%.1f%%)",
-                      percBin, rankConflictMaxPercBin);
-                    model_.messageHandler()->message(CBC_GENERAL,
-                      *model_.messagesPointer()) << msgBuf << CoinMessageEol;
-                    }
-                  }
-                }
-              }
-            }
-            if (rankerEnabled) {
-              CbcBranchingRanker *ranker = new CbcBranchingRanker();
-              ranker->weightConflict_ = rankConflictWeight;
-              ranker->scalingPowerTrusted_ = rankConflictPowerTrusted;
-              ranker->scalingPowerUntrusted_ = rankConflictPowerUntrusted;
-              if (rankConflictType == "sum")
-                ranker->formula_ = CbcBranchingRanker::CONFLICT_SUM;
-              else if (rankConflictType == "product")
-                ranker->formula_ = CbcBranchingRanker::CONFLICT_PRODUCT;
-              else
-                ranker->formula_ = CbcBranchingRanker::CONFLICT_MIN;
-              ranker->weightRange_ = rankRangeWeight;
-              ranker->scalingPowerRangeTrusted_ = rankRangePowerTrusted;
-              ranker->scalingPowerRangeUntrusted_ = rankRangePowerUntrusted;
-              ranker->maxRangeForPriority_ = rankRangeMax;
-              ranker->weightNonzeros_ = rankNzWeight;
-              ranker->scalingPowerNzTrusted_ = rankNzPowerTrusted;
-              ranker->scalingPowerNzUntrusted_ = rankNzPowerUntrusted;
-              ranker->weightObjCoeff_ = rankObjCoeffWeight;
-              ranker->scalingPowerObjTrusted_ = rankObjCoeffPowerTrusted;
-              ranker->scalingPowerObjUntrusted_ = rankObjCoeffPowerUntrusted;
-              model_.setBranchingRanker(ranker); // model_ takes ownership
-            }
-          }
-          delete babModel_;
-          babModel_ = new CbcModel(model_);
-#ifndef CBC_OTHER_SOLVER
-          int numberChanged = 0;
-          OsiSolverInterface *solver3 = clpSolver->clone();
-          babModel_->assignSolver(solver3);
-          OsiClpSolverInterface *clpSolver2 = getClpSolver(babModel_->solver());
-          if (clpSolver2->messageHandler()->logLevel())
-            clpSolver2->messageHandler()->setLogLevel(1);
-          if (logLevel > -1)
-            clpSolver2->messageHandler()->setLogLevel(logLevel);
-          lpSolver = clpSolver2->getModelPtr();
-          if (lpSolver->factorizationFrequency() == 200 && !miplib) {
-            // User did not touch preset
-            int numberRows = lpSolver->numberRows();
-            const int cutoff1 = 10000;
-            const int cutoff2 = 100000;
-            const int base = 75;
-            const int freq0 = 50;
-            const int freq1 = 200;
-            const int freq2 = 400;
-            const int maximum = 1000;
-            int frequency;
-            if (numberRows < cutoff1)
-              frequency = base + numberRows / freq0;
-            else if (numberRows < cutoff2)
-              frequency = base + cutoff1 / freq0 + (numberRows - cutoff1) / freq1;
-            else
-              frequency = base + cutoff1 / freq0 + (cutoff2 - cutoff1) / freq1 + (numberRows - cutoff2) / freq2;
-            lpSolver->setFactorizationFrequency(
-              std::min(maximum, frequency));
-          }
-#elif CBC_OTHER_SOLVER == 1
-          OsiSolverInterface *solver3 = model_.solver()->clone();
-          babModel_->assignSolver(solver3);
-#endif
-          time2 = CoinCpuTime();
-          totalTime += time2 - time1;
-          // time1 = time2;
-          double timeLeft = babModel_->getMaximumSeconds();
-          int numberOriginalColumns = babModel_->solver()->getNumCols();
-          if (preProcess == 7) {
-            // use strategy instead
-            preProcess = 0;
-            useStrategy = true;
-#ifdef COIN_HAS_LINK
-            // empty out any cuts
-            if (storedAmpl.sizeRowCuts()) {
-              printf(
-                "Emptying ampl stored cuts as internal preprocessing\n");
-              CglStored temp;
-              storedAmpl = temp;
-            }
-#endif
-          }
-          if (preProcess && cbcParamCode == CbcParam::BAB) {
-            // see whether to switch off preprocessing
-            // only allow SOS and integer
-            OsiObject **objects = babModel_->objects();
-            int numberObjects = babModel_->numberObjects();
-            for (int iObj = 0; iObj < numberObjects; iObj++) {
-              CbcSOS *objSOS = dynamic_cast< CbcSOS * >(objects[iObj]);
-              CbcSimpleInteger *objSimpleInteger = dynamic_cast< CbcSimpleInteger * >(objects[iObj]);
-              if (!objSimpleInteger && !objSOS) {
-                // find all integers anyway
-                babModel_->findIntegers(true);
-                preProcess = 0;
-                break;
-              }
-            }
-          }
-          if (cbcParamCode == CbcParam::BAB) {
-            if (preProcess == 0 && numberLotSizing) {
-              if (!babModel_->numberObjects()) {
-                /* model may not have created objects
-                                   If none then create
-                                */
-                babModel_->findIntegers(true);
-              }
-              // Lotsizing
-              // int numberColumns = babModel_->solver()->getNumCols();
-              CbcObject **objects = new CbcObject *[numberLotSizing];
-              double points[] = { 0.0, 0.0, 0.0, 0.0 };
-              for (int i = 0; i < numberLotSizing; i++) {
-                int iColumn = lotsize[i].column;
-                points[2] = lotsize[i].low;
-                points[3] = lotsize[i].high;
-                objects[i] = new CbcLotsize(&model_, iColumn, 2, points, true);
-              }
-              babModel_->addObjects(numberLotSizing, objects);
-              for (int i = 0; i < numberLotSizing; i++)
-                delete objects[i];
-              delete[] objects;
-            }
-            double limit;
-            clpSolver->getDblParam(OsiDualObjectiveLimit, limit);
-            if (clpSolver->getObjValue() * clpSolver->getObjSense() >= limit * clpSolver->getObjSense())
-              preProcess = 0;
+          RankerConfig rankerConfig;
+          rankerConfig.rankConflictWeight = rankConflictWeight;
+          rankerConfig.rankConflictType = rankConflictType;
+          rankerConfig.rankConflictPowerTrusted = rankConflictPowerTrusted;
+          rankerConfig.rankConflictPowerUntrusted = rankConflictPowerUntrusted;
+          rankerConfig.rankRangeWeight = rankRangeWeight;
+          rankerConfig.rankRangePowerTrusted = rankRangePowerTrusted;
+          rankerConfig.rankRangePowerUntrusted = rankRangePowerUntrusted;
+          rankerConfig.rankRangeMax = rankRangeMax;
+          rankerConfig.rankNzWeight = rankNzWeight;
+          rankerConfig.rankNzPowerTrusted = rankNzPowerTrusted;
+          rankerConfig.rankNzPowerUntrusted = rankNzPowerUntrusted;
+          rankerConfig.rankObjCoeffWeight = rankObjCoeffWeight;
+          rankerConfig.rankObjCoeffPowerTrusted = rankObjCoeffPowerTrusted;
+          rankerConfig.rankObjCoeffPowerUntrusted = rankObjCoeffPowerUntrusted;
+          rankerConfig.rankConflictMaxPercBin = rankConflictMaxPercBin;
+          {
+            int rc = babConfigureBabModel(miplib, logLevel, clpSolver,
+              lpSolver, storedAmpl, time1, time2, totalTime, rankerConfig,
+              numberOriginalColumns);
+            if (rc == 1) break;
           }
           if (mipStartBefore.size()) {
             CbcModel tempModel = *babModel_;

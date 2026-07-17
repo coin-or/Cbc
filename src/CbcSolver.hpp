@@ -609,6 +609,46 @@ private:
     CglStored &storedAmpl, CoinModel *&coinModel,
     CbcSolverStatistics &statistics, int &returnCode,
     int callBack(CbcModel *currentSolver, int whereFrom));
+
+  /** Configuration for the conflict-graph branching ranker, collected from
+      parameters in run() before `case CbcParam::BAB:` is reached and
+      consumed by babConfigureBabModel(). Field names mirror the run()-scope
+      locals they were extracted from.
+  */
+  struct RankerConfig {
+    double rankConflictWeight;
+    std::string rankConflictType;
+    double rankConflictPowerTrusted;
+    double rankConflictPowerUntrusted;
+    double rankRangeWeight;
+    double rankRangePowerTrusted;
+    double rankRangePowerUntrusted;
+    double rankRangeMax;
+    double rankNzWeight;
+    double rankNzPowerTrusted;
+    double rankNzPowerUntrusted;
+    double rankObjCoeffWeight;
+    double rankObjCoeffPowerTrusted;
+    double rankObjCoeffPowerUntrusted;
+    double rankConflictMaxPercBin;
+  };
+
+  /** Handle the babModel_ (re)configuration portion of the BAB action:
+      applies user settings (scaling hint, tighten-bounds-on-continuous
+      infeasibility check), builds the conflict-graph branching ranker (if
+      requested), (re)constructs babModel_ from model_, tunes the
+      factorization frequency, adds lotsizing objects, and decides whether
+      preprocessing should be switched off based on the dual objective
+      limit. Extracted from run() — the second part of `case CbcParam::BAB:`,
+      immediately following babSetupAndRootLp().
+      \return 0=success (caller continues), 1=break BAB (tighten bounds
+              found the problem infeasible)
+  */
+  int babConfigureBabModel(bool miplib, int logLevel,
+    OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
+    CglStored &storedAmpl,
+    double time1, double &time2, double &totalTime,
+    const RankerConfig &rankerConfig, int &numberOriginalColumns);
   //@}
 };
 

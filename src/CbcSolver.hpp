@@ -696,6 +696,20 @@ private:
     CglPreProcess &process, CglTwomir &twomirGen,
     CbcPreprocHandler *&preprocHandler, double preprocStart,
     CbcSolverStatistics &statistics);
+  /** Handle the common post-preprocess BAB/MIPLIB search setup:
+      linked-model knapsack expansion, cost-based priorities, heuristic/cut
+      setup, repeated-use solver tuning, debug-value mapping, and the shared
+      branch-and-bound option configuration that runs before the BAB-vs-MIPLIB
+      split. Extracted from run() — the first remaining inline block in
+      `case CbcParam::BAB:` following babPostPreprocessCleanup().
+  */
+  void babConfigureSearchModel(bool miplib, int cbcParamCode,
+    OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
+    CglPreProcess &process, CglStored &storedAmpl, CoinModel &saveCoinModel,
+    CoinModel &saveTightenedModel,
+    CoinBronKerbosch::PivotingStrategy bkPivotingStrategy,
+    int *&newPriorities, int &testOsiOptions, bool &integersOK,
+    ampl_info *info);
   //@}
 };
 

@@ -7490,6 +7490,409 @@ if (debugValues) {
   return 0;
 }
 
+
+void CbcSolver::babConfigureSearchModel(bool miplib, int cbcParamCode,
+  OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
+  CglPreProcess &process, CglStored &storedAmpl, CoinModel &saveCoinModel,
+  CoinModel &saveTightenedModel,
+  CoinBronKerbosch::PivotingStrategy bkPivotingStrategy,
+  int *&newPriorities, int &testOsiOptions, bool &integersOK,
+  ampl_info *info)
+{
+  CbcParameters &parameters = parameters_;
+  std::ostringstream buffer;
+  CoinMessageHandler *generalMessageHandler = model_.messageHandler();
+  int &complicatedInteger = complicatedInteger_;
+  int &useCosts = useCosts_;
+  int *&whichColumn = whichColumn_;
+  int *&knapsackStart = knapsackStart_;
+  int *&knapsackRow = knapsackRow_;
+  int &numberKnapsack = numberKnapsack_;
+  int &cutPass = cutPass_;
+  int &cutPassInTree = cutPassInTree_;
+  double &normalIncrement = normalIncrement_;
+  double *&debugValues = debugValues_;
+  int &numberDebugValues = numberDebugValues_;
+
+          testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
+          // If linked then see if expansion wanted
+          {
+            OsiSolverLink *solver3 = dynamic_cast< OsiSolverLink * >(babModel_->solver());
+            int options = parameters[CbcParam::MIPOPTIONS]->intVal() / 10000;
+            if (solver3 || (options & 16) != 0) {
+              if (options) {
+                /*
+                                      1 - force mini branch and bound
+                                      2 - set priorities high on continuous
+                                      4 - try adding OA cuts
+                                      8 - try doing quadratic linearization
+                                      16 - try expanding knapsacks
+                                    */
+                if ((options & 16)) {
+                  // FIXME As far as I can see, saveCoinModel is never set anywhere. The only
+                  // place it should have been set is in the AMPL parsing, but that block
+                  // was never entered as far as I can see. Check whether this block is
+                  // needed.
+                  int numberColumns = saveCoinModel.numberColumns();
+                  int numberRows = saveCoinModel.numberRows();
+                  whichColumn = new int[numberColumns];
+                  knapsackStart = new int[numberRows + 1];
+                  knapsackRow = new int[numberRows];
+                  numberKnapsack = 10000;
+                  int extra1 = parameters[CbcParam::EXTRA1]->intVal();
+                  int extra2 = parameters[CbcParam::EXTRA2]->intVal();
+                  int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
+                  OsiSolverInterface *solver = expandKnapsack(
+                    saveCoinModel, whichColumn, knapsackStart,
+                    knapsackRow, numberKnapsack, storedAmpl, logLevel,
+                    extra1, extra2, saveTightenedModel);
+                  if (solver) {
+#ifndef CBC_OTHER_SOLVER
+                    clpSolver = getClpSolver(solver);
+                    assert(clpSolver);
+                    lpSolver = clpSolver->getModelPtr();
+#endif
+                    babModel_->assignSolver(solver);
+                    testOsiOptions = 0;
+                    // allow gomory
+                    complicatedInteger = 0;
+                    // Priorities already done
+                    if (info) {
+                      free(info->priorities);
+                      info->priorities = NULL;
+                    }
+                  } else {
+                    numberKnapsack = 0;
+                    delete[] whichColumn;
+                    delete[] knapsackStart;
+                    delete[] knapsackRow;
+                    whichColumn = NULL;
+                    knapsackStart = NULL;
+                    knapsackRow = NULL;
+                  }
+                }
+              }
+            }
+          }
+          if (useCosts && testOsiOptions < 0) {
+            int numberColumns = babModel_->getNumCols();
+            int *sort = new int[numberColumns];
+            double *dsort = new double[numberColumns];
+            int *priority = new int[numberColumns];
+            const double *objective = babModel_->getObjCoefficients();
+            const double *lower = babModel_->getColLower();
+            const double *upper = babModel_->getColUpper();
+            const CoinPackedMatrix *matrix = babModel_->solver()->getMatrixByCol();
+            const int *columnLength = matrix->getVectorLengths();
+            int iColumn;
+            int n = 0;
+            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+              if (babModel_->isInteger(iColumn)) {
+                sort[n] = n;
+                if (useCosts == 1) {
+                  dsort[n++] = -fabs(objective[iColumn]);
+                } else if (useCosts == 2) {
+                  dsort[n++] = iColumn;
+                } else if (useCosts == 3) {
+                  dsort[n++] = (upper[iColumn] - lower[iColumn]) == 1.0 ? 1 : 2;
+                } else if (useCosts == 4) {
+                  dsort[n++] = (upper[iColumn] - lower[iColumn]) != 1.0 ? 1 : 2;
+                } else if (useCosts == 5) {
+                  dsort[n++] = -columnLength[iColumn];
+                } else if (useCosts == 6) {
+                  dsort[n++] = (columnLength[iColumn] == 1) ? -1.0 : 0.0;
+                } else if (useCosts == 7) {
+                  dsort[n++] = (objective[iColumn]) ? -1.0 : 0.0;
+                }
+              }
+            }
+            CoinSort_2(dsort, dsort + n, sort);
+            int level = 999;
+            double last = -1.0e100;
+            for (int i = 0; i < n; i++) {
+              int iPut = sort[i];
+              if (dsort[i] != last) {
+                level++;
+                last = dsort[i];
+              }
+              priority[iPut] = level;
+            }
+            if (newPriorities) {
+              // get rid of
+              delete[] newPriorities;
+              newPriorities = NULL;
+            }
+            babModel_->passInPriorities(priority, false);
+            integersOK = true;
+            delete[] priority;
+            delete[] sort;
+            delete[] dsort;
+          }
+          // Set up heuristics
+          configureHeuristics(babModel_, ((!miplib) ? 1 : 10));
+          if (!miplib) {
+            if (parameters[CbcParam::LOCALTREE]->modeVal()) {
+              CbcTreeLocal localTree(babModel_, NULL, 10, 0, 0, 10000,
+                2000);
+              babModel_->passInTreeHandler(localTree);
+            }
+          }
+          if (cbcParamCode == CbcParam::MIPLIB) {
+            if (babModel_->numberStrong() == 5 && babModel_->numberBeforeTrust() == 5)
+              babModel_->setNumberBeforeTrust(10);
+          }
+          int experimentFlag = parameters[CbcParam::EXPERIMENT]->intVal();
+          int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
+          int bothFlags = std::max(std::min(experimentFlag, 1), strategyFlag);
+          // add cut generators if wanted
+          configureCutGenerators(*babModel_, miplib, bkPivotingStrategy);
+          // Could tune more
+          if (!miplib) {
+            double minimumDrop = fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
+            babModel_->setMinimumDrop(std::min(5.0e-2, minimumDrop));
+            if (cutPass == -1234567) {
+              if (babModel_->getNumCols() < 500)
+                babModel_->setMaximumCutPassesAtRoot(
+                  -100); // always do 100 if possible
+              else if (babModel_->getNumCols() < 5000)
+                babModel_->setMaximumCutPassesAtRoot(
+                  100); // use minimum drop
+              else
+                babModel_->setMaximumCutPassesAtRoot(50);
+            } else {
+              babModel_->setMaximumCutPassesAtRoot(cutPass);
+            }
+            if (cutPassInTree == -1234567)
+              babModel_->setMaximumCutPasses(4);
+            else
+              babModel_->setMaximumCutPasses(cutPassInTree);
+          } else if (cutPass != -1234567) {
+            babModel_->setMaximumCutPassesAtRoot(cutPass);
+          }
+          // Do more strong branching if small
+          // if (babModel_->getNumCols()<5000)
+          // babModel_->setNumberStrong(20);
+          // Switch off strong branching if wanted
+          // if (babModel_->getNumCols()>10*babModel_->getNumRows())
+          // babModel_->setNumberStrong(0);
+          if (!parameters.noPrinting()) {
+            int iLevel = parameters[CbcParam::LOGLEVEL]->intVal();
+            if (iLevel < 0) {
+              if (iLevel > -10) {
+                babModel_->setPrintingMode(1);
+              } else {
+                babModel_->setPrintingMode(2);
+                iLevel += 10;
+                parameters[CbcParam::LOGLEVEL]->setVal(iLevel);
+              }
+              iLevel = -iLevel;
+            }
+            babModel_->messageHandler()->setLogLevel(iLevel);
+            // if (babModel_->getNumCols() > 2000 || babModel_->getNumRows()
+            // > 1500 || babModel_->messageHandler()->logLevel() > 1)
+            //  babModel_->setPrintFrequency(100);
+            babModel_->setPrintFrequency(1);
+          }
+
+          babModel_->solver()->setIntParam(
+            OsiMaxNumIterationHotStart,
+            parameters[CbcParam::MAXHOTITS]->intVal());
+#ifndef CBC_OTHER_SOLVER
+          OsiClpSolverInterface *osiclp = getClpSolver(babModel_->solver());
+          // go faster stripes
+          if ((osiclp->getNumRows() < 300 && osiclp->getNumCols() < 500)) {
+            osiclp->setupForRepeatedUse(2, parameters[CbcParam::LPLOGLEVEL]->intVal());
+            if (bothFlags >= 1) {
+              ClpSimplex *lp = osiclp->getModelPtr();
+              int specialOptions = lp->specialOptions();
+              lp->setSpecialOptions(specialOptions | (2048 + 4096));
+            }
+          } else {
+            osiclp->setupForRepeatedUse(0, parameters[CbcParam::LPLOGLEVEL]->intVal());
+          }
+          if (bothFlags >= 2) {
+            ClpSimplex *lp = osiclp->getModelPtr();
+            int specialOptions = lp->specialOptions();
+            lp->setSpecialOptions(specialOptions | (2048 + 4096));
+          }
+          double increment = babModel_->getCutoffIncrement();
+          ;
+          int *changed = NULL;
+#ifdef UNSAFE_FOR_LAZY_CUTS
+          if (!miplib && increment == normalIncrement)
+            changed = analyze(osiclp, numberChanged, increment, false,
+              generalMessageHandler, parameters.noPrinting());
+#endif
+#elif CBC_OTHER_SOLVER == 1
+          double increment = babModel_->getCutoffIncrement();
+          ;
+#endif
+          if (debugValues) {
+            int numberColumns = babModel_->solver()->getNumCols();
+            if (numberDebugValues == numberColumns) {
+              // for debug
+              babModel_->solver()->activateRowCutDebugger(debugValues);
+            } else {
+              int numberOriginalColumns = process.originalModel()->getNumCols();
+#if DEBUG_PREPROCESS < 2
+              if (numberDebugValues <= numberOriginalColumns) {
+                const int *originalColumns = process.originalColumns();
+                double *newValues = new double[numberColumns];
+                // in case preprocess added columns!
+                // need to find values
+                OsiSolverInterface *siCopy = babModel_->solver()->clone();
+                for (int i = 0; i < numberColumns; i++) {
+                  int jColumn = originalColumns[i];
+                  if (jColumn < numberDebugValues && siCopy->isInteger(i)) {
+                    // integer variable
+                    double soln = floor(debugValues[jColumn] + 0.5);
+                    // Set bounds to fix variable to its solution
+                    siCopy->setColUpper(i, soln);
+                    siCopy->setColLower(i, soln);
+                  }
+                }
+                // All integers have been fixed at optimal value.
+                // Now solve to get continuous values
+                siCopy->setHintParam(OsiDoScale, false);
+                siCopy->initialSolve();
+                if (siCopy->isProvenOptimal()) {
+                  memcpy(newValues, siCopy->getColSolution(),
+                    numberColumns * sizeof(double));
+                } else {
+                  printf("BAD debug file\n");
+                  siCopy->writeMps("Bad");
+                  exit(22);
+                }
+                delete siCopy;
+                // for debug
+                babModel_->solver()->activateRowCutDebugger(newValues);
+                delete[] newValues;
+              } else {
+                printf("debug file has incorrect number of columns\n");
+              }
+#else
+              // for debug
+              babModel_->solver()->activateRowCutDebugger(debugSolution);
+#endif
+            }
+          }
+          babModel_->setCutoffIncrement(
+            std::max(babModel_->getCutoffIncrement(), increment));
+          // Turn this off if you get problems
+          // Used to be automatically set
+          int mipOptions = parameters[CbcParam::MIPOPTIONS]->intVal() % 10000;
+          if (mipOptions != (1057) && mipOptions != 1025) {
+            buffer.str("");
+            buffer << "mip options " << mipOptions;
+            printGeneralMessage(model_, buffer.str());
+          }
+#ifndef CBC_OTHER_SOLVER
+          osiclp->setSpecialOptions(mipOptions);
+#elif CBC_OTHER_SOLVER == 1
+#endif
+          // probably faster to use a basis to get integer solutions
+          babModel_->setSpecialOptions(babModel_->specialOptions() | 2);
+          currentBranchModel = babModel_;
+          // OsiSolverInterface * strengthenedModel=NULL;
+          if (cbcParamCode == CbcParam::BAB || cbcParamCode == CbcParam::MIPLIB) {
+            if (strategyFlag == 1) {
+              // try reduced model
+              babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
+            }
+            if (experimentFlag >= 5 || strategyFlag == 2) {
+              // try reduced model at root
+              babModel_->setSpecialOptions(babModel_->specialOptions() | 32768);
+              if (experimentFlag >= 10000) {
+                // try reduced model at root with cuts
+                babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
+              }
+            }
+            {
+              int depthMiniBab = parameters[CbcParam::DEPTHMINIBAB]->intVal();
+              if (depthMiniBab != -1)
+                babModel_->setFastNodeDepth(depthMiniBab);
+            }
+            babModel_->setNodeBoundProp(
+              parameters[CbcParam::NODEBOUNDPROP]->modeVal());
+            babModel_->setNodeBoundPropMaxDepth(
+              parameters[CbcParam::NODEBOUNDPROPMAXDEPTH]->intVal());
+            babModel_->setNodeBoundPropMinDepth(
+              parameters[CbcParam::NODEBOUNDPROPMINDEPTH]->intVal());
+            babModel_->setNodeBoundPropDepthInterval(
+              parameters[CbcParam::NODEBOUNDPROPDEPTHINTERVAL]->intVal());
+            int extra4 = parameters[CbcParam::EXTRA4]->intVal();
+            if (extra4 >= 0) {
+              int strategy = extra4 % 10;
+              extra4 /= 10;
+              int method = extra4 % 100;
+              extra4 /= 100;
+              extra4 = strategy + method * 8 + extra4 * 1024;
+              babModel_->setMoreSpecialOptions(extra4);
+            }
+            int moreMipOptions = parameters[CbcParam::MOREMIPOPTIONS]->intVal();
+            if (moreMipOptions >= 0) {
+              buffer.str("");
+              buffer << "more mip options " << moreMipOptions;
+              printGeneralMessage(model_, buffer.str());
+#if 1
+              // some options may have been set already
+              // e.g. use elapsed time
+              babModel_->setMoreSpecialOptions(
+                moreMipOptions | babModel_->moreSpecialOptions());
+#else
+              OsiClpSolverInterface *osiclp = getClpSolver(babModel_->solver());
+              if (moreMipOptions == 10000) {
+                // test memory saving
+                moreMipOptions -= 10000;
+                ClpSimplex *lpSolver = osiclp->getModelPtr();
+                lpSolver->setPersistenceFlag(1);
+                // switch off row copy if few rows
+                if (lpSolver->numberRows() < 150)
+                  lpSolver->setSpecialOptions(lpSolver->specialOptions() | 256);
+              }
+              if (moreMipOptions < 10000 && moreMipOptions) {
+                if (((moreMipOptions + 1) % 1000000) != 0)
+                  babModel_->setSearchStrategy(moreMipOptions % 1000000);
+              } else if (moreMipOptions < 100000) {
+                // try reduced model
+                babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
+              }
+              // go faster stripes
+              if (moreMipOptions >= 999999) {
+                if (osiclp) {
+                  int save = osiclp->specialOptions();
+                  osiclp->setupForRepeatedUse(2, 0);
+                  osiclp->setSpecialOptions(save | osiclp->specialOptions());
+                }
+              }
+#endif
+            }
+          }
+          {
+            int extra1 = parameters[CbcParam::EXTRA1]->intVal();
+            if (extra1 != -1) {
+              if (extra1 < 0) {
+                if (extra1 == -7777)
+                  extra1 = -1;
+                else if (extra1 == -8888)
+                  extra1 = 1;
+                babModel_->setWhenCuts(-extra1);
+              } else if (extra1 < 19000) {
+                babModel_->setSearchStrategy(extra1);
+                printf("XXXXX searchStrategy %d\n", extra1);
+              } else {
+                int n = extra1 - 20000;
+                if (!n)
+                  n--;
+                babModel_->setNumberAnalyzeIterations(n);
+                printf("XXXXX analyze %d\n", extra1);
+              }
+            } else if (bothFlags >= 1) {
+              babModel_->setWhenCuts(999998);
+            }
+          }
+}
+
 int CbcSolver::configureHeuristics(CbcModel *model, int type)
 {
   return doHeuristics(model, type, parameters_, parameters_.noPrinting(),
@@ -10267,383 +10670,17 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               preprocHandler, preprocStart, statistics);
             if (rc == 1) break;
           }
-          int testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
-          // If linked then see if expansion wanted
-          {
-            OsiSolverLink *solver3 = dynamic_cast< OsiSolverLink * >(babModel_->solver());
-            int options = parameters[CbcParam::MIPOPTIONS]->intVal() / 10000;
-            if (solver3 || (options & 16) != 0) {
-              if (options) {
-                /*
-                                      1 - force mini branch and bound
-                                      2 - set priorities high on continuous
-                                      4 - try adding OA cuts
-                                      8 - try doing quadratic linearization
-                                      16 - try expanding knapsacks
-                                    */
-                if ((options & 16)) {
-                  // FIXME As far as I can see, saveCoinModel is never set anywhere. The only
-                  // place it should have been set is in the AMPL parsing, but that block
-                  // was never entered as far as I can see. Check whether this block is
-                  // needed.
-                  int numberColumns = saveCoinModel.numberColumns();
-                  int numberRows = saveCoinModel.numberRows();
-                  whichColumn = new int[numberColumns];
-                  knapsackStart = new int[numberRows + 1];
-                  knapsackRow = new int[numberRows];
-                  numberKnapsack = 10000;
-                  int extra1 = parameters[CbcParam::EXTRA1]->intVal();
-                  int extra2 = parameters[CbcParam::EXTRA2]->intVal();
-                  int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
-                  OsiSolverInterface *solver = expandKnapsack(
-                    saveCoinModel, whichColumn, knapsackStart,
-                    knapsackRow, numberKnapsack, storedAmpl, logLevel,
-                    extra1, extra2, saveTightenedModel);
-                  if (solver) {
+          int testOsiOptions = 0;
+          babConfigureSearchModel(miplib, cbcParamCode, clpSolver, lpSolver,
+            process, storedAmpl, saveCoinModel, saveTightenedModel,
+            bkPivotingStrategy, newPriorities, testOsiOptions, integersOK,
+            info);
 #ifndef CBC_OTHER_SOLVER
-                    clpSolver = getClpSolver(solver);
-                    assert(clpSolver);
-                    lpSolver = clpSolver->getModelPtr();
+          OsiClpSolverInterface *osiclp = NULL;
 #endif
-                    babModel_->assignSolver(solver);
-                    testOsiOptions = 0;
-                    // allow gomory
-                    complicatedInteger = 0;
-                    // Priorities already done
-                    if (info) {
-                      free(info->priorities);
-                      info->priorities = NULL;
-                    }
-                  } else {
-                    numberKnapsack = 0;
-                    delete[] whichColumn;
-                    delete[] knapsackStart;
-                    delete[] knapsackRow;
-                    whichColumn = NULL;
-                    knapsackStart = NULL;
-                    knapsackRow = NULL;
-                  }
-                }
-              }
-            }
-          }
-          if (useCosts && testOsiOptions < 0) {
-            int numberColumns = babModel_->getNumCols();
-            int *sort = new int[numberColumns];
-            double *dsort = new double[numberColumns];
-            int *priority = new int[numberColumns];
-            const double *objective = babModel_->getObjCoefficients();
-            const double *lower = babModel_->getColLower();
-            const double *upper = babModel_->getColUpper();
-            const CoinPackedMatrix *matrix = babModel_->solver()->getMatrixByCol();
-            const int *columnLength = matrix->getVectorLengths();
-            int iColumn;
-            int n = 0;
-            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-              if (babModel_->isInteger(iColumn)) {
-                sort[n] = n;
-                if (useCosts == 1) {
-                  dsort[n++] = -fabs(objective[iColumn]);
-                } else if (useCosts == 2) {
-                  dsort[n++] = iColumn;
-                } else if (useCosts == 3) {
-                  dsort[n++] = (upper[iColumn] - lower[iColumn]) == 1.0 ? 1 : 2;
-                } else if (useCosts == 4) {
-                  dsort[n++] = (upper[iColumn] - lower[iColumn]) != 1.0 ? 1 : 2;
-                } else if (useCosts == 5) {
-                  dsort[n++] = -columnLength[iColumn];
-                } else if (useCosts == 6) {
-                  dsort[n++] = (columnLength[iColumn] == 1) ? -1.0 : 0.0;
-                } else if (useCosts == 7) {
-                  dsort[n++] = (objective[iColumn]) ? -1.0 : 0.0;
-                }
-              }
-            }
-            CoinSort_2(dsort, dsort + n, sort);
-            int level = 999;
-            double last = -1.0e100;
-            for (int i = 0; i < n; i++) {
-              int iPut = sort[i];
-              if (dsort[i] != last) {
-                level++;
-                last = dsort[i];
-              }
-              priority[iPut] = level;
-            }
-            if (newPriorities) {
-              // get rid of
-              delete[] newPriorities;
-              newPriorities = NULL;
-            }
-            babModel_->passInPriorities(priority, false);
-            integersOK = true;
-            delete[] priority;
-            delete[] sort;
-            delete[] dsort;
-          }
-          // Set up heuristics
-          configureHeuristics(babModel_, ((!miplib) ? 1 : 10));
-          if (!miplib) {
-            if (parameters[CbcParam::LOCALTREE]->modeVal()) {
-              CbcTreeLocal localTree(babModel_, NULL, 10, 0, 0, 10000,
-                2000);
-              babModel_->passInTreeHandler(localTree);
-            }
-          }
-          if (cbcParamCode == CbcParam::MIPLIB) {
-            if (babModel_->numberStrong() == 5 && babModel_->numberBeforeTrust() == 5)
-              babModel_->setNumberBeforeTrust(10);
-          }
           int experimentFlag = parameters[CbcParam::EXPERIMENT]->intVal();
           int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
           int bothFlags = std::max(std::min(experimentFlag, 1), strategyFlag);
-          // add cut generators if wanted
-          configureCutGenerators(*babModel_, miplib, bkPivotingStrategy);
-          // Could tune more
-          if (!miplib) {
-            double minimumDrop = fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
-            babModel_->setMinimumDrop(std::min(5.0e-2, minimumDrop));
-            if (cutPass == -1234567) {
-              if (babModel_->getNumCols() < 500)
-                babModel_->setMaximumCutPassesAtRoot(
-                  -100); // always do 100 if possible
-              else if (babModel_->getNumCols() < 5000)
-                babModel_->setMaximumCutPassesAtRoot(
-                  100); // use minimum drop
-              else
-                babModel_->setMaximumCutPassesAtRoot(50);
-            } else {
-              babModel_->setMaximumCutPassesAtRoot(cutPass);
-            }
-            if (cutPassInTree == -1234567)
-              babModel_->setMaximumCutPasses(4);
-            else
-              babModel_->setMaximumCutPasses(cutPassInTree);
-          } else if (cutPass != -1234567) {
-            babModel_->setMaximumCutPassesAtRoot(cutPass);
-          }
-          // Do more strong branching if small
-          // if (babModel_->getNumCols()<5000)
-          // babModel_->setNumberStrong(20);
-          // Switch off strong branching if wanted
-          // if (babModel_->getNumCols()>10*babModel_->getNumRows())
-          // babModel_->setNumberStrong(0);
-          if (!parameters.noPrinting()) {
-            int iLevel = parameters[CbcParam::LOGLEVEL]->intVal();
-            if (iLevel < 0) {
-              if (iLevel > -10) {
-                babModel_->setPrintingMode(1);
-              } else {
-                babModel_->setPrintingMode(2);
-                iLevel += 10;
-                parameters[CbcParam::LOGLEVEL]->setVal(iLevel);
-              }
-              iLevel = -iLevel;
-            }
-            babModel_->messageHandler()->setLogLevel(iLevel);
-            // if (babModel_->getNumCols() > 2000 || babModel_->getNumRows()
-            // > 1500 || babModel_->messageHandler()->logLevel() > 1)
-            //  babModel_->setPrintFrequency(100);
-            babModel_->setPrintFrequency(1);
-          }
-
-          babModel_->solver()->setIntParam(
-            OsiMaxNumIterationHotStart,
-            parameters[CbcParam::MAXHOTITS]->intVal());
-#ifndef CBC_OTHER_SOLVER
-          OsiClpSolverInterface *osiclp = getClpSolver(babModel_->solver());
-          // go faster stripes
-          if ((osiclp->getNumRows() < 300 && osiclp->getNumCols() < 500)) {
-            osiclp->setupForRepeatedUse(2, parameters[CbcParam::LPLOGLEVEL]->intVal());
-            if (bothFlags >= 1) {
-              ClpSimplex *lp = osiclp->getModelPtr();
-              int specialOptions = lp->specialOptions();
-              lp->setSpecialOptions(specialOptions | (2048 + 4096));
-            }
-          } else {
-            osiclp->setupForRepeatedUse(0, parameters[CbcParam::LPLOGLEVEL]->intVal());
-          }
-          if (bothFlags >= 2) {
-            ClpSimplex *lp = osiclp->getModelPtr();
-            int specialOptions = lp->specialOptions();
-            lp->setSpecialOptions(specialOptions | (2048 + 4096));
-          }
-          double increment = babModel_->getCutoffIncrement();
-          ;
-          int *changed = NULL;
-#ifdef UNSAFE_FOR_LAZY_CUTS
-          if (!miplib && increment == normalIncrement)
-            changed = analyze(osiclp, numberChanged, increment, false,
-              generalMessageHandler, parameters.noPrinting());
-#endif
-#elif CBC_OTHER_SOLVER == 1
-          double increment = babModel_->getCutoffIncrement();
-          ;
-#endif
-          if (debugValues) {
-            int numberColumns = babModel_->solver()->getNumCols();
-            if (numberDebugValues == numberColumns) {
-              // for debug
-              babModel_->solver()->activateRowCutDebugger(debugValues);
-            } else {
-              int numberOriginalColumns = process.originalModel()->getNumCols();
-#if DEBUG_PREPROCESS < 2
-              if (numberDebugValues <= numberOriginalColumns) {
-                const int *originalColumns = process.originalColumns();
-                double *newValues = new double[numberColumns];
-                // in case preprocess added columns!
-                // need to find values
-                OsiSolverInterface *siCopy = babModel_->solver()->clone();
-                for (int i = 0; i < numberColumns; i++) {
-                  int jColumn = originalColumns[i];
-                  if (jColumn < numberDebugValues && siCopy->isInteger(i)) {
-                    // integer variable
-                    double soln = floor(debugValues[jColumn] + 0.5);
-                    // Set bounds to fix variable to its solution
-                    siCopy->setColUpper(i, soln);
-                    siCopy->setColLower(i, soln);
-                  }
-                }
-                // All integers have been fixed at optimal value.
-                // Now solve to get continuous values
-                siCopy->setHintParam(OsiDoScale, false);
-                siCopy->initialSolve();
-                if (siCopy->isProvenOptimal()) {
-                  memcpy(newValues, siCopy->getColSolution(),
-                    numberColumns * sizeof(double));
-                } else {
-                  printf("BAD debug file\n");
-                  siCopy->writeMps("Bad");
-                  exit(22);
-                }
-                delete siCopy;
-                // for debug
-                babModel_->solver()->activateRowCutDebugger(newValues);
-                delete[] newValues;
-              } else {
-                printf("debug file has incorrect number of columns\n");
-              }
-#else
-              // for debug
-              babModel_->solver()->activateRowCutDebugger(debugSolution);
-#endif
-            }
-          }
-          babModel_->setCutoffIncrement(
-            std::max(babModel_->getCutoffIncrement(), increment));
-          // Turn this off if you get problems
-          // Used to be automatically set
-          int mipOptions = parameters[CbcParam::MIPOPTIONS]->intVal() % 10000;
-          if (mipOptions != (1057) && mipOptions != 1025) {
-            buffer.str("");
-            buffer << "mip options " << mipOptions;
-            printGeneralMessage(model_, buffer.str());
-          }
-#ifndef CBC_OTHER_SOLVER
-          osiclp->setSpecialOptions(mipOptions);
-#elif CBC_OTHER_SOLVER == 1
-#endif
-          // probably faster to use a basis to get integer solutions
-          babModel_->setSpecialOptions(babModel_->specialOptions() | 2);
-          currentBranchModel = babModel_;
-          // OsiSolverInterface * strengthenedModel=NULL;
-          if (cbcParamCode == CbcParam::BAB || cbcParamCode == CbcParam::MIPLIB) {
-            if (strategyFlag == 1) {
-              // try reduced model
-              babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
-            }
-            if (experimentFlag >= 5 || strategyFlag == 2) {
-              // try reduced model at root
-              babModel_->setSpecialOptions(babModel_->specialOptions() | 32768);
-              if (experimentFlag >= 10000) {
-                // try reduced model at root with cuts
-                babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
-              }
-            }
-            {
-              int depthMiniBab = parameters[CbcParam::DEPTHMINIBAB]->intVal();
-              if (depthMiniBab != -1)
-                babModel_->setFastNodeDepth(depthMiniBab);
-            }
-            babModel_->setNodeBoundProp(
-              parameters[CbcParam::NODEBOUNDPROP]->modeVal());
-            babModel_->setNodeBoundPropMaxDepth(
-              parameters[CbcParam::NODEBOUNDPROPMAXDEPTH]->intVal());
-            babModel_->setNodeBoundPropMinDepth(
-              parameters[CbcParam::NODEBOUNDPROPMINDEPTH]->intVal());
-            babModel_->setNodeBoundPropDepthInterval(
-              parameters[CbcParam::NODEBOUNDPROPDEPTHINTERVAL]->intVal());
-            int extra4 = parameters[CbcParam::EXTRA4]->intVal();
-            if (extra4 >= 0) {
-              int strategy = extra4 % 10;
-              extra4 /= 10;
-              int method = extra4 % 100;
-              extra4 /= 100;
-              extra4 = strategy + method * 8 + extra4 * 1024;
-              babModel_->setMoreSpecialOptions(extra4);
-            }
-            int moreMipOptions = parameters[CbcParam::MOREMIPOPTIONS]->intVal();
-            if (moreMipOptions >= 0) {
-              buffer.str("");
-              buffer << "more mip options " << moreMipOptions;
-              printGeneralMessage(model_, buffer.str());
-#if 1
-              // some options may have been set already
-              // e.g. use elapsed time
-              babModel_->setMoreSpecialOptions(
-                moreMipOptions | babModel_->moreSpecialOptions());
-#else
-              OsiClpSolverInterface *osiclp = getClpSolver(babModel_->solver());
-              if (moreMipOptions == 10000) {
-                // test memory saving
-                moreMipOptions -= 10000;
-                ClpSimplex *lpSolver = osiclp->getModelPtr();
-                lpSolver->setPersistenceFlag(1);
-                // switch off row copy if few rows
-                if (lpSolver->numberRows() < 150)
-                  lpSolver->setSpecialOptions(lpSolver->specialOptions() | 256);
-              }
-              if (moreMipOptions < 10000 && moreMipOptions) {
-                if (((moreMipOptions + 1) % 1000000) != 0)
-                  babModel_->setSearchStrategy(moreMipOptions % 1000000);
-              } else if (moreMipOptions < 100000) {
-                // try reduced model
-                babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
-              }
-              // go faster stripes
-              if (moreMipOptions >= 999999) {
-                if (osiclp) {
-                  int save = osiclp->specialOptions();
-                  osiclp->setupForRepeatedUse(2, 0);
-                  osiclp->setSpecialOptions(save | osiclp->specialOptions());
-                }
-              }
-#endif
-            }
-          }
-          {
-            int extra1 = parameters[CbcParam::EXTRA1]->intVal();
-            if (extra1 != -1) {
-              if (extra1 < 0) {
-                if (extra1 == -7777)
-                  extra1 = -1;
-                else if (extra1 == -8888)
-                  extra1 = 1;
-                babModel_->setWhenCuts(-extra1);
-              } else if (extra1 < 19000) {
-                babModel_->setSearchStrategy(extra1);
-                printf("XXXXX searchStrategy %d\n", extra1);
-              } else {
-                int n = extra1 - 20000;
-                if (!n)
-                  n--;
-                babModel_->setNumberAnalyzeIterations(n);
-                printf("XXXXX analyze %d\n", extra1);
-              }
-            } else if (bothFlags >= 1) {
-              babModel_->setWhenCuts(999998);
-            }
-          }
           if (cbcParamCode == CbcParam::BAB) {
             if (info && statusUserFunction_[0]) {
               priorities = info->priorities;

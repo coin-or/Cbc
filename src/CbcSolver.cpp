@@ -702,16 +702,6 @@ static void printGeneralQueryHelp(int verbose,
   CbcParameters &cbcParams,
   ClpParameters &clpParams)
 {
-#if 0
-  // legacy logic retained for future consideration
-  if ((verbose & 8) != 0) {
-    // even hidden
-    // evenHidden = true;
-    verbose &= ~8;
-  }
-  if (verbose < 4 && statusUserFunction_[0])
-    verbose += 4;
-#endif
   if (verbose) {
     std::cout << std::endl
               << "Commands either invoke actions or set parameter values.\n"
@@ -773,19 +763,6 @@ static void printGeneralQueryHelp(int verbose,
       CbcParam *p = cbcParams[iParam];
       if (p->type() != type || p->getDisplayPriority() < commandPrintLevel)
         continue;
-#if 0
-      // legacy formatting and AMPL-specific filtering retained for reference
-      if ((verbose % 4) != 0) {
-        std::cout << std::endl;
-      }
-      if ((verbose & 2) != 0) {
-        std::cout << std::endl;
-      }
-      // TODO Fix AMPL mode stuff
-      // but skip if not useful for ampl (and in ampl mode)
-      if (verbose >= 4 && (p->whereUsed() & 4) == 0)
-        continue;
-#endif
       if (first) {
         std::cout << std::endl
                   << "*** " << types[type] << " ***" << std::endl
@@ -1507,15 +1484,6 @@ int CbcSolver::applyLpMethod()
   model2->setSpecialOptions(model2->specialOptions()|COIN_CBC_USING_CLP);
   model2->initialSolve(solveOptions);
   clearClpTimeLimits(model2);
-
-#if 0 // not worth doing in Cbc ndef CLP_OLD_STYLE
-  if (model2->presolveRows() >= 0
-      && model_.messageHandler()->logLevel() >= 1) {
-    printf("  CLP presolve: %d rows, %d cols (%.2fs)\n",
-      model2->presolveRows(), model2->presolveCols(),
-      model2->presolveTime());
-  }
-#endif
 
   basisHasValues_ = 1;
 
@@ -3467,56 +3435,6 @@ int CbcSolver::preprocess(
     if (numberLotSizing_) {
       int numberColumns = saveSolver_->getNumCols();
       int numberRows = saveSolver_->getNumRows();
-#if 0
-		    // Create model which uses 0-1 variables
-		    {
-		      double * els = new double[8*numberLotSizing_];
-		      int * cols = new int[4*numberLotSizing_];
-		      CoinBigIndex * starts = new CoinBigIndex [2*numberLotSizing_+1];
-		      // add 0-1 variables
-		      double * tup = els+4*numberLotSizing_;
-		      double * tlo = tup+2*numberLotSizing_;
-		      for (int i=0;i<numberLotSizing_;i++) {
-			tlo[i]=0.0;
-			tup[i]=1.0;
-			els[i]=0.0; // objective
-		      }
-		      OsiClpSolverInterface *si = getClpSolver(saveSolver_);
-		      assert(si != NULL);
-		      // get clp itself
-		      ClpSimplex *model = si->getModelPtr();
-		      model->tightenPrimalBounds(0.0,0);
-		      model->addColumns(numberLotSizing_,tlo,tup,els,NULL,NULL,NULL);
-		      for (int i=0;i<numberLotSizing_;i++)
-			model->setInteger(i+numberColumns);
-		      starts[0]=0;
-		      CoinBigIndex n=0;
-		      const double * columnUpper = model->columnUpper();
-		      for (int i=0;i<numberLotSizing_;i++) {
-			int iColumn = lotsize[i].column;
-			tlo[n] = -COIN_DBL_MAX;
-			tup[n]=0.0;
-			els[2*n] = 1.0;
-			// should be able to get correct value
-			els[2*n+1] = -std::min(10000.0,columnUpper[iColumn]);
-			cols[2*n] = iColumn;
-			cols[2*n+1] = i+numberColumns;
-			n++;
-			starts[n]=2*n;
-			tlo[n] = 0.0;
-			tup[n]=COIN_DBL_MAX;
-			els[2*n] = 1.0;
-			els[2*n+1] = -lotsize[i].low;
-			cols[2*n] = iColumn;
-			cols[2*n+1] = i+numberColumns;
-			n++;
-			starts[n]=2*n;
-		      }
-		      model->addRows(n,tlo,tup,starts,cols,els);
-		      model->writeMps("equivalentInteger.mps");
-		      exit(1);
-		    }
-#endif
       char *prohibited = new char[numberColumns + numberRows];
       char *prohibitedRow = prohibited + numberColumns;
       memset(prohibited, 0, numberColumns + numberRows);
@@ -3528,14 +3446,6 @@ int CbcSolver::preprocess(
       for (int i = 0; i < numberLotSizing_; i++) {
         int iColumn = lotsize[i].column;
         prohibited[iColumn] = 2;
-#if 0
-		      // also leave all rows
-		      for (CoinBigIndex j = columnStart[iColumn];
-			   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-			int iRow = row[j];
-			prohibitedRow[iRow] = -2;
-		      }
-#endif
       }
       process.passInProhibited(prohibited, numberColumns);
       process.passInRowTypes(prohibitedRow, numberRows);
@@ -3859,14 +3769,6 @@ int CbcSolver::preprocess(
     // just get integer part right
     const int *originalColumns = process.originalColumns();
     int numberColumns = std::min(solver2->getNumCols(), babModel_->getNumCols());
-#if 0
-        double *bestSolution = babModel_->bestSolution();
-        const double *oldBestSolution = model_.bestSolution();
-        for (int i = 0; i < numberColumns; i++) {
-          int jColumn = originalColumns[i];
-          bestSolution[i] = oldBestSolution[jColumn];
-        }
-#else
     int numberColumnsB = babModel_->getNumCols();
     int numberColumns2 = std::max(solver2->getNumCols(), numberColumnsB);
     double *bestSolution = new double[numberColumns2];
@@ -3882,7 +3784,6 @@ int CbcSolver::preprocess(
     babModel_->setBestSolution(bestSolution, numberColumns, 1.0e10, false);
     babModel_->setCutoff(newCutoff);
     delete[] bestSolution;
-#endif
   }
   // solver2->resolve();
 #ifdef CBC_NAMES_FOR_COMPARE
@@ -4967,15 +4868,6 @@ int CbcSolver::postprocess(
   // Under normal builds (UNSAFE_FOR_LAZY_CUTS not defined), changed is always NULL
   // and numberChanged (outer) is always 0, so this block is a no-op.
   // If UNSAFE_FOR_LAZY_CUTS support is needed, pass them as parameters.
-#if 0
-  if (numberChanged) {
-    for (int i = 0; i < numberChanged; i++) {
-      int iColumn = changed[i];
-      clpSolver->setContinuous(iColumn);
-    }
-    delete[] changed;
-  }
-#endif
 #endif
   if (cbcParamCode == CbcParam::BAB) {
 #ifndef CBC_OTHER_SOLVER
@@ -8411,66 +8303,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         clpParam = clpParameters[clpParamCode];
       }
 
-#if 0
-      // This logic is all captured in lookupParam
-      if ((cbcParam->type() == CoinParam::paramInvalid &&
-           clpParam->type() == CoinParam::paramInvalid) ||
-          numberQuery) {
-        if (!numberMatches) {
-          std::cout << "No match for " << field << " - ? for list of commands"
-                    << std::endl;
-        } else if (numberMatches == 1) {
-          if (!numberQuery) {
-            std::cout << "Short match for " << field << " - completion: ";
-            if (cbcParam->type() != CoinParam::paramInvalid) {
-              std::cout << cbcParam->matchName() << std::endl;
-            } else {
-              std::cout << clpParam->matchName() << std::endl;
-            }
-          } else if (numberQuery) {
-            if (cbcParam->type() != CoinParam::paramInvalid) {
-              std::cout << cbcParam->matchName() << " : ";
-              std::cout << cbcParam->shortHelp() << std::endl;
-              if (numberQuery >= 2){
-                cbcParam->printLongHelp();
-              }
-            } else {
-              std::cout << clpParam->matchName() << " : ";
-              std::cout << clpParam->shortHelp() << std::endl;
-              if (numberQuery >= 2){
-                clpParam->printLongHelp();
-              }
-            }
-          }
-        } else {
-          if (!numberQuery)
-            std::cout << "Multiple matches for " << field
-                      << " - possible completions:" << std::endl;
-          else
-            std::cout << "Completions of " << field << ":" << std::endl;
-          for (int iParam = CbcParam::FIRSTPARAM + 1;
-               iParam < CbcParam::LASTPARAM; iParam++) {
-            int match = parameters[iParam]->matches(field);
-            if (match && parameters[iParam]->getDisplayPriority()) {
-              std::cout << parameters[iParam]->matchName();
-              if (numberQuery >= 2)
-                std::cout << " : " << parameters[iParam]->shortHelp();
-              std::cout << std::endl;
-            }
-          }
-          for (int iParam = ClpParam::FIRSTPARAM + 1;
-               iParam < ClpParam::LASTPARAM; iParam++) {
-            int match = clpParameters[iParam]->matches(field);
-            if (match && clpParameters[iParam]->getDisplayPriority()) {
-              std::cout << clpParameters[iParam]->matchName();
-              if (numberQuery >= 2)
-                std::cout << " : " << clpParameters[iParam]->shortHelp();
-              std::cout << std::endl;
-            }
-          }
-        }
-      } else {
-#endif
       // found
       int status;
       numberGoodCommands++;
@@ -10436,7 +10268,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             if (rc == 1) break;
           }
           int testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
-#ifndef JJF_ONE
           // If linked then see if expansion wanted
           {
             OsiSolverLink *solver3 = dynamic_cast< OsiSolverLink * >(babModel_->solver());
@@ -10496,7 +10327,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               }
             }
           }
-#endif
           if (useCosts && testOsiOptions < 0) {
             int numberColumns = babModel_->getNumCols();
             int *sort = new int[numberColumns];
@@ -12104,18 +11934,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 double *up = lo + numberSOS;
                 // need to get rid of sos
                 ClpSimplex *fakeSimplex = new ClpSimplex(*clpSolver->getModelPtr());
-#if 0
-				    int numberRows=fakeSimplex->numberRows();
-				    int * starts =
-				      new int[std::max(numberSOS+1,numberRows)];
-				    int * columns = new int[nEls];
-				    for (int i=0;i<numberRows;i++)
-				      starts[i]=i;
-				    fakeSimplex->deleteRows(numberRows,starts);
-#else
                 int *starts = new int[numberSOS + 1];
                 int *columns = new int[nEls];
-#endif
                 int nAdded = 0;
                 starts[0] = 0;
                 nEls = 0;
@@ -12655,7 +12475,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 #endif
 #endif
 #ifdef COIN_DEVELOP
-#ifndef JJF_ONE
             {
               int numberColumns = babModel_->getNumCols();
               const double *solution = babModel_->bestSolution();
@@ -12666,7 +12485,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 }
               }
             }
-#endif
             void printHistory(const char *file /*,CbcModel * model*/);
             printHistory("branch.log" /*,babModel_*/);
 #endif
@@ -13936,9 +13754,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           break;
         }
       }
-#if 0
-      }
-#endif
     }
     delete coinModel;
   }

@@ -3241,11 +3241,10 @@ int CbcSolver::preprocess(
   // BAB-local variables
   int &truncateColumns, int &truncateRows,
   bool &redoSOS, double *&truncatedRhsLower, double *&truncatedRhsUpper,
-  int *&newPriorities, bool integersOK, int numberOriginalColumns)
+  int *&newPriorities, bool integersOK, int numberOriginalColumns,
+  CbcPreprocHandler *&preprocHandler, double &preprocStart)
 {
   std::ostringstream buffer;
-  CbcPreprocHandler *preprocHandler = nullptr;
-  double preprocStart = 0.0;
   CbcModel &model = model_;
   typedef struct {
     double low;
@@ -4524,12 +4523,11 @@ int CbcSolver::preprocess(
   // time2));
 #endif
 
-  // Restore process handler to model's handler before deleting preprocHandler,
-  // because process.postProcess() (called later in run()) will call handler_->message().
-  if (preprocHandler) {
-    process.passInMessageHandler(model_.messageHandler());
-    delete preprocHandler;
-  }
+  // preprocHandler (if created) is intentionally left alive here: run()'s
+  // caller-side cleanup (after the cgraph/clique-strengthening phase that
+  // follows this call) prints the phase-end banner through it, then restores
+  // process's handler and deletes it. See the "Print overall preprocessing
+  // phase-end banner" block in run().
   return 0;
 }
 
@@ -7476,6 +7474,131 @@ int CbcSolver::babConfigureBabModel(bool miplib, int logLevel,
 }
 
 
+int CbcSolver::babPostPreprocessCleanup(bool miplib,
+  CglPreProcess &process, CglTwomir &twomirGen,
+  CbcPreprocHandler *&preprocHandler, double preprocStart,
+  CbcSolverStatistics &statistics)
+{
+  std::string &cgraphMode = cgraphMode_;
+  std::string &clqstrMode = clqstrMode_;
+  int &cliqueMode = cliqueMode_;
+  int &oddWheelMode = oddWheelMode_;
+  std::vector<std::pair<std::string, double>> &mipStart = mipStart_;
+  int &complicatedInteger = complicatedInteger_;
+  OsiSolverInterface *&saveSolver = saveSolver_;
+  int &integerStatus = integerStatus_;
+  double *&debugValues = debugValues_;
+  CbcParameters &parameters = parameters_;
+
+if (cgraphMode == "off") {
+  // switch off new clique, odd wheel and clique strengthening
+  cliqueMode = CbcParameters::CGOff;
+  oddWheelMode = CbcParameters::CGOff;
+  parameters[CbcParam::ODDWHEELCUTS]->setModeVal(CbcParameters::CGOff);
+  clqstrMode = "off";
+} else if (cgraphMode == "clq") {
+  // old style
+  // CglClique clique;
+  // clique.setStarCliqueReport(false);
+  // clique.setRowCliqueReport(false);
+  // clique.setMinViolation(0.05);
+  // int translate[] = {-100, -1, -99, -98, 1, -1098};
+  // babModel_->addCutGenerator(&clique, translate[cliqueMode],
+  //                         "Clique");
+  cliqueMode = CbcParameters::CGOff;
+  parameters[CbcParam::CLIQUECUTS]->setVal("off");
+  oddWheelMode = CbcParameters::CGOff;
+  parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
+  clqstrMode = "off";
+}
+if (clqstrMode == "after") {
+  if (!babModel_->maximumSecondsReached()) {
+    int clqExtended = 0, clqDominated = 0;
+    // Use preprocHandler when available so that Coin0011I and Cgl0015I
+    // are intercepted and suppressed (they will be shown formatted by
+    // printCgraphSummary() below). Fall back to model handler otherwise.
+    CoinMessageHandler *clqHandler = preprocHandler
+      ? static_cast<CoinMessageHandler *>(preprocHandler)
+      : babModel_->messageHandler();
+    buildConflictGraphAndStrengthenCliques(babModel_->solver(),
+      clqHandler,
+      clqstrMode,
+      4,
+      model_, mipStart,
+      &clqExtended, &clqDominated);
+    statistics.cgraph_time += babModel_->solver()->getCGraphBuildTime();
+    statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
+    // Print cgraph + clique summary through preproc handler
+    if (preprocHandler) {
+      bool cgraphBuilt = (statistics.cgraph_time > 0.0 || statistics.cgraph_density > 0.0);
+      preprocHandler->printCgraphSummary(cgraphBuilt,
+        statistics.cgraph_time, statistics.cgraph_density,
+        true, clqExtended, clqDominated);
+    }
+  }
+} // clique Strengthening
+
+// Print overall preprocessing phase-end banner and clean up handler.
+// Restore process's handler to a valid one before deleting preprocHandler,
+// because process.postProcess() (below) calls handler_->message().
+if (preprocHandler) {
+  double totalPreprocTime = CoinWallclockTime() - preprocStart;
+  preprocHandler->printPhaseEnd(totalPreprocTime);
+  process.passInMessageHandler(model_.messageHandler());
+  delete preprocHandler;
+  preprocHandler = nullptr;
+}
+
+// now tighten bounds
+if (!miplib) {
+#ifndef CBC_OTHER_SOLVER
+  OsiClpSolverInterface *si =getClpSolver(babModel_->solver());
+  assert(si != NULL);
+  // get clp itself
+  ClpSimplex *modelC = si->getModelPtr();
+  // if (noPrinting_)
+  // modelC->setLogLevel(0);
+  if (!complicatedInteger && modelC->tightenPrimalBounds(0.0, 0, true) != 0) {
+    printGeneralMessage(model_, "Problem is infeasible!");
+    model_.setProblemStatus(0);
+    model_.setSecondaryStatus(1);
+    // say infeasible for solution
+    integerStatus = 6;
+    delete saveSolver;
+    saveSolver = NULL;
+    // and in babModel_ if exists
+    if (babModel_) {
+      babModel_->setProblemStatus(0);
+      babModel_->setSecondaryStatus(1);
+    }
+    return 1; // signal caller to break the BAB case
+  }
+  if (!babModel_->maximumSecondsReached()) {
+    // Set remaining time on the solver so this clean-up re-solve
+    // cannot run past the CBC time limit.
+    applyClpTimeLimit(*babModel_, modelC);
+    si->resolve();
+    clearClpTimeLimits(modelC);
+  }
+#elif CBC_OTHER_SOLVER == 1
+#endif
+}
+if (debugValues) {
+  // for debug
+  std::string problemName;
+  babModel_->solver()->getStrParam(OsiProbName, problemName);
+  babModel_->solver()->activateRowCutDebugger(
+    problemName.c_str());
+  twomirGen.probname_ = CoinStrdup(problemName.c_str());
+  // checking seems odd
+  // redsplitGen.set_given_optsol(babModel_->solver()->getRowCutDebuggerAlways()->optimalSolution(),
+  //                         babModel_->getNumCols());
+}
+
+  return 0;
+}
+
+
 //###########################################################################
 // CbcMain 1
 // Meaning of whereFrom:
@@ -10287,114 +10410,16 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               originalSolver, statistics, returnCode, callBack, info,
               truncateColumns, truncateRows, redoSOS,
               truncatedRhsLower, truncatedRhsUpper, newPriorities,
-              integersOK, numberOriginalColumns);
+              integersOK, numberOriginalColumns,
+              preprocHandler, preprocStart);
             if (ppStatus == 1) break;
             if (ppStatus == 3) return returnCode;
           }
 
-          if (cgraphMode == "off") {
-            // switch off new clique, odd wheel and clique strengthening
-            cliqueMode = CbcParameters::CGOff;
-            oddWheelMode = CbcParameters::CGOff;
-            parameters[CbcParam::ODDWHEELCUTS]->setModeVal(CbcParameters::CGOff);
-            clqstrMode = "off";
-          } else if (cgraphMode == "clq") {
-            // old style
-            // CglClique clique;
-            // clique.setStarCliqueReport(false);
-            // clique.setRowCliqueReport(false);
-            // clique.setMinViolation(0.05);
-            // int translate[] = {-100, -1, -99, -98, 1, -1098};
-            // babModel_->addCutGenerator(&clique, translate[cliqueMode],
-            //                         "Clique");
-            cliqueMode = CbcParameters::CGOff;
-            parameters[CbcParam::CLIQUECUTS]->setVal("off");
-            oddWheelMode = CbcParameters::CGOff;
-            parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
-            clqstrMode = "off";
-          }
-          if (clqstrMode == "after") {
-            if (!babModel_->maximumSecondsReached()) {
-              int clqExtended = 0, clqDominated = 0;
-              // Use preprocHandler when available so that Coin0011I and Cgl0015I
-              // are intercepted and suppressed (they will be shown formatted by
-              // printCgraphSummary() below). Fall back to model handler otherwise.
-              CoinMessageHandler *clqHandler = preprocHandler
-                ? static_cast<CoinMessageHandler *>(preprocHandler)
-                : babModel_->messageHandler();
-              buildConflictGraphAndStrengthenCliques(babModel_->solver(),
-                clqHandler,
-                clqstrMode,
-                4,
-                model_, mipStart,
-                &clqExtended, &clqDominated);
-              statistics.cgraph_time += babModel_->solver()->getCGraphBuildTime();
-              statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
-              // Print cgraph + clique summary through preproc handler
-              if (preprocHandler) {
-                bool cgraphBuilt = (statistics.cgraph_time > 0.0 || statistics.cgraph_density > 0.0);
-                preprocHandler->printCgraphSummary(cgraphBuilt,
-                  statistics.cgraph_time, statistics.cgraph_density,
-                  true, clqExtended, clqDominated);
-              }
-            }
-          } // clique Strengthening
-
-          // Print overall preprocessing phase-end banner and clean up handler.
-          // Restore process's handler to a valid one before deleting preprocHandler,
-          // because process.postProcess() (below) calls handler_->message().
-          if (preprocHandler) {
-            double totalPreprocTime = CoinWallclockTime() - preprocStart;
-            preprocHandler->printPhaseEnd(totalPreprocTime);
-            process.passInMessageHandler(model_.messageHandler());
-            delete preprocHandler;
-            preprocHandler = nullptr;
-          }
-
-          // now tighten bounds
-          if (!miplib) {
-#ifndef CBC_OTHER_SOLVER
-            OsiClpSolverInterface *si =getClpSolver(babModel_->solver());
-            assert(si != NULL);
-            // get clp itself
-            ClpSimplex *modelC = si->getModelPtr();
-            // if (noPrinting_)
-            // modelC->setLogLevel(0);
-            if (!complicatedInteger && modelC->tightenPrimalBounds(0.0, 0, true) != 0) {
-              printGeneralMessage(model_, "Problem is infeasible!");
-              model_.setProblemStatus(0);
-              model_.setSecondaryStatus(1);
-              // say infeasible for solution
-              integerStatus = 6;
-              delete saveSolver;
-              saveSolver = NULL;
-              // and in babModel_ if exists
-              if (babModel_) {
-                babModel_->setProblemStatus(0);
-                babModel_->setSecondaryStatus(1);
-              }
-              break;
-            }
-            if (!babModel_->maximumSecondsReached()) {
-              // Set remaining time on the solver so this clean-up re-solve
-              // cannot run past the CBC time limit.
-              applyClpTimeLimit(*babModel_, modelC);
-              si->resolve();
-              clearClpTimeLimits(modelC);
-            }
-#elif CBC_OTHER_SOLVER == 1
-#endif
-          }
-          if (debugValues) {
-            // for debug
-            std::string problemName;
-            babModel_->solver()->getStrParam(OsiProbName, problemName);
-            babModel_->solver()->activateRowCutDebugger(
-              problemName.c_str());
-            twomirGen.probname_ = CoinStrdup(problemName.c_str());
-            // checking seems odd
-            // redsplitGen.set_given_optsol(babModel_->solver()->getRowCutDebuggerAlways()->optimalSolution(),
-            //                         babModel_->getNumCols());
+          {
+            int rc = babPostPreprocessCleanup(miplib, process, twomirGen,
+              preprocHandler, preprocStart, statistics);
+            if (rc == 1) break;
           }
           int testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
 #ifndef JJF_ONE

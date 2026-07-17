@@ -47,6 +47,8 @@
 class CbcUser;
 class CbcStopNow;
 class CglStored;
+class CbcPreprocHandler;
+class CglTwomir;
 
 //#############################################################################
 //#############################################################################
@@ -565,7 +567,8 @@ private:
     ampl_info *info,
     int &truncateColumns, int &truncateRows,
     bool &redoSOS, double *&truncatedRhsLower, double *&truncatedRhsUpper,
-    int *&newPriorities, bool integersOK, int numberOriginalColumns);
+    int *&newPriorities, bool integersOK, int numberOriginalColumns,
+    CbcPreprocHandler *&preprocHandler, double &preprocStart);
 
   /** Run postprocessing after branch-and-bound and report results.
       Called at the end of the BAB action.
@@ -649,6 +652,18 @@ private:
     CglStored &storedAmpl,
     double time1, double &time2, double &totalTime,
     const RankerConfig &rankerConfig, int &numberOriginalColumns);
+
+  /** Handle the cgraph/clique-strengthening, preprocessing phase-end
+      banner cleanup, and post-preprocessing bound tightening portion of
+      the BAB action. Extracted from run() — the block immediately
+      following the preprocess() call in `case CbcParam::BAB:`.
+      \return 0=success (caller continues), 1=break BAB (tighten bounds
+              found the problem infeasible)
+  */
+  int babPostPreprocessCleanup(bool miplib,
+    CglPreProcess &process, CglTwomir &twomirGen,
+    CbcPreprocHandler *&preprocHandler, double preprocStart,
+    CbcSolverStatistics &statistics);
   //@}
 };
 

@@ -39,6 +39,7 @@
 #include "CbcParameters.hpp"
 #include "CbcMessage.hpp"
 #include "CbcSolverStatistics.hpp"
+#include "CbcSolverCutSetup.hpp"
 
 #ifdef COINUTILS_HAS_GLPK
 #include "glpk.h"
@@ -179,6 +180,37 @@ public:
   int run(int argc, const char *argv[],
     int callBack(CbcModel *currentSolver, int whereFrom) = nullptr,
     ampl_info *info = nullptr);
+  //@}
+
+  ///@name Heuristics and cut generator configuration
+  //@{
+  /** Configure/run heuristics on the given model, using this solver's
+      current parameter and tuning settings (noPrinting, initialPumpTune_).
+      Thin wrapper exposing the free function doHeuristics() as a
+      class-level call surface, so heuristic setup can be invoked directly
+      on a CbcSolver instance rather than only from run().
+      \param model  the CbcModel to configure/run heuristics on
+      \param type   1=register heuristics on model for the B&B tree,
+                    2=run heuristics now (may set cutoff/best solution),
+                    3=miplib variant (skips some heuristics),
+                    10+=use lastSolution and relax a few variables first
+      \return number of heuristic solutions found (type 2), or 0 for
+              registration-only calls
+  */
+  int configureHeuristics(CbcModel *model, int type);
+
+  /** Register all cut generators on babModel based on this solver's
+      current parameter, conflict-graph, and clique-detection settings.
+      Thin wrapper exposing the free function installCutGenerators() as a
+      class-level call surface.
+      \param babModel  the CbcModel to install cut generators on
+      \param miplib    true when running the miplib test variant (some
+                       cut generators are tuned differently)
+      \param bkPivotingStrategy  Bron-Kerbosch pivoting strategy for
+                       clique/odd-wheel cut generation
+  */
+  void configureCutGenerators(CbcModel &babModel, bool miplib,
+    CoinBronKerbosch::PivotingStrategy bkPivotingStrategy);
   //@}
 
   ///@name User extensions

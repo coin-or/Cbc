@@ -7598,6 +7598,21 @@ if (debugValues) {
   return 0;
 }
 
+int CbcSolver::configureHeuristics(CbcModel *model, int type)
+{
+  return doHeuristics(model, type, parameters_, parameters_.noPrinting(),
+    initialPumpTune_);
+}
+
+void CbcSolver::configureCutGenerators(CbcModel &babModel, bool miplib,
+  CoinBronKerbosch::PivotingStrategy bkPivotingStrategy)
+{
+  installCutGenerators(babModel, parameters_, complicatedInteger_,
+    dominatedCuts_, miplib, cgraphMode_, oldCliqueMode_, maxCallsBK_,
+    bkClqExtMethod_, bkPivotingStrategy, oddWExtMethod_,
+    mixedRoundStrategy_);
+}
+
 
 //###########################################################################
 // CbcMain 1
@@ -10320,8 +10335,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 }
               }
             }
-            doHeuristics(&model_, 2, parameters, parameters.noPrinting(),
-              initialPumpTune_);
+            configureHeuristics(&model_, 2);
             if (!objectsExist) {
               model_.deleteObjects(false);
             }
@@ -10538,8 +10552,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             delete[] dsort;
           }
           // Set up heuristics
-          doHeuristics(babModel_, ((!miplib) ? 1 : 10), parameters,
-            parameters.noPrinting(), initialPumpTune_);
+          configureHeuristics(babModel_, ((!miplib) ? 1 : 10));
           if (!miplib) {
             if (parameters[CbcParam::LOCALTREE]->modeVal()) {
               CbcTreeLocal localTree(babModel_, NULL, 10, 0, 0, 10000,
@@ -10555,11 +10568,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
           int bothFlags = std::max(std::min(experimentFlag, 1), strategyFlag);
           // add cut generators if wanted
-          installCutGenerators(*babModel_, parameters,
-            complicatedInteger, dominatedCuts, miplib,
-            cgraphMode, oldCliqueMode,
-            maxCallsBK, bkClqExtMethod, bkPivotingStrategy,
-            oddWExtMethod, mixedRoundStrategy);
+          configureCutGenerators(*babModel_, miplib, bkPivotingStrategy);
           // Could tune more
           if (!miplib) {
             double minimumDrop = fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;

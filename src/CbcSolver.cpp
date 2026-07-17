@@ -6813,6 +6813,83 @@ private:
   CoinMessageHandler *lpSilentHandler_ = nullptr;
 };
 
+// Extracted from CbcSolver::run() — the `case CbcParam::BOUNDPROP:` block.
+int CbcSolver::runBoundPropagation()
+{
+  if (!goodModel_) {
+    printGeneralWarning(model_, "** Current model not valid\n");
+    return 1;
+  }
+  CbcParameters &parameters = parameters_;
+  const CbcParameters::BoundPropLevel paramLevel = parameters.getBoundPropLevel();
+  if (paramLevel == CbcParameters::BndPropOff) {
+    printGeneralMessage(model_,
+      "Bound propagation is disabled (boundPropLevel=off); "
+      "nothing to do.");
+    return 1;
+  }
+  CbcBoundPropagation::Level bpLevel;
+  switch (paramLevel) {
+  case CbcParameters::BndPropSingletons:
+    bpLevel = CbcBoundPropagation::Singletons;
+    break;
+  case CbcParameters::BndPropFixpoint:
+    bpLevel = CbcBoundPropagation::Fixpoint;
+    break;
+  default: // BndPropMILPbt
+    bpLevel = CbcBoundPropagation::MILPbt;
+    break;
+  }
+  const bool useElapsed = model_.useElapsedTime();
+  const double startTime =
+    useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+  // Use a generous time limit for the standalone action
+  const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
+  CbcBoundPropagation bp;
+  const int maxRounds = parameters.getBoundPropMaxRounds();
+  const int logLevel = model_.messageHandler()->logLevel();
+  const bool feasible = bp.run(model_.solver(),
+    model_.messageHandler(), logLevel,
+    bpLevel, maxRounds, useElapsed, timeLimit, startTime);
+  if (!feasible) {
+    // run() already logged the infeasibility details at level >= 1.
+    // Mark model bad so downstream commands know.
+    goodModel_ = false;
+  }
+  return 0;
+}
+
+// Extracted from CbcSolver::run() — the `case CbcParam::CHECKSOLUTION:` block.
+int CbcSolver::runCheckSolution(CbcParam *cbcParam, std::deque< std::string > &inputQueue)
+{
+  std::string fileName, message;
+  std::ostringstream buffer;
+  cbcParam->readValue(inputQueue, fileName, &message);
+  CoinParamUtils::processFile(fileName,
+    parameters_[CbcParam::DIRECTORY]->dirName());
+  if (fileName == "")
+    fileName = "sol_validation.txt";
+  if (!goodModel_) {
+    printGeneralWarning(model_, "** Current model not valid\n");
+    return 1;
+  }
+  if (!writeCheckSolution(model_, fileName)) {
+    buffer << "Unable to open file " << fileName;
+    printGeneralMessage(model_, buffer.str());
+    return 1;
+  }
+  OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
+  ClpSimplex *lp = clpSolver->getModelPtr();
+  bool hasIntSol = (model_.bestSolution() != nullptr);
+  buffer.str("");
+  buffer << "Solution validation written to " << fileName
+         << " (" << (hasIntSol ? "integer" : "continuous")
+         << ", largest_primal=" << lp->largestPrimalError()
+         << ", largest_dual=" << lp->largestDualError() << ")";
+  printGeneralMessage(model_, buffer.str());
+  return 0;
+}
+
 //###########################################################################
 // CbcMain 1
 // Meaning of whereFrom:
@@ -13667,79 +13744,15 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
         } break;
         case CbcParam::BOUNDPROP: {
-          if (!goodModel) {
-            printGeneralWarning(model_, "** Current model not valid\n");
+          if (runBoundPropagation())
             continue;
-          }
-          {
-            const CbcParameters::BoundPropLevel paramLevel =
-              parameters.getBoundPropLevel();
-            if (paramLevel == CbcParameters::BndPropOff) {
-              printGeneralMessage(model_,
-                "Bound propagation is disabled (boundPropLevel=off); "
-                "nothing to do.");
-              continue;
-            }
-            CbcBoundPropagation::Level bpLevel;
-            switch (paramLevel) {
-            case CbcParameters::BndPropSingletons:
-              bpLevel = CbcBoundPropagation::Singletons;
-              break;
-            case CbcParameters::BndPropFixpoint:
-              bpLevel = CbcBoundPropagation::Fixpoint;
-              break;
-            default: // BndPropMILPbt
-              bpLevel = CbcBoundPropagation::MILPbt;
-              break;
-            }
-            const bool useElapsed = model_.useElapsedTime();
-            const double startTime =
-              useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
-            // Use a generous time limit for the standalone action
-            const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
-            CbcBoundPropagation bp;
-            const int maxRounds = parameters.getBoundPropMaxRounds();
-            const int logLevel = model_.messageHandler()->logLevel();
-            const bool feasible = bp.run(model_.solver(),
-              model_.messageHandler(), logLevel,
-              bpLevel, maxRounds, useElapsed, timeLimit, startTime);
-            if (!feasible) {
-              // run() already logged the infeasibility details at level >= 1.
-              // Mark model bad so downstream commands know.
-              goodModel = false;
-            }
-          }
         } break;
         case CbcParam::DUMPPARAMS: {
           dumpParametersAsJson(parameters, clpParameters, std::cout);
         } break;
         case CbcParam::CHECKSOLUTION: {
-          cbcParam->readValue(inputQueue, fileName, &message);
-          CoinParamUtils::processFile(fileName,
-            parameters[CbcParam::DIRECTORY]->dirName());
-          if (fileName == "")
-            fileName = "sol_validation.txt";
-          if (!goodModel) {
-            printGeneralWarning(model_, "** Current model not valid\n");
+          if (runCheckSolution(cbcParam, inputQueue))
             continue;
-          }
-          if (!writeCheckSolution(model_, fileName)) {
-            buffer.str("");
-            buffer << "Unable to open file " << fileName;
-            printGeneralMessage(model_, buffer.str());
-            continue;
-          }
-          {
-            OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
-            ClpSimplex *lp = clpSolver->getModelPtr();
-            bool hasIntSol = (model_.bestSolution() != nullptr);
-            buffer.str("");
-            buffer << "Solution validation written to " << fileName
-                   << " (" << (hasIntSol ? "integer" : "continuous")
-                   << ", largest_primal=" << lp->largestPrimalError()
-                   << ", largest_dual=" << lp->largestDualError() << ")";
-            printGeneralMessage(model_, buffer.str());
-          }
         } break;
         case CbcParam::PRINTSOL:
         case CbcParam::WRITESOL:

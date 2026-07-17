@@ -579,6 +579,22 @@ private:
     int &returnCode,
     int callBack(CbcModel *currentSolver, int whereFrom),
     ampl_info *info);
+
+  /** Handle the BOUNDPROP action: run standalone bound propagation
+      (singletons / fixpoint / MILPbt) on the current model.
+      Extracted from run() — the `case CbcParam::BOUNDPROP:` block.
+      \return 0=success (caller falls through to break), 1=continue the
+              command loop (model invalid, feature disabled, or infeasible)
+  */
+  int runBoundPropagation();
+
+  /** Handle the CHECKSOLUTION action: write a solution-validation report
+      (row/column diagnostics) for the current model to a file.
+      Extracted from run() — the `case CbcParam::CHECKSOLUTION:` block.
+      \return 0=success (caller falls through to break), 1=continue the
+              command loop (model invalid or file could not be written)
+  */
+  int runCheckSolution(CbcParam *cbcParam, std::deque< std::string > &inputQueue);
   //@}
 };
 

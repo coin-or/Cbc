@@ -6890,6 +6890,354 @@ int CbcSolver::runCheckSolution(CbcParam *cbcParam, std::deque< std::string > &i
   return 0;
 }
 
+// Extracted from CbcSolver::run() — the setup + root-LP-relaxation portion
+// of the `case CbcParam::BAB:` block (cutoff sign flip, printout hints, the
+// legacy OsiSolverLink/quadratic-model path under COIN_HAS_LINK, and the
+// solveInitialLp() call). Preserves the original control-flow escapes:
+// \return 0=success (fall through), 1=break BAB, 2=continue command loop,
+//         3=return from run() (returnCode is set)
+int CbcSolver::babSetupAndRootLp(bool miplib, int logLevel, int cbcLogLevel,
+  OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
+  CglStored &storedAmpl, CoinModel *&coinModel,
+  CbcSolverStatistics &statistics, int &returnCode,
+  int callBack(CbcModel *currentSolver, int whereFrom))
+{
+  CbcParameters &parameters = parameters_;
+  ClpParameters &clpParameters = parameters.clpParameters();
+  std::ostringstream buffer;
+  int &slpValue = slpValue_;
+  int &preProcess = preProcess_;
+  int &testOsiParameters = testOsiParameters_;
+  int &complicatedInteger = complicatedInteger_;
+  bool &biLinearProblem = biLinearProblem_;
+  int &doVector = doVector_;
+  int &doScaling = doScaling_;
+
+  if (model_.solver()->getObjSense() == -1.0) {
+    // If cutoff set flip
+    if (model_.getCutoff() < 1.0e30) {
+      double cutoff = model_.getCutoff();
+      model_.setCutoff(-cutoff);
+    }
+  }
+  // Reduce printout
+  if (logLevel <= 1) {
+    model_.solver()->setHintParam(OsiDoReducePrint, true,
+      OsiHintTry);
+  } else {
+    model_.solver()->setHintParam(OsiDoReducePrint, false,
+      OsiHintTry);
+  }
+  {
+    OsiSolverInterface *solver = model_.solver();
+#ifndef CBC_OTHER_SOLVER
+    OsiClpSolverInterface *si = getClpSolver(solver);
+    assert(si != NULL);
+    si->getModelPtr()->scaling(doScaling);
+    ClpSimplex *lpSolver = si->getModelPtr();
+    applyPositiveEdge(lpSolver, clpParameters[ClpParam::PSI]->dblVal());
+    if (doVector) {
+      applyVectorMode(lpSolver);
+    }
+#elif CBC_OTHER_SOLVER == 1
+    OsiCpxSolverInterface *si = dynamic_cast< OsiCpxSolverInterface * >(solver);
+    assert(si != NULL);
+#endif
+    statistics.nrows = si->getNumRows();
+    statistics.ncols = si->getNumCols();
+    statistics.nprocessedrows = si->getNumRows();
+    statistics.nprocessedcols = si->getNumCols();
+    // See if quadratic
+#ifndef CBC_OTHER_SOLVER
+#ifdef COIN_HAS_LINK
+    if (!complicatedInteger) {
+      ClpQuadraticObjective *obj = (dynamic_cast< ClpQuadraticObjective * >(
+        lpSolver->objectiveAsObject()));
+      if (obj) {
+        preProcess = 0;
+        int testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
+        parameters[CbcParam::TESTOSI]->setVal(std::max(0, testOsiOptions));
+        // create coin model
+        coinModel = lpSolver->createCoinModel();
+        assert(coinModel);
+        // load from coin model
+        OsiSolverLink solver1;
+        OsiSolverInterface *solver2 = solver1.clone();
+        model_.assignSolver(solver2, false);
+        OsiSolverLink *si = dynamic_cast< OsiSolverLink * >(model_.solver());
+        assert(si != NULL);
+        si->setDefaultMeshSize(0.001);
+        // need some relative granularity
+        si->setDefaultBound(100.0);
+        double dextra3 = parameters[CbcParam::DEXTRA3]->dblVal();
+        if (dextra3)
+          si->setDefaultMeshSize(dextra3);
+        si->setDefaultBound(1000.0);
+        si->setIntegerPriority(1000);
+        si->setBiLinearPriority(10000);
+        biLinearProblem = true;
+        si->setSpecialOptions2(2 + 4 + 8);
+        CoinModel *model2 = coinModel;
+        si->load(*model2, true, parameters[CbcParam::LPLOGLEVEL]->intVal());
+        // redo
+        solver = model_.solver();
+        clpSolver = getClpSolver(solver);
+        lpSolver = clpSolver->getModelPtr();
+        clpSolver->messageHandler()->setLogLevel(0);
+        testOsiParameters = 0;
+        complicatedInteger = 2; // allow cuts
+        OsiSolverInterface *coinSolver = model_.solver();
+        OsiSolverLink *linkSolver = dynamic_cast< OsiSolverLink * >(coinSolver);
+        if (linkSolver->quadraticModel()) {
+          ClpSimplex *qp = linkSolver->quadraticModel();
+          // linkSolver->nonlinearSLP(std::max(slpValue,10),1.0e-5);
+          qp->nonlinearSLP(std::max(slpValue, 40), 1.0e-5);
+          qp->primal(1);
+          OsiSolverLinearizedQuadratic solver2(qp);
+          const double *solution = NULL;
+          // Reduce printout
+          solver2.setHintParam(OsiDoReducePrint, true, OsiHintTry);
+          CbcModel model2(solver2);
+          // Now do requested saves and modifications
+          CbcModel *cbcModel = &model2;
+          OsiSolverInterface *osiModel = model2.solver();
+          OsiClpSolverInterface *osiclpModel = getClpSolver(osiModel);
+          ClpSimplex *clpModel = osiclpModel->getModelPtr();
+
+          // Set changed values
+          int numCutGens = 0;
+
+          CglProbing probing;
+          probing.setMaxProbe(10);
+          probing.setMaxLook(10);
+          probing.setMaxElements(200);
+          probing.setMaxProbeRoot(50);
+          probing.setMaxLookRoot(10);
+          probing.setRowCuts(-3);
+          probing.setUsingObjective(true);
+          cbcModel->addCutGenerator(&probing, -1, "Probing", true,
+            false, false, -100, -1, -1);
+          cbcModel->cutGenerator(numCutGens++)->setTiming(true);
+
+          CglGomory gomory;
+          gomory.setLimitAtRoot(512);
+          cbcModel->addCutGenerator(&gomory, -98, "Gomory", true,
+            false, false, -100, -1, -1);
+          cbcModel->cutGenerator(numCutGens++)->setTiming(true);
+
+          CglKnapsackCover knapsackCover;
+          cbcModel->addCutGenerator(&knapsackCover, -98,
+            "KnapsackCover", true, false,
+            false, -100, -1, -1);
+          cbcModel->cutGenerator(numCutGens++)->setTiming(true);
+
+          CglRedSplit redSplit;
+          cbcModel->addCutGenerator(&redSplit, -99, "RedSplit",
+            true, false, false, -100, -1,
+            -1);
+          cbcModel->cutGenerator(numCutGens++)->setTiming(true);
+
+          CglBKClique bkClique;
+          bkClique.setMaxCallsBK(1000);
+          bkClique.setExtendingMethod(4);
+          bkClique.setPivotingStrategy(CoinBronKerbosch::PivotingStrategy::Weight);
+          cbcModel->addCutGenerator(&bkClique, -98, "Clique", true,
+            false, false, -100, -1, -1);
+          cbcModel->cutGenerator(numCutGens++)->setTiming(true);
+
+          CglOddWheel oddWheel;
+          oddWheel.setExtendingMethod(2);
+          cbcModel->addCutGenerator(&oddWheel, -98, "OddWheel",
+            true, false, false, -100, -1,
+            -1);
+          cbcModel->cutGenerator(numCutGens++)->setTiming(true);
+
+          CglMixedIntegerRounding2 mixedIntegerRounding2;
+          cbcModel->addCutGenerator(&mixedIntegerRounding2, -98,
+            "MixedIntegerRounding2", true,
+            false, false, -100, -1, -1);
+          cbcModel->cutGenerator(numCutGens++)->setTiming(true);
+
+          CglFlowCover flowCover;
+          cbcModel->addCutGenerator(&flowCover, -98, "FlowCover",
+            true, false, false, -100, -1,
+            -1);
+          cbcModel->cutGenerator(numCutGens++)->setTiming(true);
+
+          CglTwomir twomir;
+          twomir.setMaxElements(250);
+          cbcModel->addCutGenerator(&twomir, -99, "Twomir", true,
+            false, false, -100, -1, -1);
+          cbcModel->cutGenerator(numCutGens++)->setTiming(true);
+          int heuristicOption = parameters[CbcParam::HEURISTICSTRATEGY]->modeVal();
+          if (heuristicOption) {
+            CbcHeuristicFPump heuristicFPump(*cbcModel);
+            heuristicFPump.setWhen(13);
+            heuristicFPump.setMaximumPasses(20);
+            heuristicFPump.setMaximumRetries(7);
+            heuristicFPump.setHeuristicName("feasibility pump");
+            heuristicFPump.setInitialWeight(1);
+            heuristicFPump.setFractionSmall(0.6);
+            cbcModel->addHeuristic(&heuristicFPump);
+
+            CbcRounding rounding(*cbcModel);
+            rounding.setHeuristicName("rounding");
+            cbcModel->addHeuristic(&rounding);
+
+            CbcHeuristicLocal heuristicLocal(*cbcModel);
+            heuristicLocal.setHeuristicName("combine solutions");
+            heuristicLocal.setSearchType(1);
+            heuristicLocal.setFractionSmall(0.6);
+            cbcModel->addHeuristic(&heuristicLocal);
+
+            CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
+            heuristicGreedyCover.setHeuristicName("greedy cover");
+            cbcModel->addHeuristic(&heuristicGreedyCover);
+
+            CbcHeuristicGreedyEquality heuristicGreedyEquality(
+              *cbcModel);
+            heuristicGreedyEquality.setHeuristicName(
+              "greedy equality");
+            cbcModel->addHeuristic(&heuristicGreedyEquality);
+#ifdef CBC_EXPERIMENT_JJF
+#ifndef CBC_OTHER_SOLVER
+            CbcHeuristicRandRound heuristicRandRound(*cbcModel);
+            heuristicRandRound.setHeuristicName("random rounding");
+            cbcModel->addHeuristic(&heuristicRandRound);
+#endif
+#endif
+          }
+          CbcCompareDefault compare;
+          cbcModel->setNodeComparison(compare);
+          cbcModel->setNumberBeforeTrust(10);
+          cbcModel->setSpecialOptions(2);
+          cbcModel->messageHandler()->setLogLevel(1);
+          cbcModel->setMaximumCutPassesAtRoot(-100);
+          cbcModel->setMaximumCutPasses(1);
+          cbcModel->setMinimumDrop(0.05);
+          // For branchAndBound this may help
+          clpModel->defaultFactorizationFrequency();
+          clpModel->setDualBound(1.0001e+08);
+          clpModel->setPerturbation(50);
+          osiclpModel->setSpecialOptions(193);
+          osiclpModel->messageHandler()->setLogLevel(0);
+          osiclpModel->setIntParam(OsiMaxNumIterationHotStart, 100);
+          osiclpModel->setHintParam(OsiDoReducePrint, true,
+            OsiHintTry);
+          // You can save some time by switching off message
+          // building
+          // clpModel->messagesPointer()->setDetailMessages(100,10000,(int
+          // *) NULL);
+
+          // Solve
+
+          cbcModel->initialSolve();
+          if (clpModel->tightenPrimalBounds() != 0) {
+            buffer.str("");
+            buffer << "Problem is infeasible - tightenPrimalBounds!";
+            printGeneralMessage(model_, buffer.str());
+            return 1;
+          }
+          clpModel->dual(); // clean up
+          cbcModel->initialSolve();
+#ifdef CBC_THREAD
+          int numberThreads = parameters[CbcParam::THREADS]->intVal();
+          cbcModel->setNumberThreads(numberThreads % 100);
+          cbcModel->setThreadMode(std::min((numberThreads % 1000) / 100, 7));
+#endif
+          // setCutAndHeuristicOptions(*cbcModel);
+          cbcModel->branchAndBound();
+          OsiSolverLinearizedQuadratic *solver3 = dynamic_cast< OsiSolverLinearizedQuadratic * >(
+            model2.solver());
+          assert(solver3);
+          solution = solver3->bestSolution();
+          double bestObjectiveValue = solver3->bestObjectiveValue();
+          linkSolver->setBestObjectiveValue(bestObjectiveValue);
+          if (solution) {
+            // make sure array large enough
+            int arraySize = solver3->getNumCols();
+            int wanted = linkSolver->getNumCols();
+            double *solution2 = new double[wanted];
+            memset(solution2, 0, wanted * sizeof(double));
+            memcpy(solution2, solution, arraySize * sizeof(double));
+            linkSolver->setBestSolution(solution2, solver3->getNumCols());
+            model_.setBestSolution(solution2, model_.getNumCols(),
+              bestObjectiveValue);
+            model_.setCutoff(bestObjectiveValue + 1.0e-4);
+            delete[] solution2;
+          }
+          CbcHeuristicDynamic3 dynamic(model_);
+          dynamic.setHeuristicName("dynamic pass thru");
+          if (heuristicOption)
+            model_.addHeuristic(&dynamic);
+          // if convex
+          if ((linkSolver->specialOptions2() & 4) != 0 && solution) {
+            int numberColumns = coinModel->numberColumns();
+            assert(linkSolver->objectiveVariable() == numberColumns);
+            // add OA cut
+            double offset;
+            double *gradient = new double[numberColumns + 1];
+            memcpy(gradient,
+              qp->objectiveAsObject()->gradient(
+                qp, solution, offset, true, 2),
+              numberColumns * sizeof(double));
+            double rhs = 0.0;
+            int *column = new int[numberColumns + 1];
+            int n = 0;
+            for (int i = 0; i < numberColumns; i++) {
+              double value = gradient[i];
+              if (fabs(value) > 1.0e-12) {
+                gradient[n] = value;
+                rhs += value * solution[i];
+                column[n++] = i;
+              }
+            }
+            gradient[n] = -1.0;
+            column[n++] = numberColumns;
+            storedAmpl.addCut(-COIN_DBL_MAX, offset + 1.0e-7, n,
+              column, gradient);
+            linkSolver->addRow(n, column, gradient, -COIN_DBL_MAX,
+              offset + 1.0e-7);
+            delete[] gradient;
+            delete[] column;
+          }
+          // could do three way branching round a) continuous b)
+          // best solution
+          // printf("obj %g\n", bestObjectiveValue);
+          linkSolver->initialSolve();
+        }
+      }
+    }
+#endif
+#endif
+    // OsiDoReducePrint reduces log level by 1 inside
+    // OsiClpSolverInterface::initialSolve() when logLevel<=1.
+    // applyLpMethod() calls ClpSimplex::initialSolve(ClpSolve&)
+    // directly, so this hint has no effect on our path.
+    if (logLevel <= 1)
+      si->setHintParam(OsiDoReducePrint, true, OsiHintTry);
+#ifndef CBC_OTHER_SOLVER
+    // Bit 0x40000000 is never tested in OsiClpSolverInterface;
+    // it is a harmless legacy marker with no functional effect.
+    // The functionally important bit (1024 = don't borrow model)
+    // is added with |= inside solveInitialLp().
+    si->setSpecialOptions(0x40000000);
+#endif
+  }
+  if (!miplib) {
+    int returnCode2 = 0;
+    int lpStatus = solveInitialLp(logLevel, cbcLogLevel, statistics, returnCode2, callBack);
+    if (lpStatus == 1) return 1;
+    if (lpStatus == 2) return 2;
+    if (lpStatus == 3) {
+      returnCode = returnCode2;
+      return 3;
+    }
+  }
+  return 0;
+}
+
+
 //###########################################################################
 // CbcMain 1
 // Meaning of whereFrom:
@@ -9474,323 +9822,13 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           double *truncatedRhsUpper = NULL;
           int *newPriorities = NULL;
           int returnCode = 0;
-          if (model_.solver()->getObjSense() == -1.0) {
-            // If cutoff set flip
-            if (model_.getCutoff() < 1.0e30) {
-              double cutoff = model_.getCutoff();
-              model_.setCutoff(-cutoff);
-            }
-          }
-          // Reduce printout
-          if (logLevel <= 1) {
-            model_.solver()->setHintParam(OsiDoReducePrint, true,
-              OsiHintTry);
-          } else {
-            model_.solver()->setHintParam(OsiDoReducePrint, false,
-              OsiHintTry);
-          }
           {
-            OsiSolverInterface *solver = model_.solver();
-#ifndef CBC_OTHER_SOLVER
-            OsiClpSolverInterface *si = getClpSolver(solver);
-            assert(si != NULL);
-            si->getModelPtr()->scaling(doScaling);
-            ClpSimplex *lpSolver = si->getModelPtr();
-            applyPositiveEdge(lpSolver, clpParameters[ClpParam::PSI]->dblVal());
-            if (doVector) {
-              applyVectorMode(lpSolver);
-            }
-#elif CBC_OTHER_SOLVER == 1
-            OsiCpxSolverInterface *si = dynamic_cast< OsiCpxSolverInterface * >(solver);
-            assert(si != NULL);
-#endif
-            statistics.nrows = si->getNumRows();
-            statistics.ncols = si->getNumCols();
-            statistics.nprocessedrows = si->getNumRows();
-            statistics.nprocessedcols = si->getNumCols();
-            // See if quadratic
-#ifndef CBC_OTHER_SOLVER
-#ifdef COIN_HAS_LINK
-            if (!complicatedInteger) {
-              ClpQuadraticObjective *obj = (dynamic_cast< ClpQuadraticObjective * >(
-                lpSolver->objectiveAsObject()));
-              if (obj) {
-                preProcess = 0;
-                int testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
-                parameters[CbcParam::TESTOSI]->setVal(std::max(0, testOsiOptions));
-                // create coin model
-                coinModel = lpSolver->createCoinModel();
-                assert(coinModel);
-                // load from coin model
-                OsiSolverLink solver1;
-                OsiSolverInterface *solver2 = solver1.clone();
-                model_.assignSolver(solver2, false);
-                OsiSolverLink *si = dynamic_cast< OsiSolverLink * >(model_.solver());
-                assert(si != NULL);
-                si->setDefaultMeshSize(0.001);
-                // need some relative granularity
-                si->setDefaultBound(100.0);
-                double dextra3 = parameters[CbcParam::DEXTRA3]->dblVal();
-                if (dextra3)
-                  si->setDefaultMeshSize(dextra3);
-                si->setDefaultBound(1000.0);
-                si->setIntegerPriority(1000);
-                si->setBiLinearPriority(10000);
-                biLinearProblem = true;
-                si->setSpecialOptions2(2 + 4 + 8);
-                CoinModel *model2 = coinModel;
-                si->load(*model2, true, parameters[CbcParam::LPLOGLEVEL]->intVal());
-                // redo
-                solver = model_.solver();
-                clpSolver = getClpSolver(solver);
-                lpSolver = clpSolver->getModelPtr();
-                clpSolver->messageHandler()->setLogLevel(0);
-                testOsiParameters = 0;
-                complicatedInteger = 2; // allow cuts
-                OsiSolverInterface *coinSolver = model_.solver();
-                OsiSolverLink *linkSolver = dynamic_cast< OsiSolverLink * >(coinSolver);
-                if (linkSolver->quadraticModel()) {
-                  ClpSimplex *qp = linkSolver->quadraticModel();
-                  // linkSolver->nonlinearSLP(std::max(slpValue,10),1.0e-5);
-                  qp->nonlinearSLP(std::max(slpValue, 40), 1.0e-5);
-                  qp->primal(1);
-                  OsiSolverLinearizedQuadratic solver2(qp);
-                  const double *solution = NULL;
-                  // Reduce printout
-                  solver2.setHintParam(OsiDoReducePrint, true, OsiHintTry);
-                  CbcModel model2(solver2);
-                  // Now do requested saves and modifications
-                  CbcModel *cbcModel = &model2;
-                  OsiSolverInterface *osiModel = model2.solver();
-                  OsiClpSolverInterface *osiclpModel = getClpSolver(osiModel);
-                  ClpSimplex *clpModel = osiclpModel->getModelPtr();
-
-                  // Set changed values
-                  int numCutGens = 0;
-
-                  CglProbing probing;
-                  probing.setMaxProbe(10);
-                  probing.setMaxLook(10);
-                  probing.setMaxElements(200);
-                  probing.setMaxProbeRoot(50);
-                  probing.setMaxLookRoot(10);
-                  probing.setRowCuts(-3);
-                  probing.setUsingObjective(true);
-                  cbcModel->addCutGenerator(&probing, -1, "Probing", true,
-                    false, false, -100, -1, -1);
-                  cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-
-                  CglGomory gomory;
-                  gomory.setLimitAtRoot(512);
-                  cbcModel->addCutGenerator(&gomory, -98, "Gomory", true,
-                    false, false, -100, -1, -1);
-                  cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-
-                  CglKnapsackCover knapsackCover;
-                  cbcModel->addCutGenerator(&knapsackCover, -98,
-                    "KnapsackCover", true, false,
-                    false, -100, -1, -1);
-                  cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-
-                  CglRedSplit redSplit;
-                  cbcModel->addCutGenerator(&redSplit, -99, "RedSplit",
-                    true, false, false, -100, -1,
-                    -1);
-                  cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-
-                  CglBKClique bkClique;
-                  bkClique.setMaxCallsBK(1000);
-                  bkClique.setExtendingMethod(4);
-                  bkClique.setPivotingStrategy(CoinBronKerbosch::PivotingStrategy::Weight);
-                  cbcModel->addCutGenerator(&bkClique, -98, "Clique", true,
-                    false, false, -100, -1, -1);
-                  cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-
-                  CglOddWheel oddWheel;
-                  oddWheel.setExtendingMethod(2);
-                  cbcModel->addCutGenerator(&oddWheel, -98, "OddWheel",
-                    true, false, false, -100, -1,
-                    -1);
-                  cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-
-                  CglMixedIntegerRounding2 mixedIntegerRounding2;
-                  cbcModel->addCutGenerator(&mixedIntegerRounding2, -98,
-                    "MixedIntegerRounding2", true,
-                    false, false, -100, -1, -1);
-                  cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-
-                  CglFlowCover flowCover;
-                  cbcModel->addCutGenerator(&flowCover, -98, "FlowCover",
-                    true, false, false, -100, -1,
-                    -1);
-                  cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-
-                  CglTwomir twomir;
-                  twomir.setMaxElements(250);
-                  cbcModel->addCutGenerator(&twomir, -99, "Twomir", true,
-                    false, false, -100, -1, -1);
-                  cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-                  int heuristicOption = parameters[CbcParam::HEURISTICSTRATEGY]->modeVal();
-                  if (heuristicOption) {
-                    CbcHeuristicFPump heuristicFPump(*cbcModel);
-                    heuristicFPump.setWhen(13);
-                    heuristicFPump.setMaximumPasses(20);
-                    heuristicFPump.setMaximumRetries(7);
-                    heuristicFPump.setHeuristicName("feasibility pump");
-                    heuristicFPump.setInitialWeight(1);
-                    heuristicFPump.setFractionSmall(0.6);
-                    cbcModel->addHeuristic(&heuristicFPump);
-
-                    CbcRounding rounding(*cbcModel);
-                    rounding.setHeuristicName("rounding");
-                    cbcModel->addHeuristic(&rounding);
-
-                    CbcHeuristicLocal heuristicLocal(*cbcModel);
-                    heuristicLocal.setHeuristicName("combine solutions");
-                    heuristicLocal.setSearchType(1);
-                    heuristicLocal.setFractionSmall(0.6);
-                    cbcModel->addHeuristic(&heuristicLocal);
-
-                    CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
-                    heuristicGreedyCover.setHeuristicName("greedy cover");
-                    cbcModel->addHeuristic(&heuristicGreedyCover);
-
-                    CbcHeuristicGreedyEquality heuristicGreedyEquality(
-                      *cbcModel);
-                    heuristicGreedyEquality.setHeuristicName(
-                      "greedy equality");
-                    cbcModel->addHeuristic(&heuristicGreedyEquality);
-#ifdef CBC_EXPERIMENT_JJF
-#ifndef CBC_OTHER_SOLVER
-                    CbcHeuristicRandRound heuristicRandRound(*cbcModel);
-                    heuristicRandRound.setHeuristicName("random rounding");
-                    cbcModel->addHeuristic(&heuristicRandRound);
-#endif
-#endif
-                  }
-                  CbcCompareDefault compare;
-                  cbcModel->setNodeComparison(compare);
-                  cbcModel->setNumberBeforeTrust(10);
-                  cbcModel->setSpecialOptions(2);
-                  cbcModel->messageHandler()->setLogLevel(1);
-                  cbcModel->setMaximumCutPassesAtRoot(-100);
-                  cbcModel->setMaximumCutPasses(1);
-                  cbcModel->setMinimumDrop(0.05);
-                  // For branchAndBound this may help
-                  clpModel->defaultFactorizationFrequency();
-                  clpModel->setDualBound(1.0001e+08);
-                  clpModel->setPerturbation(50);
-                  osiclpModel->setSpecialOptions(193);
-                  osiclpModel->messageHandler()->setLogLevel(0);
-                  osiclpModel->setIntParam(OsiMaxNumIterationHotStart, 100);
-                  osiclpModel->setHintParam(OsiDoReducePrint, true,
-                    OsiHintTry);
-                  // You can save some time by switching off message
-                  // building
-                  // clpModel->messagesPointer()->setDetailMessages(100,10000,(int
-                  // *) NULL);
-
-                  // Solve
-
-                  cbcModel->initialSolve();
-                  if (clpModel->tightenPrimalBounds() != 0) {
-                    buffer.str("");
-                    buffer << "Problem is infeasible - tightenPrimalBounds!";
-                    printGeneralMessage(model_, buffer.str());
-                    break;
-                  }
-                  clpModel->dual(); // clean up
-                  cbcModel->initialSolve();
-#ifdef CBC_THREAD
-                  int numberThreads = parameters[CbcParam::THREADS]->intVal();
-                  cbcModel->setNumberThreads(numberThreads % 100);
-                  cbcModel->setThreadMode(std::min((numberThreads % 1000) / 100, 7));
-#endif
-                  // setCutAndHeuristicOptions(*cbcModel);
-                  cbcModel->branchAndBound();
-                  OsiSolverLinearizedQuadratic *solver3 = dynamic_cast< OsiSolverLinearizedQuadratic * >(
-                    model2.solver());
-                  assert(solver3);
-                  solution = solver3->bestSolution();
-                  double bestObjectiveValue = solver3->bestObjectiveValue();
-                  linkSolver->setBestObjectiveValue(bestObjectiveValue);
-                  if (solution) {
-                    // make sure array large enough
-                    int arraySize = solver3->getNumCols();
-                    int wanted = linkSolver->getNumCols();
-                    double *solution2 = new double[wanted];
-                    memset(solution2, 0, wanted * sizeof(double));
-                    memcpy(solution2, solution, arraySize * sizeof(double));
-                    linkSolver->setBestSolution(solution2, solver3->getNumCols());
-                    model_.setBestSolution(solution2, model_.getNumCols(),
-                      bestObjectiveValue);
-                    model_.setCutoff(bestObjectiveValue + 1.0e-4);
-                    delete[] solution2;
-                  }
-                  CbcHeuristicDynamic3 dynamic(model_);
-                  dynamic.setHeuristicName("dynamic pass thru");
-                  if (heuristicOption)
-                    model_.addHeuristic(&dynamic);
-                  // if convex
-                  if ((linkSolver->specialOptions2() & 4) != 0 && solution) {
-                    int numberColumns = coinModel->numberColumns();
-                    assert(linkSolver->objectiveVariable() == numberColumns);
-                    // add OA cut
-                    double offset;
-                    double *gradient = new double[numberColumns + 1];
-                    memcpy(gradient,
-                      qp->objectiveAsObject()->gradient(
-                        qp, solution, offset, true, 2),
-                      numberColumns * sizeof(double));
-                    double rhs = 0.0;
-                    int *column = new int[numberColumns + 1];
-                    int n = 0;
-                    for (int i = 0; i < numberColumns; i++) {
-                      double value = gradient[i];
-                      if (fabs(value) > 1.0e-12) {
-                        gradient[n] = value;
-                        rhs += value * solution[i];
-                        column[n++] = i;
-                      }
-                    }
-                    gradient[n] = -1.0;
-                    column[n++] = numberColumns;
-                    storedAmpl.addCut(-COIN_DBL_MAX, offset + 1.0e-7, n,
-                      column, gradient);
-                    linkSolver->addRow(n, column, gradient, -COIN_DBL_MAX,
-                      offset + 1.0e-7);
-                    delete[] gradient;
-                    delete[] column;
-                  }
-                  // could do three way branching round a) continuous b)
-                  // best solution
-                  // printf("obj %g\n", bestObjectiveValue);
-                  linkSolver->initialSolve();
-                }
-              }
-            }
-#endif
-#endif
-            // OsiDoReducePrint reduces log level by 1 inside
-            // OsiClpSolverInterface::initialSolve() when logLevel<=1.
-            // applyLpMethod() calls ClpSimplex::initialSolve(ClpSolve&)
-            // directly, so this hint has no effect on our path.
-            if (logLevel <= 1)
-              si->setHintParam(OsiDoReducePrint, true, OsiHintTry);
-#ifndef CBC_OTHER_SOLVER
-            // Bit 0x40000000 is never tested in OsiClpSolverInterface;
-            // it is a harmless legacy marker with no functional effect.
-            // The functionally important bit (1024 = don't borrow model)
-            // is added with |= inside solveInitialLp().
-            si->setSpecialOptions(0x40000000);
-#endif
-          }
-          if (!miplib) {
-            int returnCode = 0;
-            int lpStatus = solveInitialLp(logLevel, cbcLogLevel, statistics, returnCode, callBack);
-            if (lpStatus == 1) break;
-            if (lpStatus == 2) continue;
-            if (lpStatus == 3) return returnCode;
+            int rc = babSetupAndRootLp(miplib, logLevel, cbcLogLevel,
+              clpSolver, lpSolver, storedAmpl, coinModel, statistics,
+              returnCode, callBack);
+            if (rc == 1) break;
+            if (rc == 2) continue;
+            if (rc == 3) return returnCode;
           }
           // If user made settings then use them
           if (!defaultSettings) {

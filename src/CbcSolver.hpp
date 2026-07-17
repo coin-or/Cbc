@@ -46,6 +46,7 @@
 
 class CbcUser;
 class CbcStopNow;
+class CglStored;
 
 //#############################################################################
 //#############################################################################
@@ -595,6 +596,19 @@ private:
               command loop (model invalid or file could not be written)
   */
   int runCheckSolution(CbcParam *cbcParam, std::deque< std::string > &inputQueue);
+
+  /** Handle the setup + root-LP-relaxation portion of the BAB action:
+      cutoff sign flip, printout hints, the legacy OsiSolverLink/quadratic
+      model path (COIN_HAS_LINK), and the solveInitialLp() call.
+      Extracted from run() — the first part of `case CbcParam::BAB:`.
+      \return 0=success (caller continues), 1=break BAB, 2=continue the
+              command loop, 3=return from run() (returnCode is set)
+  */
+  int babSetupAndRootLp(bool miplib, int logLevel, int cbcLogLevel,
+    OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
+    CglStored &storedAmpl, CoinModel *&coinModel,
+    CbcSolverStatistics &statistics, int &returnCode,
+    int callBack(CbcModel *currentSolver, int whereFrom));
   //@}
 };
 

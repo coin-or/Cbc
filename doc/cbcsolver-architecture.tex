@@ -56,13 +56,15 @@ parsing, LP relaxation solves, preprocessing, cut/heuristic configuration, branc
 post-processing, and result reporting --- that used to live in the free functions \texttt{CbcMain0}/\texttt{CbcMain1},
 now thin backward-compatible wrappers delegating to \ghc{2637}{\texttt{initialize()}} and \ghc{9963}{\texttt{run()}}.
 
-Historically, \ghc{9963}{\texttt{CbcSolver::run()}} was a single $\sim$14{,}000-line function built around one
-giant \texttt{switch} on the current command. A series of refactors (most recently: removing dead
-\texttt{\#ifndef JJF\_ONE} / \texttt{\#if~0} blocks, splitting the branch-and-bound \texttt{case} into six
-cooperating private methods, and deleting the legacy hard-coded \texttt{-miplib}/\texttt{-unitTest}
-self-test harness) progressively extracted coherent phases into named methods listed below, while
-\texttt{run()} itself was reduced to a slim command dispatcher. Local variables that needed to survive
-across these phases were promoted to \texttt{private} data members (see \S\ref{sec:state}).
+Historically this logic was not even a class method: it lived in the free function \texttt{CbcMain1}
+(paired with the smaller \texttt{CbcMain0}), a single $\sim$10{,}000-line function built around one giant
+\texttt{switch} --- still exactly this shape today on stable Cbc branches. A first refactor revived the
+class and moved \texttt{CbcMain1}'s body into it verbatim as \texttt{CbcSolver::run()} (\texttt{CbcMain0}%
+/\texttt{CbcMain1} remain as thin wrappers). Further refactors (removing dead \texttt{\#ifndef JJF\_ONE} /
+\texttt{\#if~0} blocks, splitting the branch-and-bound \texttt{case} into six cooperating private methods,
+dropping the legacy \texttt{-miplib}/\texttt{-unitTest} harness) then extracted coherent phases into the
+named methods below, reducing \texttt{run()} itself to a slim dispatcher. Local variables that needed to
+survive across phases were promoted to \texttt{private} data members (see \S\ref{sec:state}).
 
 \footnotesize
 \section{Public API surface}

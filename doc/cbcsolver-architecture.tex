@@ -228,17 +228,21 @@ code, so each call arrow is coloured like the method it leaves):}\quad
   \draw[apiarr] (initcall.south) |- (rundeque.west);
   \draw[apiarr] (runargv.south) -- (rundeque.north);
 
-  % ================= Edges: dispatcher fan-out (staggered elbow heights so each =================
-  % branch is visually distinct right below the rundeque hub, ordered by target x) =================
-  \draw[otharr] (rundeque.south) -- ++(0,-1.8) -| (imppriv.north);
-  \draw[otharr] (rundeque.south) -- ++(0,-1.5) -| (boundprop.north);
-  \draw[otharr] (rundeque.south) -- ++(0,-1.2) -| (checksol.north);
-  \draw[otharr] (rundeque.south) -- ++(0,-0.9) -| (writesol.north);
-  \draw[otharr] (rundeque.south) -- ++(0,-0.6) -| (applylp.north);
-  \draw[babarr] (rundeque.south) -- ++(0,-0.3) -| (babcase.north);
+  % ================= Edges: dispatcher fan-out (staggered elbow heights, nested by =================
+  % horizontal reach: the farther a target is from the hub, the SHORTER its drop (elbow
+  % closer to the hub), so its long horizontal run stays above every closer target's own
+  % elbow/descent and never grazes a node top; the nearest targets get the longest drop. =================
+  \draw[otharr] (rundeque.south) -- ++(0,-0.10) -| (imppriv.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-0.35) -| (boundprop.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-0.85) -| (checksol.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-1.35) -| (writesol.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-1.10) -| (applylp.north);
+  \draw[babarr] (rundeque.south) -- ++(0,-0.60) -| (babcase.north);
 
   % ================= Edges: BAB pipeline chain (orange = BAB pipeline) =================
-  \draw[babarr] (babcase.south) |- (setup.north);
+  % (dropped via a clear bus row between the dispatcher and pipeline rows, well clear of
+  % execsearch which sits directly below babcase, instead of falling straight through it)
+  \draw[babarr] (babcase.south) -- ++(0,-0.55) -| (setup.north);
   \draw[babarr] (setup.east) -- (cfgbab.west);
   \draw[babarr] (cfgbab.east) -- (prep.west);
   \draw[babarr] (prep.east) -- (postpp.west);

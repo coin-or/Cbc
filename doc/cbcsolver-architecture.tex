@@ -228,13 +228,14 @@ code, so each call arrow is coloured like the method it leaves):}\quad
   \draw[apiarr] (initcall.south) |- (rundeque.west);
   \draw[apiarr] (runargv.south) -- (rundeque.north);
 
-  % ================= Edges: dispatcher fan-out =================
-  \draw[otharr] (rundeque.south) -| (imppriv.north);
-  \draw[otharr] (rundeque.south) -| (boundprop.north);
-  \draw[otharr] (rundeque.south) -| (checksol.north);
-  \draw[otharr] (rundeque.south) -| (writesol.north);
-  \draw[otharr] (rundeque.south) -| (applylp.north);
-  \draw[babarr] (rundeque.south) -| (babcase.north);
+  % ================= Edges: dispatcher fan-out (staggered elbow heights so each =================
+  % branch is visually distinct right below the rundeque hub, ordered by target x) =================
+  \draw[otharr] (rundeque.south) -- ++(0,-1.8) -| (imppriv.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-1.5) -| (boundprop.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-1.2) -| (checksol.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-0.9) -| (writesol.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-0.6) -| (applylp.north);
+  \draw[babarr] (rundeque.south) -- ++(0,-0.3) -| (babcase.north);
 
   % ================= Edges: BAB pipeline chain (orange = BAB pipeline) =================
   \draw[babarr] (babcase.south) |- (setup.north);

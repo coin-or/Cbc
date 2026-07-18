@@ -17,4 +17,4 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
 #endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

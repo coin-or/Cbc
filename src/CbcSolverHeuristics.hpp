@@ -16,10 +16,10 @@ void crunchIt(ClpSimplex *model);
   doAction - 0 just fix in original and return NULL
              1 return fixed non-presolved solver
              2 as one but use presolve Inside this
-	     3 use presolve and fix ones with large cost
+             3 use presolve and fix ones with large cost
              ? do heuristics and set best solution
-	     ? do BAB and just set best solution
-	     10+ then use lastSolution and relax a few
+             ? do BAB and just set best solution
+             10+ then use lastSolution and relax a few
              -2 cleanup afterwards if using 2
   On output - number fixed
 */
@@ -36,9 +36,9 @@ fixVubs(CbcModel &model, int skipZero2,
         (out model later)
     */
 int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
-                 int noPrinting_, int initialPumpTune);
+  int noPrinting_, int initialPumpTune);
 
-#endif //CbcSolverHeuristics_H
+#endif // CbcSolverHeuristics_H
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

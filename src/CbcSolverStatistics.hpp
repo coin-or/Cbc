@@ -8,7 +8,6 @@
  *
  **/
 
-
 #ifndef CBC_SOLVER_STATISTICS
 #define CBC_SOLVER_STATISTICS
 
@@ -96,9 +95,9 @@ public:
    * @return true on success, false if the file could not be opened.
    */
   bool writeCsv(
-                CbcParameters &parameters,
-                const std::string &outFileName,
-                const std::deque<std::string> &inputQueue) const;
+    CbcParameters &parameters,
+    const std::string &outFileName,
+    const std::deque< std::string > &inputQueue) const;
 };
 
 #endif

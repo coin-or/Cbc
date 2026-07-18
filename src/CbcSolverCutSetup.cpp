@@ -54,7 +54,7 @@ void installCutGenerators(
   int lagrangeanFlag = (parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal() & (7 * 33554432)) >> 9;
 #define ALL_LAGRANGEAN 1
   int numberGenerators = 0;
-  std::map<int, int> translate;
+  std::map< int, int > translate;
   translate[CbcParameters::CGOff] = -100;
   translate[CbcParameters::CGOn] = -1;
   translate[CbcParameters::CGRoot] = -99;
@@ -66,7 +66,7 @@ void installCutGenerators(
   translate[CbcParameters::CGForceOnStrong] = 1;
   translate[CbcParameters::CGForceOnButStrong] = 1;
   translate[CbcParameters::CGStrongRoot] = -1;
-  std::map<int, int> laTranslate;
+  std::map< int, int > laTranslate;
   laTranslate[CbcParameters::CGEndOnlyRoot] = 1;
   laTranslate[CbcParameters::CGEndCleanRoot] = 2;
   laTranslate[CbcParameters::CGEndBothRoot] = 3;
@@ -462,8 +462,7 @@ void installCutGenerators(
       zerohalfGen.setFlags(1);
     babModel.addCutGenerator(&zerohalfGen, translate[zerohalfMode], "ZeroHalf");
     accuracyFlag[numberGenerators] = 5;
-    CglZeroHalf *storedZeroHalf =
-      dynamic_cast<CglZeroHalf *>(babModel.cutGenerator(numberGenerators)->generator());
+    CglZeroHalf *storedZeroHalf = dynamic_cast< CglZeroHalf * >(babModel.cutGenerator(numberGenerators)->generator());
     if (storedZeroHalf)
       storedZeroHalf->setSepGraphSparseThreshold(
         parameters[CbcParam::ZEROHALFSPARSETHRESH]->intVal());
@@ -508,4 +507,4 @@ void installCutGenerators(
 }
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

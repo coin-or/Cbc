@@ -48,7 +48,7 @@ int CbcSolver::preprocess(int preProcess, int cbcParamCode,
     double high;
     int column;
   } lotStruct;
-  lotStruct *lotsize = reinterpret_cast<lotStruct *>(lotsize_);
+  lotStruct *lotsize = reinterpret_cast< lotStruct * >(lotsize_);
   typedef struct {
     lotStruct *lotsize;
     int numberLotSizing;

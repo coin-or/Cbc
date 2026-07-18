@@ -211,6 +211,76 @@ public:
     CoinBronKerbosch::PivotingStrategy bkPivotingStrategy);
   //@}
 
+  ///@name Individual solve actions (reusable on any solver instance)
+  //@{
+  /** Solve the LP relaxation of \p targetSolver using every LP-related
+      option currently configured on this CbcSolver (CbcParameters,
+      ClpParameters): -lpMethod (auto/dual/primal/barrier), -racingLP,
+      presolve, crash/idiot/sprint, SLP, dualize, PSI positive-edge,
+      objective scaling, vector mode, time limits, etc.
+
+      This is the single unified LP-solve entry point used internally for
+      the root LP relaxation (via solveInitialLp()) and for the
+      SOLVECONTINUOUS (-initialSolve) action; it is exposed here so the
+      exact same, fully-configured root-LP solve can be triggered directly
+      on an arbitrary OsiClpSolverInterface — e.g. one owned by an external
+      caller such as the C interface — without duplicating any of this
+      solver's option-translation logic.
+
+      Runs, in order:
+        1. Bound propagation (strengthenBounds()), if enabled.
+        2. Clique merging "before" (strengthenCliques()), if configured.
+        3. Model-level LP settings (PSI, objective scaling, vector mode).
+        4. LP racing, if enabled.
+        5. Full ClpSolve LP solve with all user-settable options.
+
+      \param targetSolver  Solver whose LP relaxation should be solved.
+                            Pass nullptr (the default) to operate on this
+                            CbcSolver's own model_.solver().
+      \return -1  infeasibility proved during bound propagation (LP was not
+                  solved), 0  LP solve completed (racing winner or standard
+                  solve).
+  */
+  int applyLpMethod(OsiClpSolverInterface *targetSolver = nullptr);
+
+  /** Run the currently configured bound propagation (singletons / fixpoint
+      / MILP-based bound tightening, per -boundPropLevel and
+      -boundPropMaxRounds) on \p solver in place.
+
+      \param solver  Solver to tighten. Pass nullptr (the default) to
+                      operate on this CbcSolver's own model_.solver().
+      \return true if the problem remains feasible after tightening
+              (bounds/rows updated in place on \p solver), false if
+              infeasibility was proved.
+  */
+  bool strengthenBounds(OsiSolverInterface *solver = nullptr);
+
+  /** Build/refresh the conflict graph of \p solver and strengthen
+      set-packing/partitioning cliques against it (extend or dominate
+      constraints), optionally re-solving/resolving the LP afterwards.
+
+      \param solver           Solver to strengthen. Pass nullptr (the
+                               default) to operate on this CbcSolver's own
+                               model_.solver().
+      \param mode              "before" (a subsequent solve is expected;
+                               no resolve is performed here) or "after"
+                               (the LP is resolved in place once
+                               strengthening is done).
+      \param strengthenMode    Strategy flag forwarded to
+                               CglCliqueStrengthening::strengthenCliques().
+      \param clqExtendedOut    Optional: number of constraints extended.
+      \param clqDominatedOut   Optional: number of constraints dominated.
+      \param handler           Optional message handler override. Pass
+                               nullptr (the default) to use this
+                               CbcSolver's own model_.messageHandler().
+      \return true if any bounds or constraints were changed.
+  */
+  bool strengthenCliques(OsiSolverInterface *solver = nullptr,
+    const std::string &mode = "before", int strengthenMode = 2,
+    int *clqExtendedOut = nullptr, int *clqDominatedOut = nullptr,
+    CoinMessageHandler *handler = nullptr);
+  //@}
+
   ///@name User extensions
   //@{
   /// Add user function
@@ -551,25 +621,6 @@ private:
   void writeSolution(int cbcParamCode,
     std::deque< std::string > &inputQueue,
     OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver);
-
-  /** Apply the LP method to solve the current LP relaxation.
-      Unified LP-solve entry point called from both the BAB path
-      (via solveInitialLp()) and from the SOLVECONTINUOUS (-initialSolve)
-      action.  The function runs, in order:
-        1. Fast MILP preprocessing (bound tightening, if enabled)
-        2. Clique merging "before" (if clqstrMode_ == "before")
-        3. Model-level LP settings: PSI positive-edge, objective scaling,
-           vector mode — applied before racing so thread clones inherit them
-        4. LP racing (if enabled; threads use intentionally varied configs)
-        5. Full ClpSolve LP solve with all user-settable options:
-           presolve, crash/idiot/sprint, SLP, barrier options, dualize,
-           print options, time limits.
-      The caller is responsible for setting up any LP-progress message
-      handler on the ClpSimplex model before calling this function.
-      \return -1 if infeasibility proved during preprocessing (skip solve),
-               0 on success (LP solve performed or racing winner found).
-  */
-  int applyLpMethod();
 
   /** Solve the root LP relaxation.
       Called from the BAB action.

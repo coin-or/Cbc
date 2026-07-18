@@ -1126,6 +1126,85 @@ parseLpParamTag(const char *tag)
   return s;
 }
 
+// Runs the currently configured bound propagation (per -boundPropLevel /
+// -boundPropMaxRounds) on `solver` in place; falls back to the legacy
+// singleton-only tightening when propagation is off but -singletonBounds is
+// on. Shared by CbcSolver::applyLpMethod() (root-LP path) and the standalone
+// BOUNDPROP action (CbcSolver::runBoundPropagation()) so the level-mapping
+// and bp.run() call are not duplicated between the two.
+bool CbcSolver::strengthenBounds(OsiSolverInterface *solverIn)
+{
+  OsiSolverInterface *solver = solverIn ? solverIn : model_.solver();
+
+  CbcBoundPropagation::Level bpLevel;
+  switch (parameters_.getBoundPropLevel()) {
+  case CbcParameters::BndPropSingletons:
+    bpLevel = CbcBoundPropagation::Singletons;
+    break;
+  case CbcParameters::BndPropMILPbt:
+    bpLevel = CbcBoundPropagation::MILPbt;
+    break;
+  case CbcParameters::BndPropFixpoint:
+    bpLevel = CbcBoundPropagation::Fixpoint;
+    break;
+  default:
+    bpLevel = CbcBoundPropagation::Off;
+    break;
+  }
+
+  if (bpLevel != CbcBoundPropagation::Off) {
+    const bool useElapsed = model_.useElapsedTime();
+    const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+    const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
+    const int maxRounds = parameters_.getBoundPropMaxRounds();
+    const int logLevel = model_.messageHandler()->logLevel();
+
+    CbcBoundPropagation bp;
+    if (!bp.run(solver, model_.messageHandler(), logLevel,
+          bpLevel, maxRounds, useElapsed, timeLimit, startTime)) {
+      if (logLevel >= 1)
+        printGeneralMessage(model_,
+          "Bound tightening: infeasibility proved — skipping solve.");
+      return false;
+    }
+  } else if (parameters_[CbcParam::SINGLETONBOUNDS]->modeVal()) {
+    // Legacy singleton-row tightening only
+    const double t0 = CoinCpuTime();
+    int nFixed = 0;
+    int nTightened = solver->tightenBoundsFromSingletonRows(nFixed);
+    if (nTightened && model_.messageHandler()->logLevel() >= 1) {
+      char buf[256];
+      if (nFixed)
+        std::snprintf(buf, sizeof(buf),
+          "Singleton rows: %d bounds tightened, %d variables fixed (%.2fs)",
+          nTightened, nFixed, CoinCpuTime() - t0);
+      else
+        std::snprintf(buf, sizeof(buf),
+          "Singleton rows: %d bounds tightened (%.2fs)",
+          nTightened, CoinCpuTime() - t0);
+      printGeneralMessage(model_, buf);
+    }
+  }
+  return true;
+}
+
+// Builds/refreshes the conflict graph of `solver` and strengthens cliques
+// against it. Thin CbcSolver-level wrapper around the free function
+// buildConflictGraphAndStrengthenCliques() (defined above), which does the
+// actual work; this wrapper just fills in this CbcSolver's own model/handler/
+// mipStart context so callers (applyLpMethod(), the "after" clique-merging
+// step in the BAB path, and any external caller) do not need direct access
+// to those private members.
+bool CbcSolver::strengthenCliques(OsiSolverInterface *solverIn,
+  const std::string &mode, int strengthenMode,
+  int *clqExtendedOut, int *clqDominatedOut, CoinMessageHandler *handlerIn)
+{
+  OsiSolverInterface *solver = solverIn ? solverIn : model_.solver();
+  CoinMessageHandler *handler = handlerIn ? handlerIn : model_.messageHandler();
+  return buildConflictGraphAndStrengthenCliques(solver, handler,
+    mode, strengthenMode, model_, mipStart_, clqExtendedOut, clqDominatedOut);
+}
+
 // Unified LP-solve entry point: bound propagation → clique merging "before"
 // → model-level LP settings → racing → full ClpSolve with all user options.
 //
@@ -1135,11 +1214,11 @@ parseLpParamTag(const char *tag)
 //
 // The caller is responsible for setting up any LP-progress message handler
 // on the ClpSimplex model before calling this function.
-int CbcSolver::applyLpMethod()
+int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver)
 {
-  OsiSolverInterface *solver = model_.solver();
+  OsiSolverInterface *solver = targetSolver ? static_cast< OsiSolverInterface * >(targetSolver) : model_.solver();
 #ifndef CBC_OTHER_SOLVER
-  OsiClpSolverInterface *si = getClpSolver(solver);
+  OsiClpSolverInterface *si = targetSolver ? targetSolver : getClpSolver(solver);
   ClpSimplex *clp = si ? si->getModelPtr() : nullptr;
 #else
   OsiClpSolverInterface *si = nullptr;
@@ -1150,57 +1229,8 @@ int CbcSolver::applyLpMethod()
   // Tightens bounds using MILP-based bound propagation before building the
   // conflict graph or solving the LP.  Must run first so that the conflict
   // graph and clique merging (step 2) see the tightest possible bounds.
-  {
-    CbcBoundPropagation::Level bpLevel;
-    switch (parameters_.getBoundPropLevel()) {
-    case CbcParameters::BndPropSingletons:
-      bpLevel = CbcBoundPropagation::Singletons;
-      break;
-    case CbcParameters::BndPropMILPbt:
-      bpLevel = CbcBoundPropagation::MILPbt;
-      break;
-    case CbcParameters::BndPropFixpoint:
-      bpLevel = CbcBoundPropagation::Fixpoint;
-      break;
-    default:
-      bpLevel = CbcBoundPropagation::Off;
-      break;
-    }
-
-    if (bpLevel != CbcBoundPropagation::Off) {
-      const bool useElapsed = model_.useElapsedTime();
-      const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
-      const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
-      const int maxRounds = parameters_.getBoundPropMaxRounds();
-      const int logLevel = model_.messageHandler()->logLevel();
-
-      CbcBoundPropagation bp;
-      if (!bp.run(solver, model_.messageHandler(), logLevel,
-            bpLevel, maxRounds, useElapsed, timeLimit, startTime)) {
-        if (logLevel >= 1)
-          printGeneralMessage(model_,
-            "Bound tightening: infeasibility proved — skipping solve.");
-        return -1;
-      }
-    } else if (parameters_[CbcParam::SINGLETONBOUNDS]->modeVal()) {
-      // Legacy singleton-row tightening only
-      const double t0 = CoinCpuTime();
-      int nFixed = 0;
-      int nTightened = solver->tightenBoundsFromSingletonRows(nFixed);
-      if (nTightened && model_.messageHandler()->logLevel() >= 1) {
-        char buf[256];
-        if (nFixed)
-          std::snprintf(buf, sizeof(buf),
-            "Singleton rows: %d bounds tightened, %d variables fixed (%.2fs)",
-            nTightened, nFixed, CoinCpuTime() - t0);
-        else
-          std::snprintf(buf, sizeof(buf),
-            "Singleton rows: %d bounds tightened (%.2fs)",
-            nTightened, CoinCpuTime() - t0);
-        printGeneralMessage(model_, buf);
-      }
-    }
-  }
+  if (!strengthenBounds(solver))
+    return -1;
 
   // ─── 2. Clique merging "before" ──────────────────────────────────────────
   // Strengthens set-packing/partitioning cliques using the conflict graph,
@@ -1209,8 +1239,7 @@ int CbcSolver::applyLpMethod()
   if (clqstrMode_ == "before") {
     double clqTime = CoinWallclockTime();
     int clqExtended = 0, clqDominated = 0;
-    buildConflictGraphAndStrengthenCliques(solver, model_.messageHandler(),
-      clqstrMode_, 2, model_, mipStart_, &clqExtended, &clqDominated);
+    strengthenCliques(solver, clqstrMode_, 2, &clqExtended, &clqDominated);
     clqTime = CoinWallclockTime() - clqTime;
     statistics_.cgraph_time += solver->getCGraphBuildTime();
     statistics_.cgraph_density = solver->getCGraphDensity();
@@ -5430,46 +5459,11 @@ int CbcSolver::solveInitialLp(
     return 2;
   }
 #endif
-  // --- Clique strengthening "before" (after bound propagation) ---
-  if (clqstrMode_ == "before" && lpMethodResult > 0) {
-    double clqTime = CoinWallclockTime();
-    int clqExtended = 0, clqDominated = 0;
-    buildConflictGraphAndStrengthenCliques(model_.solver(),
-      model_.messageHandler(),
-      clqstrMode_,
-      2,
-      model_, mipStart_,
-      &clqExtended, &clqDominated);
-    clqTime = CoinWallclockTime() - clqTime;
-    statistics.cgraph_time += model_.solver()->getCGraphBuildTime();
-    statistics.cgraph_density = model_.solver()->getCGraphDensity();
-    statistics.clqstr_extended = clqExtended;
-    statistics.clqstr_dominated = clqDominated;
-    statistics.clqstr_time = clqTime;
-    if (cbcLogLevel >= 1) {
-      char buf[256];
-      if (clqExtended || clqDominated) {
-        std::snprintf(buf, sizeof(buf),
-          "  Clique strengthening: %d extended, %d dominated (%.2fs)",
-          clqExtended, clqDominated, clqTime);
-      } else {
-        std::snprintf(buf, sizeof(buf),
-          "  Clique strengthening: no changes (%.2fs)", clqTime);
-      }
-      printGeneralMessage(model_, buf);
-    }
-  }
-  if (lpMethodResult > 0) {
-#ifndef CLP_OLD_STYLE
-    model_.initialSolve();
-#else
-    // initial solve and report
-    // bool clpFeasible = true;
-    // double clpStartTime = CoinGetTimeOfDay();
-    int status = oldStyleInitialSolve(&model_, clpStartTime);
-    assert(!status);
-#endif
-  }
+  // NOTE: clique strengthening "before" and the actual LP solve are already
+  // performed inside applyLpMethod() (steps 2 and 5) above — this used to be
+  // duplicated here as well, gated on `lpMethodResult > 0`, but applyLpMethod()
+  // only ever returns -1 or 0, so that duplicate block (and a duplicate
+  // model_.initialSolve() call) was dead code and has been removed.
 #ifndef CBC_OTHER_SOLVER
   if (lpSavedMsg && si) {
     ClpSimplex *clpModel = si->getModelPtr();
@@ -6878,45 +6872,25 @@ private:
 };
 
 // Extracted from CbcSolver::run() — the `case CbcParam::BOUNDPROP:` block.
+// Delegates the actual level-mapping and bp.run() call to the shared
+// strengthenBounds() action (also used internally by applyLpMethod()); this
+// wrapper only adds the CLI-specific "disabled" message and goodModel_
+// bookkeeping.
 int CbcSolver::runBoundPropagation()
 {
   if (!goodModel_) {
     printGeneralWarning(model_, "** Current model not valid\n");
     return 1;
   }
-  CbcParameters &parameters = parameters_;
-  const CbcParameters::BoundPropLevel paramLevel = parameters.getBoundPropLevel();
-  if (paramLevel == CbcParameters::BndPropOff) {
+  if (parameters_.getBoundPropLevel() == CbcParameters::BndPropOff) {
     printGeneralMessage(model_,
       "Bound propagation is disabled (boundPropLevel=off); "
       "nothing to do.");
     return 1;
   }
-  CbcBoundPropagation::Level bpLevel;
-  switch (paramLevel) {
-  case CbcParameters::BndPropSingletons:
-    bpLevel = CbcBoundPropagation::Singletons;
-    break;
-  case CbcParameters::BndPropFixpoint:
-    bpLevel = CbcBoundPropagation::Fixpoint;
-    break;
-  default: // BndPropMILPbt
-    bpLevel = CbcBoundPropagation::MILPbt;
-    break;
-  }
-  const bool useElapsed = model_.useElapsedTime();
-  const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
-  // Use a generous time limit for the standalone action
-  const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
-  CbcBoundPropagation bp;
-  const int maxRounds = parameters.getBoundPropMaxRounds();
-  const int logLevel = model_.messageHandler()->logLevel();
-  const bool feasible = bp.run(model_.solver(),
-    model_.messageHandler(), logLevel,
-    bpLevel, maxRounds, useElapsed, timeLimit, startTime);
-  if (!feasible) {
-    // run() already logged the infeasibility details at level >= 1.
-    // Mark model bad so downstream commands know.
+  if (!strengthenBounds(model_.solver())) {
+    // strengthenBounds() already logged the infeasibility details at
+    // level >= 1. Mark model bad so downstream commands know.
     goodModel_ = false;
   }
   return 0;
@@ -7584,12 +7558,8 @@ int CbcSolver::babPostPreprocessCleanup(
       CoinMessageHandler *clqHandler = preprocHandler
         ? static_cast< CoinMessageHandler * >(preprocHandler)
         : babModel_->messageHandler();
-      buildConflictGraphAndStrengthenCliques(babModel_->solver(),
-        clqHandler,
-        clqstrMode,
-        4,
-        model_, mipStart,
-        &clqExtended, &clqDominated);
+      strengthenCliques(babModel_->solver(), clqstrMode, 4,
+        &clqExtended, &clqDominated, clqHandler);
       statistics.cgraph_time += babModel_->solver()->getCGraphBuildTime();
       statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
       // Print cgraph + clique summary through preproc handler

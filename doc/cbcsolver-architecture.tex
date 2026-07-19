@@ -235,7 +235,7 @@ code, so each call arrow is coloured like the method it leaves):}\quad
 \vspace{-2pt}
 
 \begin{center}
-\resizebox{!}{0.74\textheight}{%
+\resizebox{!}{0.87\textheight}{%
 \begin{tikzpicture}[
     every node/.style={font=\scriptsize},
     box/.style={draw, rounded corners=2pt, align=center, text width=2.7cm,
@@ -245,6 +245,7 @@ code, so each call arrow is coloured like the method it leaves):}\quad
     oth/.style={box, fill=cother!14, draw=cother},
     util/.style={box, fill=cutil!14, draw=cutil},
     orph/.style={box, fill=cutil!6, draw=cutil, dashed, text width=2.7cm},
+    leafapi/.style={box, fill=capi!12, draw=capi, dashed, text width=2.7cm},
     dat/.style={draw=cdata, fill=cdata!8, rounded corners=2pt, align=left, inner sep=6pt, font=\tiny},
     apiarr/.style={-{Straight Barb[scale=1.0]}, line width=0.95pt, capi},
     babarr/.style={-{Straight Barb[scale=1.0]}, line width=0.95pt, cbab},
@@ -257,26 +258,29 @@ code, so each call arrow is coloured like the method it leaves):}\quad
   \node[api] (solve)     at (-2.0, 16.6) {\ghc{3216}{solve(file)}};
   \node[api] (importpub) at (1.4, 16.6)  {\ghc{3234}{importModel(file)}};
   \node[api] (runargv)   at (4.8, 16.6) {\ghc{3203}{run(argc,argv)}};
-  \node[api] (solveLp)   at (16.0, 16.6) {\ghc{3250}{solveLp(method)}};
+  \node[leafapi] (solveLp) at (16.0, 16.6) {\ghc{3250}{solveLp(method)}\\{\tiny\itshape standalone --- reads/solves}\\{\tiny\itshape model\_.solver() directly,}\\{\tiny\itshape bypasses initialize()/run()}};
 
   % ================= Row 1: initialize() + dispatcher hub =================
   \node[api] (initcall)  at (-0.3, 14.9) {\ghc{3071}{initialize()}};
   \node[api] (rundeque) at (4.8, 13.2) {\ghc{10393}{\textbf{run(deque)}}\\[1pt]\footnotesize command dispatcher};
 
-  % ================= Row 2: dispatch fan-out (non-BAB actions) =================
-  \node[oth] (imppriv)   at (-5.6, 10.6) {\ghc{3326}{importModel(}\\\ghc{3326}{inputQueue)}\\{\tiny case IMPORT}};
-  \node[oth] (boundprop) at (-2.6, 10.6) {\ghc{7089}{runBound-}\\\ghc{7089}{Propagation()}\\{\tiny case BOUNDPROP}};
-  \node[oth] (cliquestr) at (-0.1, 10.6) {\ghc{7113}{runClique-}\\\ghc{7113}{Strengthening()}\\{\tiny case CLIQUESTRENGTHEN}};
-  \node[oth] (checksol)  at (2.5, 10.6) {\ghc{7134}{runCheck-}\\\ghc{7134}{Solution()}\\{\tiny case CHECKSOLUTION}};
-  \node[oth] (writesol)  at (5.5, 10.6) {\ghc{5935}{writeSolution()}\\{\tiny case WRITESOL/\ldots}};
-  \node[oth] (applylp)   at (8.5, 10.6) {\ghc{1269}{applyLpMethod(solver)}\\{\tiny via runSolveContinuous()}\\{\tiny case SOLVECONTINUOUS+}};
-  \node[bab] (babcase)   at (12.5, 10.6) {\textbf{case BAB}\\ 7-phase pipeline $\downarrow$};
+  % ================= Row 2: dispatch fan-out (non-BAB actions; evenly spaced ~3.2 apart =================
+  % so that no two of these wider/taller multi-line boxes touch) =================
+  \node[oth] (imppriv)   at (-6.4, 10.6) {\ghc{3326}{importModel(}\\\ghc{3326}{inputQueue)}\\{\tiny case IMPORT}};
+  \node[oth] (boundprop) at (-3.2, 10.6) {\ghc{7089}{runBound-}\\\ghc{7089}{Propagation()}\\{\tiny case BOUNDPROP}};
+  \node[oth] (cliquestr) at (0.0, 10.6) {\ghc{7113}{runClique-}\\\ghc{7113}{Strengthening()}\\{\tiny case CLIQUESTRENGTHEN}};
+  \node[oth] (checksol)  at (3.2, 10.6) {\ghc{7134}{runCheck-}\\\ghc{7134}{Solution()}\\{\tiny case CHECKSOLUTION}};
+  \node[oth] (writesol)  at (6.4, 10.6) {\ghc{5935}{writeSolution()}\\{\tiny case WRITESOL/\ldots}};
+  \node[oth] (applylp)   at (9.9, 10.6) {\ghc{1269}{applyLpMethod(solver)}\\{\tiny case SOLVECONTINUOUS+}\\{\tiny\itshape runs preRootLP-Strenghtening() first}};
+  \node[bab] (babcase)   at (13.2, 10.6) {\textbf{case BAB}\\ 7-phase pipeline $\downarrow$};
 
   % ================= Row 2.5: the two actions applyLpMethod() delegates to =================
-  \node[api, text width=1.9cm, minimum height=0.85cm] (strbnd) at (7.2, 9.05)
-    {\ghc{1135}{strengthen-}\\\ghc{1135}{Bounds()}\\{\tiny\itshape also via runBoundPropagation() /}\\{\tiny\itshape preRootLPStrenghtening()}};
-  \node[api, text width=1.9cm, minimum height=0.85cm] (strclq) at (10.0, 9.05)
-    {\ghc{1198}{strengthen-}\\\ghc{1198}{Cliques()}\\{\tiny\itshape also via runCliqueStrengthening() /}\\{\tiny\itshape babPostPreprocessCleanup() /}\\{\tiny\itshape preRootLPStrenghtening()}};
+  % (placed directly under their real, direct callers -- boundprop/cliquestr -- so those
+  % two edges become simple straight vertical drops instead of elbowed lines) =================
+  \node[api, text width=2.3cm, minimum height=1.05cm] (strbnd) at (-3.2, 9.15)
+    {\ghc{1135}{strengthenBounds()}\\{\tiny\itshape also from preRootLP-Strenghtening()}};
+  \node[api, text width=2.3cm, minimum height=1.05cm] (strclq) at (0.0, 9.15)
+    {\ghc{1198}{strengthenCliques()}\\{\tiny\itshape also from preRootLP-Strenghtening()}};
 
   % ================= Row 3: the 7-phase BAB pipeline (left to right chain) =================
   \node[bab] (preroot)    at (-8.7, 7.8) {\ghc{7178}{babPreRootLP-}\\\ghc{7178}{Strenghtening()}};
@@ -299,13 +303,13 @@ code, so each call arrow is coloured like the method it leaves):}\quad
   \node[orph] (reset)    at (13.7, 7.8) {\ghc{2887}{resetRunState()}\\{\tiny\itshape declared, never called}};
 
   % ================= Data / state panels (bottom band, spanning full width) =================
-  \node[dat, text width=8.4cm, minimum height=1.7cm] (dataA) at (-3.0, 1.1) {
+  \node[dat, text width=8.4cm, minimum height=1.7cm] (dataA) at (-3.0, 2.4) {
     \textbf{Core state} (\ghh{390}{CbcSolver.hpp:390--398})\\
     \texttt{model\_}, \texttt{babModel\_}, \texttt{parameters\_},\\
     \texttt{cutGenerator\_[]}, \texttt{userFunction\_[]},\\
     \texttt{originalSolver\_}, \texttt{originalCoinModel\_}
   };
-  \node[dat, text width=8.4cm, minimum height=1.7cm] (dataB) at (6.5, 1.1) {
+  \node[dat, text width=8.4cm, minimum height=1.7cm] (dataB) at (6.5, 2.4) {
     \textbf{Cross-phase state} (\ghh{420}{CbcSolver.hpp:420--631})\\
     preprocessing, solve-control flags, LP/barrier options,\\
     cut-generator modes, branching input (priorities/SOS),\\
@@ -322,25 +326,26 @@ code, so each call arrow is coloured like the method it leaves):}\quad
   % horizontal reach: the farther a target is from the hub, the SHORTER its drop (elbow
   % closer to the hub), so its long horizontal run stays above every closer target's own
   % elbow/descent and never grazes a node top; the nearest targets get the longest drop. =================
-  \draw[otharr] (rundeque.south) -- ++(0,-0.10) -| (imppriv.north);
-  \draw[otharr] (rundeque.south) -- ++(0,-0.35) -| (boundprop.north);
-  \draw[otharr] (rundeque.south) -- ++(0,-0.60) -| (cliquestr.north);
-  \draw[otharr] (rundeque.south) -- ++(0,-0.85) -| (checksol.north);
-  \draw[otharr] (rundeque.south) -- ++(0,-1.35) -| (writesol.north);
-  \draw[otharr] (rundeque.south) -- ++(0,-1.10) -| (applylp.north);
-  \draw[babarr] (rundeque.south) -- ++(0,-0.60) -| (babcase.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-0.25) -| (imppriv.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-0.50) -| (boundprop.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-0.75) -| (cliquestr.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-1.00) -| (checksol.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-1.00) -| (writesol.north);
+  \draw[otharr] (rundeque.south) -- ++(0,-0.75) -| (applylp.north);
+  \draw[babarr] (rundeque.south) -- ++(0,-0.50) -| (babcase.north);
 
-  % ================= Edges: applyLpMethod() delegating to the two shared actions, and the =================
-  % standalone BOUNDPROP/CLIQUESTRENGTHEN actions delegating to the same two shared actions =================
-  \draw[apiarr] (applylp.south) -- ++(0,-0.35) -| (strbnd.north);
-  \draw[apiarr] (applylp.south) -- ++(0,-0.35) -| (strclq.north);
-  \draw[otharr] (boundprop.south) -- ++(0,-1.15) -| (strbnd.north);
-  \draw[otharr] (cliquestr.south) -- ++(0,-0.95) -| (strclq.north);
+  % ================= Edges: standalone CLI actions delegating to the two shared strengthening =================
+  % actions (applyLpMethod() itself does NOT call these directly -- it runs
+  % preRootLPStrenghtening() first, see that node's fan-out below). strbnd/strclq sit
+  % directly under their callers, so these are simple straight vertical drops. =================
+  \draw[otharr] (boundprop.south) -- (strbnd.north);
+  \draw[otharr] (cliquestr.south) -- (strclq.north);
+  \draw[babarr] (postpp.north) -- ++(0,0.30) -| (strclq.south);
 
   % ================= Edges: BAB pipeline chain (orange = BAB pipeline) =================
   % (dropped via a clear bus row between the dispatcher and pipeline rows, well clear of
   % execsearch which sits directly below babcase, instead of falling straight through it)
-  \draw[babarr] (babcase.south) -- ++(0,-0.55) -| (preroot.north);
+  \draw[babarr] (babcase.south) -- ++(0,-0.30) -| (preroot.north);
   \draw[babarr] (preroot.east) -- (setup.west);
   \draw[babarr] (setup.east) -- (cfgbab.west);
   \draw[babarr] (cfgbab.east) -- (prep.west);
@@ -359,10 +364,15 @@ code, so each call arrow is coloured like the method it leaves):}\quad
   \draw[utilarr] (babcase.east) -| (paramchg.north);
 
   % ================= Edges: data ownership (aggregated, dashed grey, non-crossing) =================
-  \draw[darr] (dataA.north) -- ++(0,0.55) -| (setup.south);
+  % Each of these rises through the WIDE, node-free vertical gap between solveInitialLp()
+  % (x=-5.6) and configureHeuristics() (x=5.5) in row 4, well clear of every row-4 box,
+  % before jogging sideways *above* row 4's top edge -- so the final vertical leg into the
+  % target's south anchor never grazes solveInitialLp()/postprocess() sitting in between.
+  \draw[darr] (dataA.north) -- ++(0,3.00) -| (setup.south);
   \draw[darr] (dataA.north) ++(2.6,0) -- ++(0,0.9) -| (cfgbab.south);
   \draw[darr] (dataB.north) ++(-2.6,0) -- ++(0,0.9) -| (postpp.south);
-  \draw[darr] (dataB.north) -- ++(0,0.55) -| (execsearch.south);
+  \draw[darr] (dataB.north) -| (0.0,6.25) -| (execsearch.south);
+  \draw[darr] (solveLp.south) -- ++(0,-16.9) -| (dataA.south);
 
 \end{tikzpicture}%
 }

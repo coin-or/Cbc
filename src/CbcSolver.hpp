@@ -527,21 +527,40 @@ private:
   bool biLinearProblem_;
 
   // --- Cut generator modes ---
+  // Each field is a CbcParameters::CutStrategy value (CGOff/CGOn/CGRoot/
+  // CGIfMove/CGForceOn/...) controlling whether/how often the named cut
+  // generator is installed on babModel_ by configureCutGenerators().
+  /// Gomory mixed-integer cuts strategy
   int gomoryMode_;
+  /// Probing cuts strategy
   int probingMode_;
+  /// Knapsack cover cuts strategy
   int knapsackMode_;
+  /// Reduce-and-split cuts strategy
   int redsplitMode_;
+  /// Reduce-and-split (v2) cuts strategy
   int redsplit2Mode_;
+  /// Gomory mixed-integer (alternative implementation) cuts strategy
   int GMIMode_;
+  /// Clique cuts strategy
   int cliqueMode_;
+  /// Legacy (pre-conflict-graph) clique cuts strategy
   int oldCliqueMode_;
+  /// Odd-wheel cuts strategy
   int oddWheelMode_;
+  /// Mixed-integer-rounding cuts strategy
   int mixedMode_;
+  /// Mixed-integer-rounding cut rounding sub-strategy
   int mixedRoundStrategy_;
+  /// Flow-cover cuts strategy
   int flowMode_;
+  /// Two-step MIR (twomir) cuts strategy
   int twomirMode_;
+  /// Lift-and-project cuts strategy
   int landpMode_;
+  /// Residual capacity cuts strategy
   int residualCapacityMode_;
+  /// Zero-half cuts strategy
   int zerohalfMode_;
   /// Conflict graph mode ("on"/"off"/"clq")
   std::string cgraphMode_;
@@ -557,18 +576,31 @@ private:
   int oddWExtMethod_;
 
   // --- Branching input (from AMPL or priority files) ---
+  /// Per-column branching priority (one entry per column), or NULL if unset
   int *priorities_;
+  /// Per-column forced branch direction (-1/0/1), or NULL if unset
   int *branchDirection_;
+  /// Per-column down-branch pseudocost, or NULL if unset
   double *pseudoDown_;
+  /// Per-column up-branch pseudocost, or NULL if unset
   double *pseudoUp_;
+  /// Per-column starting solution values supplied by AMPL, or NULL if unset
   double *solutionIn_;
+  /// Per-column priorities supplied together with solutionIn_, or NULL if unset
   int *prioritiesIn_;
+  /// Number of SOS (special ordered sets) constraints supplied by AMPL
   int numberSOS_;
+  /// Start index (into sosIndices_/sosReference_) of each SOS, size numberSOS_+1
   int *sosStart_;
+  /// Column indices referenced by each SOS, concatenated per sosStart_
   int *sosIndices_;
+  /// Type (1 or 2) of each SOS, one entry per SOS
   char *sosType_;
+  /// Reference row weights for each SOS entry, concatenated per sosStart_
   double *sosReference_;
+  /// AMPL "cut" markers (columns that must remain in the model), or NULL if unset
   int *cut_;
+  /// Per-SOS branching priority, one entry per SOS, or NULL if unset
   int *sosPriority_;
 
   // --- MIP start ---
@@ -577,43 +609,66 @@ private:
   std::string mipStartFile_;
 
   // --- Knapsack expansion ---
+  /// Map from original model column to expanded-knapsack sub-model column, or NULL
   int *whichColumn_;
+  /// Start index (into knapsackRow_) of each expanded knapsack row, size numberKnapsack_+1
   int *knapsackStart_;
+  /// Original model row index of each expanded knapsack, one entry per knapsackStart_ range
   int *knapsackRow_;
+  /// Number of knapsack constraints expanded
   int numberKnapsack_;
 
   // --- Import control ---
+  /// Whether MPS/LP read errors are tolerated (0=fail on error, nonzero=continue)
   int allowImportErrors_;
+  /// Whether original row/column names are kept on import (0=discard, nonzero=keep)
   int keepImportNames_;
 
   // --- Names ---
+  /// Maximum row/column name length recorded for the current model (0 if names unavailable)
   int lengthName_;
+  /// Row names for the current model, indexed by row number
   std::vector< std::string > rowNames_;
+  /// Column names for the current model, indexed by column number
   std::vector< std::string > columnNames_;
 
   // --- Debug ---
+  /// Reference solution values loaded via -debug/-checkSolution, or NULL if unset
   double *debugValues_;
+  /// Number of entries in debugValues_ (-1 if not loaded)
   int numberDebugValues_;
+  /// Whether a debug basis has been loaded (-1=not loaded, 1=loaded)
   int basisHasValues_;
 
   // --- Lot sizing ---
+  /// One semi-continuous/lot-sizing variable: allowed range [low,high] plus its column index
   struct LotStruct {
+    /// Lower bound of the allowed lot-sizing range (in addition to 0)
     double low;
+    /// Upper bound of the allowed lot-sizing range
     double high;
+    /// Column index this lot-sizing entry applies to
     int column;
   };
+  /// Lot-sizing entries collected from the model, one per lot-sized column
   LotStruct *lotsize_;
+  /// Number of entries in lotsize_
   int numberLotSizing_;
 
   // --- GLPK state ---
 #ifdef COINUTILS_HAS_GLPK
+  /// GLPK MathProg translator, used when importing a GMPL/AMPL-style model via GLPK
   glp_tran *coin_glp_tran_;
+  /// GLPK problem instance backing coin_glp_tran_'s translated model
   glp_prob *coin_glp_prob_;
 #endif
 
   // --- Timing ---
+  /// Accumulated CPU time across the run (seconds)
   double totalTime_;
+  /// CPU time reference point (seconds), reset at various phase boundaries
   double time0_;
+  /// Elapsed (wall-clock) time reference point (seconds)
   double time0Elapsed_;
 
   // --- Statistics ---
@@ -796,20 +851,35 @@ private:
       locals they were extracted from.
   */
   struct RankerConfig {
+    /// Weight of the conflict-graph degree component in the branching rank score
     double rankConflictWeight;
+    /// How conflict/range/nonzero/objective components are combined ("sum" or "product")
     std::string rankConflictType;
+    /// Exponent applied to the conflict component for variables considered "trusted"
     double rankConflictPowerTrusted;
+    /// Exponent applied to the conflict component for variables considered "untrusted"
     double rankConflictPowerUntrusted;
+    /// Weight of the bound-range component in the branching rank score
     double rankRangeWeight;
+    /// Exponent applied to the range component for "trusted" variables
     double rankRangePowerTrusted;
+    /// Exponent applied to the range component for "untrusted" variables
     double rankRangePowerUntrusted;
+    /// Range values above this cap are truncated before scaling (range component)
     double rankRangeMax;
+    /// Weight of the row-nonzero-count component in the branching rank score
     double rankNzWeight;
+    /// Exponent applied to the nonzero component for "trusted" variables
     double rankNzPowerTrusted;
+    /// Exponent applied to the nonzero component for "untrusted" variables
     double rankNzPowerUntrusted;
+    /// Weight of the objective-coefficient component in the branching rank score
     double rankObjCoeffWeight;
+    /// Exponent applied to the objective-coefficient component for "trusted" variables
     double rankObjCoeffPowerTrusted;
+    /// Exponent applied to the objective-coefficient component for "untrusted" variables
     double rankObjCoeffPowerUntrusted;
+    /// Skip the ranker entirely if the percentage of binary variables reaches this threshold
     double rankConflictMaxPercBin;
   };
 
@@ -1033,6 +1103,7 @@ private:
 //  Default no-op callback for CbcMain1 backward compatibility
 // ###########################################################################
 
+/// Default no-op user callback: always returns 0 (never requests early exit)
 static int dummyCallback(CbcModel * /*model*/, int /*whereFrom*/) { return 0; }
 
 // #############################################################################
@@ -1050,8 +1121,31 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
   int callBack(CbcModel *currentSolver, int whereFrom) = dummyCallback,
   ampl_info *info = NULL);
 
+/** Print a general (non-warning) message through the model's message handler.
+    No-op if \p message is empty.
+    \param model    Model whose message handler/registry is used
+    \param message  Text to print
+    \param type     CBC message type code (default CBC_GENERAL)
+*/
 void printGeneralMessage(CbcModel &model, std::string message, int type = CBC_GENERAL);
+
+/** Print a warning message through the model's message handler.
+    No-op if \p message is empty.
+    \param model    Model whose message handler/registry is used
+    \param message  Text to print
+    \param type     CBC message type code (default CBC_GENERAL_WARNING)
+*/
 void printGeneralWarning(CbcModel &model, std::string message, int type = CBC_GENERAL_WARNING);
+
+/** Read an AMPL-generated .nl model (via the AMPL Solver Library) into \p model,
+    populating \p info with AMPL-specific data (branching priorities, SOS sets,
+    initial solution, etc.) for later use by CbcSolver::run().
+    \param info  Output: AMPL interface data, filled in from the .nl file
+    \param argc  Argument count (as passed to CbcMain1/CbcSolver::run())
+    \param argv  Argument vector; the .nl filename and AMPL options are parsed from here
+    \param model Model to populate with the imported problem
+    \return 0 on success, nonzero on error
+*/
 CBCLIB_EXPORT
 int cbcReadAmpl(ampl_info *info, int argc, char **argv, CbcModel &model);
 

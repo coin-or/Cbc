@@ -1214,7 +1214,7 @@ bool CbcSolver::strengthenCliques(OsiSolverInterface *solverIn,
 //
 // The caller is responsible for setting up any LP-progress message handler
 // on the ClpSimplex model before calling this function.
-int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver)
+int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMethod)
 {
   OsiSolverInterface *solver = targetSolver ? static_cast< OsiSolverInterface * >(targetSolver) : model_.solver();
 #ifndef CBC_OTHER_SOLVER
@@ -1262,8 +1262,12 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver)
   // result is stored in `autoS` and applied in sections 3 and 5 below.
   // Skipped when racing is active — racing manages its own per-thread configs.
   const int racingLP = parameters_[CbcParam::RACINGLP]->intVal();
-  const bool canRace = (racingLP > 0) && (clp != nullptr);
-  const bool autoLpMode = (parameters_.getLpMethod() == CbcParameters::LPAuto) && (clp != nullptr)
+  // A forced method (from -dualSimplex/-primalSimplex/-barrier) means the
+  // caller wants *that* method run directly — auto-recommendation and
+  // racing (which both pick the method themselves) are skipped.
+  const bool canRace = (racingLP > 0) && (clp != nullptr) && (forcedMethod < 0);
+  const bool autoLpMode = (forcedMethod < 0)
+    && (parameters_.getLpMethod() == CbcParameters::LPAuto) && (clp != nullptr)
     && !canRace;
 
   LpAutoSettings autoS;
@@ -1465,7 +1469,9 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver)
   }
   solveOptions.setPresolveType(presolveType, preSolve);
 
-  const CbcParameters::LPMethod lpMethod = autoLpMode ? autoS.method : parameters_.getLpMethod();
+  const CbcParameters::LPMethod lpMethod = forcedMethod >= 0
+    ? static_cast< CbcParameters::LPMethod >(forcedMethod)
+    : (autoLpMode ? autoS.method : parameters_.getLpMethod());
   ClpSolve::SolveType clpMethod;
   if (lpMethod == CbcParameters::LPPrimal) {
     clpMethod = ClpSolve::usePrimalorSprint;
@@ -1564,6 +1570,205 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver)
   basisHasValues_ = 1;
 #endif
 
+  return 0;
+}
+
+// Backs the SOLVECONTINUOUS action and the CLP DUALSIMPLEX / PRIMALSIMPLEX /
+// BARRIER actions (see CbcSolver::runSolveContinuous() below), which used to
+// each keep their own copy of the LP-solve + status-mapping + AMPL-info
+// sequence built around applyLpMethod()/its predecessor inline code.
+int CbcSolver::runSolveContinuous(int forcedMethod,
+  int callBack(CbcModel *currentSolver, int whereFrom), ampl_info *info,
+  int &returnCode)
+{
+  returnCode = 0;
+  OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
+  ClpSimplex *lpSolver = clpSolver ? clpSolver->getModelPtr() : nullptr;
+
+#ifndef CLP_OLD_STYLE
+#ifndef CBC_OTHER_SOLVER
+  if (clpSolver)
+    clpSolver->setSpecialOptions(clpSolver->specialOptions() | 1024);
+  // ------ LP progress output (mirrors the CLP-handler setup) ------
+  // Guard entire setup: applyLpMethod() will setLogLevel(0) when
+  // noPrinting() is true, so capturing logLevel here (before that call)
+  // would incorrectly preserve a non-zero level.
+  auto lpScState = std::make_shared< ClpLpPhaseState >();
+  lpScState->fp = model_.messageHandler()->filePointer();
+  lpScState->utf8 = CbcOutput::useUtf8();
+  lpScState->compact = CbcOutput::useCompact();
+  lpScState->logLevel = (lpSolver && !parameters_.noPrinting())
+    ? lpSolver->logLevel()
+    : 0;
+  lpScState->iterFreq = 0;
+  lpScState->timeFreq = 5.0;
+  lpScState->startTime = CoinWallclockTime();
+  lpScState->lastPrintTime = lpScState->startTime;
+  lpScState->title = "LP solve";
+  ClpLpMsgHandler lpScMsgH(lpScState);
+  ClpLpEventHandler lpScEvtH(lpScState);
+  bool lpScMsgOldDefault = false;
+  CoinMessageHandler *lpScSavedMsg = nullptr;
+  ClpLpEventHandler *lpScProg = nullptr;
+  if (lpSolver && !parameters_.noPrinting()) {
+    lpScSavedMsg = lpSolver->pushMessageHandler(&lpScMsgH, lpScMsgOldDefault);
+    lpSolver->passInEventHandler(&lpScEvtH);
+    lpScProg = dynamic_cast< ClpLpEventHandler * >(lpSolver->eventHandler());
+  }
+#endif
+#endif
+  int lpResult = applyLpMethod(nullptr, forcedMethod);
+#ifndef CLP_OLD_STYLE
+#ifndef CBC_OTHER_SOLVER
+  if (lpScProg)
+    lpScProg->printFinalStatus();
+  if (lpSolver && lpScSavedMsg)
+    lpSolver->popMessageHandler(lpScSavedMsg, lpScMsgOldDefault);
+  if (lpSolver) {
+    ClpEventHandler defEvt;
+    lpSolver->passInEventHandler(&defEvt);
+  }
+#endif
+#endif
+  if (lpResult < 0) {
+    // Infeasibility proved by bound propagation — mark model.
+    model_.setProblemStatus(0);
+    model_.setSecondaryStatus(1);
+    if (babModel_) {
+      babModel_->setProblemStatus(0);
+      babModel_->setSecondaryStatus(1);
+    }
+    return 0;
+  }
+  // Map ClpSimplex status codes to Cbc status (same as CLP handlers).
+  {
+#ifndef CBC_OTHER_SOLVER
+    int iStatus = lpSolver ? lpSolver->status() : -1;
+    int iStatus2 = lpSolver ? lpSolver->secondaryStatus() : 0;
+#else
+    int iStatus = -1;
+    int iStatus2 = 0;
+#endif
+    if (iStatus == 0) {
+      iStatus2 = 0;
+    } else if (iStatus == 1) {
+      iStatus = 0;
+      iStatus2 = 1; // infeasible
+    } else if (iStatus == 2) {
+      iStatus = 0;
+      iStatus2 = 7; // unbounded
+    } else if (iStatus == 3) {
+      iStatus = 1;
+      iStatus2 = (iStatus2 == 9) ? 4 : 3;
+    } else if (iStatus == 4) {
+      iStatus = 2; // difficulties
+      iStatus2 = 0;
+    }
+    model_.setProblemStatus(iStatus);
+    model_.setSecondaryStatus(iStatus2);
+    if ((iStatus == 2 || iStatus2 > 0) && parameters_.noPrinting()) {
+      const char *statusName[] = { "", "Stopped on ", "Run abandoned",
+        "", "", "User ctrl-c" };
+      const char *minor[] = {
+        "Optimal solution found",
+        "Linear relaxation infeasible",
+        "Optimal solution found (within gap tolerance)",
+        "node limit", "time limit", "user ctrl-c", "solution limit",
+        "Linear relaxation unbounded", "iterations limit",
+        "Problem proven infeasible"
+      };
+      std::ostringstream buffer;
+      buffer << std::endl
+             << "Result - " << statusName[iStatus]
+             << minor[iStatus2] << std::endl
+             << std::endl;
+      buffer << "Enumerated nodes:           0" << std::endl;
+      buffer << "Total iterations:           0" << std::endl;
+#if CBC_QUIET == 0
+      if (model_.useElapsedTime())
+        buffer << "Time (Wallclock seconds):   "
+               << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
+      else
+        buffer << "Time (CPU seconds):         "
+               << CoinCpuTime() - time0_ << std::endl;
+#endif
+      printGeneralMessage(model_, buffer.str());
+    }
+    assert(clpSolver == getClpSolver(model_.solver()));
+    if (clpSolver)
+      clpSolver->setWarmStart(nullptr);
+    if (babModel_) {
+      babModel_->setProblemStatus(iStatus);
+      babModel_->setSecondaryStatus(iStatus2);
+    }
+    int cbRc = callBack(&model_, 1);
+    if (cbRc) {
+      delete babModel_;
+      babModel_ = nullptr;
+      returnCode = cbRc;
+      return 3;
+    }
+  }
+  if (statusUserFunction_[0]) {
+#ifndef CBC_OTHER_SOLVER
+    double value = lpSolver ? lpSolver->getObjValue() : 0.0;
+    char buf[300];
+    int pos = 0;
+    int iStat = lpSolver ? lpSolver->status() : -1;
+    if (iStat == 0)
+      pos += sprintf(buf + pos, "optimal,");
+    else if (iStat == 1)
+      pos += sprintf(buf + pos, "infeasible,");
+    else if (iStat == 2)
+      pos += sprintf(buf + pos, "unbounded,");
+    else if (iStat == 3)
+      pos += sprintf(buf + pos, "stopped on iterations or time,");
+    else if (iStat == 4) {
+      iStat = 7;
+      pos += sprintf(buf + pos, "stopped on difficulties,");
+    } else if (iStat == 5) {
+      iStat = 3;
+      pos += sprintf(buf + pos, "stopped on ctrl-c,");
+    } else
+      pos += sprintf(buf + pos, "status unknown,");
+    if (info) {
+      info->problemStatus = iStat;
+      info->objValue = value;
+      pos += sprintf(buf + pos, " objective %.*g",
+        ampl_obj_prec(), value);
+      sprintf(buf + pos, "\n%d iterations",
+        lpSolver ? lpSolver->getIterationCount() : 0);
+      free(info->primalSolution);
+      int numberColumns = lpSolver ? lpSolver->numberColumns() : 0;
+      info->primalSolution = reinterpret_cast< double * >(
+        malloc(numberColumns * sizeof(double)));
+      if (lpSolver)
+        CoinCopyN(lpSolver->primalColumnSolution(), numberColumns,
+          info->primalSolution);
+      int numberRows = lpSolver ? lpSolver->numberRows() : 0;
+      free(info->dualSolution);
+      info->dualSolution = reinterpret_cast< double * >(
+        malloc(numberRows * sizeof(double)));
+      if (lpSolver)
+        CoinCopyN(lpSolver->dualRowSolution(), numberRows,
+          info->dualSolution);
+      CoinWarmStartBasis *basis = lpSolver ? lpSolver->getBasis() : nullptr;
+      free(info->rowStatus);
+      info->rowStatus = reinterpret_cast< int * >(malloc(numberRows * sizeof(int)));
+      free(info->columnStatus);
+      info->columnStatus = reinterpret_cast< int * >(
+        malloc(numberColumns * sizeof(int)));
+      if (basis) {
+        for (int i = 0; i < numberRows; i++)
+          info->rowStatus[i] = basis->getArtifStatus(i);
+        for (int i = 0; i < numberColumns; i++)
+          info->columnStatus[i] = basis->getStructStatus(i);
+        delete basis;
+      }
+      strcpy(info->buffer, buf);
+    }
+#endif
+  }
   return 0;
 }
 
@@ -11678,459 +11883,24 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         case ClpParam::DUALSIMPLEX:
         case ClpParam::PRIMALSIMPLEX:
         case ClpParam::BARRIER: {
+          // Solve the LP relaxation with a forced method, via
+          // runSolveContinuous()/applyLpMethod() — this used to keep its own
+          // copy of the option-setting/progress-handler/status-mapping
+          // sequence now shared with SOLVECONTINUOUS.
           if (!goodModel) {
             printGeneralWarning(model_, "** Current model not valid\n");
             continue;
           }
           // Say not in integer
           integerStatus = -1;
-          double objScale = clpParameters[ClpParam::OBJSCALE2]->dblVal();
-          applyPositiveEdge(lpSolver, clpParameters[ClpParam::PSI]->dblVal());
-          if (objScale != 1.0) {
-            int iColumn;
-            int numberColumns = lpSolver->numberColumns();
-            double *dualColumnSolution = lpSolver->dualColumnSolution();
-            ClpObjective *obj = lpSolver->objectiveAsObject();
-            assert(dynamic_cast< ClpLinearObjective * >(obj));
-            double offset;
-            double *objective = obj->gradient(NULL, NULL, offset, true);
-            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-              dualColumnSolution[iColumn] *= objScale;
-              objective[iColumn] *= objScale;
-              ;
-            }
-            int iRow;
-            int numberRows = lpSolver->numberRows();
-            double *dualRowSolution = lpSolver->dualRowSolution();
-            for (iRow = 0; iRow < numberRows; iRow++)
-              dualRowSolution[iRow] *= objScale;
-            lpSolver->setObjectiveOffset(objScale * lpSolver->objectiveOffset());
-          }
-          ClpSolve::SolveType method;
-          ClpSolve::PresolveType presolveType;
-          ClpSimplex *model2 = lpSolver;
-          if (dualize) {
-            bool tryIt = true;
-            double fractionColumn = 1.0;
-            double fractionRow = 1.0;
-            if (dualize == 3) {
-              dualize = 1;
-              int numberColumns = lpSolver->numberColumns();
-              int numberRows = lpSolver->numberRows();
-              if (numberRows < 50000 || 5 * numberColumns > numberRows) {
-                tryIt = false;
-              } else {
-                fractionColumn = 0.1;
-                fractionRow = 0.1;
-              }
-            }
-            if (tryIt) {
-              model2 = static_cast< ClpSimplexOther * >(model2)->dualOfModel(
-                fractionRow, fractionColumn);
-              if (model2) {
-                buffer.str("");
-                buffer << "Dual of model has " << model2->numberRows()
-                       << " rows and " << model2->numberColumns()
-                       << " columns";
-                printGeneralMessage(model_, buffer.str());
-                model2->setOptimizationDirection(1.0);
-              } else {
-                model2 = lpSolver;
-                dualize = 0;
-              }
-            } else {
-              dualize = 0;
-            }
-          }
-          if (parameters.noPrinting()) {
-            lpSolver->setLogLevel(0);
-          }
-          ClpSolve solveOptions;
-          solveOptions.setPresolveActions(presolveOptions);
-          solveOptions.setSubstitution(substitution);
-          if (preSolve != 5 && preSolve) {
-            presolveType = ClpSolve::presolveNumber;
-            if (preSolve < 0) {
-              preSolve = -preSolve;
-              if (preSolve <= 100) {
-                presolveType = ClpSolve::presolveNumber;
-                buffer.str("");
-                buffer << "Doing " << preSolve
-                       << " presolve passes - picking up non-costed slacks";
-                printGeneralMessage(model_, buffer.str());
-                solveOptions.setDoSingletonColumn(true);
-              } else {
-                preSolve -= 100;
-                presolveType = ClpSolve::presolveNumberCost;
-                buffer.str("");
-                buffer << "Doing " << preSolve
-                       << " presolve passes - picking up non-costed slacks";
-                printGeneralMessage(model_, buffer.str());
-              }
-            }
-          } else if (preSolve) {
-            presolveType = ClpSolve::presolveOn;
-          } else {
-            presolveType = ClpSolve::presolveOff;
-          }
-          solveOptions.setPresolveType(presolveType, preSolve);
-          if (clpParamCode == ClpParam::DUALSIMPLEX) {
-            method = ClpSolve::useDual;
-          } else if (clpParamCode == ClpParam::PRIMALSIMPLEX) {
-            method = ClpSolve::usePrimalorSprint;
-          } else {
-            method = ClpSolve::useBarrier;
-            if (crossover == 1) {
-              method = ClpSolve::useBarrierNoCross;
-            } else if (crossover == 2) {
-              ClpObjective *obj = lpSolver->objectiveAsObject();
-              if (obj->type() > 1) {
-                method = ClpSolve::useBarrierNoCross;
-                presolveType = ClpSolve::presolveOff;
-                solveOptions.setPresolveType(presolveType, preSolve);
-              }
-            }
-          }
-          solveOptions.setSolveType(method);
-          if (preSolveFile)
-            presolveOptions |= 0x40000000;
-          solveOptions.setSpecialOption(4, presolveOptions);
-          solveOptions.setSpecialOption(5, printOptions);
-          if (doVector) {
-            applyVectorMode(lpSolver);
-          }
-          if (method == ClpSolve::useDual) {
-            // dual
-            if (doCrash)
-              solveOptions.setSpecialOption(0, 1, doCrash); // crash
-            else if (doIdiot)
-              solveOptions.setSpecialOption(0, 2,
-                doIdiot); // possible idiot
-          } else if (method == ClpSolve::usePrimalorSprint) {
-            // primal
-            // if slp turn everything off
-            if (slpValue > 0) {
-              doCrash = false;
-              doSprint = 0;
-              doIdiot = -1;
-              solveOptions.setSpecialOption(1, 10, slpValue); // slp
-              method = ClpSolve::usePrimal;
-            }
-            if (doCrash) {
-              solveOptions.setSpecialOption(1, 1, doCrash); // crash
-            } else if (doSprint > 0) {
-              // sprint overrides idiot
-              solveOptions.setSpecialOption(1, 3, doSprint); // sprint
-            } else if (doIdiot > 0) {
-              solveOptions.setSpecialOption(1, 2, doIdiot); // idiot
-            } else if (slpValue <= 0) {
-              if (doIdiot == 0) {
-                if (doSprint == 0)
-                  solveOptions.setSpecialOption(1, 4); // all slack
-                else
-                  solveOptions.setSpecialOption(1,
-                    9); // all slack or sprint
-              } else {
-                if (doSprint == 0)
-                  solveOptions.setSpecialOption(1, 8); // all slack or idiot
-                else
-                  solveOptions.setSpecialOption(1, 7); // initiative
-              }
-            }
-            if (basisHasValues == -1)
-              solveOptions.setSpecialOption(1, 11); // switch off values
-          } else if (method == ClpSolve::useBarrier || method == ClpSolve::useBarrierNoCross) {
-            int barrierOptions = choleskyType;
-            if (scaleBarrier)
-              barrierOptions |= 8;
-            if (doKKT)
-              barrierOptions |= 16;
-            if (gamma)
-              barrierOptions |= 32 * gamma;
-            if (crossover == 3)
-              barrierOptions |= 256; // try presolve in crossover
-            solveOptions.setSpecialOption(4, barrierOptions);
-          }
-          if (model_.getMaximumSeconds() < 1.0e8) {
-            // Propagate remaining time limit to LP solver, honouring time mode.
-            if (!model_.getDblParam(CbcModel::CbcStartSeconds)) {
-              // Capture start time if not yet set for this solve sequence.
-              model_.setDblParam(CbcModel::CbcStartSeconds,
-                model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
-            }
-            applyClpTimeLimit(model_, model2);
-          }
-          // ------ LP action progress output (Idiot/Sprint/LP unified table) ------
-#ifndef CLP_OLD_STYLE
-#ifndef CBC_OTHER_SOLVER
-          auto lpActState = std::make_shared< ClpLpPhaseState >();
-          lpActState->fp = model_.messageHandler()->filePointer();
-          lpActState->utf8 = CbcOutput::useUtf8();
-          lpActState->compact = CbcOutput::useCompact();
-          lpActState->logLevel = model2->logLevel();
-          lpActState->iterFreq = 0;
-          lpActState->timeFreq = 5.0;
-          lpActState->startTime = CoinWallclockTime();
-          lpActState->lastPrintTime = lpActState->startTime;
-          lpActState->title = "LP solve";
-          ClpLpMsgHandler lpActMsgH(lpActState);
-          ClpLpEventHandler lpActEvtH(lpActState);
-          bool lpActMsgOldDefault;
-          CoinMessageHandler *lpActSavedMsg = model2->pushMessageHandler(&lpActMsgH, lpActMsgOldDefault);
-          model2->passInEventHandler(&lpActEvtH);
-          ClpLpEventHandler *lpActProg = dynamic_cast< ClpLpEventHandler * >(model2->eventHandler());
-#endif
-#endif
-#ifdef COIN_HAS_LINK
-          OsiSolverInterface *coinSolver = model_.solver();
-          OsiSolverLink *linkSolver = dynamic_cast< OsiSolverLink * >(coinSolver);
-          if (!linkSolver) {
-            model2->initialSolve(solveOptions);
-          } else {
-            // special solver
-            int testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
-            double *solution = NULL;
-            if (testOsiOptions < 10) {
-              solution = linkSolver->nonlinearSLP(
-                slpValue > 0 ? slpValue : 20, 1.0e-5);
-            } else if (testOsiOptions >= 10) {
-              CoinModel coinModel = *linkSolver->coinModel();
-              ClpSimplex *tempModel = approximateSolution(
-                coinModel, slpValue > 0 ? slpValue : 50, 1.0e-5, 0);
-              assert(tempModel);
-              solution = CoinCopyOfArray(tempModel->primalColumnSolution(),
-                coinModel.numberColumns());
-              model2->setObjectiveValue(tempModel->objectiveValue());
-              model2->setProblemStatus(tempModel->problemStatus());
-              model2->setSecondaryStatus(tempModel->secondaryStatus());
-              delete tempModel;
-            }
-            if (solution) {
-              memcpy(model2->primalColumnSolution(), solution,
-                std::min(model2->numberColumns(),
-                  linkSolver->coinModel()->numberColumns())
-                  * sizeof(double));
-              delete[] solution;
-            } else {
-              printf("No nonlinear solution\n");
-            }
-          }
-#else
-          model2->initialSolve(solveOptions);
-#endif
-          // Clear time limits from LP solver to avoid leaking into later solves.
-          clearClpTimeLimits(model2);
-          // ------ LP action progress teardown ------
-#ifndef CLP_OLD_STYLE
-#ifndef CBC_OTHER_SOLVER
-          if (lpActProg)
-            lpActProg->printFinalStatus();
-          model2->popMessageHandler(lpActSavedMsg, lpActMsgOldDefault);
-          {
-            ClpEventHandler defEvt;
-            model2->passInEventHandler(&defEvt);
-          }
-#endif
-#endif
-          {
-            // map states
-            /* clp status
-                               -1 - unknown e.g. before solve or if
-               postSolve says not optimal 0 - optimal 1 - primal infeasible
-                               2 - dual infeasible
-                               3 - stopped on iterations or time
-                               4 - stopped due to errors
-                               5 - stopped by event handler (virtual int
-               ClpEventHandler::event()) */
-            /* cbc status
-                               -1 before branchAndBound
-                               0 finished - check isProvenOptimal or
-               isProvenInfeasible to see if solution found (or check value
-               of best solution) 1 stopped - on maxnodes, maxsols, maxtime
-                               2 difficulties so run was abandoned
-                               (5 event user programmed event occurred) */
-            /* clp secondary status of problem - may get extended
-                               0 - none
-                               1 - primal infeasible because dual limit
-               reached OR probably primal infeasible but can't prove it
-               (main status 4) 2 - scaled problem optimal - unscaled problem
-               has primal infeasibilities 3 - scaled problem optimal -
-               unscaled problem has dual infeasibilities 4 - scaled problem
-               optimal - unscaled problem has primal and dual
-               infeasibilities 5 - giving up in primal with flagged
-               variables 6 - failed due to empty problem check 7 - postSolve
-               says not optimal 8 - failed due to bad element check 9 -
-               status was 3 and stopped on time 100 up - translation of enum
-               from ClpEventHandler
-                            */
-            /* cbc secondary status of problem
-                               -1 unset (status_ will also be -1)
-                               0 search completed with solution
-                               1 linear relaxation not feasible (or worse
-               than cutoff) 2 stopped on gap 3 stopped on nodes 4 stopped on
-               time 5 stopped on user event 6 stopped on solutions 7 linear
-               relaxation unbounded 8 stopped on iterations limit
-                            */
-            int iStatus = model2->status();
-            int iStatus2 = model2->secondaryStatus();
-            if (iStatus == 0) {
-              iStatus2 = 0;
-              if (cbcParamCode == CbcParam::BAB) {
-                // set best solution in model as no integers
-                model_.setBestSolution(
-                  model2->primalColumnSolution(), model2->numberColumns(),
-                  model2->getObjValue() * model2->getObjSense());
-                // Cutoff
-                model_.solver()->setDblParam(OsiDualObjectiveLimit, 1.0e100);
-              }
-            } else if (iStatus == 1) {
-              iStatus = 0;
-              iStatus2 = 1; // say infeasible
-            } else if (iStatus == 2) {
-              iStatus = 0;
-              iStatus2 = 7; // say unbounded
-            } else if (iStatus == 3) {
-              iStatus = 1;
-              if (iStatus2 == 9) // what does 9 mean ?????????????
-                iStatus2 = 4;
-              else
-                iStatus2 = 3; // Use nodes - as closer than solutions
-            } else if (iStatus == 4) {
-              iStatus = 2; // difficulties
-              iStatus2 = 0;
-            }
-            model_.setProblemStatus(iStatus);
-            model_.setSecondaryStatus(iStatus2);
-            if ((iStatus == 2 || iStatus2 > 0) && parameters.noPrinting()) {
-              std::string statusName[] = {
-                "", "Stopped on ", "Run abandoned", "",
-                "", "User ctrl-c"
-              };
-              std::string minor[] = {
-                "Optimal solution found",
-                "Linear relaxation infeasible",
-                "Optimal solution found (within gap tolerance)",
-                "node limit",
-                "time limit",
-                "user ctrl-c",
-                "solution limit",
-                "Linear relaxation unbounded",
-                "iterations limit",
-                "Problem proven infeasible"
-              };
-              buffer.str("");
-              buffer << std::endl
-                     << "Result - " << statusName[iStatus].c_str()
-                     << minor[iStatus2].c_str() << std::endl
-                     << std::endl;
-              buffer << "Enumerated nodes:           0" << std::endl;
-              buffer << "Total iterations:           0" << std::endl;
-#if CBC_QUIET == 0
-              if (model_.useElapsedTime())
-                buffer << "Time (Wallclock seconds):   " << CoinGetTimeOfDay() - time0Elapsed
-                       << std::endl;
-              else
-                buffer << "Time (CPU seconds):         " << CoinCpuTime() - time0 << std::endl;
-#endif
-              printGeneralMessage(model_, buffer.str());
-            }
-            // assert (lpSolver==clpSolver->getModelPtr());
-            assert(clpSolver == model_.solver());
-            clpSolver->setWarmStart(NULL);
-            // and in babModel if exists
-            if (babModel_) {
-              babModel_->setProblemStatus(iStatus);
-              babModel_->setSecondaryStatus(iStatus2);
-            }
-            int returnCode = callBack(&model, 1);
-            if (returnCode) {
-              // exit if user wants
-              delete babModel_;
-              babModel_ = NULL;
-              return returnCode;
-            }
-          }
-          basisHasValues = 1;
-          if (dualize) {
-            int returnCode = static_cast< ClpSimplexOther * >(lpSolver)->restoreFromDual(
-              model2);
-            if (model2->status() == 3)
-              returnCode = 0;
-            delete model2;
-            if (returnCode && dualize != 2)
-              lpSolver->primal(1);
-            model2 = lpSolver;
-          }
-          if (statusUserFunction_[0]) {
-            double value = model2->getObjValue();
-            char buf[300];
-            int pos = 0;
-            int iStat = model2->status();
-            if (iStat == 0) {
-              pos += sprintf(buf + pos, "optimal,");
-            } else if (iStat == 1) {
-              // infeasible
-              pos += sprintf(buf + pos, "infeasible,");
-            } else if (iStat == 2) {
-              // unbounded
-              pos += sprintf(buf + pos, "unbounded,");
-            } else if (iStat == 3) {
-              pos += sprintf(buf + pos, "stopped on iterations or time,");
-            } else if (iStat == 4) {
-              iStat = 7;
-              pos += sprintf(buf + pos, "stopped on difficulties,");
-            } else if (iStat == 5) {
-              iStat = 3;
-              pos += sprintf(buf + pos, "stopped on ctrl-c,");
-            } else if (iStat == 6) {
-              // bab infeasible
-              pos += sprintf(buf + pos, "integer infeasible,");
-              iStat = 1;
-            } else {
-              pos += sprintf(buf + pos, "status unknown,");
-              iStat = 6;
-            }
-            if (info) {
-              info->problemStatus = iStat;
-              info->objValue = value;
-              pos += sprintf(buf + pos, " objective %.*g", ampl_obj_prec(),
-                value);
-              sprintf(buf + pos, "\n%d iterations",
-                model2->getIterationCount());
-              free(info->primalSolution);
-              int numberColumns = model2->numberColumns();
-              info->primalSolution = reinterpret_cast< double * >(
-                malloc(numberColumns * sizeof(double)));
-              CoinCopyN(model2->primalColumnSolution(), numberColumns,
-                info->primalSolution);
-              int numberRows = model2->numberRows();
-              free(info->dualSolution);
-              info->dualSolution = reinterpret_cast< double * >(
-                malloc(numberRows * sizeof(double)));
-              CoinCopyN(model2->dualRowSolution(), numberRows,
-                info->dualSolution);
-              CoinWarmStartBasis *basis = model2->getBasis();
-              free(info->rowStatus);
-              info->rowStatus = reinterpret_cast< int * >(malloc(numberRows * sizeof(int)));
-              free(info->columnStatus);
-              info->columnStatus = reinterpret_cast< int * >(
-                malloc(numberColumns * sizeof(int)));
-              // Put basis in
-              int i;
-              // free,basic,ub,lb are 0,1,2,3
-              for (i = 0; i < numberRows; i++) {
-                CoinWarmStartBasis::Status status = basis->getArtifStatus(i);
-                info->rowStatus[i] = status;
-              }
-              for (i = 0; i < numberColumns; i++) {
-                CoinWarmStartBasis::Status status = basis->getStructStatus(i);
-                info->columnStatus[i] = status;
-              }
-              // put buffer into info
-              strcpy(info->buffer, buf);
-              delete basis;
-            }
-          }
+          int forcedMethod = (clpParamCode == ClpParam::DUALSIMPLEX)
+            ? static_cast< int >(CbcParameters::LPDual)
+            : (clpParamCode == ClpParam::PRIMALSIMPLEX)
+            ? static_cast< int >(CbcParameters::LPPrimal)
+            : static_cast< int >(CbcParameters::LPBarrier);
+          int dsReturnCode = 0;
+          if (runSolveContinuous(forcedMethod, callBack, info, dsReturnCode) == 3)
+            return dsReturnCode;
         } break;
         case ClpParam::TIGHTEN: {
           if (!goodModel) {
@@ -12394,198 +12164,20 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 
         switch (cbcParamCode) {
         case CbcParam::SOLVECONTINUOUS: {
-          // Solve the LP relaxation via applyLpMethod(), which handles bound
-          // propagation, clique merging "before", model-level LP settings,
-          // LP racing, and the full configured ClpSolve solve — all using the
-          // same member-variable state as the -solve (BAB) path.
+          // Solve the LP relaxation via runSolveContinuous()/applyLpMethod(),
+          // which handles bound propagation, clique merging "before",
+          // model-level LP settings, LP racing, and the full configured
+          // ClpSolve solve — all using the same member-variable state as
+          // the -solve (BAB) path.
           if (!goodModel) {
             printGeneralWarning(model_, "** Current model not valid\n");
             continue;
           }
           printParamChanges();
           integerStatus = -1;
-#ifndef CLP_OLD_STYLE
-#ifndef CBC_OTHER_SOLVER
-          if (clpSolver)
-            clpSolver->setSpecialOptions(clpSolver->specialOptions() | 1024);
-          // ------ LP progress output (mirrors the CLP-handler setup) ------
-          // Guard entire setup: applyLpMethod() will setLogLevel(0) when
-          // noPrinting() is true, so capturing logLevel here (before that
-          // call) would incorrectly preserve a non-zero level.
-          auto lpScState = std::make_shared< ClpLpPhaseState >();
-          lpScState->fp = model_.messageHandler()->filePointer();
-          lpScState->utf8 = CbcOutput::useUtf8();
-          lpScState->compact = CbcOutput::useCompact();
-          lpScState->logLevel = (lpSolver && !parameters_.noPrinting())
-            ? lpSolver->logLevel()
-            : 0;
-          lpScState->iterFreq = 0;
-          lpScState->timeFreq = 5.0;
-          lpScState->startTime = CoinWallclockTime();
-          lpScState->lastPrintTime = lpScState->startTime;
-          lpScState->title = "LP solve";
-          ClpLpMsgHandler lpScMsgH(lpScState);
-          ClpLpEventHandler lpScEvtH(lpScState);
-          bool lpScMsgOldDefault = false;
-          CoinMessageHandler *lpScSavedMsg = nullptr;
-          ClpLpEventHandler *lpScProg = nullptr;
-          if (lpSolver && !parameters_.noPrinting()) {
-            lpScSavedMsg = lpSolver->pushMessageHandler(&lpScMsgH, lpScMsgOldDefault);
-            lpSolver->passInEventHandler(&lpScEvtH);
-            lpScProg = dynamic_cast< ClpLpEventHandler * >(lpSolver->eventHandler());
-          }
-#endif
-#endif
-          int lpResult = applyLpMethod();
-#ifndef CLP_OLD_STYLE
-#ifndef CBC_OTHER_SOLVER
-          if (lpScProg)
-            lpScProg->printFinalStatus();
-          if (lpSolver && lpScSavedMsg)
-            lpSolver->popMessageHandler(lpScSavedMsg, lpScMsgOldDefault);
-          if (lpSolver) {
-            ClpEventHandler defEvt;
-            lpSolver->passInEventHandler(&defEvt);
-          }
-#endif
-#endif
-          if (lpResult < 0) {
-            // Infeasibility proved by bound propagation — mark model.
-            model_.setProblemStatus(0);
-            model_.setSecondaryStatus(1);
-            if (babModel_) {
-              babModel_->setProblemStatus(0);
-              babModel_->setSecondaryStatus(1);
-            }
-            continue;
-          }
-          // Map ClpSimplex status codes to Cbc status (same as CLP handlers).
-          {
-#ifndef CBC_OTHER_SOLVER
-            int iStatus = lpSolver ? lpSolver->status() : -1;
-            int iStatus2 = lpSolver ? lpSolver->secondaryStatus() : 0;
-#else
-            int iStatus = -1;
-            int iStatus2 = 0;
-#endif
-            if (iStatus == 0) {
-              iStatus2 = 0;
-            } else if (iStatus == 1) {
-              iStatus = 0;
-              iStatus2 = 1; // infeasible
-            } else if (iStatus == 2) {
-              iStatus = 0;
-              iStatus2 = 7; // unbounded
-            } else if (iStatus == 3) {
-              iStatus = 1;
-              iStatus2 = (iStatus2 == 9) ? 4 : 3;
-            } else if (iStatus == 4) {
-              iStatus = 2; // difficulties
-              iStatus2 = 0;
-            }
-            model_.setProblemStatus(iStatus);
-            model_.setSecondaryStatus(iStatus2);
-            if ((iStatus == 2 || iStatus2 > 0) && parameters.noPrinting()) {
-              const char *statusName[] = { "", "Stopped on ", "Run abandoned",
-                "", "", "User ctrl-c" };
-              const char *minor[] = {
-                "Optimal solution found",
-                "Linear relaxation infeasible",
-                "Optimal solution found (within gap tolerance)",
-                "node limit", "time limit", "user ctrl-c", "solution limit",
-                "Linear relaxation unbounded", "iterations limit",
-                "Problem proven infeasible"
-              };
-              buffer.str("");
-              buffer << std::endl
-                     << "Result - " << statusName[iStatus]
-                     << minor[iStatus2] << std::endl
-                     << std::endl;
-              buffer << "Enumerated nodes:           0" << std::endl;
-              buffer << "Total iterations:           0" << std::endl;
-#if CBC_QUIET == 0
-              if (model_.useElapsedTime())
-                buffer << "Time (Wallclock seconds):   "
-                       << CoinGetTimeOfDay() - time0Elapsed << std::endl;
-              else
-                buffer << "Time (CPU seconds):         "
-                       << CoinCpuTime() - time0 << std::endl;
-#endif
-              printGeneralMessage(model_, buffer.str());
-            }
-            assert(clpSolver == model_.solver());
-            clpSolver->setWarmStart(nullptr);
-            if (babModel_) {
-              babModel_->setProblemStatus(iStatus);
-              babModel_->setSecondaryStatus(iStatus2);
-            }
-            int returnCode2 = callBack(&model_, 1);
-            if (returnCode2) {
-              delete babModel_;
-              babModel_ = nullptr;
-              return returnCode2;
-            }
-          }
-          if (statusUserFunction_[0]) {
-#ifndef CBC_OTHER_SOLVER
-            double value = lpSolver ? lpSolver->getObjValue() : 0.0;
-            char buf[300];
-            int pos = 0;
-            int iStat = lpSolver ? lpSolver->status() : -1;
-            if (iStat == 0)
-              pos += sprintf(buf + pos, "optimal,");
-            else if (iStat == 1)
-              pos += sprintf(buf + pos, "infeasible,");
-            else if (iStat == 2)
-              pos += sprintf(buf + pos, "unbounded,");
-            else if (iStat == 3)
-              pos += sprintf(buf + pos, "stopped on iterations or time,");
-            else if (iStat == 4) {
-              iStat = 7;
-              pos += sprintf(buf + pos, "stopped on difficulties,");
-            } else if (iStat == 5) {
-              iStat = 3;
-              pos += sprintf(buf + pos, "stopped on ctrl-c,");
-            } else
-              pos += sprintf(buf + pos, "status unknown,");
-            if (info) {
-              info->problemStatus = iStat;
-              info->objValue = value;
-              pos += sprintf(buf + pos, " objective %.*g",
-                ampl_obj_prec(), value);
-              sprintf(buf + pos, "\n%d iterations",
-                lpSolver ? lpSolver->getIterationCount() : 0);
-              free(info->primalSolution);
-              int numberColumns = lpSolver ? lpSolver->numberColumns() : 0;
-              info->primalSolution = reinterpret_cast< double * >(
-                malloc(numberColumns * sizeof(double)));
-              if (lpSolver)
-                CoinCopyN(lpSolver->primalColumnSolution(), numberColumns,
-                  info->primalSolution);
-              int numberRows = lpSolver ? lpSolver->numberRows() : 0;
-              free(info->dualSolution);
-              info->dualSolution = reinterpret_cast< double * >(
-                malloc(numberRows * sizeof(double)));
-              if (lpSolver)
-                CoinCopyN(lpSolver->dualRowSolution(), numberRows,
-                  info->dualSolution);
-              CoinWarmStartBasis *basis = lpSolver ? lpSolver->getBasis() : nullptr;
-              free(info->rowStatus);
-              info->rowStatus = reinterpret_cast< int * >(malloc(numberRows * sizeof(int)));
-              free(info->columnStatus);
-              info->columnStatus = reinterpret_cast< int * >(
-                malloc(numberColumns * sizeof(int)));
-              if (basis) {
-                for (int i = 0; i < numberRows; i++)
-                  info->rowStatus[i] = basis->getArtifStatus(i);
-                for (int i = 0; i < numberColumns; i++)
-                  info->columnStatus[i] = basis->getStructStatus(i);
-                delete basis;
-              }
-              strcpy(info->buffer, buf);
-            }
-#endif
-          }
+          int scReturnCode = 0;
+          if (runSolveContinuous(-1, callBack, info, scReturnCode) == 3)
+            return scReturnCode;
           continue;
         }
         case CbcParam::STATISTICS: {

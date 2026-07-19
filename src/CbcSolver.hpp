@@ -234,14 +234,28 @@ public:
         4. LP racing, if enabled.
         5. Full ClpSolve LP solve with all user-settable options.
 
+      This is the single place where the root-node (or standalone) LP
+      relaxation is actually solved: -solveContinuous (SOLVECONTINUOUS) and
+      the CLP -dualSimplex/-primalSimplex/-barrier commands all call this
+      method (the latter via runSolveContinuous(), forcing their respective
+      method), instead of each keeping their own copy of the option-setting
+      logic.
+
       \param targetSolver  Solver whose LP relaxation should be solved.
                             Pass nullptr (the default) to operate on this
                             CbcSolver's own model_.solver().
+      \param forcedMethod  A CbcParameters::LPMethod value to force for this
+                            call only (bypassing -lpMethod=auto and LP
+                            racing, which only make sense when the caller
+                            lets us pick the method). Pass -1 (the default)
+                            to use the currently configured -lpMethod
+                            (including auto/racing).
       \return -1  infeasibility proved during bound propagation (LP was not
                   solved), 0  LP solve completed (racing winner or standard
                   solve).
   */
-  int applyLpMethod(OsiClpSolverInterface *targetSolver = nullptr);
+  int applyLpMethod(OsiClpSolverInterface *targetSolver = nullptr,
+    int forcedMethod = -1);
 
   /** Run the currently configured bound propagation (singletons / fixpoint
       / MILP-based bound tightening, per -boundPropLevel and
@@ -678,6 +692,34 @@ private:
               command loop (model invalid or file could not be written)
   */
   int runCheckSolution(CbcParam *cbcParam, std::deque< std::string > &inputQueue);
+
+  /** Solve the LP relaxation of the current model via applyLpMethod(),
+      optionally forcing a specific LP method, with the shared LP progress
+      handler set up/torn down around the call, then map the resulting
+      ClpSimplex status onto model_ (and babModel_, if any), print the CLI
+      summary when appropriate, run the "solution found" callback, and
+      populate the AMPL info buffer.
+
+      Backs both the SOLVECONTINUOUS action (forcedMethod == -1, i.e. use
+      the currently configured -lpMethod) and the CLP DUALSIMPLEX /
+      PRIMALSIMPLEX / BARRIER actions (forcedMethod set to force that
+      method) — these four actions used to each keep their own copy of
+      this sequence.
+      Extracted from run() — the `case CbcParam::SOLVECONTINUOUS:` and
+      `case ClpParam::DUALSIMPLEX/PRIMALSIMPLEX/BARRIER:` blocks.
+
+      \param forcedMethod  A CbcParameters::LPMethod value to force, or -1
+                            to use the currently configured -lpMethod.
+      \param callBack       User callback, forwarded from run().
+      \param info           AMPL info struct, forwarded from run().
+      \param returnCode     Set to the value run() should return when this
+                             method returns 3.
+      \return 0=success (caller continues its own control flow), 3=return
+              returnCode from run() (user callback requested an early exit)
+  */
+  int runSolveContinuous(int forcedMethod,
+    int callBack(CbcModel *currentSolver, int whereFrom), ampl_info *info,
+    int &returnCode);
 
   /** Handle the setup + root-LP-relaxation portion of the BAB action:
       cutoff sign flip, printout hints, the legacy OsiSolverLink/quadratic

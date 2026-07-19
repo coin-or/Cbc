@@ -704,15 +704,6 @@ private:
     OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver,
     double &time1, double &totalTime);
 
-  /** Run CglPreProcess on the model before branch-and-bound.
-      Extracted from run() — the `if (preProcess && cbcParamCode == CbcParam::BAB)` block.
-      \return 0=ok, 1=break, 2=continue, 3=return (returnCode set)
-  */
-  int preprocess(int preProcess, int cbcParamCode,
-    OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
-    CglPreProcess &process, CbcSolverStatistics &statistics,
-    int &returnCode, ampl_info *info);
-
   /** Handle the WRITESOL/PRINTSOL/WRITEGMPLSOL/WRITENEXTSOL action.
       Called from run() when a solution-writing command is encountered.
       \param cbcParamCode  Which solution-write variant was requested

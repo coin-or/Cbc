@@ -91,7 +91,7 @@ libCbc_la_SOURCES = \
 	CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp CbcSolution.cpp \
 	CbcPostprocessRepair.cpp CbcPostprocessRepair.hpp \
-	CbcSolver.cpp CbcSolverPreprocess.cpp \
+	CbcSolver.cpp \
 	CbcLpParamScorer.cpp CbcLpParamScorer.hpp \
 	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverCutSetup.cpp CbcSolverCutSetup.hpp \

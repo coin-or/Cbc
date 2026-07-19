@@ -228,11 +228,18 @@ public:
       solver's option-translation logic.
 
       Runs, in order:
-        1. Bound propagation (strengthenBounds()), if enabled.
-        2. Clique merging "before" (strengthenCliques()), if configured.
-        3. Model-level LP settings (PSI, objective scaling, vector mode).
-        4. LP racing, if enabled.
-        5. Full ClpSolve LP solve with all user-settable options.
+        1. Model-level LP settings (PSI, objective scaling, vector mode).
+        2. LP racing, if enabled.
+        3. Full ClpSolve LP solve with all user-settable options.
+
+      Bound propagation and clique merging "before" used to be the first two
+      steps here, run unconditionally on every call; they are now the
+      standalone preRootLPStrenghtening() action instead, so that it can be
+      gated independently (e.g. by -preRootLPStrenghtening in the BAB
+      pipeline's babPreRootLPStrenghtening()) and run at most once even when
+      applyLpMethod() itself is retried. Callers that still want the old
+      combined behavior (e.g. runSolveContinuous(), for the CLP LP-only
+      commands) call preRootLPStrenghtening() explicitly first.
 
       This is the single place where the root-node (or standalone) LP
       relaxation is actually solved: -solveContinuous (SOLVECONTINUOUS) and
@@ -250,9 +257,11 @@ public:
                             lets us pick the method). Pass -1 (the default)
                             to use the currently configured -lpMethod
                             (including auto/racing).
-      \return -1  infeasibility proved during bound propagation (LP was not
-                  solved), 0  LP solve completed (racing winner or standard
-                  solve).
+      \return 0  LP solve completed (racing winner or standard solve). Kept
+                  as an int (rather than void) for interface stability with
+                  existing callers, which historically also checked for a
+                  negative "infeasible" result from the bound-propagation
+                  step now performed by preRootLPStrenghtening() instead.
   */
   int applyLpMethod(OsiClpSolverInterface *targetSolver = nullptr,
     int forcedMethod = -1);
@@ -293,6 +302,30 @@ public:
     const std::string &mode = "before", int strengthenMode = 2,
     int *clqExtendedOut = nullptr, int *clqDominatedOut = nullptr,
     CoinMessageHandler *handler = nullptr);
+
+  /** Groups bound propagation (strengthenBounds()) and clique merging
+      "before" (strengthenCliques()) into a single, explicitly callable
+      pre-root-LP strengthening action, run in place on \p solver ahead of
+      the root LP relaxation solve. Deliberately does NOT resolve/re-solve
+      the LP afterwards -- clique merging always runs in "before" mode here
+      -- since LP optimization is left entirely to
+      applyLpMethod()/solveInitialLp() downstream.
+
+      This is what used to be steps 1-2 of applyLpMethod(), run
+      unconditionally on every call including plain LP-only actions
+      (SOLVECONTINUOUS, -dualSimplex, ...); it is now a standalone action so
+      the BAB pipeline can gate it behind the -preRootLPStrenghtening meta
+      switch (see babPreRootLPStrenghtening()), and callers that still want
+      the old combined behavior (e.g. runSolveContinuous()) call it
+      explicitly before applyLpMethod().
+
+      \param solver  Solver to strengthen. Pass nullptr (the default) to
+                      operate on this CbcSolver's own model_.solver().
+      \return true if the problem remains feasible after strengthening
+              (bounds/rows updated in place on \p solver), false if
+              infeasibility was proved.
+  */
+  bool preRootLPStrenghtening(OsiSolverInterface *solver = nullptr);
   //@}
 
   ///@name User extensions
@@ -685,6 +718,16 @@ private:
   */
   int runBoundPropagation();
 
+  /** Handle the CLIQUESTRENGTHEN action: run standalone clique
+      strengthening ("before" mode, no resolve) on the current model.
+      Mirrors runBoundPropagation() -- previously clique strengthening had
+      no standalone CLI action, only reachable indirectly through
+      applyLpMethod()/the BAB pipeline.
+      \return 0=success (caller falls through to break), 1=continue the
+              command loop (model invalid)
+  */
+  int runCliqueStrengthening();
+
   /** Handle the CHECKSOLUTION action: write a solution-validation report
       (row/column diagnostics) for the current model to a file.
       Extracted from run() — the `case CbcParam::CHECKSOLUTION:` block.
@@ -720,6 +763,19 @@ private:
   int runSolveContinuous(int forcedMethod,
     int callBack(CbcModel *currentSolver, int whereFrom), ampl_info *info,
     int &returnCode);
+
+  /** Handle the new first phase of the BAB pipeline: bound propagation +
+      clique merging "before" (via preRootLPStrenghtening()), gated by the
+      -preRootLPStrenghtening meta switch (default on). Extracted out of
+      applyLpMethod() (steps 1-2), which used to run this unconditionally
+      on every LP solve. Also prints the "Root LP relaxation" section
+      banner, so these messages are grouped visually with the root LP solve
+      that immediately follows in babSetupAndRootLp() -> solveInitialLp(),
+      instead of introducing a separate, more verbose section.
+      \return 0=success (caller continues), 2=continue the command loop
+              (infeasibility proved)
+  */
+  int babPreRootLPStrenghtening(int logLevel, int cbcLogLevel);
 
   /** Handle the setup + root-LP-relaxation portion of the BAB action:
       cutoff sign flip, printout hints, the legacy OsiSolverLink/quadratic

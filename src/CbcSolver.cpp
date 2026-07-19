@@ -1129,9 +1129,9 @@ parseLpParamTag(const char *tag)
 // Runs the currently configured bound propagation (per -boundPropLevel /
 // -boundPropMaxRounds) on `solver` in place; falls back to the legacy
 // singleton-only tightening when propagation is off but -singletonBounds is
-// on. Shared by CbcSolver::applyLpMethod() (root-LP path) and the standalone
-// BOUNDPROP action (CbcSolver::runBoundPropagation()) so the level-mapping
-// and bp.run() call are not duplicated between the two.
+// on. Shared by CbcSolver::preRootLPStrenghtening() (root-LP path) and the
+// standalone BOUNDPROP action (CbcSolver::runBoundPropagation()) so the
+// level-mapping and bp.run() call are not duplicated between the two.
 bool CbcSolver::strengthenBounds(OsiSolverInterface *solverIn)
 {
   OsiSolverInterface *solver = solverIn ? solverIn : model_.solver();
@@ -1205,37 +1205,33 @@ bool CbcSolver::strengthenCliques(OsiSolverInterface *solverIn,
     mode, strengthenMode, model_, mipStart_, clqExtendedOut, clqDominatedOut);
 }
 
-// Unified LP-solve entry point: bound propagation → clique merging "before"
-// → model-level LP settings → racing → full ClpSolve with all user options.
+// Groups bound propagation + clique merging "before" into a single,
+// explicitly callable pre-root-LP strengthening action. This used to be
+// steps 1-2 of applyLpMethod(), run unconditionally on every call
+// (including plain LP-only actions such as SOLVECONTINUOUS/-dualSimplex/
+// -primalSimplex/-barrier); it is now a standalone action, run once ahead of
+// applyLpMethod() by the caller -- the BAB pipeline's babPreRootLPStrenghtening()
+// (gated by -preRootLPStrenghtening) and runSolveContinuous() (unconditionally,
+// to preserve the previous combined behavior for the CLI LP-only commands).
 //
-// Returns:
-//   -1  infeasibility proved during preprocessing — caller should skip solve
-//    0  LP solve complete (racing winner or standard solve)
-//
-// The caller is responsible for setting up any LP-progress message handler
-// on the ClpSimplex model before calling this function.
-int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMethod)
+// Deliberately does NOT resolve/re-solve the LP: clique merging always runs
+// in "before" mode here (no resolve) -- the actual LP optimization is left
+// entirely to applyLpMethod()/solveInitialLp() downstream.
+bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn)
 {
-  OsiSolverInterface *solver = targetSolver ? static_cast< OsiSolverInterface * >(targetSolver) : model_.solver();
-#ifndef CBC_OTHER_SOLVER
-  OsiClpSolverInterface *si = targetSolver ? targetSolver : getClpSolver(solver);
-  ClpSimplex *clp = si ? si->getModelPtr() : nullptr;
-#else
-  OsiClpSolverInterface *si = nullptr;
-  ClpSimplex *clp = nullptr;
-#endif
+  OsiSolverInterface *solver = solverIn ? solverIn : model_.solver();
 
   // ─── 1. Bound propagation ────────────────────────────────────────────────
   // Tightens bounds using MILP-based bound propagation before building the
   // conflict graph or solving the LP.  Must run first so that the conflict
   // graph and clique merging (step 2) see the tightest possible bounds.
   if (!strengthenBounds(solver))
-    return -1;
+    return false;
 
   // ─── 2. Clique merging "before" ──────────────────────────────────────────
   // Strengthens set-packing/partitioning cliques using the conflict graph,
   // then does a quick raw LP warm-start inside the function.  The full
-  // configured LP solve happens in step 5 below.
+  // configured LP solve happens later, in applyLpMethod().
   if (clqstrMode_ == "before") {
     double clqTime = CoinWallclockTime();
     int clqExtended = 0, clqDominated = 0;
@@ -1255,8 +1251,33 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
         printf("  Clique strengthening: no changes (%.2fs)\n", clqTime);
     }
   }
+  return true;
+}
 
-  // ─── 2.5 Auto LP param recommendation ────────────────────────────────────
+// Unified LP-solve entry point: model-level LP settings → racing → full
+// ClpSolve with all user options. (Bound propagation and clique merging
+// "before" used to be steps 1-2 here; they are now the standalone
+// preRootLPStrenghtening() action, run by the caller before this function --
+// see that method's doc comment for why.)
+//
+// Returns:
+//   -1  infeasibility proved during preprocessing — caller should skip solve
+//    0  LP solve complete (racing winner or standard solve)
+//
+// The caller is responsible for setting up any LP-progress message handler
+// on the ClpSimplex model before calling this function.
+int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMethod)
+{
+  OsiSolverInterface *solver = targetSolver ? static_cast< OsiSolverInterface * >(targetSolver) : model_.solver();
+#ifndef CBC_OTHER_SOLVER
+  OsiClpSolverInterface *si = targetSolver ? targetSolver : getClpSolver(solver);
+  ClpSimplex *clp = si ? si->getModelPtr() : nullptr;
+#else
+  OsiClpSolverInterface *si = nullptr;
+  ClpSimplex *clp = nullptr;
+#endif
+
+  // ─── 1. Auto LP param recommendation ─────────────────────────────────────
   // When -lpMethod=auto, extract OsiFeatures and query the ML scorer to pick
   // the best LP parameter configuration for this specific instance.  The
   // result is stored in `autoS` and applied in sections 3 and 5 below.
@@ -1290,7 +1311,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
     autoS.scalingMode = -1;
   }
 
-  // ─── 3. Model-level LP settings ──────────────────────────────────────────
+  // ─── 2. Model-level LP settings ──────────────────────────────────────────
   // PSI, objective scaling, and vector mode modify the ClpSimplex object in
   // place.  They MUST be applied before racing (step 4) so that every racing
   // thread clone inherits them.
@@ -1345,7 +1366,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   }
 #endif
 #ifndef CLP_OLD_STYLE
-  // ─── 4. LP racing ───────────────────────────────────────────────────────
+  // ─── 3. LP racing ───────────────────────────────────────────────────────
   // Races multiple LP strategies in parallel threads.  Thread configs are
   // intentionally varied (dual, primal+idiot, sprint) — that is the point
   // of racing.  Model-level settings from step 3 are already baked into the
@@ -1371,7 +1392,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
     // All racers failed — fall through to the standard single-threaded solve.
   }
 #endif
-  // ─── 5. Standard LP solve with full ClpSolve option set ─────────────────
+  // ─── 4. Standard LP solve with full ClpSolve option set ─────────────────
   // Replicates all option-setting logic from the CLP command handlers
   // (DUALSIMPLEX / PRIMALSIMPLEX / BARRIER cases in run()), using member
   // variables so the same code path is followed regardless of whether we
@@ -1585,6 +1606,25 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
   ClpSimplex *lpSolver = clpSolver ? clpSolver->getModelPtr() : nullptr;
 
+  // Bound propagation + clique merging "before": previously the first two
+  // steps of applyLpMethod(), run unconditionally on every call including
+  // this one; now the standalone preRootLPStrenghtening() action, called
+  // explicitly here to preserve the historical combined behavior of the
+  // SOLVECONTINUOUS/-dualSimplex/-primalSimplex/-barrier CLI commands.
+  // Unlike the BAB pipeline's babPreRootLPStrenghtening(), this is not
+  // gated by -preRootLPStrenghtening -- these are LP-only actions, so the
+  // phase always runs for them, same as before this refactor.
+  if (!preRootLPStrenghtening(model_.solver())) {
+    // Infeasibility proved by bound propagation — mark model.
+    model_.setProblemStatus(0);
+    model_.setSecondaryStatus(1);
+    if (babModel_) {
+      babModel_->setProblemStatus(0);
+      babModel_->setSecondaryStatus(1);
+    }
+    return 0;
+  }
+
 #ifndef CLP_OLD_STYLE
 #ifndef CBC_OTHER_SOLVER
   if (clpSolver)
@@ -1617,7 +1657,7 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   }
 #endif
 #endif
-  int lpResult = applyLpMethod(nullptr, forcedMethod);
+  applyLpMethod(nullptr, forcedMethod);
 #ifndef CLP_OLD_STYLE
 #ifndef CBC_OTHER_SOLVER
   if (lpScProg)
@@ -1630,16 +1670,6 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   }
 #endif
 #endif
-  if (lpResult < 0) {
-    // Infeasibility proved by bound propagation — mark model.
-    model_.setProblemStatus(0);
-    model_.setSecondaryStatus(1);
-    if (babModel_) {
-      babModel_->setProblemStatus(0);
-      babModel_->setSecondaryStatus(1);
-    }
-    return 0;
-  }
   // Map ClpSimplex status codes to Cbc status (same as CLP handlers).
   {
 #ifndef CBC_OTHER_SOLVER
@@ -5570,7 +5600,6 @@ int CbcSolver::solveInitialLp(
   double time1a = CoinCpuTime();
   OsiSolverInterface *solver = model_.solver();
   OsiClpSolverInterface *si = getClpSolver(solver);
-  int lpMethodResult = 0;
   CoinMessageHandler *lpSavedMsg = nullptr;
 #ifdef CLP_OLD_STYLE
   // initial solve and report
@@ -5606,14 +5635,10 @@ int CbcSolver::solveInitialLp(
     lpState->timeFreq = lpTimeFreq;
     lpState->startTime = CoinWallclockTime();
     lpState->lastPrintTime = lpState->startTime;
-    lpState->title = "Root LP relaxation";
-    // Print the section title now so that bound propagation
-    // messages (from applyLpMethod) appear inside this section.
-    // Clear title so lpPhaseOpenTable prints only the table header.
-    fprintf(lpState->fp, "\n%s\n\n",
-      CoinTable::phaseStart(lpState->title, lpState->utf8).c_str());
-    // Print clique strengthening summary after it runs (below)
-    lpState->title.clear();
+    // The "Root LP relaxation" section banner is now printed earlier, by
+    // babPreRootLPStrenghtening() (so bound-propagation/clique-strengthening
+    // messages appear inside the same section) -- leave title empty here so
+    // lpPhaseOpenTable only prints the table header, not a repeated banner.
     lpMsgHandler = new ClpLpMsgHandler(lpState);
     ClpLpEventHandler tmpEvt(lpState);
     lpSavedMsg = clpModel->pushMessageHandler(lpMsgHandler, lpMsgOldDefault);
@@ -5636,33 +5661,13 @@ int CbcSolver::solveInitialLp(
     }
     numMipInts = static_cast< int >(intCols.size());
   }
-  lpMethodResult = applyLpMethod();
-  if (lpMethodResult < 0) {
-    // Infeasible — clean up LP progress handler and skip BAB.
-    // Mark the model infeasible (same pattern used when
-    // pre-processing or tightenPrimalBounds() prove infeasibility)
-    // so the solution writer reports "Integer infeasible" instead
-    // of leaving iStat/iStat2 unset ("Status unknown").
-    integerStatus_ = 6;
-    model_.setProblemStatus(0);
-    model_.setSecondaryStatus(1);
-    if (babModel_) {
-      babModel_->setProblemStatus(0);
-      babModel_->setSecondaryStatus(1);
-    }
-#ifndef CBC_OTHER_SOLVER
-    if (lpSavedMsg && si) {
-      ClpSimplex *clpModel = si->getModelPtr();
-      clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
-      si->setDefaultHandler(lpSavedOsiDefault);
-      delete lpMsgHandler;
-      lpMsgHandler = nullptr;
-      ClpEventHandler defaultHandler;
-      clpModel->passInEventHandler(&defaultHandler);
-    }
-#endif
-    return 2;
-  }
+  // NOTE: bound propagation and clique merging "before" used to run here,
+  // as the first two steps of applyLpMethod() -- they are now the
+  // standalone preRootLPStrenghtening() action, already run (and its
+  // infeasibility, if any, already handled) by babPreRootLPStrenghtening()
+  // before babSetupAndRootLp()/solveInitialLp() are even reached. So
+  // applyLpMethod() can no longer report infeasibility here.
+  applyLpMethod();
 #endif
   // NOTE: clique strengthening "before" and the actual LP solve are already
   // performed inside applyLpMethod() (steps 2 and 5) above — this used to be
@@ -7078,9 +7083,9 @@ private:
 
 // Extracted from CbcSolver::run() — the `case CbcParam::BOUNDPROP:` block.
 // Delegates the actual level-mapping and bp.run() call to the shared
-// strengthenBounds() action (also used internally by applyLpMethod()); this
-// wrapper only adds the CLI-specific "disabled" message and goodModel_
-// bookkeeping.
+// strengthenBounds() action (also used internally by
+// preRootLPStrenghtening()); this wrapper only adds the CLI-specific
+// "disabled" message and goodModel_ bookkeeping.
 int CbcSolver::runBoundPropagation()
 {
   if (!goodModel_) {
@@ -7098,6 +7103,30 @@ int CbcSolver::runBoundPropagation()
     // level >= 1. Mark model bad so downstream commands know.
     goodModel_ = false;
   }
+  return 0;
+}
+
+// Extracted as a standalone CLI action mirroring runBoundPropagation():
+// clique strengthening previously had no manually-triggerable action, only
+// reachable indirectly through preRootLPStrenghtening()/applyLpMethod().
+// Runs in "before" mode (no resolve), in place, on the current model.
+int CbcSolver::runCliqueStrengthening()
+{
+  if (!goodModel_) {
+    printGeneralWarning(model_, "** Current model not valid\n");
+    return 1;
+  }
+  double clqTime = CoinWallclockTime();
+  int clqExtended = 0, clqDominated = 0;
+  strengthenCliques(model_.solver(), "before", 2, &clqExtended, &clqDominated);
+  clqTime = CoinWallclockTime() - clqTime;
+  std::ostringstream buffer;
+  if (clqExtended || clqDominated)
+    buffer << "Clique strengthening: " << clqExtended << " extended, "
+           << clqDominated << " dominated (" << clqTime << "s)";
+  else
+    buffer << "Clique strengthening: no changes (" << clqTime << "s)";
+  printGeneralMessage(model_, buffer.str());
   return 0;
 }
 
@@ -7129,6 +7158,50 @@ int CbcSolver::runCheckSolution(CbcParam *cbcParam, std::deque< std::string > &i
          << ", largest_primal=" << lp->largestPrimalError()
          << ", largest_dual=" << lp->largestDualError() << ")";
   printGeneralMessage(model_, buffer.str());
+  return 0;
+}
+
+// New first phase of the BAB pipeline, extracted out of applyLpMethod()
+// (steps 1-2, run there unconditionally on every LP solve). Runs bound
+// propagation and clique merging "before" once, ahead of
+// babSetupAndRootLp(), gated by the -preRootLPStrenghtening meta switch
+// (default on) so users who want neither sub-step can disable the whole
+// phase in one shot -- the individual sub-steps are still independently
+// controlled by -boundPropLevel/-singletonBounds and -clqStrengthening.
+// Also prints the "Root LP relaxation" section banner (previously printed
+// from inside solveInitialLp(), only when LP progress printing was active)
+// unconditionally when applicable, so these messages are grouped visually
+// with the root LP solve that immediately follows, instead of introducing a
+// separate, more verbose section.
+// \return 0=success (caller continues), 2=continue the command loop
+//         (infeasibility proved)
+int CbcSolver::babPreRootLPStrenghtening(int logLevel, int cbcLogLevel)
+{
+  if (!parameters_[CbcParam::PREROOTLPSTRENGTHENING]->modeVal())
+    return 0;
+
+  if (cbcLogLevel >= 1 && logLevel >= 1) {
+    FILE *fp = model_.messageHandler()->filePointer();
+    if (fp) {
+      fprintf(fp, "\n%s\n\n",
+        CoinTable::phaseStart("Root LP relaxation", CbcOutput::useUtf8()).c_str());
+    }
+  }
+
+  if (!preRootLPStrenghtening(model_.solver())) {
+    // Mirrors the infeasibility handling previously done in solveInitialLp()
+    // when applyLpMethod() returned -1 from this same bound-propagation
+    // step: mark the model infeasible so the solution writer reports
+    // "Integer infeasible" instead of "Status unknown".
+    integerStatus_ = 6;
+    model_.setProblemStatus(0);
+    model_.setSecondaryStatus(1);
+    if (babModel_) {
+      babModel_->setProblemStatus(0);
+      babModel_->setSecondaryStatus(1);
+    }
+    return 2;
+  }
   return 0;
 }
 
@@ -12236,6 +12309,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           int *newPriorities = NULL;
           int returnCode = 0;
           {
+            int rc = babPreRootLPStrenghtening(logLevel, cbcLogLevel);
+            if (rc == 2)
+              continue;
+          }
+          {
             int rc = babSetupAndRootLp(logLevel, cbcLogLevel,
               clpSolver, lpSolver, storedAmpl, coinModel, statistics,
               returnCode, callBack);
@@ -13394,6 +13472,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         } break;
         case CbcParam::BOUNDPROP: {
           if (runBoundPropagation())
+            continue;
+        } break;
+        case CbcParam::CLIQUESTRENGTHEN: {
+          if (runCliqueStrengthening())
             continue;
         } break;
         case CbcParam::DUMPPARAMS: {

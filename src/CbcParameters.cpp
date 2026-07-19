@@ -611,6 +611,7 @@ void CbcParameters::addCbcParams() {
 
   // Action params — preprocessing
   parameters_[CbcParam::BOUNDPROP]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
+  parameters_[CbcParam::CLIQUESTRENGTHEN]->setTopic("MIP Preprocessing");
 
   // Action params — other
   parameters_[CbcParam::STATISTICS]->setTopic("Output");
@@ -702,6 +703,7 @@ void CbcParameters::addCbcParams() {
   // Bool params
   parameters_[CbcParam::SOS]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::SINGLETONBOUNDS]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
+  parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
   parameters_[CbcParam::PREPROCNAMES]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::DOHEURISTIC]->setTopic("Heuristics");
   parameters_[CbcParam::USESOLUTION]->setTopic("Heuristics");
@@ -861,6 +863,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
      parameters_[CbcParam::MESSAGES]->setDefault("off");
      parameters_[CbcParam::PREPROCNAMES]->setDefault("on");
+     parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setDefault("on");
      parameters_[CbcParam::SINGLETONBOUNDS]->setDefault("on");
      parameters_[CbcParam::SOS]->setDefault("off");
      parameters_[CbcParam::USESOLUTION]->setDefault("off");
@@ -1378,6 +1381,19 @@ void CbcParameters::addCbcSolverActionParams() {
       "model, applying bound tightenings to the problem in place. "
       "The aggression level is controlled by boundPropLevel. "
       "After running, use writeModel to save the tightened problem.",
+      CoinParam::displayPriorityHigh);
+
+    parameters_[CbcParam::CLIQUESTRENGTHEN]->setup(
+      "doClique!Strengthening",
+      "Run clique strengthening on the loaded model",
+      "Immediately builds the conflict graph of the currently loaded "
+      "model and strengthens set-packing/partitioning cliques against "
+      "it (extending/dominating constraints) in place, without "
+      "resolving the LP afterwards. Previously only reachable "
+      "indirectly through -solve's automatic preRootLPStrenghtening "
+      "phase; exposed here so it can be triggered manually, mirroring "
+      "doBoundPropagation. After running, use writeModel to save the "
+      "strengthened problem.",
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::CHECKSOLUTION]->setup(
@@ -2614,6 +2630,16 @@ void CbcParameters::addCbcSolverBoolParams() {
       "tighten variable bounds before the initial LP solve and conflict "
       "graph construction. This is a cheap preprocessing step that can "
       "fix variables and reduce the problem size.");
+
+  parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setup(
+      "preRootLPStr!enghtening",
+      "Whether to run the pre-root-LP strengthening phase before -solve",
+      "When on (the default), the first step of -solve/BAB runs bound "
+      "propagation and, if configured, clique strengthening \"before\" "
+      "on the model, ahead of the root LP relaxation solve. Turning "
+      "this off skips the whole phase in one shot -- the individual "
+      "sub-steps can still be controlled independently via "
+      "-boundPropLevel/-singletonBounds and -clqStrengthening.");
 
   parameters_[CbcParam::USESOLUTION]->setup(
       "force!Solution", "Whether to use given solution as crash for BAB",

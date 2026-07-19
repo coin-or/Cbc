@@ -94,6 +94,7 @@ public:
       CHECKSOLUTION,
       DUMPPARAMS,
       BOUNDPROP,
+      CLIQUESTRENGTHEN,
       LASTACTIONPARAM,
 
       // File Parameters
@@ -181,6 +182,7 @@ public:
       ERRORSALLOWED,
       MESSAGES,
       PREPROCNAMES,
+      PREROOTLPSTRENGTHENING,
       SINGLETONBOUNDS,
       SOS,
       USESOLUTION,

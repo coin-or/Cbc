@@ -12,6 +12,12 @@
 
 \hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!60!black}
 
+% Small colored tag identifying a parameter's type (e.g. \ptag{blue!60!black}{INT}).
+% Shown next to the parameter name in both the table of contents and its
+% own heading, so the kind of value a parameter expects is visible at a
+% glance without reading its full description.
+\newcommand{\ptag}[2]{{\scriptsize\textcolor{#1}{\textbf{[#2]}}}}
+
 \title{CBC Parameter Reference}
 \author{COIN-OR Cbc Development Team}
 \date{July 2026 --- CBC devel}
@@ -35,10 +41,16 @@ Parameters are specified on the command line \emph{before} \texttt{-solve}:
 Both single-dash (\texttt{-sec}) and double-dash (\texttt{--sec}) styles
 are accepted.  In interactive mode, omit the leading dash.
 
+Each parameter is tagged with its type, both here and in the table of
+contents: \ptag{blue!60!black}{INT} integer, \ptag{violet!65!black}{DBL}
+double, \ptag{teal!70!black}{KW} keyword, \ptag{orange!80!black}{STR}
+string, \ptag{red!65!black}{ACT} action (no value), \ptag{gray!60!black}{FILE}
+file/directory.
+
 \section{Stopping}
 
-\subsection*{\texttt{-allowableGap}}
-\addcontentsline{toc}{subsection}{\texttt{-allowableGap}}
+\subsection*{\texttt{-allowableGap} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-allowableGap} \ptag{violet!65!black}{DBL}}
 
 Stop when gap between best possible and incumbent is less than this
 
@@ -46,8 +58,8 @@ If the gap between best solution and best possible solution is less than this th
 
 \textbf{Range:} 0 to $\infty$ (default: 1e-12)
 
-\subsection*{\texttt{-cutoff}}
-\addcontentsline{toc}{subsection}{\texttt{-cutoff}}
+\subsection*{\texttt{-cutoff} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-cutoff} \ptag{violet!65!black}{DBL}}
 
 All solutions must be better than this
 
@@ -55,8 +67,8 @@ All solutions must be better than this value (in a minimization sense).  This is
 
 \textbf{Range:} $-\infty$ to $\infty$ (default: 1e+50)
 
-\subsection*{\texttt{-ratioGap}}
-\addcontentsline{toc}{subsection}{\texttt{-ratioGap}}
+\subsection*{\texttt{-ratioGap} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-ratioGap} \ptag{violet!65!black}{DBL}}
 
 Stop when the gap between the best possible solution and the incumbent is less than this fraction of the larger of the two
 
@@ -64,8 +76,8 @@ If the gap between the best solution and the best possible solution is less than
 
 \textbf{Range:} 0 to $\infty$ (default: 0)
 
-\subsection*{\texttt{-maxNodes}}
-\addcontentsline{toc}{subsection}{\texttt{-maxNodes}}
+\subsection*{\texttt{-maxNodes} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-maxNodes} \ptag{blue!60!black}{INT}}
 
 Maximum number of nodes to evaluate
 
@@ -73,8 +85,8 @@ This is a repeatable way to limit search.  Normally using time is easier but the
 
 \textbf{Range:} 0 to INT\_MAX (default: 2147483647)
 
-\subsection*{\texttt{-maxNNIFS}}
-\addcontentsline{toc}{subsection}{\texttt{-maxNNIFS}}
+\subsection*{\texttt{-maxNNIFS} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-maxNNIFS} \ptag{blue!60!black}{INT}}
 
 Maximum number of nodes to be processed without improving the incumbent solution.
 
@@ -82,8 +94,8 @@ This criterion specifies that when a feasible solution is available, the search 
 
 \textbf{Range:} -1 to INT\_MAX (default: 2147483647)
 
-\subsection*{\texttt{-secnifs}}
-\addcontentsline{toc}{subsection}{\texttt{-secnifs}}
+\subsection*{\texttt{-secnifs} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-secnifs} \ptag{violet!65!black}{DBL}}
 
 maximum seconds without improving the incumbent solution
 
@@ -91,8 +103,8 @@ With this stopping criterion, after a feasible solution is found, the search sho
 
 \textbf{Range:} -1 to inf (default: inf)
 
-\subsection*{\texttt{-maxSolutions}}
-\addcontentsline{toc}{subsection}{\texttt{-maxSolutions}}
+\subsection*{\texttt{-maxSolutions} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-maxSolutions} \ptag{blue!60!black}{INT}}
 
 Maximum number of feasible solutions to get
 
@@ -100,8 +112,8 @@ You may want to stop after (say) two solutions or an hour. This is checked every
 
 \textbf{Range:} 1 to 1073741823 (default: 1073741823)
 
-\subsection*{\texttt{-seconds}}
-\addcontentsline{toc}{subsection}{\texttt{-seconds}}
+\subsection*{\texttt{-seconds} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-seconds} \ptag{violet!65!black}{DBL}}
 
 Maximum seconds for branch and cut
 
@@ -109,8 +121,8 @@ After this many seconds the program will act as if maximum nodes had been reache
 
 \textbf{Range:} -1 to 1000000000000 (default: 100000000)
 
-\subsection*{\texttt{-lpseconds}}
-\addcontentsline{toc}{subsection}{\texttt{-lpseconds}}
+\subsection*{\texttt{-lpseconds} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-lpseconds} \ptag{violet!65!black}{DBL}}
 
 Maximum seconds
 
@@ -120,8 +132,8 @@ After this many seconds clp will act as if maximum iterations had been reached (
 
 \section{MIP Preprocessing}
 
-\subsection*{\texttt{-PrepNames}}
-\addcontentsline{toc}{subsection}{\texttt{-PrepNames}}
+\subsection*{\texttt{-PrepNames} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-PrepNames} \ptag{teal!70!black}{KW}}
 
 If column names will be kept in pre-processed model
 
@@ -129,8 +141,8 @@ Normally the preprocessed model has column names replaced by new names C0000... 
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{on})
 
-\subsection*{\texttt{-sosOptions}}
-\addcontentsline{toc}{subsection}{\texttt{-sosOptions}}
+\subsection*{\texttt{-sosOptions} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-sosOptions} \ptag{teal!70!black}{KW}}
 
 Whether to use SOS from AMPL
 
@@ -138,15 +150,15 @@ Normally if AMPL says there are SOS variables they should be used, but sometimes
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
-\subsection*{\texttt{-clqstrengthen}}
-\addcontentsline{toc}{subsection}{\texttt{-clqstrengthen}}
+\subsection*{\texttt{-clqstrengthen} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-clqstrengthen} \ptag{teal!70!black}{KW}}
 
 Whether and when to perform Clique Strengthening preprocessing routine
 
 \textbf{Values:} \texttt{off}, \texttt{before}, \texttt{after} (default: \texttt{after})
 
-\subsection*{\texttt{-preprocess}}
-\addcontentsline{toc}{subsection}{\texttt{-preprocess}}
+\subsection*{\texttt{-preprocess} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-preprocess} \ptag{teal!70!black}{KW}}
 
 Whether to use integer preprocessing
 
@@ -154,8 +166,8 @@ This tries to reduce size of the model in a similar way to presolve and it also 
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{save}, \texttt{equal}, \texttt{sos}, \texttt{trysos}, \texttt{equalall}, \texttt{strategy}, \texttt{aggregate}, \texttt{forcesos}, \texttt{stop!aftersaving}, \texttt{equalallstop} (default: \texttt{sos})
 
-\subsection*{\texttt{-cppGenerate}}
-\addcontentsline{toc}{subsection}{\texttt{-cppGenerate}}
+\subsection*{\texttt{-cppGenerate} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cppGenerate} \ptag{blue!60!black}{INT}}
 
 Generates C++ code
 
@@ -163,8 +175,8 @@ Once you like what the stand-alone solver does then this allows you to generate 
 
 \textbf{Range:} 0 to 4 (default: 0)
 
-\subsection*{\texttt{-extraVariables}}
-\addcontentsline{toc}{subsection}{\texttt{-extraVariables}}
+\subsection*{\texttt{-extraVariables} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-extraVariables} \ptag{blue!60!black}{INT}}
 
 Allow creation of extra integer variables
 
@@ -172,8 +184,8 @@ Switches on a trivial re-formulation that introduces extra integer variables to 
 
 \textbf{Range:} $-$INT\_MAX to INT\_MAX (default: 0)
 
-\subsection*{\texttt{-tunePreProcess}}
-\addcontentsline{toc}{subsection}{\texttt{-tunePreProcess}}
+\subsection*{\texttt{-tunePreProcess} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-tunePreProcess} \ptag{blue!60!black}{INT}}
 
 Dubious tuning parameters for preprocessing
 
@@ -196,8 +208,8 @@ Format aabbcccc -
 
 \textbf{Range:} 0 to INT\_MAX (default: 7)
 
-\subsection*{\texttt{-fixOnDj}}
-\addcontentsline{toc}{subsection}{\texttt{-fixOnDj}}
+\subsection*{\texttt{-fixOnDj} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-fixOnDj} \ptag{violet!65!black}{DBL}}
 
 Try heuristic that fixes variables based on reduced costs
 
@@ -205,8 +217,8 @@ If set, integer variables with reduced costs greater than the specified value wi
 
 \textbf{Range:} $-\infty$ to $\infty$ (default: 0)
 
-\subsection*{\texttt{-tightenFactor}}
-\addcontentsline{toc}{subsection}{\texttt{-tightenFactor}}
+\subsection*{\texttt{-tightenFactor} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-tightenFactor} \ptag{violet!65!black}{DBL}}
 
 Tighten bounds using value times largest activity at continuous solution
 
@@ -216,15 +228,15 @@ This sleazy trick can help on some problems.
 
 \section{MIP Preprocessing --- Bound Propagation}
 
-\subsection*{\texttt{-doBoundPropagation}}
-\addcontentsline{toc}{subsection}{\texttt{-doBoundPropagation}}
+\subsection*{\texttt{-doBoundPropagation} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-doBoundPropagation} \ptag{red!65!black}{ACT}}
 
 Run bound propagation on the loaded model
 
 Immediately runs bound propagation on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by boundPropLevel. After running, use writeModel to save the tightened problem.
 
-\subsection*{\texttt{-singletonBounds}}
-\addcontentsline{toc}{subsection}{\texttt{-singletonBounds}}
+\subsection*{\texttt{-singletonBounds} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-singletonBounds} \ptag{teal!70!black}{KW}}
 
 Whether to tighten variable bounds from singleton rows before solve
 
@@ -232,8 +244,8 @@ When on, singleton rows (rows with a single nonzero) are used to tighten variabl
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{on})
 
-\subsection*{\texttt{-boundPropLevel}}
-\addcontentsline{toc}{subsection}{\texttt{-boundPropLevel}}
+\subsection*{\texttt{-boundPropLevel} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-boundPropLevel} \ptag{teal!70!black}{KW}}
 
 Aggression level for bound propagation before solve
 
@@ -245,8 +257,8 @@ Controls how aggressively bound propagation tightens variable bounds before the 
 
 \textbf{Values:} \texttt{off}, \texttt{singletons}, \texttt{milpbt}, \texttt{fixpoint} (default: \texttt{milpbt})
 
-\subsection*{\texttt{-nodeBoundProp}}
-\addcontentsline{toc}{subsection}{\texttt{-nodeBoundProp}}
+\subsection*{\texttt{-nodeBoundProp} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-nodeBoundProp} \ptag{teal!70!black}{KW}}
 
 Run bound propagation at B\&B nodes
 
@@ -254,8 +266,8 @@ When enabled, runs knapsack-based bound propagation after branching decisions ar
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
-\subsection*{\texttt{-boundPropMaxRounds}}
-\addcontentsline{toc}{subsection}{\texttt{-boundPropMaxRounds}}
+\subsection*{\texttt{-boundPropMaxRounds} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-boundPropMaxRounds} \ptag{blue!60!black}{INT}}
 
 Maximum number of bound propagation rounds
 
@@ -263,8 +275,8 @@ Maximum number of CoinBoundPropagation rounds when boundPropLevel is 'milpbt'. E
 
 \textbf{Range:} 1 to INT\_MAX (default: 100)
 
-\subsection*{\texttt{-nodeBoundPropMaxDepth}}
-\addcontentsline{toc}{subsection}{\texttt{-nodeBoundPropMaxDepth}}
+\subsection*{\texttt{-nodeBoundPropMaxDepth} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-nodeBoundPropMaxDepth} \ptag{blue!60!black}{INT}}
 
 Maximum tree depth at which node bound propagation is applied
 
@@ -272,8 +284,8 @@ Node bound propagation is only applied at depths up to this value. Deeper nodes 
 
 \textbf{Range:} 0 to INT\_MAX (default: 50)
 
-\subsection*{\texttt{-nodeBoundPropMinDepth}}
-\addcontentsline{toc}{subsection}{\texttt{-nodeBoundPropMinDepth}}
+\subsection*{\texttt{-nodeBoundPropMinDepth} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-nodeBoundPropMinDepth} \ptag{blue!60!black}{INT}}
 
 Minimum tree depth at which node bound propagation is applied
 
@@ -281,8 +293,8 @@ Node bound propagation is only applied at depths at or above this value. Shallow
 
 \textbf{Range:} 0 to INT\_MAX (default: 5)
 
-\subsection*{\texttt{-nodeBoundPropDepthInterval}}
-\addcontentsline{toc}{subsection}{\texttt{-nodeBoundPropDepthInterval}}
+\subsection*{\texttt{-nodeBoundPropDepthInterval} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-nodeBoundPropDepthInterval} \ptag{blue!60!black}{INT}}
 
 Depth interval for node bound propagation
 
@@ -292,8 +304,8 @@ Node bound propagation is applied at depths that are multiples of this interval 
 
 \section{LP Presolve}
 
-\subsection*{\texttt{-presolve}}
-\addcontentsline{toc}{subsection}{\texttt{-presolve}}
+\subsection*{\texttt{-presolve} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-presolve} \ptag{teal!70!black}{KW}}
 
 Whether to presolve problem
 
@@ -301,8 +313,8 @@ Presolve analyzes the model to find such things as redundant equations, equation
 
 \textbf{Values:} \texttt{on}, \texttt{off}, \texttt{more}, \texttt{file} (default: \texttt{on})
 
-\subsection*{\texttt{-passPresolve}}
-\addcontentsline{toc}{subsection}{\texttt{-passPresolve}}
+\subsection*{\texttt{-passPresolve} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-passPresolve} \ptag{blue!60!black}{INT}}
 
 How many passes in presolve
 
@@ -310,8 +322,8 @@ Normally Presolve does 10 passes but you may want to do less to make it more lig
 
 \textbf{Range:} -200 to 100 (default: 5)
 
-\subsection*{\texttt{-preTolerance}}
-\addcontentsline{toc}{subsection}{\texttt{-preTolerance}}
+\subsection*{\texttt{-preTolerance} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-preTolerance} \ptag{violet!65!black}{DBL}}
 
 Tolerance to use in presolve
 
@@ -321,8 +333,8 @@ One may want to increase this tolerance if presolve says the problem is infeasib
 
 \section{Cuts}
 
-\subsection*{\texttt{-cliqueCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-cliqueCuts}}
+\subsection*{\texttt{-cliqueCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-cliqueCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use clique cuts
 
@@ -330,8 +342,8 @@ This switches on clique cuts (either at root or in entire tree). An improved ver
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{ifmove})
 
-\subsection*{\texttt{-cutsOnOff}}
-\addcontentsline{toc}{subsection}{\texttt{-cutsOnOff}}
+\subsection*{\texttt{-cutsOnOff} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-cutsOnOff} \ptag{teal!70!black}{KW}}
 
 Switches all cuts on or off
 
@@ -339,8 +351,8 @@ This can be used to switch on or off all cuts (apart from Reduce and Split).  Th
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon} (default: \texttt{on})
 
-\subsection*{\texttt{-flowCoverCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-flowCoverCuts}}
+\subsection*{\texttt{-flowCoverCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-flowCoverCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Flow Cover cuts
 
@@ -349,8 +361,8 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{ifmove})
 
-\subsection*{\texttt{-GMICuts}}
-\addcontentsline{toc}{subsection}{\texttt{-GMICuts}}
+\subsection*{\texttt{-GMICuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-GMICuts} \ptag{teal!70!black}{KW}}
 
 Whether to use alternative Gomory cuts
 
@@ -359,8 +371,8 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{endonly}, \texttt{long}, \texttt{longroot}, \texttt{longifmove}, \texttt{forcelongon}, \texttt{longendonly} (default: \texttt{off})
 
-\subsection*{\texttt{-gomoryCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-gomoryCuts}}
+\subsection*{\texttt{-gomoryCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-gomoryCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Gomory cuts
 
@@ -369,8 +381,8 @@ The original cuts - beware of imitations!  Having gone out of favor, they are no
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{forceandglobal}, \texttt{forcelongon}, \texttt{onglobal}, \texttt{longer}, \texttt{shorter} (default: \texttt{ifmove})
 
-\subsection*{\texttt{-knapsackCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-knapsackCuts}}
+\subsection*{\texttt{-knapsackCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-knapsackCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Knapsack cuts
 
@@ -379,8 +391,8 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{forceandglobal}, \texttt{onglobal} (default: \texttt{ifmove})
 
-\subsection*{\texttt{-lagomoryCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-lagomoryCuts}}
+\subsection*{\texttt{-lagomoryCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-lagomoryCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Lagrangean Gomory cuts
 
@@ -388,8 +400,8 @@ This is a gross simplification of 'A Relax-and-Cut Framework for Gomory's Mixed-
 
 \textbf{Values:} \texttt{off}, \texttt{root}, \texttt{endonly}, \texttt{endonlyroot}, \texttt{endclean}, \texttt{endcleanroot}, \texttt{endboth}, \texttt{onlyaswell}, \texttt{onlyaswellroot}, \texttt{cleanaswell}, \texttt{cleanaswellroot}, \texttt{bothaswell}, \texttt{bothaswellroot}, \texttt{onlyinstead}, \texttt{cleaninstead}, \texttt{bothinstead} (default: \texttt{off})
 
-\subsection*{\texttt{-liftAndProjectCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-liftAndProjectCuts}}
+\subsection*{\texttt{-liftAndProjectCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-liftAndProjectCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use lift-and-project cuts
 
@@ -398,8 +410,8 @@ These cuts may be expensive to compute. Value 'on' enables the cut generator and
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{iflongon} (default: \texttt{off})
 
-\subsection*{\texttt{-latwomirCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-latwomirCuts}}
+\subsection*{\texttt{-latwomirCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-latwomirCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Lagrangean Twomir cuts
 
@@ -407,8 +419,8 @@ This is a Lagrangean relaxation for Twomir cuts.  See lagomoryCuts for descripti
 
 \textbf{Values:} \texttt{off}, \texttt{endonly}, \texttt{endonlyroot}, \texttt{endclean}, \texttt{endcleanroot}, \texttt{endboth}, \texttt{onlyaswell}, \texttt{cleanaswell}, \texttt{bothaswell}, \texttt{onlyinstead}, \texttt{cleaninstead}, \texttt{bothinstead} (default: \texttt{off})
 
-\subsection*{\texttt{-mixedIntegerRoundingCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-mixedIntegerRoundingCuts}}
+\subsection*{\texttt{-mixedIntegerRoundingCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-mixedIntegerRoundingCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Mixed Integer Rounding cuts
 
@@ -417,8 +429,8 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{ifmove})
 
-\subsection*{\texttt{-oddwheelCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-oddwheelCuts}}
+\subsection*{\texttt{-oddwheelCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-oddwheelCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use odd wheel cuts
 
@@ -426,8 +438,8 @@ This switches on odd-wheel inequalities (either at root or in entire tree).
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{off})
 
-\subsection*{\texttt{-probingCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-probingCuts}}
+\subsection*{\texttt{-probingCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-probingCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Probing cuts
 
@@ -435,8 +447,8 @@ Value 'forceOnBut' turns on probing and forces CBC to do probing at every node, 
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{forceonbut}, \texttt{forceonbutstrong}, \texttt{forceonglobal}, \texttt{forceonstrong}, \texttt{onglobal}, \texttt{strongroot} (default: \texttt{ifmove})
 
-\subsection*{\texttt{-reduceAndSplitCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-reduceAndSplitCuts}}
+\subsection*{\texttt{-reduceAndSplitCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-reduceAndSplitCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Reduce-and-Split cuts
 
@@ -445,8 +457,8 @@ These cuts may be expensive to generate. Value 'on' enables the cut generator an
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon} (default: \texttt{off})
 
-\subsection*{\texttt{-reduce2AndSplitCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-reduce2AndSplitCuts}}
+\subsection*{\texttt{-reduce2AndSplitCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-reduce2AndSplitCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Reduce-and-Split cuts - style 2
 
@@ -454,8 +466,8 @@ This switches on reduce and split cuts (either at root or in entire tree). This 
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{longon}, \texttt{longroot} (default: \texttt{off})
 
-\subsection*{\texttt{-residualCapacityCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-residualCapacityCuts}}
+\subsection*{\texttt{-residualCapacityCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-residualCapacityCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Residual Capacity cuts
 
@@ -464,8 +476,8 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon} (default: \texttt{off})
 
-\subsection*{\texttt{-twoMirCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-twoMirCuts}}
+\subsection*{\texttt{-twoMirCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-twoMirCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use Two phase Mixed Integer Rounding cuts
 
@@ -474,8 +486,8 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{forceandglobal}, \texttt{forcelongon}, \texttt{onglobal} (default: \texttt{ifmove})
 
-\subsection*{\texttt{-zeroHalfCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-zeroHalfCuts}}
+\subsection*{\texttt{-zeroHalfCuts} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-zeroHalfCuts} \ptag{teal!70!black}{KW}}
 
 Whether to use zero half cuts
 
@@ -484,8 +496,8 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{ifmove})
 
-\subsection*{\texttt{-aggregatelevel}}
-\addcontentsline{toc}{subsection}{\texttt{-aggregatelevel}}
+\subsection*{\texttt{-aggregatelevel} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-aggregatelevel} \ptag{blue!60!black}{INT}}
 
 Level of aggregation used in CglMixedRounding
 
@@ -493,8 +505,8 @@ MixedIntegerRounding2 can work on constraints created by aggregating constraints
 
 \textbf{Range:} -1 to 5 (default: 1)
 
-\subsection*{\texttt{-cutDepth}}
-\addcontentsline{toc}{subsection}{\texttt{-cutDepth}}
+\subsection*{\texttt{-cutDepth} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cutDepth} \ptag{blue!60!black}{INT}}
 
 Depth in tree at which to do cuts
 
@@ -502,8 +514,8 @@ Cut generators may be off, on only at the root, on if they look useful, and on a
 
 \textbf{Range:} -1 to INT\_MAX (default: -1)
 
-\subsection*{\texttt{-cutLength}}
-\addcontentsline{toc}{subsection}{\texttt{-cutLength}}
+\subsection*{\texttt{-cutLength} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cutLength} \ptag{blue!60!black}{INT}}
 
 Length of a cut
 
@@ -511,8 +523,8 @@ At present this only applies to Gomory cuts. -1 (default) leaves as is. Any valu
 
 \textbf{Range:} -1 to INT\_MAX (default: -1)
 
-\subsection*{\texttt{-passTreeCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-passTreeCuts}}
+\subsection*{\texttt{-passTreeCuts} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-passTreeCuts} \ptag{blue!60!black}{INT}}
 
 Number of rounds that cut generators are applied in the tree
 
@@ -520,8 +532,8 @@ The default is to do one pass. A negative value -n means that n passes are also 
 
 \textbf{Range:} $-$INT\_MAX to INT\_MAX (default: 10)
 
-\subsection*{\texttt{-slowcutpasses}}
-\addcontentsline{toc}{subsection}{\texttt{-slowcutpasses}}
+\subsection*{\texttt{-slowcutpasses} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-slowcutpasses} \ptag{blue!60!black}{INT}}
 
 Maximum number of rounds for slower cut generators
 
@@ -529,8 +541,8 @@ Some cut generators are fairly slow - this limits the number of times they are t
 
 \textbf{Range:} -1 to INT\_MAX (default: 10)
 
-\subsection*{\texttt{-zeroHalfRowMaxFractionalCount}}
-\addcontentsline{toc}{subsection}{\texttt{-zeroHalfRowMaxFractionalCount}}
+\subsection*{\texttt{-zeroHalfRowMaxFractionalCount} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-zeroHalfRowMaxFractionalCount} \ptag{blue!60!black}{INT}}
 
 Skip ZeroHalf rows whose fractional count exceeds this threshold
 
@@ -538,8 +550,8 @@ If nonnegative, ZeroHalf skips any candidate row whose number of fractional vari
 
 \textbf{Range:} -1 to INT\_MAX (default: -1)
 
-\subsection*{\texttt{-zeroHalfRowMaxPairCount}}
-\addcontentsline{toc}{subsection}{\texttt{-zeroHalfRowMaxPairCount}}
+\subsection*{\texttt{-zeroHalfRowMaxPairCount} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-zeroHalfRowMaxPairCount} \ptag{blue!60!black}{INT}}
 
 Skip ZeroHalf rows whose pair count exceeds this threshold
 
@@ -547,8 +559,8 @@ If nonnegative, ZeroHalf skips any candidate row whose weakening pair count exce
 
 \textbf{Range:} -1 to INT\_MAX (default: 150000)
 
-\subsection*{\texttt{-zeroHalfSparseThreshold}}
-\addcontentsline{toc}{subsection}{\texttt{-zeroHalfSparseThreshold}}
+\subsection*{\texttt{-zeroHalfSparseThreshold} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-zeroHalfSparseThreshold} \ptag{blue!60!black}{INT}}
 
 Active-node threshold for sparse ZeroHalf separation graph
 
@@ -556,8 +568,8 @@ If positive, ZeroHalf will use the sparse separation-graph implementation when t
 
 \textbf{Range:} -1 to INT\_MAX (default: 8000)
 
-\subsection*{\texttt{-passCuts}}
-\addcontentsline{toc}{subsection}{\texttt{-passCuts}}
+\subsection*{\texttt{-passCuts} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-passCuts} \ptag{blue!60!black}{INT}}
 
 Number of cut passes at root node
 
@@ -571,8 +583,8 @@ The default is 100 passes if less than 500 columns, 100 passes (but stop if the 
 
 These heuristics do \textbf{not} require an existing feasible solution. They attempt to construct a feasible solution from scratch.
 
-\subsubsection*{\texttt{-DivingCoefficient}}
-\addcontentsline{toc}{subsubsection}{\texttt{-DivingCoefficient}}
+\subsubsection*{\texttt{-DivingCoefficient} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-DivingCoefficient} \ptag{teal!70!black}{KW}}
 
 Whether to try Coefficient diving heuristic
 
@@ -580,8 +592,8 @@ Coefficient diving selects the fractional variable with the fewest constraint lo
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{on})
 
-\subsubsection*{\texttt{-DivingFractional}}
-\addcontentsline{toc}{subsubsection}{\texttt{-DivingFractional}}
+\subsubsection*{\texttt{-DivingFractional} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-DivingFractional} \ptag{teal!70!black}{KW}}
 
 Whether to try Fractional diving heuristic
 
@@ -589,8 +601,8 @@ Fractional diving selects the fractional variable closest to an integer value an
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
-\subsubsection*{\texttt{-DivingGuided}}
-\addcontentsline{toc}{subsubsection}{\texttt{-DivingGuided}}
+\subsubsection*{\texttt{-DivingGuided} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-DivingGuided} \ptag{teal!70!black}{KW}}
 
 Whether to try Guided diving heuristic
 
@@ -598,8 +610,8 @@ Guided diving uses the best known feasible solution (incumbent) to decide the ro
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
-\subsubsection*{\texttt{-DivingLineSearch}}
-\addcontentsline{toc}{subsubsection}{\texttt{-DivingLineSearch}}
+\subsubsection*{\texttt{-DivingLineSearch} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-DivingLineSearch} \ptag{teal!70!black}{KW}}
 
 Whether to try Linesearch diving heuristic
 
@@ -607,8 +619,8 @@ Linesearch diving selects the variable where rounding to integrality requires th
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
-\subsubsection*{\texttt{-DivingPseudocost}}
-\addcontentsline{toc}{subsubsection}{\texttt{-DivingPseudocost}}
+\subsubsection*{\texttt{-DivingPseudocost} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-DivingPseudocost} \ptag{teal!70!black}{KW}}
 
 Whether to try Pseudocost diving heuristic
 
@@ -616,8 +628,8 @@ Pseudocost diving uses estimated costs of rounding (pseudocosts) to select the v
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
-\subsubsection*{\texttt{-DivingSome}}
-\addcontentsline{toc}{subsubsection}{\texttt{-DivingSome}}
+\subsubsection*{\texttt{-DivingSome} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-DivingSome} \ptag{teal!70!black}{KW}}
 
 Whether to try Diving heuristics
 
@@ -625,8 +637,8 @@ This switches on a random diving heuristic at various times. One may prefer to i
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
-\subsubsection*{\texttt{-DivingVectorLength}}
-\addcontentsline{toc}{subsubsection}{\texttt{-DivingVectorLength}}
+\subsubsection*{\texttt{-DivingVectorLength} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-DivingVectorLength} \ptag{teal!70!black}{KW}}
 
 Whether to try Vectorlength diving heuristic
 
@@ -634,8 +646,8 @@ Vector length diving selects the variable that minimizes the ratio of objective 
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
-\subsubsection*{\texttt{-feasibilityPump}}
-\addcontentsline{toc}{subsubsection}{\texttt{-feasibilityPump}}
+\subsubsection*{\texttt{-feasibilityPump} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-feasibilityPump} \ptag{teal!70!black}{KW}}
 
 Whether to try Feasibility Pump
 
@@ -643,8 +655,8 @@ This switches on feasibility pump heuristic at root. This is due to Fischetti an
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{on})
 
-\subsubsection*{\texttt{-greedyHeuristic}}
-\addcontentsline{toc}{subsubsection}{\texttt{-greedyHeuristic}}
+\subsubsection*{\texttt{-greedyHeuristic} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-greedyHeuristic} \ptag{teal!70!black}{KW}}
 
 Whether to use a greedy heuristic
 
@@ -652,8 +664,8 @@ Switches on a pair of greedy heuristic which will try and obtain a solution.  It
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{on})
 
-\subsubsection*{\texttt{-naiveHeuristics}}
-\addcontentsline{toc}{subsubsection}{\texttt{-naiveHeuristics}}
+\subsubsection*{\texttt{-naiveHeuristics} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-naiveHeuristics} \ptag{teal!70!black}{KW}}
 
 Whether to try some stupid heuristic
 
@@ -661,8 +673,8 @@ This is naive heuristics which, e.g., fix all integers with costs to zero!. Valu
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
-\subsubsection*{\texttt{-pivotAndFix}}
-\addcontentsline{toc}{subsubsection}{\texttt{-pivotAndFix}}
+\subsubsection*{\texttt{-pivotAndFix} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-pivotAndFix} \ptag{teal!70!black}{KW}}
 
 Whether to try Pivot and Fix heuristic
 
@@ -670,8 +682,8 @@ Value 'on' means to use the heuristic in each node of the tree, i.e. after prepr
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
-\subsubsection*{\texttt{-randomizedRounding}}
-\addcontentsline{toc}{subsubsection}{\texttt{-randomizedRounding}}
+\subsubsection*{\texttt{-randomizedRounding} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-randomizedRounding} \ptag{teal!70!black}{KW}}
 
 Whether to try randomized rounding heuristic
 
@@ -679,8 +691,8 @@ Value 'on' means to use the heuristic in each node of the tree, i.e. after prepr
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
-\subsubsection*{\texttt{-Rens}}
-\addcontentsline{toc}{subsubsection}{\texttt{-Rens}}
+\subsubsection*{\texttt{-Rens} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-Rens} \ptag{teal!70!black}{KW}}
 
 Whether to try Relaxation Enforced Neighborhood Search
 
@@ -688,8 +700,8 @@ Value 'on' means to use the heuristic in each node of the tree, i.e. after prepr
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{200}, \texttt{1000}, \texttt{10000}, \texttt{dj}, \texttt{djbefore}, \texttt{usesolution} (default: \texttt{off})
 
-\subsubsection*{\texttt{-roundingHeuristic}}
-\addcontentsline{toc}{subsubsection}{\texttt{-roundingHeuristic}}
+\subsubsection*{\texttt{-roundingHeuristic} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-roundingHeuristic} \ptag{teal!70!black}{KW}}
 
 Whether to use Rounding heuristic
 
@@ -701,8 +713,8 @@ This switches on a simple (but effective) rounding heuristic at each node of tre
 
 These heuristics require \textbf{at least one} existing feasible solution. They attempt to improve upon the incumbent.
 
-\subsubsection*{\texttt{-Dins}}
-\addcontentsline{toc}{subsubsection}{\texttt{-Dins}}
+\subsubsection*{\texttt{-Dins} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-Dins} \ptag{teal!70!black}{KW}}
 
 Whether to try Distance Induced Neighborhood Search
 
@@ -710,8 +722,8 @@ Value 'on' means to use the heuristic in each node of the tree, i.e. after prepr
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{often} (default: \texttt{off})
 
-\subsubsection*{\texttt{-dwHeuristic}}
-\addcontentsline{toc}{subsubsection}{\texttt{-dwHeuristic}}
+\subsubsection*{\texttt{-dwHeuristic} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-dwHeuristic} \ptag{teal!70!black}{KW}}
 
 Whether to try Dantzig Wolfe heuristic
 
@@ -719,8 +731,8 @@ This heuristic is very very compute intensive. It tries to find a Dantzig Wolfe 
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{special}, \texttt{trial} (default: \texttt{off})
 
-\subsubsection*{\texttt{-localTreeSearch}}
-\addcontentsline{toc}{subsubsection}{\texttt{-localTreeSearch}}
+\subsubsection*{\texttt{-localTreeSearch} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-localTreeSearch} \ptag{teal!70!black}{KW}}
 
 Whether to use local tree search
 
@@ -728,8 +740,8 @@ This switches on a local search algorithm when a solution is found.  This is fro
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{10}, \texttt{100}, \texttt{300} (default: \texttt{off})
 
-\subsubsection*{\texttt{-proximitySearch}}
-\addcontentsline{toc}{subsubsection}{\texttt{-proximitySearch}}
+\subsubsection*{\texttt{-proximitySearch} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-proximitySearch} \ptag{teal!70!black}{KW}}
 
 Whether to do proximity search heuristic
 
@@ -737,8 +749,8 @@ This heuristic looks for a solution close to the incumbent solution (Fischetti a
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{10}, \texttt{100}, \texttt{300} (default: \texttt{off})
 
-\subsubsection*{\texttt{-Rins}}
-\addcontentsline{toc}{subsubsection}{\texttt{-Rins}}
+\subsubsection*{\texttt{-Rins} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-Rins} \ptag{teal!70!black}{KW}}
 
 Whether to try Relaxed Induced Neighborhood Search
 
@@ -746,8 +758,8 @@ Value 'on' means to use the heuristic in each node of the tree, i.e. after prepr
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{often} (default: \texttt{on})
 
-\subsubsection*{\texttt{-VndVariableNeighborhoodSearch}}
-\addcontentsline{toc}{subsubsection}{\texttt{-VndVariableNeighborhoodSearch}}
+\subsubsection*{\texttt{-VndVariableNeighborhoodSearch} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-VndVariableNeighborhoodSearch} \ptag{teal!70!black}{KW}}
 
 Whether to try Variable Neighborhood Search
 
@@ -759,8 +771,8 @@ Value 'on' means to use the heuristic in each node of the tree, i.e. after prepr
 
 These heuristics require \textbf{at least two} existing feasible solutions. They combine or crossover multiple solutions.
 
-\subsubsection*{\texttt{-combineSolutions}}
-\addcontentsline{toc}{subsubsection}{\texttt{-combineSolutions}}
+\subsubsection*{\texttt{-combineSolutions} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combineSolutions} \ptag{teal!70!black}{KW}}
 
 Whether to use combine solution heuristic
 
@@ -768,8 +780,8 @@ This switches on a heuristic which does branch and cut on the problem given by j
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{onequick}, \texttt{bothquick}, \texttt{beforequick} (default: \texttt{off})
 
-\subsubsection*{\texttt{-combine2Solutions}}
-\addcontentsline{toc}{subsubsection}{\texttt{-combine2Solutions}}
+\subsubsection*{\texttt{-combine2Solutions} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combine2Solutions} \ptag{teal!70!black}{KW}}
 
 Whether to use crossover solution heuristic
 
@@ -779,8 +791,8 @@ This heuristic does branch and cut on the problem given by fixing variables whic
 
 \subsection{General Heuristic Settings}
 
-\subsubsection*{\texttt{-heuristicsOnOff}}
-\addcontentsline{toc}{subsubsection}{\texttt{-heuristicsOnOff}}
+\subsubsection*{\texttt{-heuristicsOnOff} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-heuristicsOnOff} \ptag{teal!70!black}{KW}}
 
 Switches most heuristics on or off
 
@@ -788,8 +800,8 @@ This can be used to switch on or off all heuristics.  Then you can set individua
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{on})
 
-\subsubsection*{\texttt{-doHeuristic}}
-\addcontentsline{toc}{subsubsection}{\texttt{-doHeuristic}}
+\subsubsection*{\texttt{-doHeuristic} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-doHeuristic} \ptag{teal!70!black}{KW}}
 
 Do heuristics before any preprocessing
 
@@ -797,8 +809,8 @@ Normally heuristics are done in branch and bound.  It may be useful to do them o
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
-\subsubsection*{\texttt{-forceSolution}}
-\addcontentsline{toc}{subsubsection}{\texttt{-forceSolution}}
+\subsubsection*{\texttt{-forceSolution} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-forceSolution} \ptag{teal!70!black}{KW}}
 
 Whether to use given solution as crash for BAB
 
@@ -806,8 +818,8 @@ If on then tries to branch to solution given by AMPL or priorities file.
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
-\subsubsection*{\texttt{-depthMiniBab}}
-\addcontentsline{toc}{subsubsection}{\texttt{-depthMiniBab}}
+\subsubsection*{\texttt{-depthMiniBab} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-depthMiniBab} \ptag{blue!60!black}{INT}}
 
 Depth at which to try mini branch-and-bound
 
@@ -815,8 +827,8 @@ Rather a complicated parameter but can be useful. -1 means off for large problem
 
 \textbf{Range:} $-$INT\_MAX to INT\_MAX (default: 1)
 
-\subsubsection*{\texttt{-diveOpt}}
-\addcontentsline{toc}{subsubsection}{\texttt{-diveOpt}}
+\subsubsection*{\texttt{-diveOpt} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-diveOpt} \ptag{blue!60!black}{INT}}
 
 Diving options
 
@@ -832,8 +844,8 @@ If >2 \&\& <=8 then modify diving options -
 
 \textbf{Range:} -1 to 20 (default: 2)
 
-\subsubsection*{\texttt{-diveSolves}}
-\addcontentsline{toc}{subsubsection}{\texttt{-diveSolves}}
+\subsubsection*{\texttt{-diveSolves} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-diveSolves} \ptag{blue!60!black}{INT}}
 
 Diving solve option
 
@@ -841,8 +853,8 @@ If >0 then do up to this many solves. However, the last digit is ignored and use
 
 \textbf{Range:} -1 to 200000 (default: 100)
 
-\subsubsection*{\texttt{-passFeasibilityPump}}
-\addcontentsline{toc}{subsubsection}{\texttt{-passFeasibilityPump}}
+\subsubsection*{\texttt{-passFeasibilityPump} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-passFeasibilityPump} \ptag{blue!60!black}{INT}}
 
 How many passes in feasibility pump
 
@@ -850,8 +862,8 @@ This fine tunes the Feasibility Pump heuristic by doing more or fewer passes.
 
 \textbf{Range:} 0 to 10000 (default: 30)
 
-\subsubsection*{\texttt{-pumpTune}}
-\addcontentsline{toc}{subsubsection}{\texttt{-pumpTune}}
+\subsubsection*{\texttt{-pumpTune} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-pumpTune} \ptag{blue!60!black}{INT}}
 
 Dubious ideas for feasibility pump
 
@@ -865,8 +877,8 @@ This fine tunes Feasibility Pump
 
 \textbf{Range:} 0 to 1000000000 (default: 1005043)
 
-\subsubsection*{\texttt{-hOptions}}
-\addcontentsline{toc}{subsubsection}{\texttt{-hOptions}}
+\subsubsection*{\texttt{-hOptions} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-hOptions} \ptag{blue!60!black}{INT}}
 
 Heuristic options
 
@@ -874,22 +886,22 @@ Value 1 stops heuristics immediately if the allowable gap has been reached. Othe
 
 \textbf{Range:} $-$INT\_MAX to INT\_MAX (default: 0)
 
-\subsubsection*{\texttt{-fpumpPassFreq}}
-\addcontentsline{toc}{subsubsection}{\texttt{-fpumpPassFreq}}
+\subsubsection*{\texttt{-fpumpPassFreq} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-fpumpPassFreq} \ptag{blue!60!black}{INT}}
 
 Print feasibility pump progress every N passes (0 = disabled).
 
 \textbf{Range:} 0 to 1000000 (default: 0)
 
-\subsubsection*{\texttt{-artificialCost}}
-\addcontentsline{toc}{subsubsection}{\texttt{-artificialCost}}
+\subsubsection*{\texttt{-artificialCost} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-artificialCost} \ptag{violet!65!black}{DBL}}
 
 Costs >= this treated as artificials in feasibility pump
 
 \textbf{Range:} 0 to inf (default: 0)
 
-\subsubsection*{\texttt{-rinsCloseMaxDist}}
-\addcontentsline{toc}{subsubsection}{\texttt{-rinsCloseMaxDist}}
+\subsubsection*{\texttt{-rinsCloseMaxDist} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-rinsCloseMaxDist} \ptag{violet!65!black}{DBL}}
 
 Maximum fractional distance for RINS close-fixing fallback
 
@@ -899,8 +911,8 @@ When the standard RINS fix-count threshold (>20\%\% of integers must agree betwe
 
 \section{Branching}
 
-\subsection*{\texttt{-branchPriorities}}
-\addcontentsline{toc}{subsection}{\texttt{-branchPriorities}}
+\subsection*{\texttt{-branchPriorities} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-branchPriorities} \ptag{teal!70!black}{KW}}
 
 What rule (if any) to use in prioritizing variables for branching
 
@@ -914,8 +926,8 @@ What rule (if any) to use in prioritizing variables for branching
 
 \textbf{Values:} \texttt{off}, \texttt{pri!orities}, \texttt{column!Order}, \texttt{01f!irst?}, \texttt{01l!ast?}, \texttt{length!?}, \texttt{singletons}, \texttt{nonzero}, \texttt{general!Force?} (default: \texttt{off})
 
-\subsection*{\texttt{-nodeStrategy}}
-\addcontentsline{toc}{subsection}{\texttt{-nodeStrategy}}
+\subsection*{\texttt{-nodeStrategy} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-nodeStrategy} \ptag{teal!70!black}{KW}}
 
 What strategy to use to select the next node from the branch and cut tree
 
@@ -923,8 +935,8 @@ Normally before a feasible solution is found, CBC will choose a node with fewest
 
 \textbf{Values:} \texttt{hybrid}, \texttt{fewest}, \texttt{depth}, \texttt{upfewest}, \texttt{downfewest}, \texttt{updepth}, \texttt{downdepth} (default: \texttt{fewest})
 
-\subsection*{\texttt{-OrbitalBranching}}
-\addcontentsline{toc}{subsection}{\texttt{-OrbitalBranching}}
+\subsection*{\texttt{-OrbitalBranching} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-OrbitalBranching} \ptag{teal!70!black}{KW}}
 
 Whether to try orbital branching
 
@@ -932,8 +944,8 @@ This switches on Orbital branching. Value 'on' just adds orbital, 'strong' tries
 
 \textbf{Values:} \texttt{off}, \texttt{slowish}, \texttt{strong}, \texttt{force}, \texttt{simple}, \texttt{on}, \texttt{lightweight}, \texttt{moreprinting}, \texttt{cuts}, \texttt{cutslight} (default: \texttt{off})
 
-\subsection*{\texttt{-sosPrioritize}}
-\addcontentsline{toc}{subsection}{\texttt{-sosPrioritize}}
+\subsection*{\texttt{-sosPrioritize} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-sosPrioritize} \ptag{teal!70!black}{KW}}
 
 How to deal with SOS priorities
 
@@ -941,8 +953,8 @@ This sets priorities for SOS.  Values 'high' and 'low' just set a priority relat
 
 \textbf{Values:} \texttt{off}, \texttt{high}, \texttt{low}, \texttt{orderhigh}, \texttt{orderlow} (default: \texttt{off})
 
-\subsection*{\texttt{-trustPseudocosts}}
-\addcontentsline{toc}{subsection}{\texttt{-trustPseudocosts}}
+\subsection*{\texttt{-trustPseudocosts} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-trustPseudocosts} \ptag{blue!60!black}{INT}}
 
 Number of branches before we trust pseudocosts
 
@@ -950,8 +962,8 @@ Using strong branching computes pseudo-costs.  After this many times for a varia
 
 \textbf{Range:} -3 to INT\_MAX (default: 10)
 
-\subsection*{\texttt{-strongBranching}}
-\addcontentsline{toc}{subsection}{\texttt{-strongBranching}}
+\subsection*{\texttt{-strongBranching} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-strongBranching} \ptag{blue!60!black}{INT}}
 
 Number of variables to look at in strong branching
 
@@ -961,8 +973,8 @@ In order to decide which variable to branch on, the code will choose up to this 
 
 \section{Tolerances}
 
-\subsection*{\texttt{-increment}}
-\addcontentsline{toc}{subsection}{\texttt{-increment}}
+\subsection*{\texttt{-increment} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-increment} \ptag{violet!65!black}{DBL}}
 
 A new solution must be at least this much better than the incumbent
 
@@ -970,8 +982,8 @@ Whenever a solution is found the bound on future solutions is set to the objecti
 
 \textbf{Range:} $-\infty$ to $\infty$ (default: 0.0001)
 
-\subsection*{\texttt{-infeasibilityWeight}}
-\addcontentsline{toc}{subsection}{\texttt{-infeasibilityWeight}}
+\subsection*{\texttt{-infeasibilityWeight} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-infeasibilityWeight} \ptag{violet!65!black}{DBL}}
 
 Each integer infeasibility is expected to cost this much
 
@@ -979,8 +991,8 @@ A primitive way of deciding which node to explore next.  Satisfying each integer
 
 \textbf{Range:} 0 to $\infty$ (default: 0)
 
-\subsection*{\texttt{-integerTolerance}}
-\addcontentsline{toc}{subsection}{\texttt{-integerTolerance}}
+\subsection*{\texttt{-integerTolerance} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-integerTolerance} \ptag{violet!65!black}{DBL}}
 
 For an optimal solution, no integer variable may be farther than this from an integer value
 
@@ -988,8 +1000,8 @@ When checking a solution for feasibility, if the difference between the value of
 
 \textbf{Range:} 1e-20 to 0.5 (default: 1e-06)
 
-\subsection*{\texttt{-dualTolerance}}
-\addcontentsline{toc}{subsection}{\texttt{-dualTolerance}}
+\subsection*{\texttt{-dualTolerance} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-dualTolerance} \ptag{violet!65!black}{DBL}}
 
 For an optimal solution no dual infeasibility may exceed this value
 
@@ -997,8 +1009,8 @@ Normally the default tolerance is fine, but one may want to increase it a bit if
 
 \textbf{Range:} 1e-20 to inf (default: 1e-06)
 
-\subsection*{\texttt{-primalTolerance}}
-\addcontentsline{toc}{subsection}{\texttt{-primalTolerance}}
+\subsection*{\texttt{-primalTolerance} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-primalTolerance} \ptag{violet!65!black}{DBL}}
 
 For a feasible solution no primal infeasibility, i.e., constraint violation, may exceed this value
 
@@ -1006,8 +1018,8 @@ Normally the default tolerance is fine, but one may want to increase it a bit if
 
 \textbf{Range:} 1e-20 to inf (default: 1e-06)
 
-\subsection*{\texttt{-zeroTolerance}}
-\addcontentsline{toc}{subsection}{\texttt{-zeroTolerance}}
+\subsection*{\texttt{-zeroTolerance} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-zeroTolerance} \ptag{violet!65!black}{DBL}}
 
 Kill all coefficients whose absolute value is less than this value
 
@@ -1017,8 +1029,8 @@ This applies to reading mps files (and also lp files if KILL\_ZERO\_READLP defin
 
 \section{Conflict Graph}
 
-\subsection*{\texttt{-cgraph}}
-\addcontentsline{toc}{subsection}{\texttt{-cgraph}}
+\subsection*{\texttt{-cgraph} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-cgraph} \ptag{teal!70!black}{KW}}
 
 Whether to use the conflict graph-based preprocessing and cut separation routines.
 
@@ -1029,22 +1041,22 @@ This switches the conflict graph-based preprocessing and cut separation routines
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{clq} (default: \texttt{on})
 
-\subsection*{\texttt{-bkpivoting}}
-\addcontentsline{toc}{subsection}{\texttt{-bkpivoting}}
+\subsection*{\texttt{-bkpivoting} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-bkpivoting} \ptag{blue!60!black}{INT}}
 
 Pivoting strategy used in Bron-Kerbosch algorithm
 
 \textbf{Range:} 0 to 6 (default: 3)
 
-\subsection*{\texttt{-bkmaxcalls}}
-\addcontentsline{toc}{subsection}{\texttt{-bkmaxcalls}}
+\subsection*{\texttt{-bkmaxcalls} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-bkmaxcalls} \ptag{blue!60!black}{INT}}
 
 Maximum number of recursive calls made by Bron-Kerbosch algorithm
 
 \textbf{Range:} 1 to INT\_MAX (default: 1000)
 
-\subsection*{\texttt{-bkclqextmethod}}
-\addcontentsline{toc}{subsection}{\texttt{-bkclqextmethod}}
+\subsection*{\texttt{-bkclqextmethod} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-bkclqextmethod} \ptag{blue!60!black}{INT}}
 
 Strategy used to extend violated cliques found by BK Clique Cut Separation routine
 
@@ -1052,8 +1064,8 @@ Sets the method used in the extension module of BK Clique Cut Separation routine
 
 \textbf{Range:} 0 to 5 (default: 4)
 
-\subsection*{\texttt{-oddwextmethod}}
-\addcontentsline{toc}{subsection}{\texttt{-oddwextmethod}}
+\subsection*{\texttt{-oddwextmethod} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-oddwextmethod} \ptag{blue!60!black}{INT}}
 
 Strategy used to search for wheel centers for the cuts found by Odd Wheel Cut Separation routine
 
@@ -1063,8 +1075,8 @@ Sets the method used in the extension module of Odd Wheel Cut Separation routine
 
 \section{Strategy}
 
-\subsection*{\texttt{-strategy}}
-\addcontentsline{toc}{subsection}{\texttt{-strategy}}
+\subsection*{\texttt{-strategy} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-strategy} \ptag{teal!70!black}{KW}}
 
 Switches on groups of features
 
@@ -1078,8 +1090,8 @@ Selects a preset configuration that adjusts cuts, heuristics, and solver tuning 
 
 \textbf{Values:} \texttt{easy}, \texttt{default}, \texttt{aggressive} (default: \texttt{default})
 
-\subsection*{\texttt{-experiment}}
-\addcontentsline{toc}{subsection}{\texttt{-experiment}}
+\subsection*{\texttt{-experiment} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-experiment} \ptag{blue!60!black}{INT}}
 
 Whether to use testing features
 
@@ -1087,15 +1099,15 @@ Defines how adventurous you want to be in using new ideas. 0 then no new ideas, 
 
 \textbf{Range:} -1 to 200000 (default: 0)
 
-\subsection*{\texttt{-hotStartMaxIts}}
-\addcontentsline{toc}{subsection}{\texttt{-hotStartMaxIts}}
+\subsection*{\texttt{-hotStartMaxIts} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-hotStartMaxIts} \ptag{blue!60!black}{INT}}
 
 Maximum iterations on hot start
 
 \textbf{Range:} 0 to INT\_MAX (default: 100)
 
-\subsection*{\texttt{-multipleRootPasses}}
-\addcontentsline{toc}{subsection}{\texttt{-multipleRootPasses}}
+\subsection*{\texttt{-multipleRootPasses} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-multipleRootPasses} \ptag{blue!60!black}{INT}}
 
 Do multiple root passes to collect cuts and solutions
 
@@ -1103,8 +1115,8 @@ Solve (in parallel, if enabled) the root phase this number of times, each with i
 
 \textbf{Range:} 0 to INT\_MAX (default: 0)
 
-\subsection*{\texttt{-options}}
-\addcontentsline{toc}{subsection}{\texttt{-options}}
+\subsection*{\texttt{-options} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-options} \ptag{blue!60!black}{INT}}
 
 Fine tuning of specialOptions
 
@@ -1112,8 +1124,8 @@ If set Or's with specialOptions just before entering branchAndBound.
 
 \textbf{Range:} 0 to INT\_MAX (default: 0)
 
-\subsection*{\texttt{-pumpCutoff}}
-\addcontentsline{toc}{subsection}{\texttt{-pumpCutoff}}
+\subsection*{\texttt{-pumpCutoff} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-pumpCutoff} \ptag{violet!65!black}{DBL}}
 
 Fake cutoff for use in feasibility pump
 
@@ -1121,8 +1133,8 @@ A value of 0.0 means off. Otherwise, add a constraint forcing objective below th
 
 \textbf{Range:} -inf to inf (default: 0)
 
-\subsection*{\texttt{-pumpIncrement}}
-\addcontentsline{toc}{subsection}{\texttt{-pumpIncrement}}
+\subsection*{\texttt{-pumpIncrement} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-pumpIncrement} \ptag{violet!65!black}{DBL}}
 
 Fake increment for use in feasibility pump
 
@@ -1130,8 +1142,8 @@ A value of 0.0 means off. Otherwise, add a constraint forcing objective below th
 
 \textbf{Range:} -inf to inf (default: 0)
 
-\subsection*{\texttt{-fractionforBAB}}
-\addcontentsline{toc}{subsection}{\texttt{-fractionforBAB}}
+\subsection*{\texttt{-fractionforBAB} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-fractionforBAB} \ptag{violet!65!black}{DBL}}
 
 Fraction in feasibility pump
 
@@ -1139,8 +1151,8 @@ After a pass in the feasibility pump, variables which have not moved about are f
 
 \textbf{Range:} 1e-05 to 1.1 (default: 0.5)
 
-\subsection*{\texttt{-fakeBound}}
-\addcontentsline{toc}{subsection}{\texttt{-fakeBound}}
+\subsection*{\texttt{-fakeBound} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-fakeBound} \ptag{violet!65!black}{DBL}}
 
 All bounds <= this value - DEBUG
 
@@ -1148,29 +1160,29 @@ All bounds <= this value - DEBUG
 
 \section{Solving}
 
-\subsection*{\texttt{-solve}}
-\addcontentsline{toc}{subsection}{\texttt{-solve}}
+\subsection*{\texttt{-solve} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-solve} \ptag{red!65!black}{ACT}}
 
 invoke branch and cut to solve the current problem
 
 This does branch and cut. There are many parameters which can affect the performance.  First just try with default cbcSettings and look carefully at the log file.  Did cuts help?  Did they take too long?  Look at output to see which cuts were effective and then do some tuning.  You will see that the options for cuts are off, on, root and ifmove.  Off is obvious, on means that this cut generator will be tried in the branch and cut tree (you can fine tune using 'depth').  Root means just at the root node while 'ifmove' means that cuts will be used in the tree if they look as if they are doing some good and moving the objective value.  If pre-processing reduced the size of the problem or strengthened many coefficients then it is probably wise to leave it on.  Switch off heuristics which did not provide solutions.  The other major area to look at is the search.  Hopefully good solutions were obtained fairly early in the search so the important point is to select the best variable to branch on.  See whether strong branching did a good job - or did it just take a lot of iterations.  Adjust the strongBranching and trustPseudoCosts parameters.
 
-\subsection*{\texttt{-initialSolve}}
-\addcontentsline{toc}{subsection}{\texttt{-initialSolve}}
+\subsection*{\texttt{-initialSolve} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-initialSolve} \ptag{red!65!black}{ACT}}
 
 Solve to continuous optimum
 
 This just solves the problem to the continuous optimum, without adding any cuts.
 
-\subsection*{\texttt{-strengthen}}
-\addcontentsline{toc}{subsection}{\texttt{-strengthen}}
+\subsection*{\texttt{-strengthen} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-strengthen} \ptag{red!65!black}{ACT}}
 
 Create strengthened problem
 
 This creates a new problem by applying the root node cuts. All tight constraints will be in resulting problem.
 
-\subsection*{\texttt{-constraintfromCutoff}}
-\addcontentsline{toc}{subsection}{\texttt{-constraintfromCutoff}}
+\subsection*{\texttt{-constraintfromCutoff} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-constraintfromCutoff} \ptag{teal!70!black}{KW}}
 
 Whether to use cutoff as constraint
 
@@ -1178,8 +1190,8 @@ For some problems, cut generators and general branching work better if the probl
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{variable}, \texttt{forcevariable}, \texttt{conflict} (default: \texttt{off})
 
-\subsection*{\texttt{-lpMethod}}
-\addcontentsline{toc}{subsection}{\texttt{-lpMethod}}
+\subsection*{\texttt{-lpMethod} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-lpMethod} \ptag{teal!70!black}{KW}}
 
 Which LP algorithm to use for the initial LP relaxation solve
 
@@ -1191,8 +1203,8 @@ Controls which LP algorithm is used when -solve or -initialSolve triggers the ro
 
 \textbf{Values:} \texttt{dual}, \texttt{primal}, \texttt{barrier}, \texttt{auto} (default: \texttt{dual})
 
-\subsection*{\texttt{-maxSavedSolutions}}
-\addcontentsline{toc}{subsection}{\texttt{-maxSavedSolutions}}
+\subsection*{\texttt{-maxSavedSolutions} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-maxSavedSolutions} \ptag{blue!60!black}{INT}}
 
 Maximum number of solutions to save
 
@@ -1200,8 +1212,8 @@ Number of solutions to save.
 
 \textbf{Range:} 0 to INT\_MAX (default: 10)
 
-\subsection*{\texttt{-randomCbcSeed}}
-\addcontentsline{toc}{subsection}{\texttt{-randomCbcSeed}}
+\subsection*{\texttt{-randomCbcSeed} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-randomCbcSeed} \ptag{blue!60!black}{INT}}
 
 Random seed for Cbc
 
@@ -1209,8 +1221,8 @@ Allows initialization of the random seed for pseudo-random numbers used in heuri
 
 \textbf{Range:} -1 to INT\_MAX (default: 42)
 
-\subsection*{\texttt{-direction}}
-\addcontentsline{toc}{subsection}{\texttt{-direction}}
+\subsection*{\texttt{-direction} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-direction} \ptag{teal!70!black}{KW}}
 
 Minimize or maximize
 
@@ -1219,99 +1231,99 @@ You can also use the parameters\_ 'maximize' or 'minimize'.
 
 \textbf{Values:} \texttt{max!imize}, \texttt{min!imize}, \texttt{zero} (default: \texttt{min(imize)})
 
-\subsection*{\texttt{-maximize}}
-\addcontentsline{toc}{subsection}{\texttt{-maximize}}
+\subsection*{\texttt{-maximize} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-maximize} \ptag{red!65!black}{ACT}}
 
 Set optimization direction to maximize
 
 The default is minimize - use 'maximize' for maximization.
  A synonym for 'direction maximize'.
 
-\subsection*{\texttt{-minimize}}
-\addcontentsline{toc}{subsection}{\texttt{-minimize}}
+\subsection*{\texttt{-minimize} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-minimize} \ptag{red!65!black}{ACT}}
 
 Set optimization direction to minimize
 
 The default is minimize - use 'maximize' for maximization.
 This should only be necessary if you have previously set maximization. A synonym for 'direction minimize'.
 
-\subsection*{\texttt{-allSlack}}
-\addcontentsline{toc}{subsection}{\texttt{-allSlack}}
+\subsection*{\texttt{-allSlack} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-allSlack} \ptag{red!65!black}{ACT}}
 
 Set basis back to all slack and reset solution
 
 Mainly useful for tuning purposes.  Normally the first dual or primal will be using an all slack basis anyway.
 
-\subsection*{\texttt{-barrier}}
-\addcontentsline{toc}{subsection}{\texttt{-barrier}}
+\subsection*{\texttt{-barrier} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-barrier} \ptag{red!65!black}{ACT}}
 
 Solve using primal dual predictor corrector algorithm
 
 This command solves the current model using the  primal dual predictor corrector algorithm. You may want to link in an alternative ordering and factorization. It will also solve models with quadratic objectives.
 
-\subsection*{\texttt{-dualSimplex}}
-\addcontentsline{toc}{subsection}{\texttt{-dualSimplex}}
+\subsection*{\texttt{-dualSimplex} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-dualSimplex} \ptag{red!65!black}{ACT}}
 
 Do dual simplex algorithm
 
 This command solves the continuous relaxation of the current model using the dual steepest edge algorithm. The time and iterations may be affected by settings such as presolve, scaling, crash and also by dual pivot method, fake bound on variables and dual and primal tolerances.
 
-\subsection*{\texttt{-eitherSimplex}}
-\addcontentsline{toc}{subsection}{\texttt{-eitherSimplex}}
+\subsection*{\texttt{-eitherSimplex} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-eitherSimplex} \ptag{red!65!black}{ACT}}
 
 Do dual or primal simplex algorithm
 
 This command solves the continuous relaxation of the current model using the dual or primal algorithm, based on a dubious analysis of model.
 
-\subsection*{\texttt{-guess}}
-\addcontentsline{toc}{subsection}{\texttt{-guess}}
+\subsection*{\texttt{-guess} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-guess} \ptag{red!65!black}{ACT}}
 
 Guesses at good parameters
 
 This looks at model statistics and does an initial solve setting some parameters which may help you to think of possibilities.
 
-\subsection*{\texttt{-network}}
-\addcontentsline{toc}{subsection}{\texttt{-network}}
+\subsection*{\texttt{-network} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-network} \ptag{red!65!black}{ACT}}
 
 Tries to make network matrix
 
 Clp will go faster if the matrix can be converted to a network.  The matrix operations may be a bit faster with more efficient storage, but the main advantage comes from using a network factorization. It will probably not be as fast as a specialized network code.
 
-\subsection*{\texttt{-parametrics}}
-\addcontentsline{toc}{subsection}{\texttt{-parametrics}}
+\subsection*{\texttt{-parametrics} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-parametrics} \ptag{red!65!black}{ACT}}
 
 Import data from file and do parametrics
 
 This will read a file with parametric data from the given file name and then do parametrics. It will use the default directory given by 'directory'. A name of '\$' will use the previous value for the name. This is initialized to '', i.e. it must be set.  This can not read from compressed files. File is in modified csv format - a line ROWS will be followed by rows data while a line COLUMNS will be followed by column data.  The last line should be ENDATA. The ROWS line must exist and is in the format ROWS, inital theta, final theta, interval theta, n where n is 0 to get CLPI0062 message at interval or at each change of theta and 1 to get CLPI0063 message at each iteration.  If interval theta is 0.0 or >= final theta then no interval reporting.  n may be missed out when it is taken as 0.  If there is Row data then there is a headings line with allowed headings - name, number, lower(rhs change), upper(rhs change), rhs(change).  Either the lower and upper fields should be given or the rhs field. The optional COLUMNS line is followed by a headings line with allowed headings - name, number, objective(change), lower(change), upper(change). Exactly one of name and number must be given for either section and missing ones have value 0.0.
 
-\subsection*{\texttt{-plusMinus}}
-\addcontentsline{toc}{subsection}{\texttt{-plusMinus}}
+\subsection*{\texttt{-plusMinus} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-plusMinus} \ptag{red!65!black}{ACT}}
 
 Tries to make +- 1 matrix
 
 Clp will go slightly faster if the matrix can be converted so that the elements are not stored and are known to be unit.  The main advantage is memory use.  Clp may automatically see if it can convert the problem so you should not need to use this.
 
-\subsection*{\texttt{-primalSimplex}}
-\addcontentsline{toc}{subsection}{\texttt{-primalSimplex}}
+\subsection*{\texttt{-primalSimplex} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-primalSimplex} \ptag{red!65!black}{ACT}}
 
 Do primal simplex algorithm
 
 This command solves the continuous relaxation of the current model using the primal algorithm. The default is to use exact devex. The time and iterations may be affected by settings such as presolve, scaling, crash and also by column selection  method, infeasibility weight and dual and primal tolerances.
 
-\subsection*{\texttt{-reallyScale}}
-\addcontentsline{toc}{subsection}{\texttt{-reallyScale}}
+\subsection*{\texttt{-reallyScale} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-reallyScale} \ptag{red!65!black}{ACT}}
 
 Scales model in place
 
-\subsection*{\texttt{-reverse}}
-\addcontentsline{toc}{subsection}{\texttt{-reverse}}
+\subsection*{\texttt{-reverse} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-reverse} \ptag{red!65!black}{ACT}}
 
 Reverses sign of objective
 
 Useful for testing if maximization works correctly
 
-\subsection*{\texttt{-direction}}
-\addcontentsline{toc}{subsection}{\texttt{-direction}}
+\subsection*{\texttt{-direction} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-direction} \ptag{teal!70!black}{KW}}
 
 Minimize or Maximize
 
@@ -1320,8 +1332,8 @@ The default is minimize - use 'direction maximize' for maximization.
 
 \textbf{Values:} \texttt{min!imize}, \texttt{max!imize}, \texttt{zero} (default: \texttt{min(imize)})
 
-\subsection*{\texttt{-vector}}
-\addcontentsline{toc}{subsection}{\texttt{-vector}}
+\subsection*{\texttt{-vector} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-vector} \ptag{teal!70!black}{KW}}
 
 Try and use vector instructions in simplex
 
@@ -1329,8 +1341,8 @@ At present only for Intel architectures - but could be extended. Uses avx2 or av
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{ones} (default: \texttt{off})
 
-\subsection*{\texttt{-decompose}}
-\addcontentsline{toc}{subsection}{\texttt{-decompose}}
+\subsection*{\texttt{-decompose} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-decompose} \ptag{blue!60!black}{INT}}
 
 Whether to try decomposition
 
@@ -1338,8 +1350,8 @@ Whether to try decomposition
 
 \textbf{Range:} $-$INT\_MAX to INT\_MAX (default: 0)
 
-\subsection*{\texttt{-dualize}}
-\addcontentsline{toc}{subsection}{\texttt{-dualize}}
+\subsection*{\texttt{-dualize} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-dualize} \ptag{blue!60!black}{INT}}
 
 Solves dual reformulation
 
@@ -1347,8 +1359,8 @@ Don't even think about it.
 
 \textbf{Range:} 0 to 4 (default: 3)
 
-\subsection*{\texttt{-randomSeed}}
-\addcontentsline{toc}{subsection}{\texttt{-randomSeed}}
+\subsection*{\texttt{-randomSeed} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-randomSeed} \ptag{blue!60!black}{INT}}
 
 Random seed for Clp
 
@@ -1358,15 +1370,15 @@ Initialization of the random seed for pseudo-random numbers used to break ties i
 
 \section{Simplex}
 
-\subsection*{\texttt{-KKT}}
-\addcontentsline{toc}{subsection}{\texttt{-KKT}}
+\subsection*{\texttt{-KKT} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-KKT} \ptag{teal!70!black}{KW}}
 
 Whether to use KKT factorization in barrier
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
-\subsection*{\texttt{-perturbation}}
-\addcontentsline{toc}{subsection}{\texttt{-perturbation}}
+\subsection*{\texttt{-perturbation} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-perturbation} \ptag{teal!70!black}{KW}}
 
 Whether to perturb the problem
 
@@ -1374,8 +1386,8 @@ Perturbation helps to stop cycling, but CLP uses other measures for this. Howeve
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{on})
 
-\subsection*{\texttt{-crash}}
-\addcontentsline{toc}{subsection}{\texttt{-crash}}
+\subsection*{\texttt{-crash} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-crash} \ptag{teal!70!black}{KW}}
 
 Whether to create basis for problem
 
@@ -1383,8 +1395,8 @@ If crash is set to 'on' and there is an all slack basis then Clp will flip or pu
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{so!low\_halim}, \texttt{lots}, \texttt{free}, \texttt{zero}, \texttt{single!ton}, \texttt{idiot1}, \texttt{idiot2}, \texttt{idiot3}, \texttt{idiot4}, \texttt{idiot5}, \texttt{idiot6}, \texttt{idiot7} (default: \texttt{off})
 
-\subsection*{\texttt{-dualPivot}}
-\addcontentsline{toc}{subsection}{\texttt{-dualPivot}}
+\subsection*{\texttt{-dualPivot} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-dualPivot} \ptag{teal!70!black}{KW}}
 
 Dual pivot choice algorithm
 
@@ -1392,8 +1404,8 @@ The Dantzig method is simple but its use is deprecated.  Steepest is the method 
 
 \textbf{Values:} \texttt{auto!matic}, \texttt{dant!zig}, \texttt{partial}, \texttt{steep!est}, \texttt{PEsteep!est}, \texttt{PEdantzig} (default: \texttt{auto(matic)})
 
-\subsection*{\texttt{-factorization}}
-\addcontentsline{toc}{subsection}{\texttt{-factorization}}
+\subsection*{\texttt{-factorization} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-factorization} \ptag{teal!70!black}{KW}}
 
 Which factorization to use
 
@@ -1401,8 +1413,8 @@ The default is to use the normal CoinFactorization, but other choices are a dens
 
 \textbf{Values:} \texttt{normal}, \texttt{dense}, \texttt{simple}, \texttt{osl} (default: \texttt{normal})
 
-\subsection*{\texttt{-primalPivot}}
-\addcontentsline{toc}{subsection}{\texttt{-primalPivot}}
+\subsection*{\texttt{-primalPivot} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-primalPivot} \ptag{teal!70!black}{KW}}
 
 Primal pivot choice algorithm
 
@@ -1410,8 +1422,8 @@ The Dantzig method is simple but its use is deprecated.  Exact devex is the meth
 
 \textbf{Values:} \texttt{auto!matic}, \texttt{exa!ct}, \texttt{dant!zig}, \texttt{part!ial}, \texttt{steep!est}, \texttt{change}, \texttt{sprint}, \texttt{PEsteep!est}, \texttt{PEdantzig} (default: \texttt{auto(matic)})
 
-\subsection*{\texttt{-denseThreshold}}
-\addcontentsline{toc}{subsection}{\texttt{-denseThreshold}}
+\subsection*{\texttt{-denseThreshold} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-denseThreshold} \ptag{blue!60!black}{INT}}
 
 Threshold for using dense factorization
 
@@ -1419,8 +1431,8 @@ If processed problem <= this use dense factorization
 
 \textbf{Range:} -1 to 10000 (default: -1)
 
-\subsection*{\texttt{-idiotCrash}}
-\addcontentsline{toc}{subsection}{\texttt{-idiotCrash}}
+\subsection*{\texttt{-idiotCrash} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-idiotCrash} \ptag{blue!60!black}{INT}}
 
 Whether to try idiot crash
 
@@ -1428,8 +1440,8 @@ This is a type of 'crash' which works well on some homogeneous problems. It work
 
 \textbf{Range:} -1 to INT\_MAX (default: -1)
 
-\subsection*{\texttt{-maxFactor}}
-\addcontentsline{toc}{subsection}{\texttt{-maxFactor}}
+\subsection*{\texttt{-maxFactor} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-maxFactor} \ptag{blue!60!black}{INT}}
 
 Maximum number of iterations between refactorizations
 
@@ -1437,8 +1449,8 @@ If this is left at its default value of 200 then CLP will guess a  value to use.
 
 \textbf{Range:} 1 to INT\_MAX (default: 200)
 
-\subsection*{\texttt{-maxIterations}}
-\addcontentsline{toc}{subsection}{\texttt{-maxIterations}}
+\subsection*{\texttt{-maxIterations} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-maxIterations} \ptag{blue!60!black}{INT}}
 
 Maximum number of iterations before stopping
 
@@ -1448,8 +1460,8 @@ This can be used for testing purposes.  The corresponding library call
 
 \textbf{Range:} 0 to INT\_MAX (default: 2147483647)
 
-\subsection*{\texttt{-moreSpecialOptions}}
-\addcontentsline{toc}{subsection}{\texttt{-moreSpecialOptions}}
+\subsection*{\texttt{-moreSpecialOptions} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-moreSpecialOptions} \ptag{blue!60!black}{INT}}
 
 Yet more dubious options for Simplex
 
@@ -1457,15 +1469,15 @@ See ClpSimplex.hpp.
 
 \textbf{Range:} 0 to INT\_MAX (default: 0)
 
-\subsection*{\texttt{-pertValue}}
-\addcontentsline{toc}{subsection}{\texttt{-pertValue}}
+\subsection*{\texttt{-pertValue} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-pertValue} \ptag{blue!60!black}{INT}}
 
 Method of perturbation
 
 \textbf{Range:} -5000 to 102 (default: 50)
 
-\subsection*{\texttt{-sprintCrash}}
-\addcontentsline{toc}{subsection}{\texttt{-sprintCrash}}
+\subsection*{\texttt{-sprintCrash} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-sprintCrash} \ptag{blue!60!black}{INT}}
 
 Whether to try sprint crash
 
@@ -1473,8 +1485,8 @@ For long and thin problems this method may solve a series of small problems crea
 
 \textbf{Range:} -1 to INT\_MAX (default: -1)
 
-\subsection*{\texttt{-slpValue}}
-\addcontentsline{toc}{subsection}{\texttt{-slpValue}}
+\subsection*{\texttt{-slpValue} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-slpValue} \ptag{blue!60!black}{INT}}
 
 Number of slp passes before primal
 
@@ -1482,8 +1494,8 @@ If you are solving a quadratic problem using primal then it may be helpful to do
 
 \textbf{Range:} -50000 to 50000 (default: 0)
 
-\subsection*{\texttt{-smallFactorization}}
-\addcontentsline{toc}{subsection}{\texttt{-smallFactorization}}
+\subsection*{\texttt{-smallFactorization} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-smallFactorization} \ptag{blue!60!black}{INT}}
 
 Threshold for using small factorization
 
@@ -1491,15 +1503,15 @@ If processed problem <= this use small factorization
 
 \textbf{Range:} -1 to 10000 (default: -1)
 
-\subsection*{\texttt{-specialOptions}}
-\addcontentsline{toc}{subsection}{\texttt{-specialOptions}}
+\subsection*{\texttt{-specialOptions} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-specialOptions} \ptag{blue!60!black}{INT}}
 
 Dubious options for Simplex - see ClpSimplex.hpp
 
 \textbf{Range:} 0 to INT\_MAX (default: 0)
 
-\subsection*{\texttt{-dualBound}}
-\addcontentsline{toc}{subsection}{\texttt{-dualBound}}
+\subsection*{\texttt{-dualBound} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-dualBound} \ptag{violet!65!black}{DBL}}
 
 Initially algorithm acts as if no gap between bounds exceeds this value
 
@@ -1507,8 +1519,8 @@ The dual algorithm in Clp is a single phase algorithm as opposed to a two phase 
 
 \textbf{Range:} 1e-20 to $\infty$ (default: 10000000000)
 
-\subsection*{\texttt{-primalWeight}}
-\addcontentsline{toc}{subsection}{\texttt{-primalWeight}}
+\subsection*{\texttt{-primalWeight} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-primalWeight} \ptag{violet!65!black}{DBL}}
 
 Initially algorithm acts as if it costs this much to be infeasible
 
@@ -1516,8 +1528,8 @@ The primal algorithm in Clp is a single phase algorithm as opposed to a two phas
 
 \textbf{Range:} 1e-20 to inf (default: 10000000000)
 
-\subsection*{\texttt{-psi}}
-\addcontentsline{toc}{subsection}{\texttt{-psi}}
+\subsection*{\texttt{-psi} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-psi} \ptag{violet!65!black}{DBL}}
 
 Two-dimension pricing factor for Positive Edge criterion
 
@@ -1527,8 +1539,8 @@ The Positive Edge criterion has been added to select incoming variables to try a
 
 \section{Barrier}
 
-\subsection*{\texttt{-cholesky}}
-\addcontentsline{toc}{subsection}{\texttt{-cholesky}}
+\subsection*{\texttt{-cholesky} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-cholesky} \ptag{teal!70!black}{KW}}
 
 Which cholesky algorithm
 
@@ -1536,8 +1548,8 @@ For a barrier code to be effective it needs a good Cholesky ordering and factori
 
 \textbf{Values:} \texttt{native}, \texttt{dense}, \texttt{fudge!Long\_dummy}, \texttt{wssmp\_dummy}, \texttt{Uni!versityOfFlorida}, \texttt{Taucs\_dummy}, \texttt{Mumps\_dummy}, \texttt{Pardiso\_dummy} (default: \texttt{native})
 
-\subsection*{\texttt{-crossover}}
-\addcontentsline{toc}{subsection}{\texttt{-crossover}}
+\subsection*{\texttt{-crossover} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-crossover} \ptag{teal!70!black}{KW}}
 
 Whether to get a basic solution with the simplex algorithm after the barrier algorithm finished
 
@@ -1545,8 +1557,8 @@ Interior point algorithms do not obtain a basic solution. This option will cross
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{maybe}, \texttt{presolve} (default: \texttt{on})
 
-\subsection*{\texttt{-gamma(Delta)}}
-\addcontentsline{toc}{subsection}{\texttt{-gamma(Delta)}}
+\subsection*{\texttt{-gamma(Delta)} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-gamma(Delta)} \ptag{teal!70!black}{KW}}
 
 Whether to regularize barrier
 
@@ -1554,8 +1566,8 @@ Whether to regularize barrier
 
 \section{Scaling}
 
-\subsection*{\texttt{-scaling}}
-\addcontentsline{toc}{subsection}{\texttt{-scaling}}
+\subsection*{\texttt{-scaling} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-scaling} \ptag{teal!70!black}{KW}}
 
 Whether to scale problem
 
@@ -1566,8 +1578,8 @@ Scaling can help in solving problems which might otherwise fail because of lack 
 
 \textbf{Values:} \texttt{off}, \texttt{equi!librium}, \texttt{geo!metric}, \texttt{auto!matic}, \texttt{dynamic}, \texttt{rows!only} (default: \texttt{auto(matic)})
 
-\subsection*{\texttt{-objectiveScale}}
-\addcontentsline{toc}{subsection}{\texttt{-objectiveScale}}
+\subsection*{\texttt{-objectiveScale} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-objectiveScale} \ptag{violet!65!black}{DBL}}
 
 Scale factor to apply to objective
 
@@ -1575,8 +1587,8 @@ If the objective function has some very large values, you may wish to scale them
 
 \textbf{Range:} -inf to inf (default: 1)
 
-\subsection*{\texttt{-reallyObjectiveScale}}
-\addcontentsline{toc}{subsection}{\texttt{-reallyObjectiveScale}}
+\subsection*{\texttt{-reallyObjectiveScale} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-reallyObjectiveScale} \ptag{violet!65!black}{DBL}}
 
 Scale factor to apply to objective in place
 
@@ -1584,8 +1596,8 @@ You can set this to -1.0 to test maximization or other to stress code
 
 \textbf{Range:} -inf to inf (default: 1)
 
-\subsection*{\texttt{-rhsScale}}
-\addcontentsline{toc}{subsection}{\texttt{-rhsScale}}
+\subsection*{\texttt{-rhsScale} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rhsScale} \ptag{violet!65!black}{DBL}}
 
 Scale factor to apply to rhs and bounds
 
@@ -1595,29 +1607,29 @@ If the rhs or bounds have some very large meaningful values, you may wish to sca
 
 \section{Output}
 
-\subsection*{\texttt{-statistics}}
-\addcontentsline{toc}{subsection}{\texttt{-statistics}}
+\subsection*{\texttt{-statistics} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-statistics} \ptag{red!65!black}{ACT}}
 
 Print some statistics
 
 This command prints some statistics for the current model. If log level >1 then more is printed. These are for presolved model if presolve on (and unscaled).
 
-\subsection*{\texttt{-printMask}}
-\addcontentsline{toc}{subsection}{\texttt{-printMask}}
+\subsection*{\texttt{-printMask} \ptag{orange!80!black}{STR}}
+\addcontentsline{toc}{subsection}{\texttt{-printMask} \ptag{orange!80!black}{STR}}
 
 Control printing of solution with a regular expression
 
 If set then only those names which match mask are printed in a solution. '?' matches any character and '*' matches any set of characters.  The default is '' (unset) so all variables are printed. This is only active if model has names.
 
-\subsection*{\texttt{-precisionOutput}}
-\addcontentsline{toc}{subsection}{\texttt{-precisionOutput}}
+\subsection*{\texttt{-precisionOutput} \ptag{orange!80!black}{STR}}
+\addcontentsline{toc}{subsection}{\texttt{-precisionOutput} \ptag{orange!80!black}{STR}}
 
 Handle format precision with string print mask
 
 Precision: \%.nf -> n digits after decimal; \%.ng -> n significant digits; Width: \%mw -> minimum field width, padded with spaces by default. Remember the f or g at end as \%18.5 by itself gives garbage.
 
-\subsection*{\texttt{-messages}}
-\addcontentsline{toc}{subsection}{\texttt{-messages}}
+\subsection*{\texttt{-messages} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-messages} \ptag{teal!70!black}{KW}}
 
 Controls whether standardised message prefix is printed
 
@@ -1627,8 +1639,8 @@ but this program turns this off to make it look more friendly.  It can be useful
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
-\subsection*{\texttt{-checktimeFrequency}}
-\addcontentsline{toc}{subsection}{\texttt{-checktimeFrequency}}
+\subsection*{\texttt{-checktimeFrequency} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-checktimeFrequency} \ptag{teal!70!black}{KW}}
 
 How often to check time for stopping
 
@@ -1636,8 +1648,8 @@ Checking the time costs more than one might think. In cbc one does not normally 
 
 \textbf{Values:} \texttt{less}, \texttt{often} (default: \texttt{often})
 
-\subsection*{\texttt{-printingOptions}}
-\addcontentsline{toc}{subsection}{\texttt{-printingOptions}}
+\subsection*{\texttt{-printingOptions} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-printingOptions} \ptag{teal!70!black}{KW}}
 
 Print options
 
@@ -1652,8 +1664,8 @@ integer - nonzero integer column variables
 
 \textbf{Values:} \texttt{normal}, \texttt{integer}, \texttt{special}, \texttt{rows}, \texttt{all}, \texttt{csv}, \texttt{bound!ranging}, \texttt{rhs!ranging}, \texttt{objective!ranging}, \texttt{stats}, \texttt{boundsint}, \texttt{boundsall}, \texttt{fixint}, \texttt{fixall}, \texttt{allcsv} (default: \texttt{normal})
 
-\subsection*{\texttt{-timeMode}}
-\addcontentsline{toc}{subsection}{\texttt{-timeMode}}
+\subsection*{\texttt{-timeMode} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-timeMode} \ptag{teal!70!black}{KW}}
 
 Whether to use CPU or elapsed time
 
@@ -1661,8 +1673,8 @@ elapsed uses elapsed (wall-clock) time for stopping, while cpu uses CPU time. El
 
 \textbf{Values:} \texttt{cpu}, \texttt{elapsed} (default: \texttt{elapsed})
 
-\subsection*{\texttt{-logLevel}}
-\addcontentsline{toc}{subsection}{\texttt{-logLevel}}
+\subsection*{\texttt{-logLevel} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-logLevel} \ptag{blue!60!black}{INT}}
 
 Level of detail in CBC output.
 
@@ -1670,8 +1682,8 @@ If set to 0 then there should be no output in normal circumstances. A value of 1
 
 \textbf{Range:} -1 to 999999 (default: 1)
 
-\subsection*{\texttt{-lplogLevel}}
-\addcontentsline{toc}{subsection}{\texttt{-lplogLevel}}
+\subsection*{\texttt{-lplogLevel} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-lplogLevel} \ptag{blue!60!black}{INT}}
 
 Level of detail in LP solver output.
 
@@ -1679,8 +1691,8 @@ If set to 0 then there should be no output in normal circumstances. A value of 1
 
 \textbf{Range:} -1 to 999999 (default: 1)
 
-\subsection*{\texttt{-flushPerNewLine}}
-\addcontentsline{toc}{subsection}{\texttt{-flushPerNewLine}}
+\subsection*{\texttt{-flushPerNewLine} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-flushPerNewLine} \ptag{blue!60!black}{INT}}
 
 Flush output after every message line.
 
@@ -1688,8 +1700,8 @@ When set to 1 (default), each output line is flushed immediately. This is alread
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-useUTF8}}
-\addcontentsline{toc}{subsection}{\texttt{-useUTF8}}
+\subsection*{\texttt{-useUTF8} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-useUTF8} \ptag{blue!60!black}{INT}}
 
 Use UTF-8 characters in output.
 
@@ -1697,8 +1709,8 @@ Controls whether UTF-8 characters ($\in$, $\kappa$, ---) are used in solver outp
 
 \textbf{Range:} -1 to 1 (default: 0)
 
-\subsection*{\texttt{-compactTables}}
-\addcontentsline{toc}{subsection}{\texttt{-compactTables}}
+\subsection*{\texttt{-compactTables} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-compactTables} \ptag{blue!60!black}{INT}}
 
 Use compact (borderless) table style in output.
 
@@ -1706,8 +1718,8 @@ Controls the table style used for progress tables (LP relaxation, preprocessing,
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-lpIterFreq}}
-\addcontentsline{toc}{subsection}{\texttt{-lpIterFreq}}
+\subsection*{\texttt{-lpIterFreq} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-lpIterFreq} \ptag{blue!60!black}{INT}}
 
 Print LP progress every N iterations (0 = disabled).
 
@@ -1715,8 +1727,8 @@ When solving the LP relaxation at the root node, print a progress row every N it
 
 \textbf{Range:} 0 to INT\_MAX (default: 0)
 
-\subsection*{\texttt{-outputFormat}}
-\addcontentsline{toc}{subsection}{\texttt{-outputFormat}}
+\subsection*{\texttt{-outputFormat} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-outputFormat} \ptag{blue!60!black}{INT}}
 
 Which output format to use
 
@@ -1724,8 +1736,8 @@ Normally export will be done using normal representation for numbers and two val
 
 \textbf{Range:} 1 to 6 (default: 2)
 
-\subsection*{\texttt{-pOptions}}
-\addcontentsline{toc}{subsection}{\texttt{-pOptions}}
+\subsection*{\texttt{-pOptions} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-pOptions} \ptag{blue!60!black}{INT}}
 
 Dubious print options
 
@@ -1733,8 +1745,8 @@ If this is greater than 0 then presolve will give more information and branch an
 
 \textbf{Range:} 0 to INT\_MAX (default: 0)
 
-\subsection*{\texttt{-lpTimeFreq}}
-\addcontentsline{toc}{subsection}{\texttt{-lpTimeFreq}}
+\subsection*{\texttt{-lpTimeFreq} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-lpTimeFreq} \ptag{violet!65!black}{DBL}}
 
 Print LP progress every N seconds (0 = disabled).
 
@@ -1742,15 +1754,15 @@ When solving the LP relaxation at the root node, print a progress row every N se
 
 \textbf{Range:} 0 to inf (default: 5)
 
-\subsection*{\texttt{-fpumpTimeFreq}}
-\addcontentsline{toc}{subsection}{\texttt{-fpumpTimeFreq}}
+\subsection*{\texttt{-fpumpTimeFreq} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-fpumpTimeFreq} \ptag{violet!65!black}{DBL}}
 
 Print feasibility pump progress every N seconds (0 = disabled, default 5).
 
 \textbf{Range:} 0 to 10000000000 (default: 5)
 
-\subsection*{\texttt{-bufferedMode}}
-\addcontentsline{toc}{subsection}{\texttt{-bufferedMode}}
+\subsection*{\texttt{-bufferedMode} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-bufferedMode} \ptag{teal!70!black}{KW}}
 
 Whether to flush print buffer
 
@@ -1758,8 +1770,8 @@ Default is on, off switches on unbuffered output
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{on})
 
-\subsection*{\texttt{-messages}}
-\addcontentsline{toc}{subsection}{\texttt{-messages}}
+\subsection*{\texttt{-messages} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-messages} \ptag{teal!70!black}{KW}}
 
 Controls if Clpnnnn is printed
 
@@ -1769,8 +1781,8 @@ The default behavior is to put out messages such as:
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
-\subsection*{\texttt{-allCommands}}
-\addcontentsline{toc}{subsection}{\texttt{-allCommands}}
+\subsection*{\texttt{-allCommands} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-allCommands} \ptag{teal!70!black}{KW}}
 
 What priority level of commands to print
 
@@ -1778,8 +1790,8 @@ For the sake of your sanity, only the more useful and simple commands are printe
 
 \textbf{Values:} \texttt{all}, \texttt{more}, \texttt{important} (default: \texttt{more})
 
-\subsection*{\texttt{-printingOptions}}
-\addcontentsline{toc}{subsection}{\texttt{-printingOptions}}
+\subsection*{\texttt{-printingOptions} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-printingOptions} \ptag{teal!70!black}{KW}}
 
 Print options
 
@@ -1794,8 +1806,8 @@ normal - nonzero column variables
 
 \textbf{Values:} \texttt{normal}, \texttt{integer}, \texttt{special}, \texttt{rows}, \texttt{all}, \texttt{csv}, \texttt{bound!ranging}, \texttt{rhs!ranging}, \texttt{objective!ranging}, \texttt{stats}, \texttt{boundsint}, \texttt{boundsall}, \texttt{fixint}, \texttt{fixall} (default: \texttt{normal})
 
-\subsection*{\texttt{-cppGenerate}}
-\addcontentsline{toc}{subsection}{\texttt{-cppGenerate}}
+\subsection*{\texttt{-cppGenerate} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cppGenerate} \ptag{blue!60!black}{INT}}
 
 Generates C++ code
 
@@ -1803,8 +1815,8 @@ Once you like what the stand-alone solver does then this allows you to generate 
 
 \textbf{Range:} -1 to 50000 (default: 0)
 
-\subsection*{\texttt{-progressInterval}}
-\addcontentsline{toc}{subsection}{\texttt{-progressInterval}}
+\subsection*{\texttt{-progressInterval} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-progressInterval} \ptag{violet!65!black}{DBL}}
 
 Time interval for printing progress
 
@@ -1814,29 +1826,29 @@ This sets a minimum interval for some printing - elapsed seconds
 
 \section{I/O}
 
-\subsection*{\texttt{-export}}
-\addcontentsline{toc}{subsection}{\texttt{-export}}
+\subsection*{\texttt{-export} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-export} \ptag{red!65!black}{ACT}}
 
 Export model as mps file
 
 This will write an MPS format file to the given file name.  It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name.  This is initialized to 'default.mps'. It can be useful to get rid of the original names and go over to using Rnnnnnnn and Cnnnnnnn.  This can be done by setting 'keepnames' off before importing mps file.
 
-\subsection*{\texttt{-import}}
-\addcontentsline{toc}{subsection}{\texttt{-import}}
+\subsection*{\texttt{-import} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-import} \ptag{red!65!black}{ACT}}
 
 Import model from file
 
 This will read an MPS format file from the given file name.  It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name.  This is initialized to '', i.e., it must be set.  If you have libgz then it can read compressed files 'xxxxxxxx.gz'.
 
-\subsection*{\texttt{-printSolution}}
-\addcontentsline{toc}{subsection}{\texttt{-printSolution}}
+\subsection*{\texttt{-printSolution} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-printSolution} \ptag{red!65!black}{ACT}}
 
 writes solution to file (or stdout)
 
 This will write a binary solution file to the file set by solFile.
 
-\subsection*{\texttt{-mipStart}}
-\addcontentsline{toc}{subsection}{\texttt{-mipStart}}
+\subsection*{\texttt{-mipStart} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-mipStart} \ptag{red!65!black}{ACT}}
 
 reads an initial feasible solution from file
 
@@ -1858,71 +1870,71 @@ The MIPStart allows one to enter an initial integer feasible solution to CBC. Va
  Question and suggestions regarding MIPStart can be directed to
  haroldo.santos@gmail.com. 
 
-\subsection*{\texttt{-readPriorities}}
-\addcontentsline{toc}{subsection}{\texttt{-readPriorities}}
+\subsection*{\texttt{-readPriorities} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-readPriorities} \ptag{red!65!black}{ACT}}
 
 reads priorities from file
 
 Read priorities from the file name designated by PRIORITYFILE. File is in csv format with allowed headings - name, number, priority, direction, up, down, solution.  Exactly one of name and number must be given.
 
-\subsection*{\texttt{-readModel}}
-\addcontentsline{toc}{subsection}{\texttt{-readModel}}
+\subsection*{\texttt{-readModel} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-readModel} \ptag{red!65!black}{ACT}}
 
 Reads problem from a binary save file
 
 This will read the problem saved by 'writeModel' from the file name set by 'modelFile'.
 
-\subsection*{\texttt{-writeGSolution}}
-\addcontentsline{toc}{subsection}{\texttt{-writeGSolution}}
+\subsection*{\texttt{-writeGSolution} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-writeGSolution} \ptag{red!65!black}{ACT}}
 
 Puts glpk solution to file
 
 Will write a glpk solution file to the given file name.  It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name.  This is initialized to 'stdout' (this defaults to ordinary solution if stdout). If problem created from gmpl model - will do any reports.
 
-\subsection*{\texttt{-writeModel}}
-\addcontentsline{toc}{subsection}{\texttt{-writeModel}}
+\subsection*{\texttt{-writeModel} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-writeModel} \ptag{red!65!black}{ACT}}
 
 save model to binary file
 
 This will write the problem in binary foramt to the file name set by 'modelFile' for future use by readModel.
 
-\subsection*{\texttt{-nextBestSolution}}
-\addcontentsline{toc}{subsection}{\texttt{-nextBestSolution}}
+\subsection*{\texttt{-nextBestSolution} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-nextBestSolution} \ptag{red!65!black}{ACT}}
 
 Prints next best saved solution to file
 
 To write best solution, just use writeSolution.  This prints next best (if exists) and then deletes it. This will write a primitive solution file to the file name set by 'nextBestSolutionFile'. The amount of output can be varied using 'printingOptions' or 'printMask'.
 
-\subsection*{\texttt{-writeSolution}}
-\addcontentsline{toc}{subsection}{\texttt{-writeSolution}}
+\subsection*{\texttt{-writeSolution} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-writeSolution} \ptag{red!65!black}{ACT}}
 
 writes solution to file (or stdout)
 
 This will write a primitive solution file to the file set by 'solFile'. The amount of output can be varied using 'printingOptions' or 'printMask'.
 
-\subsection*{\texttt{-solution}}
-\addcontentsline{toc}{subsection}{\texttt{-solution}}
+\subsection*{\texttt{-solution} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-solution} \ptag{red!65!black}{ACT}}
 
 writes solution to file (or stdout) (synonym for writeSolution).
 
 This will write a primitive solution file to the file set by 'solFile'. The amount of output can be varied using 'printingOptions' or 'printMask'.
 
-\subsection*{\texttt{-writeSolBinary}}
-\addcontentsline{toc}{subsection}{\texttt{-writeSolBinary}}
+\subsection*{\texttt{-writeSolBinary} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-writeSolBinary} \ptag{red!65!black}{ACT}}
 
 writes solution to file in binary format
 
 This will write a binary solution file to the file set by 'solBinaryFile'. To read the file use fread(int) twice to pick up number of rows and columns, then fread(double) to pick up objective value, then pick up row activities, row duals, column activities and reduced costs - see bottom of ClpParamUtils.cpp for code that reads or writes file. If name contains '\_fix\_read\_', then does not write but reads and will fix all variables
 
-\subsection*{\texttt{-writeStatistics}}
-\addcontentsline{toc}{subsection}{\texttt{-writeStatistics}}
+\subsection*{\texttt{-writeStatistics} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-writeStatistics} \ptag{red!65!black}{ACT}}
 
 writes collected statistics to CSV file
 
 This writes the statistics gathered so far to the file designated by csvStatistics (default 'stats.csv'). If no file name is supplied when the command is run, the previous CSV statistics file name is used.
 
-\subsection*{\texttt{-writeFeatures}}
-\addcontentsline{toc}{subsection}{\texttt{-writeFeatures}}
+\subsection*{\texttt{-writeFeatures} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-writeFeatures} \ptag{red!65!black}{ACT}}
 
 writes instance features to CSV file
 
@@ -1940,106 +1952,106 @@ This extracts all OsiFeatures from the current MIP instance and appends them as 
     for k = 1, 2, 4, ..., 4096).
 All features are computed in O(nz) time.
 
-\subsection*{\texttt{-checkSolution}}
-\addcontentsline{toc}{subsection}{\texttt{-checkSolution}}
+\subsection*{\texttt{-checkSolution} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-checkSolution} \ptag{red!65!black}{ACT}}
 
 Check LP/MIP solution feasibility and write validation report
 
 Recomputes constraint and bound violations from scratch and writes a machine-readable report to the specified file (default 'sol\_validation.txt'). Reports feasibility status, largest primal and dual errors, and identifies the constraint/variable with the largest violation.
 
-\subsection*{\texttt{-csvFeatures}}
-\addcontentsline{toc}{subsection}{\texttt{-csvFeatures}}
+\subsection*{\texttt{-csvFeatures} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-csvFeatures} \ptag{gray!60!black}{FILE}}
 
 sets file name for writing out instance features
 
 Sets the file name used by writeFeatures. If name is not specified the previous value is used. Initialized to 'features.csv'. The header row listing all 207 feature names is written automatically when the file is new or empty; subsequent calls append a new row.
 
-\subsection*{\texttt{-csvStatistics}}
-\addcontentsline{toc}{subsection}{\texttt{-csvStatistics}}
+\subsection*{\texttt{-csvStatistics} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-csvStatistics} \ptag{gray!60!black}{FILE}}
 
 sets file name for writing out statistics
 
 This appends statistics to given file name.  If name is not specified, the previous value will be used. This is initialized to '', i.e. it must be set. Adds header if file empty or does not exist.
 
-\subsection*{\texttt{-exportFile}}
-\addcontentsline{toc}{subsection}{\texttt{-exportFile}}
+\subsection*{\texttt{-exportFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-exportFile} \ptag{gray!60!black}{FILE}}
 
 sets name for file to export model to
 
 This will set the name of the model will be written to and read from. This is initialized to 'export.mps'. 
 
-\subsection*{\texttt{-importFile}}
-\addcontentsline{toc}{subsection}{\texttt{-importFile}}
+\subsection*{\texttt{-importFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-importFile} \ptag{gray!60!black}{FILE}}
 
 sets name for file to import model from
 
 This will set the name of the model to be read in with the import command. This is initialized to 'import.mps'
 
-\subsection*{\texttt{-gmplSolutionFile}}
-\addcontentsline{toc}{subsection}{\texttt{-gmplSolutionFile}}
+\subsection*{\texttt{-gmplSolutionFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-gmplSolutionFile} \ptag{gray!60!black}{FILE}}
 
 sets name for file to store GMPL solution in
 
 This will set the name the GMPL solution will be written to and read from. This is initialized to 'gmpl.sol'. 
 
-\subsection*{\texttt{-mipReadFile}}
-\addcontentsline{toc}{subsection}{\texttt{-mipReadFile}}
+\subsection*{\texttt{-mipReadFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-mipReadFile} \ptag{gray!60!black}{FILE}}
 
 sets name for file to read mip start from
 
 This will set the name the model will be written to and read from. This is initialized to 'prob.mod'. 
 
-\subsection*{\texttt{-modelFile}}
-\addcontentsline{toc}{subsection}{\texttt{-modelFile}}
+\subsection*{\texttt{-modelFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-modelFile} \ptag{gray!60!black}{FILE}}
 
 sets name for file to store model in
 
 This will set the name the model will be written to and read from. This is initialized to 'prob.mod'. 
 
-\subsection*{\texttt{-nextSolutionFile}}
-\addcontentsline{toc}{subsection}{\texttt{-nextSolutionFile}}
+\subsection*{\texttt{-nextSolutionFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-nextSolutionFile} \ptag{gray!60!black}{FILE}}
 
 sets name for file to store suboptimal solutions in
 
 This will set the name solutions will be written to and read from. This is initialized to 'next.sol'. 
 
-\subsection*{\texttt{-priorityFile}}
-\addcontentsline{toc}{subsection}{\texttt{-priorityFile}}
+\subsection*{\texttt{-priorityFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-priorityFile} \ptag{gray!60!black}{FILE}}
 
 Name of file to import priorities from
 
 Priorities will be read from the given file name.  It will use the default directory given by 'directory'. The default name is priorities.txt and it cannot be a compressed file.File is in csv format with allowed headings - name, number, priority, direction, up, down, solution.  Exactly one of name and number must be given.
 
-\subsection*{\texttt{-solFile}}
-\addcontentsline{toc}{subsection}{\texttt{-solFile}}
+\subsection*{\texttt{-solFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-solFile} \ptag{gray!60!black}{FILE}}
 
 sets name for file to store solution in
 
 This will set the name the solution will be saved to and read from. By default, solutions are written to 'opt.sol'. To print to stdout, use printSolution.
 
-\subsection*{\texttt{-solBinaryFile}}
-\addcontentsline{toc}{subsection}{\texttt{-solBinaryFile}}
+\subsection*{\texttt{-solBinaryFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-solBinaryFile} \ptag{gray!60!black}{FILE}}
 
 sets name for file to store solution in binary format
 
 This will set the name the solution will be saved to and read from. By default, binary solutions are written to 'solution.file'.use printSolution.
 
-\subsection*{\texttt{-directory}}
-\addcontentsline{toc}{subsection}{\texttt{-directory}}
+\subsection*{\texttt{-directory} \ptag{gray!60!black}{DIR}}
+\addcontentsline{toc}{subsection}{\texttt{-directory} \ptag{gray!60!black}{DIR}}
 
 Set Default directory for import etc.
 
 This sets the directory which import, export, saveModel, restoreModel etc. will use. It is initialized to the current directory.
 
-\subsection*{\texttt{-dirNetlib}}
-\addcontentsline{toc}{subsection}{\texttt{-dirNetlib}}
+\subsection*{\texttt{-dirNetlib} \ptag{gray!60!black}{DIR}}
+\addcontentsline{toc}{subsection}{\texttt{-dirNetlib} \ptag{gray!60!black}{DIR}}
 
 Set directory where the netlib problems are.
 
 This sets the directory where the netlib problems reside. One can get the netlib problems from COIN-OR or from the main netlib site. This parameter is used only when -netlib is passed to cbc. cbc will pick up the netlib problems from this directory. If cbc is built without zlib support then the problems must be uncompressed.
 
-\subsection*{\texttt{-errorsAllowed}}
-\addcontentsline{toc}{subsection}{\texttt{-errorsAllowed}}
+\subsection*{\texttt{-errorsAllowed} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-errorsAllowed} \ptag{teal!70!black}{KW}}
 
 Whether to allow import errors
 
@@ -2047,36 +2059,36 @@ The default is not to use any model which had errors when reading the mps file. 
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
-\subsection*{\texttt{-basisIn}}
-\addcontentsline{toc}{subsection}{\texttt{-basisIn}}
+\subsection*{\texttt{-basisIn} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-basisIn} \ptag{red!65!black}{ACT}}
 
 Import basis from bas file
 
 This will read an MPS format basis file from the given file name.  It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name. This is initialized to '', i.e. it must be set.  If you have libz then it can read compressed files 'xxxxxxxx.gz' or xxxxxxxx.bz2.
 
-\subsection*{\texttt{-basisOut}}
-\addcontentsline{toc}{subsection}{\texttt{-basisOut}}
+\subsection*{\texttt{-basisOut} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-basisOut} \ptag{red!65!black}{ACT}}
 
 Export basis as bas file
 
 This will write an MPS format basis file to the given file name.  It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name.  This is initialized to 'default.bas'.
 
-\subsection*{\texttt{-basisFile}}
-\addcontentsline{toc}{subsection}{\texttt{-basisFile}}
+\subsection*{\texttt{-basisFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-basisFile} \ptag{gray!60!black}{FILE}}
 
 sets the name for file for reading/writing the basis
 
 This will read an MPS format basis file from the given file name.  It will use the default directory given by 'directory'.  If no name is specified, the previous value will be used. This is initialized to '', i.e. it must be set.  If you have libz then it can read compressed files 'xxxxxxxx.gz' or xxxxxxxx.bz2.
 
-\subsection*{\texttt{-paramFile}}
-\addcontentsline{toc}{subsection}{\texttt{-paramFile}}
+\subsection*{\texttt{-paramFile} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-paramFile} \ptag{gray!60!black}{FILE}}
 
 set name of file to import parametrics data from
 
 This will read a file with parametric data from the given file name and then do parametrics. It will use the default directory given by 'directory'. A name of '\$' will use the previous value for the name. This is initialized to '', i.e. it must be set.  This can not read from compressed files. File is in modified csv format - a line ROWS will be followed by rows data while a line COLUMNS will be followed by column data.  The last line should be ENDATA. The ROWS line must exist and is in the format ROWS, inital theta, final theta, interval theta, n where n is 0 to get CLPI0062 message at interval or at each change of theta and 1 to get CLPI0063 message at each iteration.  If interval theta is 0.0 or >= final theta then no interval reporting.  n may be missed out when it is taken as 0.  If there is Row data then there is a headings line with allowed headings - name, number, lower(rhs change), upper(rhs change), rhs(change).  Either the lower and upper fields should be given or the rhs field. The optional COLUMNS line is followed by a headings line with allowed headings - name, number, objective(change), lower(change), upper(change). Exactly one of name and number must be given for either section and missing ones have value 0.0.
 
-\subsection*{\texttt{-errorsAllowed}}
-\addcontentsline{toc}{subsection}{\texttt{-errorsAllowed}}
+\subsection*{\texttt{-errorsAllowed} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-errorsAllowed} \ptag{teal!70!black}{KW}}
 
 Whether to allow import errors
 
@@ -2084,8 +2096,8 @@ The default is not to use any model which had errors when reading the mps file. 
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
-\subsection*{\texttt{-keepNames}}
-\addcontentsline{toc}{subsection}{\texttt{-keepNames}}
+\subsection*{\texttt{-keepNames} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-keepNames} \ptag{teal!70!black}{KW}}
 
 Whether to keep names from import
 
@@ -2095,8 +2107,8 @@ It saves space to get rid of names so if you need to you can set this to off. Th
 
 \section{Parallelism}
 
-\subsection*{\texttt{-racingLP}}
-\addcontentsline{toc}{subsection}{\texttt{-racingLP}}
+\subsection*{\texttt{-racingLP} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-racingLP} \ptag{blue!60!black}{INT}}
 
 Number of threads for opportunistic parallel LP racing at root node
 
@@ -2104,8 +2116,8 @@ When set to a value > 0, the root LP relaxation is solved by racing multiple LP 
 
 \textbf{Range:} 0 to 8 (default: 0)
 
-\subsection*{\texttt{-threads}}
-\addcontentsline{toc}{subsection}{\texttt{-threads}}
+\subsection*{\texttt{-threads} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-threads} \ptag{blue!60!black}{INT}}
 
 Number of threads to try and use
 
@@ -2115,48 +2127,48 @@ To use multiple threads, set threads to number wanted.  It may be better to use 
 
 \section{General}
 
-\subsection*{\texttt{-help}}
-\addcontentsline{toc}{subsection}{\texttt{-help}}
+\subsection*{\texttt{-help} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-help} \ptag{red!65!black}{ACT}}
 
 Print out version, non-standard options and some help
 
 This prints out some help to get a user started. If you're seeing this message, you should be past that stage.
 
-\subsection*{\texttt{-end}}
-\addcontentsline{toc}{subsection}{\texttt{-end}}
+\subsection*{\texttt{-end} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-end} \ptag{red!65!black}{ACT}}
 
 Stops execution
 
 This stops execution; end, exit, quit and stop are synonyms.
 
-\subsection*{\texttt{-exit}}
-\addcontentsline{toc}{subsection}{\texttt{-exit}}
+\subsection*{\texttt{-exit} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-exit} \ptag{red!65!black}{ACT}}
 
 Stops cbc execution
 
 This stops the execution of Cbc, end, exit, quit and stop are synonyms
 
-\subsection*{\texttt{-quit}}
-\addcontentsline{toc}{subsection}{\texttt{-quit}}
+\subsection*{\texttt{-quit} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-quit} \ptag{red!65!black}{ACT}}
 
 Stops cbc execution
 
 This stops the execution of Cbc, end, exit, quit and stop are synonyms
 
-\subsection*{\texttt{-stop}}
-\addcontentsline{toc}{subsection}{\texttt{-stop}}
+\subsection*{\texttt{-stop} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-stop} \ptag{red!65!black}{ACT}}
 
 Stops cbc execution
 
 This stops the execution of Cbc, end, exit, quit and stop are synonyms
 
-\subsection*{\texttt{-version}}
-\addcontentsline{toc}{subsection}{\texttt{-version}}
+\subsection*{\texttt{-version} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-version} \ptag{red!65!black}{ACT}}
 
 Print version
 
-\subsection*{\texttt{-cplexUse}}
-\addcontentsline{toc}{subsection}{\texttt{-cplexUse}}
+\subsection*{\texttt{-cplexUse} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-cplexUse} \ptag{teal!70!black}{KW}}
 
 Whether to use Cplex!
 
@@ -2164,8 +2176,8 @@ If the user has Cplex, but wants to use some of Cbc's heuristics then you can!  
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
-\subsection*{\texttt{-rankConflictType}}
-\addcontentsline{toc}{subsection}{\texttt{-rankConflictType}}
+\subsection*{\texttt{-rankConflictType} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-rankConflictType} \ptag{teal!70!black}{KW}}
 
 Formula for combining directional conflict degrees into a single score.
 
@@ -2176,36 +2188,36 @@ Controls how d0 (conflicts when x=0) and d1 (conflicts when x=1) are combined:
 
 \textbf{Values:} \texttt{min}, \texttt{sum}, \texttt{product}
 
-\subsection*{\texttt{-extra1}}
-\addcontentsline{toc}{subsection}{\texttt{-extra1}}
+\subsection*{\texttt{-extra1} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-extra1} \ptag{blue!60!black}{INT}}
 
 Extra integer parameter 1
 
 \textbf{Range:} $-$INT\_MAX to INT\_MAX (default: -1)
 
-\subsection*{\texttt{-extra2}}
-\addcontentsline{toc}{subsection}{\texttt{-extra2}}
+\subsection*{\texttt{-extra2} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-extra2} \ptag{blue!60!black}{INT}}
 
 Extra integer parameter 2
 
 \textbf{Range:} $-$INT\_MAX to INT\_MAX (default: -1)
 
-\subsection*{\texttt{-extra3}}
-\addcontentsline{toc}{subsection}{\texttt{-extra3}}
+\subsection*{\texttt{-extra3} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-extra3} \ptag{blue!60!black}{INT}}
 
 Extra integer parameter 3
 
 \textbf{Range:} $-$INT\_MAX to INT\_MAX (default: -1)
 
-\subsection*{\texttt{-extra4}}
-\addcontentsline{toc}{subsection}{\texttt{-extra4}}
+\subsection*{\texttt{-extra4} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-extra4} \ptag{blue!60!black}{INT}}
 
 Extra integer parameter 4
 
 \textbf{Range:} $-$INT\_MAX to INT\_MAX (default: -1)
 
-\subsection*{\texttt{-rootHeurSchedule}}
-\addcontentsline{toc}{subsection}{\texttt{-rootHeurSchedule}}
+\subsection*{\texttt{-rootHeurSchedule} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-rootHeurSchedule} \ptag{blue!60!black}{INT}}
 
 Enable two-phase parallel root heuristic schedule
 
@@ -2213,8 +2225,8 @@ When set to 1, replaces the default root heuristic execution with a two-phase pa
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-rankConflict}}
-\addcontentsline{toc}{subsection}{\texttt{-rankConflict}}
+\subsection*{\texttt{-rankConflict} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankConflict} \ptag{violet!65!black}{DBL}}
 
 Weight for conflict-graph degree in strong branching sort-key (0 = disabled).
 
@@ -2222,8 +2234,8 @@ When positive, the conflict graph degree of binary variables is used to augment 
 
 \textbf{Range:} 0 to 100 (default: 0)
 
-\subsection*{\texttt{-rankConflictPowerTrusted}}
-\addcontentsline{toc}{subsection}{\texttt{-rankConflictPowerTrusted}}
+\subsection*{\texttt{-rankConflictPowerTrusted} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankConflictPowerTrusted} \ptag{violet!65!black}{DBL}}
 
 Scaling exponent for conflict score when pseudo-costs are trusted (sqrt = 0.5).
 
@@ -2231,8 +2243,8 @@ When pseudo-cost observations are sufficient (trusted), conflict information act
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-rankConflictPowerUntrusted}}
-\addcontentsline{toc}{subsection}{\texttt{-rankConflictPowerUntrusted}}
+\subsection*{\texttt{-rankConflictPowerUntrusted} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankConflictPowerUntrusted} \ptag{violet!65!black}{DBL}}
 
 Scaling exponent for conflict score when pseudo-costs are untrusted (linear = 1.0).
 
@@ -2240,8 +2252,8 @@ When pseudo-cost observations are insufficient (untrusted), conflict information
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-rankRange}}
-\addcontentsline{toc}{subsection}{\texttt{-rankRange}}
+\subsection*{\texttt{-rankRange} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankRange} \ptag{violet!65!black}{DBL}}
 
 Weight for variable-range criterion 1/min(maxRange,ub-lb) in strong branching sort-key (0 = disabled).
 
@@ -2249,8 +2261,8 @@ When positive, the domain width of integer variables is used to augment the sort
 
 \textbf{Range:} 0 to 100 (default: 0)
 
-\subsection*{\texttt{-rankRangePowerTrusted}}
-\addcontentsline{toc}{subsection}{\texttt{-rankRangePowerTrusted}}
+\subsection*{\texttt{-rankRangePowerTrusted} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankRangePowerTrusted} \ptag{violet!65!black}{DBL}}
 
 Scaling exponent for range score when pseudo-costs are trusted (sqrt = 0.5).
 
@@ -2258,8 +2270,8 @@ When pseudo-cost observations are sufficient (trusted), range information acts a
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-rankRangePowerUntrusted}}
-\addcontentsline{toc}{subsection}{\texttt{-rankRangePowerUntrusted}}
+\subsection*{\texttt{-rankRangePowerUntrusted} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankRangePowerUntrusted} \ptag{violet!65!black}{DBL}}
 
 Scaling exponent for range score when pseudo-costs are untrusted (linear = 1.0).
 
@@ -2267,8 +2279,8 @@ When pseudo-cost observations are insufficient, range information is given stron
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-rankRangeMax}}
-\addcontentsline{toc}{subsection}{\texttt{-rankRangeMax}}
+\subsection*{\texttt{-rankRangeMax} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankRangeMax} \ptag{violet!65!black}{DBL}}
 
 Cap on domain width for range criterion: score = 1/min(rankRangeMax, ub-lb). Default 10.
 
@@ -2276,8 +2288,8 @@ Variables with domain width >= rankRangeMax all receive the same floor score (1/
 
 \textbf{Range:} 1 to 1e+30 (default: 0)
 
-\subsection*{\texttt{-rankObjCoeff}}
-\addcontentsline{toc}{subsection}{\texttt{-rankObjCoeff}}
+\subsection*{\texttt{-rankObjCoeff} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankObjCoeff} \ptag{violet!65!black}{DBL}}
 
 Weight for objective coefficient magnitude criterion |c\_j|\textasciicircum{}power in strong branching sort-key (0 = disabled).
 
@@ -2285,8 +2297,8 @@ When positive, the absolute value of a variable's objective coefficient |c\_j| i
 
 \textbf{Range:} 0 to 100 (default: 0)
 
-\subsection*{\texttt{-rankObjCoeffPowerTrusted}}
-\addcontentsline{toc}{subsection}{\texttt{-rankObjCoeffPowerTrusted}}
+\subsection*{\texttt{-rankObjCoeffPowerTrusted} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankObjCoeffPowerTrusted} \ptag{violet!65!black}{DBL}}
 
 Scaling exponent for obj-coeff score when pseudo-costs are trusted. Default 0.1 (very slow growth).
 
@@ -2294,8 +2306,8 @@ When pseudo-cost observations are sufficient, objective coefficient acts as a ge
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-rankObjCoeffPowerUntrusted}}
-\addcontentsline{toc}{subsection}{\texttt{-rankObjCoeffPowerUntrusted}}
+\subsection*{\texttt{-rankObjCoeffPowerUntrusted} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankObjCoeffPowerUntrusted} \ptag{violet!65!black}{DBL}}
 
 Scaling exponent for obj-coeff score when pseudo-costs are untrusted. Default 0.2.
 
@@ -2303,8 +2315,8 @@ When pseudo-cost observations are insufficient, objective coefficient is allowed
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-rankNonzeros}}
-\addcontentsline{toc}{subsection}{\texttt{-rankNonzeros}}
+\subsection*{\texttt{-rankNonzeros} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankNonzeros} \ptag{violet!65!black}{DBL}}
 
 Weight for column non-zeros criterion nz\textasciicircum{}power in strong branching sort-key (0 = disabled).
 
@@ -2312,8 +2324,8 @@ When positive, the number of constraints a variable appears in is used to augmen
 
 \textbf{Range:} 0 to 100 (default: 0)
 
-\subsection*{\texttt{-rankNonzerosPowerTrusted}}
-\addcontentsline{toc}{subsection}{\texttt{-rankNonzerosPowerTrusted}}
+\subsection*{\texttt{-rankNonzerosPowerTrusted} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankNonzerosPowerTrusted} \ptag{violet!65!black}{DBL}}
 
 Scaling exponent for nz score when pseudo-costs are trusted (4th-root = 0.25).
 
@@ -2321,8 +2333,8 @@ When pseudo-cost observations are sufficient, nz information acts as a gentle ti
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-rankNonzerosPowerUntrusted}}
-\addcontentsline{toc}{subsection}{\texttt{-rankNonzerosPowerUntrusted}}
+\subsection*{\texttt{-rankNonzerosPowerUntrusted} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankNonzerosPowerUntrusted} \ptag{violet!65!black}{DBL}}
 
 Scaling exponent for nz score when pseudo-costs are untrusted (sqrt = 0.5).
 
@@ -2330,8 +2342,8 @@ When pseudo-cost observations are insufficient, nz information is given slightly
 
 \textbf{Range:} 0 to 1 (default: 0)
 
-\subsection*{\texttt{-rankConflictMaxPercBin}}
-\addcontentsline{toc}{subsection}{\texttt{-rankConflictMaxPercBin}}
+\subsection*{\texttt{-rankConflictMaxPercBin} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-rankConflictMaxPercBin} \ptag{violet!65!black}{DBL}}
 
 Maximum \% of binary integer variables for the conflict ranker to activate (default 97).
 
@@ -2339,36 +2351,36 @@ The conflict-graph ranker is beneficial primarily on mixed-integer problems (whe
 
 \textbf{Range:} 0 to 100 (default: 97)
 
-\subsection*{\texttt{-netlibBarrier}}
-\addcontentsline{toc}{subsection}{\texttt{-netlibBarrier}}
+\subsection*{\texttt{-netlibBarrier} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-netlibBarrier} \ptag{red!65!black}{ACT}}
 
 Solve entire netlib test set with barrier
 
 This exercises the unit test for clp and then solves the netlib test set using barrier. The user can set options before e.g. clp -kkt on -netlib
 
-\subsection*{\texttt{-netlibDual}}
-\addcontentsline{toc}{subsection}{\texttt{-netlibDual}}
+\subsection*{\texttt{-netlibDual} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-netlibDual} \ptag{red!65!black}{ACT}}
 
 Solve entire netlib test set (dual)
 
 This exercises the unit test for clp and then solves the netlib test set using dual. The user can set options before e.g. clp -presolve off -netlib
 
-\subsection*{\texttt{-netlib}}
-\addcontentsline{toc}{subsection}{\texttt{-netlib}}
+\subsection*{\texttt{-netlib} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-netlib} \ptag{red!65!black}{ACT}}
 
 Solve entire netlib test set
 
 This exercises the unit test for clp and then solves the netlib test set using dual or primal. The user can set options before e.g. clp -presolve off -netlib
 
-\subsection*{\texttt{-netlibPrimal}}
-\addcontentsline{toc}{subsection}{\texttt{-netlibPrimal}}
+\subsection*{\texttt{-netlibPrimal} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-netlibPrimal} \ptag{red!65!black}{ACT}}
 
 Solve entire netlib test set (primal)
 
 This exercises the unit test for clp and then solves the netlib test set using primal. The user can set options before e.g. clp -presolve off -netlibp
 
-\subsection*{\texttt{-netlibTune}}
-\addcontentsline{toc}{subsection}{\texttt{-netlibTune}}
+\subsection*{\texttt{-netlibTune} \ptag{red!65!black}{ACT}}
+\addcontentsline{toc}{subsection}{\texttt{-netlibTune} \ptag{red!65!black}{ACT}}
 
 Solve entire netlib test set with 'best' algorithm
 

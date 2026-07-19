@@ -63,6 +63,24 @@ TYPE_LABELS = {
     "directory": "Directory",
 }
 
+# Short tag + color shown next to every parameter name (heading and TOC) so
+# readers can tell a parameter's kind at a glance without opening its entry.
+TYPE_TAGS = {
+    "integer": ("blue!60!black", "INT"),
+    "double": ("violet!65!black", "DBL"),
+    "keyword": ("teal!70!black", "KW"),
+    "string": ("orange!80!black", "STR"),
+    "action": ("red!65!black", "ACT"),
+    "file": ("gray!60!black", "FILE"),
+    "directory": ("gray!60!black", "DIR"),
+}
+
+
+def type_tag(ptype):
+    """Return a LaTeX snippet for the small colored type tag, e.g. \\ptag{...}{INT}."""
+    color, label = TYPE_TAGS.get(ptype, ("gray!60!black", (ptype or "?")[:4].upper()))
+    return f"\\ptag{{{color}}}{{{label}}}"
+
 
 def emit(version, topics, out):
     date = datetime.now().strftime("%B %Y")
@@ -89,6 +107,12 @@ def emit(version, topics, out):
 
 \hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!60!black}
 
+% Small colored tag identifying a parameter's type (e.g. \ptag{blue!60!black}{INT}).
+% Shown next to the parameter name in both the table of contents and its
+% own heading, so the kind of value a parameter expects is visible at a
+% glance without reading its full description.
+\newcommand{\ptag}[2]{{\scriptsize\textcolor{#1}{\textbf{[#2]}}}}
+
 \title{CBC Parameter Reference}
 \author{COIN-OR Cbc Development Team}
 """)
@@ -112,6 +136,12 @@ Parameters are specified on the command line \emph{before} \texttt{-solve}:
 
 Both single-dash (\texttt{-sec}) and double-dash (\texttt{--sec}) styles
 are accepted.  In interactive mode, omit the leading dash.
+
+Each parameter is tagged with its type, both here and in the table of
+contents: \ptag{blue!60!black}{INT} integer, \ptag{violet!65!black}{DBL}
+double, \ptag{teal!70!black}{KW} keyword, \ptag{orange!80!black}{STR}
+string, \ptag{red!65!black}{ACT} action (no value), \ptag{gray!60!black}{FILE}
+file/directory.
 
 """)
 
@@ -222,9 +252,10 @@ def emit_param(p, out, sub="subsection"):
     long_help = p.get("longHelp", "")
     keywords = p.get("keywords", [])
 
-    out.write(f"\\{sub}*{{\\texttt{{-{tex_escape(name)}}}}}\n")
+    heading = f"\\texttt{{-{tex_escape(name)}}} {type_tag(ptype)}"
+    out.write(f"\\{sub}*{{{heading}}}\n")
     out.write(f"\\addcontentsline{{toc}}{{{sub}}}"
-              f"{{\\texttt{{-{tex_escape(name)}}}}}\n\n")
+              f"{{{heading}}}\n\n")
 
     # Short description
     out.write(f"{tex_escape(short_help)}\n\n")

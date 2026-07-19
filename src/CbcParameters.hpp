@@ -305,16 +305,27 @@ public:
   /*! \brief Which LP algorithm to use for initialSolve in -solve and
       -initialSolve paths
 
-    - LPDual:    dual simplex (default)
-    - LPPrimal:  primal simplex
-    - LPBarrier: barrier (interior point)
-    - LPAuto:    ML-based per-instance recommendation (see CbcLpParamScorer)
+    - LPDual:      dual simplex (default)
+    - LPPrimal:    primal simplex
+    - LPBarrier:   barrier (interior point)
+    - LPAuto:      picks between LPRacing and LPRecommend depending on the
+                   number of threads available: LPRacing when running in
+                   parallel (threads >= 2), LPRecommend when running
+                   sequentially (threads == 1).
+    - LPRacing:    opportunistic parallel LP racing (dual simplex, primal
+                   with Idiot crash, primal with Sprint race each other;
+                   the first to finish wins). Requires threads >= 2.
+    - LPRecommend: ML-based per-instance recommendation of a single LP
+                   method/configuration (see CbcLpParamScorer). Runs
+                   sequentially.
   */
   enum LPMethod {
     LPDual = 0,
     LPPrimal,
     LPBarrier,
     LPAuto,
+    LPRacing,
+    LPRecommend,
     LPEndMarker
   };
 
@@ -1536,12 +1547,6 @@ public:
   /*! \brief Set ProcessTune setting */
   inline void setProcessTune(int processTune) { processTune_ = processTune; }
 
-  /*! \brief Get RacingLP setting */
-  inline int getRacingLP() { return racingLP_; }
-
-  /*! \brief Set RacingLP setting */
-  inline void setRacingLP(int racingLP) { racingLP_ = racingLP; }
-
   /*! \brief Get RandomSeed setting */
   inline int getRandomSeed() { return randomSeed_; }
 
@@ -2561,7 +2566,6 @@ private:
   int options_;
   int outputFormat_;
   int processTune_;
-  int racingLP_ = 0;
   int randomSeed_;
   int strongStrategy_;
   int testOsi_;

@@ -123,10 +123,12 @@ every LP/bound-propagation/clique option configured on this \texttt{CbcSolver} (
   \item \textbf{\swatch{capi} \ghc{1269}{\texttt{applyLpMethod(OsiClpSolverInterface\,*targetSolver=nullptr,}}
     \texttt{int forcedMethod=-1)}} --- the unified root-LP-relaxation solver, and the \emph{only} place that
     actually solves it: model-level LP settings (PSI positive-edge, objective scaling, vector mode) $\to$ LP
-    racing (\texttt{-racingLP}) $\to$ full \texttt{ClpSolve} with every user-settable option (\texttt{-lpMethod}
-    auto/dual/primal/barrier, presolve, crash/idiot/sprint, SLP, dualize, time limits). \texttt{forcedMethod}
+    racing (\texttt{-lpMethod=racing}, or \texttt{-lpMethod=auto} with $\ge 2$ threads --- races
+    \texttt{min(3, nThreads)} configurations) $\to$ full \texttt{ClpSolve} with every user-settable option
+    (\texttt{-lpMethod} auto/dual/primal/barrier/racing/recommend, presolve, crash/idiot/sprint, SLP, dualize,
+    time limits). \texttt{forcedMethod}
     lets a caller pin the LP method (a \texttt{CbcParameters::LPMethod} value) for this call
-    only, bypassing \texttt{-lpMethod=auto} and LP racing --- used by the \texttt{DUALSIMPLEX}/\texttt{PRIMALSIMPLEX}/
+    only, bypassing \texttt{-lpMethod=auto}/\texttt{recommend} and LP racing --- used by the \texttt{DUALSIMPLEX}/\texttt{PRIMALSIMPLEX}/
     \texttt{BARRIER} CLI commands, which used to hand-duplicate this entire option-setting sequence instead of
     calling it. Used internally by \ghc{5592}{\texttt{solveInitialLp()}} (root LP of the BAB pipeline) and, via
     \ghc{1601}{\texttt{runSolveContinuous()}}, by the \texttt{SOLVECONTINUOUS}/\texttt{DUALSIMPLEX}/\texttt{PRIMALSIMPLEX}/

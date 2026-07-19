@@ -27,7 +27,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [Scaling](#scaling) (4 parameters)
 - [Output](#output) (23 parameters)
 - [I/O](#i/o) (35 parameters)
-- [Parallelism](#parallelism) (2 parameters)
+- [Parallelism](#parallelism) (1 parameters)
 - [General](#general) (32 parameters)
 
 ---
@@ -1061,12 +1061,14 @@ For some problems, cut generators and general branching work better if the probl
 Which LP algorithm to use for the initial LP relaxation solve
 
 Controls which LP algorithm is used when -solve or -initialSolve triggers the root LP relaxation.
-  dual:    dual simplex (default).
-  primal:  primal simplex.
-  barrier: interior-point (barrier) method.
-  auto:    ML-based per-instance recommendation, using a classifier trained on instance features (see CbcLpParamScorer) to pick the LP method/perturbation/scaling settings expected to solve fastest.
+  dual:      dual simplex (default).
+  primal:    primal simplex.
+  barrier:   interior-point (barrier) method.
+  racing:    opportunistic parallel LP racing -- multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) are run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (-threads).
+  recommend: ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features (see CbcLpParamScorer) to pick the settings expected to solve fastest. Runs sequentially.
+  auto:      picks racing when running in parallel (threads >= 2) or recommend when running sequentially (threads == 1).
 
-**Values:** `dual`, `primal`, `barrier`, `auto` (default: `dual`)
+**Values:** `dual`, `primal`, `barrier`, `auto`, `racing`, `recommend` (default: `dual`)
 
 ### `-maxSavedSolutions`
 
@@ -1866,14 +1868,6 @@ It saves space to get rid of names so if you need to you can set this to off. Th
 **Values:** `off`, `on` (default: `on`)
 
 ## Parallelism
-
-### `-racingLP`
-
-Number of threads for opportunistic parallel LP racing at root node
-
-When set to a value > 0, the root LP relaxation is solved by racing multiple LP method configurations in parallel (dual simplex, primal with Idiot crash, primal with Sprint). The first to reach optimality wins and the others are aborted. This can significantly reduce root LP time for problems where the default method is not the fastest. A value of 3 races all three configurations. Set to 0 to disable.
-
-**Range:** 0 to 8 (default: 0)
 
 ### `-threads`
 

@@ -367,10 +367,6 @@ int pushCbcSolverIntParam(CoinParam &param)
     parameters->setProcessTune(val);
     break;
   }
-  case CbcParam::RACINGLP: {
-    parameters->setRacingLP(val);
-    break;
-  }
   case CbcParam::RANDOMSEED: {
     parameters->setRandomSeed(val);
     break;

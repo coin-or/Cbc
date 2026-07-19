@@ -282,7 +282,7 @@
 <a href="#scaling" class="sb-link">Scaling<span class="sb-count">4</span></a>
 <a href="#output" class="sb-link">Output<span class="sb-count">23</span></a>
 <a href="#i-o" class="sb-link">I/O<span class="sb-count">35</span></a>
-<a href="#parallelism" class="sb-link">Parallelism<span class="sb-count">2</span></a>
+<a href="#parallelism" class="sb-link">Parallelism<span class="sb-count">1</span></a>
 <a href="#general" class="sb-link">General<span class="sb-count">32</span></a>
     </nav>
   </aside>
@@ -995,11 +995,13 @@
 <details class="param" data-search="lpmethod which lp algorithm to use for the initial lp relaxation solve">
   <summary><span class="pname"><code>-lpMethod</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Which LP algorithm to use for the initial LP relaxation solve</span><span class="pmeta">default:&nbsp;<code>dual</code></span></summary>
   <div class="pbody"><p class="plong">Controls which LP algorithm is used when -solve or -initialSolve triggers the root LP relaxation.
-  dual:    dual simplex (default).
-  primal:  primal simplex.
-  barrier: interior-point (barrier) method.
-  auto:    ML-based per-instance recommendation, using a classifier trained on instance features (see CbcLpParamScorer) to pick the LP method/perturbation/scaling settings expected to solve fastest.</p>
-<div class="pextra"><strong>Values:</strong> <code class="kw">dual</code> <code class="kw">primal</code> <code class="kw">barrier</code> <code class="kw">auto</code>&ensp;<span class="pmeta">(default: <code>dual</code>)</span></div></div>
+  dual:      dual simplex (default).
+  primal:    primal simplex.
+  barrier:   interior-point (barrier) method.
+  racing:    opportunistic parallel LP racing -- multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) are run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (-threads).
+  recommend: ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features (see CbcLpParamScorer) to pick the settings expected to solve fastest. Runs sequentially.
+  auto:      picks racing when running in parallel (threads >= 2) or recommend when running sequentially (threads == 1).</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">dual</code> <code class="kw">primal</code> <code class="kw">barrier</code> <code class="kw">auto</code> <code class="kw">racing</code> <code class="kw">recommend</code>&ensp;<span class="pmeta">(default: <code>dual</code>)</span></div></div>
 </details>
 <details class="param" data-search="maxsavedsolutions maximum number of solutions to save">
   <summary><span class="pname"><code>-maxSavedSolutions</code></span><span class="badge badge-int">Integer</span><span class="pshort">Maximum number of solutions to save</span><span class="pmeta">default:&nbsp;<code>10</code></span></summary>
@@ -1551,11 +1553,6 @@ All features are computed in O(nz) time.</p></div>
 
 <section id="parallelism" class="topic-section">
   <h2>Parallelism</h2>
-<details class="param" data-search="racinglp number of threads for opportunistic parallel lp racing at root node">
-  <summary><span class="pname"><code>-racingLP</code></span><span class="badge badge-int">Integer</span><span class="pshort">Number of threads for opportunistic parallel LP racing at root node</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
-  <div class="pbody"><p class="plong">When set to a value &gt; 0, the root LP relaxation is solved by racing multiple LP method configurations in parallel (dual simplex, primal with Idiot crash, primal with Sprint). The first to reach optimality wins and the others are aborted. This can significantly reduce root LP time for problems where the default method is not the fastest. A value of 3 races all three configurations. Set to 0 to disable.</p>
-<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;8&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
-</details>
 <details class="param" data-search="threads number of threads to try and use">
   <summary><span class="pname"><code>-threads</code></span><span class="badge badge-int">Integer</span><span class="pshort">Number of threads to try and use</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
   <div class="pbody"><p class="plong">To use multiple threads, set threads to number wanted.  It may be better to use one or two more than number of cpus available.  If 100+n then n threads and search is repeatable (maybe be somewhat slower), if 200+n use threads for root cuts, 400+n threads used in sub-trees.</p>

@@ -651,7 +651,7 @@ Values: off, on, variable, forcevariable, conflict (default: off)
 .BI \-lpMethod
 Which LP algorithm to use for the initial LP relaxation solve
 .br
-Values: dual, primal, barrier, auto (default: dual)
+Values: dual, primal, barrier, auto, racing, recommend (default: dual)
 .TP
 .BI \-maxSavedSolutions
 Maximum number of solutions to save
@@ -1087,11 +1087,6 @@ Whether to keep names from import
 .br
 Values: off, on (default: on)
 .SH PARALLELISM
-.TP
-.BI \-racingLP
-Number of threads for opportunistic parallel LP racing at root node
-.br
-Range: 0 to 8 (default: 0)
 .TP
 .BI \-threads
 Number of threads to try and use

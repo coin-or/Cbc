@@ -250,7 +250,6 @@ public:
       OPTIONS,
       PRINTOPTIONS,
       PROCESSTUNE,
-      RACINGLP,
       ROOTHEURSCHED,
       RANDOMSEED,
       STRONGSTRATEGY,

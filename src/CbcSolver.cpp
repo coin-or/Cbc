@@ -1278,18 +1278,34 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
 #endif
 
   // ─── 1. Auto LP param recommendation ─────────────────────────────────────
-  // When -lpMethod=auto, extract OsiFeatures and query the ML scorer to pick
-  // the best LP parameter configuration for this specific instance.  The
-  // result is stored in `autoS` and applied in sections 3 and 5 below.
+  // When -lpMethod=auto, the choice between racing (parallel) and recommend
+  // (sequential ML recommendation) depends on the number of threads
+  // available. When -lpMethod=racing or -lpMethod=recommend is set
+  // explicitly, that choice is honored directly (racing requires >= 2
+  // threads; it is a hard error to request it with a single thread).
+  // The result is stored in `autoS` and applied in sections 3 and 5 below.
   // Skipped when racing is active — racing manages its own per-thread configs.
-  const int racingLP = parameters_[CbcParam::RACINGLP]->intVal();
+  const int rawThreads = parameters_[CbcParam::THREADS]->intVal();
+  const int nThreads = std::max(1, rawThreads % 100);
+  const CbcParameters::LPMethod lpMethodSetting = parameters_.getLpMethod();
+
+  if (lpMethodSetting == CbcParameters::LPRacing && nThreads < 2) {
+    throw CoinError(
+      "lpMethod=racing requires at least 2 threads (-threads); racing "
+      "cannot run with a single thread.",
+      "applyLpMethod", "CbcSolver");
+  }
+
   // A forced method (from -dualSimplex/-primalSimplex/-barrier) means the
   // caller wants *that* method run directly — auto-recommendation and
   // racing (which both pick the method themselves) are skipped.
-  const bool canRace = (racingLP > 0) && (clp != nullptr) && (forcedMethod < 0);
-  const bool autoLpMode = (forcedMethod < 0)
-    && (parameters_.getLpMethod() == CbcParameters::LPAuto) && (clp != nullptr)
-    && !canRace;
+  const bool canRace = (clp != nullptr) && (forcedMethod < 0)
+    && (lpMethodSetting == CbcParameters::LPRacing
+      || (lpMethodSetting == CbcParameters::LPAuto && nThreads >= 2));
+  const int racingThreads = canRace ? std::min(3, nThreads) : 0;
+  const bool autoLpMode = (forcedMethod < 0) && (clp != nullptr) && !canRace
+    && (lpMethodSetting == CbcParameters::LPRecommend
+      || (lpMethodSetting == CbcParameters::LPAuto && nThreads < 2));
 
   LpAutoSettings autoS;
   if (autoLpMode) {
@@ -1372,7 +1388,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   // of racing.  Model-level settings from step 3 are already baked into the
   // clp model, so every cloned thread inherits PSI, objScale, and vector mode.
   if (canRace) {
-    ClpRacingSolver racer(clp, racingLP);
+    ClpRacingSolver racer(clp, racingThreads);
     racer.solve();
     if (racer.winnerIndex() >= 0) {
       clp->setNumberIterations(racer.winnerIterations());

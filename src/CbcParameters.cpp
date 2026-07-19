@@ -465,7 +465,6 @@ CbcParameters &CbcParameters::operator=(const CbcParameters &rhs)
   options_ = rhs.options_;
   outputFormat_ = rhs.outputFormat_;
   processTune_ = rhs.processTune_;
-  racingLP_ = rhs.racingLP_;
   randomSeed_ = rhs.randomSeed_;
   strongStrategy_ = rhs.strongStrategy_;
   testOsi_ = rhs.testOsi_;
@@ -692,7 +691,6 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::RANDOMSEED]->setTopic("Solving");
   parameters_[CbcParam::MAXSAVEDSOLS]->setTopic("Solving");
   parameters_[CbcParam::THREADS]->setTopic("Parallelism");
-  parameters_[CbcParam::RACINGLP]->setTopic("Parallelism");
 
   // Integer params — ZeroHalf tuning (sub-topic of Cuts)
   for (int code : {CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT,
@@ -844,7 +842,6 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::OPTIONS]->setDefault(0);
      parameters_[CbcParam::PRINTOPTIONS]->setDefault(0);
      parameters_[CbcParam::PROCESSTUNE]->setDefault(0);
-     parameters_[CbcParam::RACINGLP]->setDefault(0);
      parameters_[CbcParam::ROOTHEURSCHED]->setDefault(0);
      parameters_[CbcParam::RANDOMSEED]->setDefault(42);
      parameters_[CbcParam::STRONGSTRATEGY]->setDefault(0);
@@ -1845,12 +1842,19 @@ void CbcParameters::addCbcSolverKwdParams() {
     "Which LP algorithm to use for the initial LP relaxation solve",
     "Controls which LP algorithm is used when -solve or -initialSolve "
     "triggers the root LP relaxation.\n"
-    "  dual:    dual simplex (default).\n"
-    "  primal:  primal simplex.\n"
-    "  barrier: interior-point (barrier) method.\n"
-    "  auto:    ML-based per-instance recommendation, using a classifier "
-    "trained on instance features (see CbcLpParamScorer) to pick the LP "
-    "method/perturbation/scaling settings expected to solve fastest.");
+    "  dual:      dual simplex (default).\n"
+    "  primal:    primal simplex.\n"
+    "  barrier:   interior-point (barrier) method.\n"
+    "  racing:    opportunistic parallel LP racing -- multiple LP method "
+    "configurations (dual simplex, primal with Idiot crash, primal with "
+    "Sprint) are run in parallel threads and the first to reach optimality "
+    "wins. Requires at least 2 threads (-threads).\n"
+    "  recommend: ML-based per-instance recommendation of a single LP "
+    "method/configuration, using a classifier trained on instance features "
+    "(see CbcLpParamScorer) to pick the settings expected to solve fastest. "
+    "Runs sequentially.\n"
+    "  auto:      picks racing when running in parallel (threads >= 2) or "
+    "recommend when running sequentially (threads == 1).");
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "dual", CbcParameters::LPDual);
   parameters_[CbcParam::LPMETHOD]->appendKwd(
@@ -1859,6 +1863,10 @@ void CbcParameters::addCbcSolverKwdParams() {
     "barrier", CbcParameters::LPBarrier);
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "auto", CbcParameters::LPAuto);
+  parameters_[CbcParam::LPMETHOD]->appendKwd(
+    "racing", CbcParameters::LPRacing);
+  parameters_[CbcParam::LPMETHOD]->appendKwd(
+    "recommend", CbcParameters::LPRecommend);
 
   parameters_[CbcParam::RANKCONFLICTTYPE]->setup(
       "rankConflictType",
@@ -2430,18 +2438,6 @@ void CbcParameters::addCbcSolverIntParams() {
       CoinParam::displayPriorityLow);
   parameters_[CbcParam::PROCESSTUNE]->appendKwd("heavy!Probing#Do more probing",7);
   parameters_[CbcParam::PROCESSTUNE]->appendKwd("heavier!Probing#Do yet more probing",519);
-
-  parameters_[CbcParam::RACINGLP]->setup(
-      "racing!LP",
-      "Number of threads for opportunistic parallel LP racing at root node", 0,
-      8,
-      "When set to a value > 0, the root LP relaxation is solved by racing "
-      "multiple LP method configurations in parallel (dual simplex, primal "
-      "with Idiot crash, primal with Sprint). The first to reach optimality "
-      "wins and the others are aborted. This can significantly reduce root LP "
-      "time for problems where the default method is not the fastest. A value "
-      "of 3 races all three configurations. Set to 0 to disable.",
-      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::ROOTHEURSCHED]->setup(
       "rootHeur!Schedule",

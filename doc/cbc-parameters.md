@@ -1061,14 +1061,14 @@ For some problems, cut generators and general branching work better if the probl
 Which LP algorithm to use for the initial LP relaxation solve
 
 Controls which LP algorithm is used when -solve or -initialSolve triggers the root LP relaxation.
-  dual:      dual simplex (default).
+  dual:      dual simplex.
   primal:    primal simplex.
   barrier:   interior-point (barrier) method.
   racing:    opportunistic parallel LP racing -- multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) are run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (-threads).
   recommend: ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features (see CbcLpParamScorer) to pick the settings expected to solve fastest. Runs sequentially.
-  auto:      picks racing when running in parallel (threads >= 2) or recommend when running sequentially (threads == 1).
+  auto:      picks racing when running in parallel (threads >= 2) or recommend when running sequentially (threads == 1). (default)
 
-**Values:** `dual`, `primal`, `barrier`, `auto`, `racing`, `recommend` (default: `dual`)
+**Values:** `dual`, `primal`, `barrier`, `auto`, `racing`, `recommend` (default: `auto`)
 
 ### `-maxSavedSolutions`
 

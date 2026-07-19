@@ -305,13 +305,13 @@ public:
   /*! \brief Which LP algorithm to use for initialSolve in -solve and
       -initialSolve paths
 
-    - LPDual:      dual simplex (default)
+    - LPDual:      dual simplex
     - LPPrimal:    primal simplex
     - LPBarrier:   barrier (interior point)
     - LPAuto:      picks between LPRacing and LPRecommend depending on the
                    number of threads available: LPRacing when running in
                    parallel (threads >= 2), LPRecommend when running
-                   sequentially (threads == 1).
+                   sequentially (threads == 1). (default)
     - LPRacing:    opportunistic parallel LP racing (dual simplex, primal
                    with Idiot crash, primal with Sprint race each other;
                    the first to finish wins). Requires threads >= 2.

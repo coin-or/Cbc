@@ -993,15 +993,15 @@
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">variable</code> <code class="kw">forcevariable</code> <code class="kw">conflict</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
 </details>
 <details class="param" data-search="lpmethod which lp algorithm to use for the initial lp relaxation solve">
-  <summary><span class="pname"><code>-lpMethod</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Which LP algorithm to use for the initial LP relaxation solve</span><span class="pmeta">default:&nbsp;<code>dual</code></span></summary>
+  <summary><span class="pname"><code>-lpMethod</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Which LP algorithm to use for the initial LP relaxation solve</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
   <div class="pbody"><p class="plong">Controls which LP algorithm is used when -solve or -initialSolve triggers the root LP relaxation.
-  dual:      dual simplex (default).
+  dual:      dual simplex.
   primal:    primal simplex.
   barrier:   interior-point (barrier) method.
   racing:    opportunistic parallel LP racing -- multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) are run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (-threads).
   recommend: ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features (see CbcLpParamScorer) to pick the settings expected to solve fastest. Runs sequentially.
-  auto:      picks racing when running in parallel (threads >= 2) or recommend when running sequentially (threads == 1).</p>
-<div class="pextra"><strong>Values:</strong> <code class="kw">dual</code> <code class="kw">primal</code> <code class="kw">barrier</code> <code class="kw">auto</code> <code class="kw">racing</code> <code class="kw">recommend</code>&ensp;<span class="pmeta">(default: <code>dual</code>)</span></div></div>
+  auto:      picks racing when running in parallel (threads >= 2) or recommend when running sequentially (threads == 1). (default)</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">dual</code> <code class="kw">primal</code> <code class="kw">barrier</code> <code class="kw">auto</code> <code class="kw">racing</code> <code class="kw">recommend</code>&ensp;<span class="pmeta">(default: <code>auto</code>)</span></div></div>
 </details>
 <details class="param" data-search="maxsavedsolutions maximum number of solutions to save">
   <summary><span class="pname"><code>-maxSavedSolutions</code></span><span class="badge badge-int">Integer</span><span class="pshort">Maximum number of solutions to save</span><span class="pmeta">default:&nbsp;<code>10</code></span></summary>

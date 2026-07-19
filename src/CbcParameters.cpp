@@ -788,7 +788,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::TIMEMODE]->setDefault("elapsed");
      parameters_[CbcParam::USECGRAPH]->setDefault("on");
      parameters_[CbcParam::BOUNDPROPLEVEL]->setDefault("milpbt");
-     parameters_[CbcParam::LPMETHOD]->setDefault("dual");
+     parameters_[CbcParam::LPMETHOD]->setDefault("auto");
      parameters_[CbcParam::NODEBOUNDPROP]->setDefault("off");
      parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setDefault(100);
      parameters_[CbcParam::NODEBOUNDPROPMAXDEPTH]->setDefault(50);
@@ -1842,7 +1842,7 @@ void CbcParameters::addCbcSolverKwdParams() {
     "Which LP algorithm to use for the initial LP relaxation solve",
     "Controls which LP algorithm is used when -solve or -initialSolve "
     "triggers the root LP relaxation.\n"
-    "  dual:      dual simplex (default).\n"
+    "  dual:      dual simplex.\n"
     "  primal:    primal simplex.\n"
     "  barrier:   interior-point (barrier) method.\n"
     "  racing:    opportunistic parallel LP racing -- multiple LP method "
@@ -1854,7 +1854,7 @@ void CbcParameters::addCbcSolverKwdParams() {
     "(see CbcLpParamScorer) to pick the settings expected to solve fastest. "
     "Runs sequentially.\n"
     "  auto:      picks racing when running in parallel (threads >= 2) or "
-    "recommend when running sequentially (threads == 1).");
+    "recommend when running sequentially (threads == 1). (default)");
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "dual", CbcParameters::LPDual);
   parameters_[CbcParam::LPMETHOD]->appendKwd(

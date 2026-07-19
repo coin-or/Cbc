@@ -7552,6 +7552,15 @@ int CbcSolver::babSetupAndRootLp(int logLevel, int cbcLogLevel,
   return 0;
 }
 
+// Extracted from CbcSolver::run() — the second part of `case CbcParam::BAB:`,
+// immediately following babSetupAndRootLp(). (Re)configures babModel_ from
+// model_: applies scaling-hint / tighten-bounds-on-continuous-infeasibility
+// user settings, builds the conflict-graph branching ranker (if any weight is
+// requested via rankerConfig), tunes the factorization frequency, adds
+// lotsizing objects, and disables preprocessing when the dual objective
+// limit already dominates the root LP bound.
+// \return 0=success (caller continues), 1=break BAB (tighten bounds found
+//         the problem infeasible)
 int CbcSolver::babConfigureBabModel(int logLevel,
   OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
   CglStored &storedAmpl,
@@ -7790,6 +7799,15 @@ int CbcSolver::babConfigureBabModel(int logLevel,
   return 0;
 }
 
+// Extracted from CbcSolver::run() — the block immediately following the
+// preprocess() call in `case CbcParam::BAB:`. Handles the cgraph/clique-
+// strengthening mode switches (disabling new-style clique/odd-wheel cuts
+// and clique strengthening when -cgraph=off, applying MIP-start values to
+// the preprocessed model), prints the preprocessing phase-end banner
+// through preprocHandler and tears it down, then re-strengthens cliques
+// ("after" mode) and re-activates the row-cut debugger if requested.
+// \return 0=success (caller continues), 1=break BAB (tighten bounds found
+//         the problem infeasible)
 int CbcSolver::babPostPreprocessCleanup(
   CglPreProcess &process, CglTwomir &twomirGen,
   CbcPreprocHandler *&preprocHandler, double preprocStart,
@@ -7908,6 +7926,16 @@ int CbcSolver::babPostPreprocessCleanup(
   return 0;
 }
 
+// Extracted from CbcSolver::run() — the first remaining inline block in
+// `case CbcParam::BAB:` following babPostPreprocessCleanup(). Handles the
+// optional linked-model (OsiSolverLink) knapsack expansion via
+// expandKnapsack(), cost-based branching-priority assignment (-cost),
+// heuristic registration (configureHeuristics(type=1)), local-tree setup,
+// cut-generator installation (configureCutGenerators()), minimum-drop /
+// cut-pass tuning, cutoff-increment / repeated-use solver options, and
+// debug-value mapping -- i.e. all the shared branch-and-bound search setup
+// that must run once, right before the actual search, regardless of
+// whether preprocessing ran.
 void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
   CglPreProcess &process, CglStored &storedAmpl, CoinModel &saveCoinModel,
@@ -8300,6 +8328,15 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   }
 }
 
+// Extracted from CbcSolver::run() — the remaining inline tail of
+// `case CbcParam::BAB:` after babConfigureSearchModel(): BAB-specific
+// object/SOS setup (lotsizing/SOS objects, priorities, pseudocosts, branch
+// direction), the actual babModel_->branchAndBound() call (including any
+// racing/multi-threaded/donor-model variants), search statistics
+// collection/printing, and the final postprocess() call that restores the
+// original (pre-preprocessing) solver and reports results.
+// \return 0=success (caller breaks BAB), 3=return from run() (returnCode
+//         is set)
 int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
   int cbcLogLevel, int testOsiOptions, OsiClpSolverInterface *&clpSolver,
   ClpSimplex *&lpSolver, OsiClpSolverInterface *originalSolver,

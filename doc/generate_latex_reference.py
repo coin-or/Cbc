@@ -25,11 +25,19 @@ def get_version(cbc):
 
 
 def group_by_topic(params):
+    """Return {topic: [param_dict, ...]} for visible params.
+
+    Parameters without an explicit topic are still shown (grouped under a
+    "General" catch-all) as long as they are meant to be visible
+    (displayPriority != 0) -- previously such parameters (e.g. rankConflict*,
+    rankRange*, extra1-4, help, version, ...) were silently dropped from
+    every generated reference.
+    """
     topics = {}
     for p in params:
-        t = p.get("topic", "")
-        if not t or p.get("displayPriority", 0) == 0:
+        if p.get("displayPriority", 0) == 0:
             continue
+        t = p.get("topic", "") or "General"
         topics.setdefault(t, []).append(p)
     return topics
 
@@ -59,9 +67,12 @@ TYPE_LABELS = {
 def emit(version, topics, out):
     date = datetime.now().strftime("%B %Y")
     order = [
-        "Stopping", "Cuts", "Heuristics", "Preprocessing", "Branching",
+        "Stopping",
+        "MIP Preprocessing", "MIP Preprocessing \u2014 Bound Propagation", "LP Presolve",
+        "Cuts", "Heuristics", "Branching",
         "Tolerances", "Conflict Graph", "Strategy", "Solving",
         "Simplex", "Barrier", "Scaling", "Output", "I/O", "Parallelism",
+        "General",
     ]
 
     out.write(r"""\documentclass[11pt,a4paper]{article}

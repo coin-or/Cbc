@@ -12,6 +12,9 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 ## Contents
 
 - [Stopping](#stopping) (9 parameters)
+- [MIP Preprocessing](#mip-preprocessing) (9 parameters)
+- [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (8 parameters)
+- [LP Presolve](#lp-presolve) (3 parameters)
 - [Cuts](#cuts) (26 parameters)
 - [Heuristics](#heuristics) (34 parameters)
 - [Branching](#branching) (6 parameters)
@@ -25,9 +28,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [Output](#output) (23 parameters)
 - [I/O](#i/o) (35 parameters)
 - [Parallelism](#parallelism) (2 parameters)
-- [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (8 parameters)
-- [MIP Preprocessing](#mip-preprocessing) (9 parameters)
-- [LP Presolve](#lp-presolve) (3 parameters)
+- [General](#general) (32 parameters)
 
 ---
 
@@ -104,6 +105,187 @@ Maximum seconds
 After this many seconds clp will act as if maximum iterations had been reached (if value >=0).
 
 **Range:** -1 to inf (default: -1)
+
+## MIP Preprocessing
+
+### `-PrepNames`
+
+If column names will be kept in pre-processed model
+
+Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-sosOptions`
+
+Whether to use SOS from AMPL
+
+Normally if AMPL says there are SOS variables they should be used, but sometimes they should be turned off - this does so.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-clqstrengthen`
+
+Whether and when to perform Clique Strengthening preprocessing routine
+
+**Values:** `off`, `before`, `after` (default: `after`)
+
+### `-preprocess`
+
+Whether to use integer preprocessing
+
+This tries to reduce size of the model in a similar way to presolve and it also tries to strengthen the model. This can be very useful and is worth trying.  save option saves on file presolved.mps.  equal will turn <= cliques into ==.  sos will create sos sets if all 0-1 in sets (well one extra is allowed) and no overlaps.  trysos is same but allows any number extra. equalall will turn all valid inequalities into equalities with integer slacks. strategy is as on but uses CbcStrategy.
+
+**Values:** `off`, `on`, `save`, `equal`, `sos`, `trysos`, `equalall`, `strategy`, `aggregate`, `forcesos`, `stop!aftersaving`, `equalallstop` (default: `sos`)
+
+### `-cppGenerate`
+
+Generates C++ code
+
+Once you like what the stand-alone solver does then this allows you to generate user_driver.cpp which approximates the code.  0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values.
+
+**Range:** 0 to 4 (default: 0)
+
+### `-extraVariables`
+
+Allow creation of extra integer variables
+
+Switches on a trivial re-formulation that introduces extra integer variables to group together variables with same cost.
+
+**Range:** -INT_MAX to INT_MAX (default: 0)
+
+### `-tunePreProcess`
+
+Dubious tuning parameters for preprocessing
+
+Format aabbcccc - 
+ If aa then this is number of major passes (i.e. with presolve) 
+ If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) 
+ cccc is bit set 
+ 0 - 1 Heavy probing 
+ 1 - 2 Make variables integer if possible (if obj value)
+ 2 - 4 As above but even if zero objective value
+ 7 - 128 Try and create cliques
+ 8 - 256 If all +1 try hard for dominated rows
+ 9 - 512 Even heavier probing 
+ 10 - 1024 Use a larger feasibility tolerance in presolve
+ 11 - 2048 Try probing before creating cliques
+ 12 - 4096 Switch off duplicate column checking for integers 
+ 13 - 8192 Allow scaled duplicate column checking 
+ 
+     Now aa 99 has special meaning i.e. just one simple presolve.
+
+**Range:** 0 to INT_MAX (default: 7)
+
+### `-fixOnDj`
+
+Try heuristic that fixes variables based on reduced costs
+
+If set, integer variables with reduced costs greater than the specified value will be fixed before branch and bound - use with extreme caution!
+
+**Range:** -∞ to ∞ (default: 0)
+
+### `-tightenFactor`
+
+Tighten bounds using value times largest activity at continuous solution
+
+This sleazy trick can help on some problems.
+
+**Range:** 0 to inf (default: 0)
+
+## MIP Preprocessing — Bound Propagation
+
+### `-doBoundPropagation`
+
+Run bound propagation on the loaded model
+
+Immediately runs bound propagation on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by boundPropLevel. After running, use writeModel to save the tightened problem.
+
+### `-singletonBounds`
+
+Whether to tighten variable bounds from singleton rows before solve
+
+When on, singleton rows (rows with a single nonzero) are used to tighten variable bounds before the initial LP solve and conflict graph construction. This is a cheap preprocessing step that can fix variables and reduce the problem size.
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-boundPropLevel`
+
+Aggression level for bound propagation before solve
+
+Controls how aggressively bound propagation tightens variable bounds before the initial LP solve.
+  off:       disabled (falls back to singletonBounds setting).
+  singletons: singleton rows only — same as singletonBounds on.
+  milpbt:    singletons then knapsack-based bound propagation for up to boundPropMaxRounds rounds (default 100, effectively fixpoint).
+  fixpoint:  singletons then bound propagation until no new fixings are found, regardless of boundPropMaxRounds.
+
+**Values:** `off`, `singletons`, `milpbt`, `fixpoint` (default: `milpbt`)
+
+### `-nodeBoundProp`
+
+Run bound propagation at B&B nodes
+
+When enabled, runs knapsack-based bound propagation after branching decisions are applied at each node (subject to depth constraints), before the LP is solved. Can detect infeasibility earlier and fix additional variables. Controlled by nodeBoundPropMaxDepth and nodeBoundPropDepthInterval.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-boundPropMaxRounds`
+
+Maximum number of bound propagation rounds
+
+Maximum number of CoinBoundPropagation rounds when boundPropLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when boundPropLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
+
+**Range:** 1 to INT_MAX (default: 100)
+
+### `-nodeBoundPropMaxDepth`
+
+Maximum tree depth at which node bound propagation is applied
+
+Node bound propagation is only applied at depths up to this value. Deeper nodes skip bound propagation to reduce overhead.
+
+**Range:** 0 to INT_MAX (default: 50)
+
+### `-nodeBoundPropMinDepth`
+
+Minimum tree depth at which node bound propagation is applied
+
+Node bound propagation is only applied at depths at or above this value. Shallower nodes skip bound propagation.
+
+**Range:** 0 to INT_MAX (default: 5)
+
+### `-nodeBoundPropDepthInterval`
+
+Depth interval for node bound propagation
+
+Node bound propagation is applied at depths that are multiples of this interval (0, interval, 2*interval, ...). For example, with interval 3 bound propagation runs at depths 0, 3, 6, 9, etc.
+
+**Range:** 1 to INT_MAX (default: 5)
+
+## LP Presolve
+
+### `-presolve`
+
+Whether to presolve problem
+
+Presolve analyzes the model to find such things as redundant equations, equations which fix some variables, equations which can be transformed into bounds, etc. For the initial solve of any problem this is worth doing unless one knows that it will have no effect. Option 'on' will normally do 5 passes, while using 'more' will do 10.  If the problem is very large one can let CLP write the original problem to file by using 'file'.
+
+**Values:** `on`, `off`, `more`, `file` (default: `on`)
+
+### `-passPresolve`
+
+How many passes in presolve
+
+Normally Presolve does 10 passes but you may want to do less to make it more lightweight or do more if improvements are still being made.  As Presolve will return if nothing is being taken out, you should not normally need to use this fine tuning.
+
+**Range:** -200 to 100 (default: 5)
+
+### `-preTolerance`
+
+Tolerance to use in presolve
+
+One may want to increase this tolerance if presolve says the problem is infeasible and one has awkward numbers and is sure that the problem is really feasible.
+
+**Range:** 1e-20 to inf (default: 1e-08)
 
 ## Cuts
 
@@ -1701,184 +1883,232 @@ To use multiple threads, set threads to number wanted.  It may be better to use 
 
 **Range:** -100 to 100000 (default: 0)
 
-## MIP Preprocessing — Bound Propagation
+## General
 
-### `-doBoundPropagation`
+### `-help`
 
-Run bound propagation on the loaded model
+Print out version, non-standard options and some help
 
-Immediately runs bound propagation on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by boundPropLevel. After running, use writeModel to save the tightened problem.
+This prints out some help to get a user started. If you're seeing this message, you should be past that stage.
 
-### `-singletonBounds`
+### `-end`
 
-Whether to tighten variable bounds from singleton rows before solve
+Stops execution
 
-When on, singleton rows (rows with a single nonzero) are used to tighten variable bounds before the initial LP solve and conflict graph construction. This is a cheap preprocessing step that can fix variables and reduce the problem size.
+This stops execution; end, exit, quit and stop are synonyms.
 
-**Values:** `off`, `on` (default: `on`)
+### `-exit`
 
-### `-boundPropLevel`
+Stops cbc execution
 
-Aggression level for bound propagation before solve
+This stops the execution of Cbc, end, exit, quit and stop are synonyms
 
-Controls how aggressively bound propagation tightens variable bounds before the initial LP solve.
-  off:       disabled (falls back to singletonBounds setting).
-  singletons: singleton rows only — same as singletonBounds on.
-  milpbt:    singletons then knapsack-based bound propagation for up to boundPropMaxRounds rounds (default 100, effectively fixpoint).
-  fixpoint:  singletons then bound propagation until no new fixings are found, regardless of boundPropMaxRounds.
+### `-quit`
 
-**Values:** `off`, `singletons`, `milpbt`, `fixpoint` (default: `milpbt`)
+Stops cbc execution
 
-### `-nodeBoundProp`
+This stops the execution of Cbc, end, exit, quit and stop are synonyms
 
-Run bound propagation at B&B nodes
+### `-stop`
 
-When enabled, runs knapsack-based bound propagation after branching decisions are applied at each node (subject to depth constraints), before the LP is solved. Can detect infeasibility earlier and fix additional variables. Controlled by nodeBoundPropMaxDepth and nodeBoundPropDepthInterval.
+Stops cbc execution
 
-**Values:** `off`, `on` (default: `off`)
+This stops the execution of Cbc, end, exit, quit and stop are synonyms
 
-### `-boundPropMaxRounds`
+### `-version`
 
-Maximum number of bound propagation rounds
+Print version
 
-Maximum number of CoinBoundPropagation rounds when boundPropLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when boundPropLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
+### `-cplexUse`
 
-**Range:** 1 to INT_MAX (default: 100)
+Whether to use Cplex!
 
-### `-nodeBoundPropMaxDepth`
-
-Maximum tree depth at which node bound propagation is applied
-
-Node bound propagation is only applied at depths up to this value. Deeper nodes skip bound propagation to reduce overhead.
-
-**Range:** 0 to INT_MAX (default: 50)
-
-### `-nodeBoundPropMinDepth`
-
-Minimum tree depth at which node bound propagation is applied
-
-Node bound propagation is only applied at depths at or above this value. Shallower nodes skip bound propagation.
-
-**Range:** 0 to INT_MAX (default: 5)
-
-### `-nodeBoundPropDepthInterval`
-
-Depth interval for node bound propagation
-
-Node bound propagation is applied at depths that are multiples of this interval (0, interval, 2*interval, ...). For example, with interval 3 bound propagation runs at depths 0, 3, 6, 9, etc.
-
-**Range:** 1 to INT_MAX (default: 5)
-
-## MIP Preprocessing
-
-### `-PrepNames`
-
-If column names will be kept in pre-processed model
-
-Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem
-
-**Values:** `off`, `on` (default: `on`)
-
-### `-sosOptions`
-
-Whether to use SOS from AMPL
-
-Normally if AMPL says there are SOS variables they should be used, but sometimes they should be turned off - this does so.
+If the user has Cplex, but wants to use some of Cbc's heuristics then you can!  If this is on, then Cbc will get to the root node and then hand over to Cplex.  If heuristics find a solution this can be significantly quicker.  You will probably want to switch off Cbc's cuts as Cplex thinks they are genuine constraints.  It is also probable that you want to switch off preprocessing, although for difficult problems it is worth trying both.
 
 **Values:** `off`, `on` (default: `off`)
 
-### `-clqstrengthen`
+### `-rankConflictType`
 
-Whether and when to perform Clique Strengthening preprocessing routine
+Formula for combining directional conflict degrees into a single score.
 
-**Values:** `off`, `before`, `after` (default: `after`)
+Controls how d0 (conflicts when x=0) and d1 (conflicts when x=1) are combined: 
+	 sum: d0+d1 — total propagation power (default);
+	 min: min(d0,d1) — both directions must be strong; 
+	 product: sqrt(d0*d1) — product score analog, rewards balance.
 
-### `-preprocess`
+**Values:** `min`, `sum`, `product`
 
-Whether to use integer preprocessing
+### `-extra1`
 
-This tries to reduce size of the model in a similar way to presolve and it also tries to strengthen the model. This can be very useful and is worth trying.  save option saves on file presolved.mps.  equal will turn <= cliques into ==.  sos will create sos sets if all 0-1 in sets (well one extra is allowed) and no overlaps.  trysos is same but allows any number extra. equalall will turn all valid inequalities into equalities with integer slacks. strategy is as on but uses CbcStrategy.
+Extra integer parameter 1
 
-**Values:** `off`, `on`, `save`, `equal`, `sos`, `trysos`, `equalall`, `strategy`, `aggregate`, `forcesos`, `stop!aftersaving`, `equalallstop` (default: `sos`)
+**Range:** -INT_MAX to INT_MAX (default: -1)
 
-### `-cppGenerate`
+### `-extra2`
 
-Generates C++ code
+Extra integer parameter 2
 
-Once you like what the stand-alone solver does then this allows you to generate user_driver.cpp which approximates the code.  0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values.
+**Range:** -INT_MAX to INT_MAX (default: -1)
 
-**Range:** 0 to 4 (default: 0)
+### `-extra3`
 
-### `-extraVariables`
+Extra integer parameter 3
 
-Allow creation of extra integer variables
+**Range:** -INT_MAX to INT_MAX (default: -1)
 
-Switches on a trivial re-formulation that introduces extra integer variables to group together variables with same cost.
+### `-extra4`
 
-**Range:** -INT_MAX to INT_MAX (default: 0)
+Extra integer parameter 4
 
-### `-tunePreProcess`
+**Range:** -INT_MAX to INT_MAX (default: -1)
 
-Dubious tuning parameters for preprocessing
+### `-rootHeurSchedule`
 
-Format aabbcccc - 
- If aa then this is number of major passes (i.e. with presolve) 
- If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) 
- cccc is bit set 
- 0 - 1 Heavy probing 
- 1 - 2 Make variables integer if possible (if obj value)
- 2 - 4 As above but even if zero objective value
- 7 - 128 Try and create cliques
- 8 - 256 If all +1 try hard for dominated rows
- 9 - 512 Even heavier probing 
- 10 - 1024 Use a larger feasibility tolerance in presolve
- 11 - 2048 Try probing before creating cliques
- 12 - 4096 Switch off duplicate column checking for integers 
- 13 - 8192 Allow scaled duplicate column checking 
- 
-     Now aa 99 has special meaning i.e. just one simple presolve.
+Enable two-phase parallel root heuristic schedule
 
-**Range:** 0 to INT_MAX (default: 7)
+When set to 1, replaces the default root heuristic execution with a two-phase parallel schedule. Phase 1 runs optimized diving configurations in parallel (stops on first feasible solution). Phase 2 runs improvement heuristics (RINS, etc.) on the found solution. Use with -threads to set the number of parallel threads.
 
-### `-fixOnDj`
+**Range:** 0 to 1 (default: 0)
 
-Try heuristic that fixes variables based on reduced costs
+### `-rankConflict`
 
-If set, integer variables with reduced costs greater than the specified value will be fixed before branch and bound - use with extreme caution!
+Weight for conflict-graph degree in strong branching sort-key (0 = disabled).
 
-**Range:** -∞ to ∞ (default: 0)
+When positive, the conflict graph degree of binary variables is used to augment the pseudo-cost-based sort key that determines which candidates receive strong branching LP solves. Higher-degree variables (those whose branching triggers more propagations) are prioritized. The boost factor is (1 + weight * scaledScore), where scaledScore depends on rankConflictType and the per-trust scaling powers. Default 0.2 (enabled, sum formula). Set to 0.0 to disable. Typical useful range: 0.1 to 0.5.
 
-### `-tightenFactor`
+**Range:** 0 to 100 (default: 0)
 
-Tighten bounds using value times largest activity at continuous solution
+### `-rankConflictPowerTrusted`
 
-This sleazy trick can help on some problems.
+Scaling exponent for conflict score when pseudo-costs are trusted (sqrt = 0.5).
 
-**Range:** 0 to inf (default: 0)
+When pseudo-cost observations are sufficient (trusted), conflict information acts as a gentle tie-breaker. The raw conflict score is raised to this power before weighting: 0.5 = square root (default, mild nudge), 0.333 = cube root (very mild), 1.0 = linear (full influence even when trusted).
 
-## LP Presolve
+**Range:** 0 to 1 (default: 0)
 
-### `-presolve`
+### `-rankConflictPowerUntrusted`
 
-Whether to presolve problem
+Scaling exponent for conflict score when pseudo-costs are untrusted (linear = 1.0).
 
-Presolve analyzes the model to find such things as redundant equations, equations which fix some variables, equations which can be transformed into bounds, etc. For the initial solve of any problem this is worth doing unless one knows that it will have no effect. Option 'on' will normally do 5 passes, while using 'more' will do 10.  If the problem is very large one can let CLP write the original problem to file by using 'file'.
+When pseudo-cost observations are insufficient (untrusted), conflict information is given stronger influence. The raw conflict score is raised to this power: 1.0 = linear (default, full influence), 0.5 = square root (moderate).
 
-**Values:** `on`, `off`, `more`, `file` (default: `on`)
+**Range:** 0 to 1 (default: 0)
 
-### `-passPresolve`
+### `-rankRange`
 
-How many passes in presolve
+Weight for variable-range criterion 1/min(maxRange,ub-lb) in strong branching sort-key (0 = disabled).
 
-Normally Presolve does 10 passes but you may want to do less to make it more lightweight or do more if improvements are still being made.  As Presolve will return if nothing is being taken out, you should not normally need to use this fine tuning.
+When positive, the domain width of integer variables is used to augment the sort key that determines which candidates receive strong branching LP solves. Score = 1/min(rankRangeMax, ub-lb): binary [0,1] scores 1.0, domains >= rankRangeMax score 1/rankRangeMax (floor), preventing large/unbounded vars from collapsing to ~0. Applies to all integer variables (not just binary). The boost factor is (1 + weight * scaledScore). Default 0.0 (disabled). Typical useful range: 0.01 to 0.3.
 
-**Range:** -200 to 100 (default: 5)
+**Range:** 0 to 100 (default: 0)
 
-### `-preTolerance`
+### `-rankRangePowerTrusted`
 
-Tolerance to use in presolve
+Scaling exponent for range score when pseudo-costs are trusted (sqrt = 0.5).
 
-One may want to increase this tolerance if presolve says the problem is infeasible and one has awkward numbers and is sure that the problem is really feasible.
+When pseudo-cost observations are sufficient (trusted), range information acts as a gentle tie-breaker. The raw score 1/min(maxRange,ub-lb) is raised to this power: 0.5 = square root (default, mild nudge), 0.333 = cube root, 1.0 = linear.
 
-**Range:** 1e-20 to inf (default: 1e-08)
+**Range:** 0 to 1 (default: 0)
+
+### `-rankRangePowerUntrusted`
+
+Scaling exponent for range score when pseudo-costs are untrusted (linear = 1.0).
+
+When pseudo-cost observations are insufficient, range information is given stronger influence. 1.0 = linear (default), 0.5 = square root (moderate).
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankRangeMax`
+
+Cap on domain width for range criterion: score = 1/min(rankRangeMax, ub-lb). Default 10.
+
+Variables with domain width >= rankRangeMax all receive the same floor score (1/rankRangeMax), preventing large or unbounded integer domains from collapsing to a near-zero range score. Binary [0,1] always scores 1.0 (unaffected). Default 10.0: domains of 10 or wider are treated equally (floor score = 0.1). Increase to give more differentiation among wider domains.
+
+**Range:** 1 to 1e+30 (default: 0)
+
+### `-rankObjCoeff`
+
+Weight for objective coefficient magnitude criterion |c_j|^power in strong branching sort-key (0 = disabled).
+
+When positive, the absolute value of a variable's objective coefficient |c_j| is used to augment the sort key that determines strong branching candidate priority. Score = |c_j|^scalingPower. Variables not in the objective (c_j=0) receive no boost. Most useful for untrusted variables where pseudo-costs are unreliable; for trusted variables pseudo-costs already capture the objective coefficient implicitly. Default 0.0 (disabled). Typical useful range: 0.01 to 0.3.
+
+**Range:** 0 to 100 (default: 0)
+
+### `-rankObjCoeffPowerTrusted`
+
+Scaling exponent for obj-coeff score when pseudo-costs are trusted. Default 0.1 (very slow growth).
+
+When pseudo-cost observations are sufficient, objective coefficient acts as a gentle tie-breaker. Score = |c_j|^power: 0.1 (default) gives c=100→1.58, c=10000→2.51. Use 0.05 for even milder effect, 0.2 for more influence.
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankObjCoeffPowerUntrusted`
+
+Scaling exponent for obj-coeff score when pseudo-costs are untrusted. Default 0.2.
+
+When pseudo-cost observations are insufficient, objective coefficient is allowed more influence. 0.2 (default): c=100→2.51, c=10000→6.31. Use 0.1 to match trusted, or 0.5 for sqrt (moderate growth).
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankNonzeros`
+
+Weight for column non-zeros criterion nz^power in strong branching sort-key (0 = disabled).
+
+When positive, the number of constraints a variable appears in is used to augment the sort key that determines strong branching candidate priority. Score = nz^scalingPower (default 4th-root, very slow growth). Variables appearing in many constraints propagate their fixing more broadly. Applies to all integer variables. Designed as a cheap tie-breaker. Default 0.0 (disabled). Typical useful range: 0.01 to 0.1.
+
+**Range:** 0 to 100 (default: 0)
+
+### `-rankNonzerosPowerTrusted`
+
+Scaling exponent for nz score when pseudo-costs are trusted (4th-root = 0.25).
+
+When pseudo-cost observations are sufficient, nz information acts as a gentle tie-breaker. Score = nz^power: 0.25 = 4th root (default, very slow growth), 0.5 = sqrt, 1.0 = linear.
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankNonzerosPowerUntrusted`
+
+Scaling exponent for nz score when pseudo-costs are untrusted (sqrt = 0.5).
+
+When pseudo-cost observations are insufficient, nz information is given slightly more influence. 0.5 = sqrt (default), 1.0 = linear.
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankConflictMaxPercBin`
+
+Maximum % of binary integer variables for the conflict ranker to activate (default 97).
+
+The conflict-graph ranker is beneficial primarily on mixed-integer problems (where not all integer variables are binary). When the fraction of binary variables among all integer variables is >= this threshold, the ranker is automatically disabled to avoid performance regressions on near-pure-binary instances. Set to 100 to always activate regardless of binary fraction.
+
+**Range:** 0 to 100 (default: 97)
+
+### `-netlibBarrier`
+
+Solve entire netlib test set with barrier
+
+This exercises the unit test for clp and then solves the netlib test set using barrier. The user can set options before e.g. clp -kkt on -netlib
+
+### `-netlibDual`
+
+Solve entire netlib test set (dual)
+
+This exercises the unit test for clp and then solves the netlib test set using dual. The user can set options before e.g. clp -presolve off -netlib
+
+### `-netlib`
+
+Solve entire netlib test set
+
+This exercises the unit test for clp and then solves the netlib test set using dual or primal. The user can set options before e.g. clp -presolve off -netlib
+
+### `-netlibPrimal`
+
+Solve entire netlib test set (primal)
+
+This exercises the unit test for clp and then solves the netlib test set using primal. The user can set options before e.g. clp -presolve off -netlibp
+
+### `-netlibTune`
+
+Solve entire netlib test set with 'best' algorithm
+
+This exercises the unit test for clp and then solves the netlib test set using whatever works best. I know this is cheating but it also stresses the code better by doing a mixture of stuff. The best algorithm was chosen on a Linux ThinkPad using native cholesky with University of Florida ordering.
 

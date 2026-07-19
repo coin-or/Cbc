@@ -14,7 +14,7 @@
 
 \title{CBC Parameter Reference}
 \author{COIN-OR Cbc Development Team}
-\date{May 2026 --- CBC devel}
+\date{July 2026 --- CBC devel}
 
 \begin{document}
 \maketitle
@@ -71,7 +71,7 @@ Maximum number of nodes to evaluate
 
 This is a repeatable way to limit search.  Normally using time is easier but then the results may not be repeatable.
 
-\textbf{Range:} 1 to INT\_MAX (default: 2147483647)
+\textbf{Range:} 0 to INT\_MAX (default: 2147483647)
 
 \subsection*{\texttt{-maxNNIFS}}
 \addcontentsline{toc}{subsection}{\texttt{-maxNNIFS}}
@@ -87,7 +87,7 @@ This criterion specifies that when a feasible solution is available, the search 
 
 maximum seconds without improving the incumbent solution
 
-With this stopping criterion, after a feasible solution is found, the search should continue only if the incumbent solution was updated recently, the tolerance is specified here. A discussion on why this criterion can be useful is included here: https://yetanothermathprogrammingconsultant.blogspot.com/2019/11/mip-solver-stopping-criteria.html .
+With this stopping criterion, after a feasible solution is found, the search should continue only if the incumbent solution was updated recently, the tolerance is specified here.
 
 \textbf{Range:} -1 to inf (default: inf)
 
@@ -986,8 +986,9 @@ Controls which LP algorithm is used when -solve or -initialSolve triggers the ro
   dual:    dual simplex (default).
   primal:  primal simplex.
   barrier: interior-point (barrier) method.
+  auto:    ML-based per-instance recommendation, using a classifier trained on instance features (see CbcLpParamScorer) to pick the LP method/perturbation/scaling settings expected to solve fastest.
 
-\textbf{Values:} \texttt{dual}, \texttt{primal}, \texttt{barrier} (default: \texttt{dual})
+\textbf{Values:} \texttt{dual}, \texttt{primal}, \texttt{barrier}, \texttt{auto} (default: \texttt{dual})
 
 \subsection*{\texttt{-maxSavedSolutions}}
 \addcontentsline{toc}{subsection}{\texttt{-maxSavedSolutions}}
@@ -1121,11 +1122,11 @@ The default is minimize - use 'direction maximize' for maximization.
 \subsection*{\texttt{-vector}}
 \addcontentsline{toc}{subsection}{\texttt{-vector}}
 
-Whether to use vector? Form of matrix in simplex
+Try and use vector instructions in simplex
 
-If this is on ClpPackedMatrix uses extra column copy in odd format.
+At present only for Intel architectures - but could be extended. Uses avx2 or avx512 instructions. Uses different storage for matrix - can be of benefit without instruction set on some problems. I may add pool to switch on a pool matrix
 
-\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{ones} (default: \texttt{off})
 
 \subsection*{\texttt{-decompose}}
 \addcontentsline{toc}{subsection}{\texttt{-decompose}}
@@ -1332,7 +1333,7 @@ Which cholesky algorithm
 
 For a barrier code to be effective it needs a good Cholesky ordering and factorization. The native ordering and factorization is not state of the art, although acceptable. You may want to link in one from another source.  See Makefile.locations for some possibilities.
 
-\textbf{Values:} \texttt{native}, \texttt{dense}, \texttt{fudge!Long\_dummy}, \texttt{wssmp\_dummy}, \texttt{Uni!versityOfFlorida\_dummy}, \texttt{Taucs\_dummy}, \texttt{Mumps\_dummy}, \texttt{Pardiso\_dummy} (default: \texttt{native})
+\textbf{Values:} \texttt{native}, \texttt{dense}, \texttt{fudge!Long\_dummy}, \texttt{wssmp\_dummy}, \texttt{Uni!versityOfFlorida}, \texttt{Taucs\_dummy}, \texttt{Mumps\_dummy}, \texttt{Pardiso\_dummy} (default: \texttt{native})
 
 \subsection*{\texttt{-crossover}}
 \addcontentsline{toc}{subsection}{\texttt{-crossover}}
@@ -1893,6 +1894,15 @@ It saves space to get rid of names so if you need to you can set this to off. Th
 
 \section{Parallelism}
 
+\subsection*{\texttt{-racingLP}}
+\addcontentsline{toc}{subsection}{\texttt{-racingLP}}
+
+Number of threads for opportunistic parallel LP racing at root node
+
+When set to a value > 0, the root LP relaxation is solved by racing multiple LP method configurations in parallel (dual simplex, primal with Idiot crash, primal with Sprint). The first to reach optimality wins and the others are aborted. This can significantly reduce root LP time for problems where the default method is not the fastest. A value of 3 races all three configurations. Set to 0 to disable.
+
+\textbf{Range:} 0 to 8 (default: 0)
+
 \subsection*{\texttt{-threads}}
 \addcontentsline{toc}{subsection}{\texttt{-threads}}
 
@@ -1902,14 +1912,14 @@ To use multiple threads, set threads to number wanted.  It may be better to use 
 
 \textbf{Range:} -100 to 100000 (default: 0)
 
-\section{MIP Preprocessing --- Fast}
+\section{MIP Preprocessing --- Bound Propagation}
 
-\subsection*{\texttt{-fastPreProcess}}
-\addcontentsline{toc}{subsection}{\texttt{-fastPreProcess}}
+\subsection*{\texttt{-doBoundPropagation}}
+\addcontentsline{toc}{subsection}{\texttt{-doBoundPropagation}}
 
-Run fast MILP preprocessing on the loaded model
+Run bound propagation on the loaded model
 
-Immediately runs the fast MILP preprocessor on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by fastPreProcessLevel. After running, use writeModel to save the tightened problem.
+Immediately runs bound propagation on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by boundPropLevel. After running, use writeModel to save the tightened problem.
 
 \subsection*{\texttt{-singletonBounds}}
 \addcontentsline{toc}{subsection}{\texttt{-singletonBounds}}
@@ -1920,27 +1930,63 @@ When on, singleton rows (rows with a single nonzero) are used to tighten variabl
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{on})
 
-\subsection*{\texttt{-fastPreProcessLevel}}
-\addcontentsline{toc}{subsection}{\texttt{-fastPreProcessLevel}}
+\subsection*{\texttt{-boundPropLevel}}
+\addcontentsline{toc}{subsection}{\texttt{-boundPropLevel}}
 
-Aggression level for fast MILP preprocessing before solve
+Aggression level for bound propagation before solve
 
-Controls how aggressively fast preprocessing tightens variable bounds before the initial LP solve.
+Controls how aggressively bound propagation tightens variable bounds before the initial LP solve.
   off:       disabled (falls back to singletonBounds setting).
   singletons: singleton rows only --- same as singletonBounds on.
-  milpbt:    singletons then knapsack-based bound tightening for up to fastPreProcessMaxRounds rounds (default 100, effectively fixpoint).
-  fixpoint:  singletons then bound tightening until no new fixings are found, regardless of fastPreProcessMaxRounds.
+  milpbt:    singletons then knapsack-based bound propagation for up to boundPropMaxRounds rounds (default 100, effectively fixpoint).
+  fixpoint:  singletons then bound propagation until no new fixings are found, regardless of boundPropMaxRounds.
 
 \textbf{Values:} \texttt{off}, \texttt{singletons}, \texttt{milpbt}, \texttt{fixpoint} (default: \texttt{milpbt})
 
-\subsection*{\texttt{-fastPreProcessMaxRounds}}
-\addcontentsline{toc}{subsection}{\texttt{-fastPreProcessMaxRounds}}
+\subsection*{\texttt{-nodeBoundProp}}
+\addcontentsline{toc}{subsection}{\texttt{-nodeBoundProp}}
 
-Maximum number of bound-tightening rounds in fast preprocessing
+Run bound propagation at B\&B nodes
 
-Maximum number of CoinMILPBoundTightening rounds when fastPreProcessLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when fastPreProcessLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
+When enabled, runs knapsack-based bound propagation after branching decisions are applied at each node (subject to depth constraints), before the LP is solved. Can detect infeasibility earlier and fix additional variables. Controlled by nodeBoundPropMaxDepth and nodeBoundPropDepthInterval.
+
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
+
+\subsection*{\texttt{-boundPropMaxRounds}}
+\addcontentsline{toc}{subsection}{\texttt{-boundPropMaxRounds}}
+
+Maximum number of bound propagation rounds
+
+Maximum number of CoinBoundPropagation rounds when boundPropLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when boundPropLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
 
 \textbf{Range:} 1 to INT\_MAX (default: 100)
+
+\subsection*{\texttt{-nodeBoundPropMaxDepth}}
+\addcontentsline{toc}{subsection}{\texttt{-nodeBoundPropMaxDepth}}
+
+Maximum tree depth at which node bound propagation is applied
+
+Node bound propagation is only applied at depths up to this value. Deeper nodes skip bound propagation to reduce overhead.
+
+\textbf{Range:} 0 to INT\_MAX (default: 50)
+
+\subsection*{\texttt{-nodeBoundPropMinDepth}}
+\addcontentsline{toc}{subsection}{\texttt{-nodeBoundPropMinDepth}}
+
+Minimum tree depth at which node bound propagation is applied
+
+Node bound propagation is only applied at depths at or above this value. Shallower nodes skip bound propagation.
+
+\textbf{Range:} 0 to INT\_MAX (default: 5)
+
+\subsection*{\texttt{-nodeBoundPropDepthInterval}}
+\addcontentsline{toc}{subsection}{\texttt{-nodeBoundPropDepthInterval}}
+
+Depth interval for node bound propagation
+
+Node bound propagation is applied at depths that are multiples of this interval (0, interval, 2*interval, ...). For example, with interval 3 bound propagation runs at depths 0, 3, 6, 9, etc.
+
+\textbf{Range:} 1 to INT\_MAX (default: 5)
 
 \section{MIP Preprocessing}
 

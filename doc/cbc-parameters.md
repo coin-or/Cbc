@@ -1,6 +1,6 @@
 # CBC Parameter Reference
 
-*CBC devel — May 2026*
+*CBC devel — July 2026*
 
 Parameters are specified on the command line **before** `-solve`:
 ```
@@ -23,9 +23,9 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [Barrier](#barrier) (3 parameters)
 - [Scaling](#scaling) (4 parameters)
 - [Output](#output) (23 parameters)
-- [I/O](#i/o) (37 parameters)
-- [Parallelism](#parallelism) (1 parameters)
-- [MIP Preprocessing — Fast](#mip-preprocessing-—-fast) (4 parameters)
+- [I/O](#i/o) (35 parameters)
+- [Parallelism](#parallelism) (2 parameters)
+- [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (8 parameters)
 - [MIP Preprocessing](#mip-preprocessing) (9 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
 
@@ -63,7 +63,7 @@ Maximum number of nodes to evaluate
 
 This is a repeatable way to limit search.  Normally using time is easier but then the results may not be repeatable.
 
-**Range:** 1 to INT_MAX (default: 2147483647)
+**Range:** 0 to INT_MAX (default: 2147483647)
 
 ### `-maxNNIFS`
 
@@ -77,7 +77,7 @@ This criterion specifies that when a feasible solution is available, the search 
 
 maximum seconds without improving the incumbent solution
 
-With this stopping criterion, after a feasible solution is found, the search should continue only if the incumbent solution was updated recently, the tolerance is specified here. A discussion on why this criterion can be useful is included here: https://yetanothermathprogrammingconsultant.blogspot.com/2019/11/mip-solver-stopping-criteria.html .
+With this stopping criterion, after a feasible solution is found, the search should continue only if the incumbent solution was updated recently, the tolerance is specified here.
 
 **Range:** -1 to inf (default: inf)
 
@@ -882,8 +882,9 @@ Controls which LP algorithm is used when -solve or -initialSolve triggers the ro
   dual:    dual simplex (default).
   primal:  primal simplex.
   barrier: interior-point (barrier) method.
+  auto:    ML-based per-instance recommendation, using a classifier trained on instance features (see CbcLpParamScorer) to pick the LP method/perturbation/scaling settings expected to solve fastest.
 
-**Values:** `dual`, `primal`, `barrier` (default: `dual`)
+**Values:** `dual`, `primal`, `barrier`, `auto` (default: `dual`)
 
 ### `-maxSavedSolutions`
 
@@ -999,11 +1000,11 @@ The default is minimize - use 'direction maximize' for maximization.
 
 ### `-vector`
 
-Whether to use vector? Form of matrix in simplex
+Try and use vector instructions in simplex
 
-If this is on ClpPackedMatrix uses extra column copy in odd format.
+At present only for Intel architectures - but could be extended. Uses avx2 or avx512 instructions. Uses different storage for matrix - can be of benefit without instruction set on some problems. I may add pool to switch on a pool matrix
 
-**Values:** `off`, `on` (default: `off`)
+**Values:** `off`, `on`, `ones` (default: `off`)
 
 ### `-decompose`
 
@@ -1187,7 +1188,7 @@ Which cholesky algorithm
 
 For a barrier code to be effective it needs a good Cholesky ordering and factorization. The native ordering and factorization is not state of the art, although acceptable. You may want to link in one from another source.  See Makefile.locations for some possibilities.
 
-**Values:** `native`, `dense`, `fudge!Long_dummy`, `wssmp_dummy`, `Uni!versityOfFlorida_dummy`, `Taucs_dummy`, `Mumps_dummy`, `Pardiso_dummy` (default: `native`)
+**Values:** `native`, `dense`, `fudge!Long_dummy`, `wssmp_dummy`, `Uni!versityOfFlorida`, `Taucs_dummy`, `Mumps_dummy`, `Pardiso_dummy` (default: `native`)
 
 ### `-crossover`
 
@@ -1684,6 +1685,14 @@ It saves space to get rid of names so if you need to you can set this to off. Th
 
 ## Parallelism
 
+### `-racingLP`
+
+Number of threads for opportunistic parallel LP racing at root node
+
+When set to a value > 0, the root LP relaxation is solved by racing multiple LP method configurations in parallel (dual simplex, primal with Idiot crash, primal with Sprint). The first to reach optimality wins and the others are aborted. This can significantly reduce root LP time for problems where the default method is not the fastest. A value of 3 races all three configurations. Set to 0 to disable.
+
+**Range:** 0 to 8 (default: 0)
+
 ### `-threads`
 
 Number of threads to try and use
@@ -1692,13 +1701,13 @@ To use multiple threads, set threads to number wanted.  It may be better to use 
 
 **Range:** -100 to 100000 (default: 0)
 
-## MIP Preprocessing — Fast
+## MIP Preprocessing — Bound Propagation
 
-### `-fastPreProcess`
+### `-doBoundPropagation`
 
-Run fast MILP preprocessing on the loaded model
+Run bound propagation on the loaded model
 
-Immediately runs the fast MILP preprocessor on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by fastPreProcessLevel. After running, use writeModel to save the tightened problem.
+Immediately runs bound propagation on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by boundPropLevel. After running, use writeModel to save the tightened problem.
 
 ### `-singletonBounds`
 
@@ -1708,25 +1717,57 @@ When on, singleton rows (rows with a single nonzero) are used to tighten variabl
 
 **Values:** `off`, `on` (default: `on`)
 
-### `-fastPreProcessLevel`
+### `-boundPropLevel`
 
-Aggression level for fast MILP preprocessing before solve
+Aggression level for bound propagation before solve
 
-Controls how aggressively fast preprocessing tightens variable bounds before the initial LP solve.
+Controls how aggressively bound propagation tightens variable bounds before the initial LP solve.
   off:       disabled (falls back to singletonBounds setting).
   singletons: singleton rows only — same as singletonBounds on.
-  milpbt:    singletons then knapsack-based bound tightening for up to fastPreProcessMaxRounds rounds (default 100, effectively fixpoint).
-  fixpoint:  singletons then bound tightening until no new fixings are found, regardless of fastPreProcessMaxRounds.
+  milpbt:    singletons then knapsack-based bound propagation for up to boundPropMaxRounds rounds (default 100, effectively fixpoint).
+  fixpoint:  singletons then bound propagation until no new fixings are found, regardless of boundPropMaxRounds.
 
 **Values:** `off`, `singletons`, `milpbt`, `fixpoint` (default: `milpbt`)
 
-### `-fastPreProcessMaxRounds`
+### `-nodeBoundProp`
 
-Maximum number of bound-tightening rounds in fast preprocessing
+Run bound propagation at B&B nodes
 
-Maximum number of CoinMILPBoundTightening rounds when fastPreProcessLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when fastPreProcessLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
+When enabled, runs knapsack-based bound propagation after branching decisions are applied at each node (subject to depth constraints), before the LP is solved. Can detect infeasibility earlier and fix additional variables. Controlled by nodeBoundPropMaxDepth and nodeBoundPropDepthInterval.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-boundPropMaxRounds`
+
+Maximum number of bound propagation rounds
+
+Maximum number of CoinBoundPropagation rounds when boundPropLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when boundPropLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
 
 **Range:** 1 to INT_MAX (default: 100)
+
+### `-nodeBoundPropMaxDepth`
+
+Maximum tree depth at which node bound propagation is applied
+
+Node bound propagation is only applied at depths up to this value. Deeper nodes skip bound propagation to reduce overhead.
+
+**Range:** 0 to INT_MAX (default: 50)
+
+### `-nodeBoundPropMinDepth`
+
+Minimum tree depth at which node bound propagation is applied
+
+Node bound propagation is only applied at depths at or above this value. Shallower nodes skip bound propagation.
+
+**Range:** 0 to INT_MAX (default: 5)
+
+### `-nodeBoundPropDepthInterval`
+
+Depth interval for node bound propagation
+
+Node bound propagation is applied at depths that are multiples of this interval (0, interval, 2*interval, ...). For example, with interval 3 bound propagation runs at depths 0, 3, 6, 9, etc.
+
+**Range:** 1 to INT_MAX (default: 5)
 
 ## MIP Preprocessing
 

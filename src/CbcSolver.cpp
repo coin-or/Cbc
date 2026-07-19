@@ -3323,6 +3323,11 @@ bool CbcSolver::hasSolution() const
 // ###########################################################################
 // ###########################################################################
 
+// Extracted from CbcSolver::run() — the `case CbcParam::IMPORT:` block.
+// Reads an MPS/LP/GMPL/AMPL file named in inputQueue into model_'s solver
+// (via readMps/readLp/GLPK MathProg, as appropriate), resets branching
+// input (priorities/pseudocosts/SOS/etc.) unless a user function already
+// supplied it, and updates row/column names and time1/totalTime on success.
 void CbcSolver::importModel(std::deque< std::string > &inputQueue,
   OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver,
   double &time1, double &totalTime)
@@ -5589,6 +5594,13 @@ int oldStyleInitialSolve(CbcModel *model, double startTime)
 // ###########################################################################
 // ###########################################################################
 
+// Extracted from CbcSolver::run() — called from babSetupAndRootLp() as the
+// BAB pipeline's root-LP-relaxation step. Runs applyLpMethod() on model_'s
+// solver with the shared LP progress handler installed, maps the resulting
+// ClpSimplex status onto model_, prints the CLI summary, invokes the
+// "solution found" user callback, and updates the AMPL info buffer -- the
+// same sequence runSolveContinuous() performs for the standalone
+// SOLVECONTINUOUS/DUALSIMPLEX/PRIMALSIMPLEX/BARRIER actions.
 int CbcSolver::solveInitialLp(
   int logLevel, int cbcLogLevel,
   CbcSolverStatistics &statistics,
@@ -5932,6 +5944,12 @@ int CbcSolver::solveInitialLp(
 #endif
   return 0;
 }
+
+// Extracted from CbcSolver::run() — the WRITESOL/PRINTSOL/WRITEGMPLSOL/
+// WRITENEXTSOL action group (`cbcParamCode` selects which variant). Writes
+// the current best solution (model_ or babModel_, whichever is populated)
+// to a file/stdout in the requested format, honoring the "append" filename
+// convention and skipping cleanly if no solution is available.
 void CbcSolver::writeSolution(int cbcParamCode,
   std::deque< std::string > &inputQueue,
   OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver)

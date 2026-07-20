@@ -54,7 +54,7 @@
 entry point, encapsulating the entire solve pipeline --- parameter initialization, command-queue
 parsing, LP relaxation solves, preprocessing, cut/heuristic configuration, branch-and-bound search,
 post-processing, and result reporting --- that used to live in the free functions \texttt{CbcMain0}/\texttt{CbcMain1},
-now thin backward-compatible wrappers delegating to \ghc{3071}{\texttt{initialize()}} and \ghc{10393}{\texttt{run()}}.
+now thin backward-compatible wrappers delegating to \ghc{3087}{\texttt{initialize()}} and \ghc{10464}{\texttt{run()}}.
 
 Historically this logic was not even a class method: it lived in the free function \texttt{CbcMain1}
 (paired with the smaller \texttt{CbcMain0}), a single $\sim$10{,}000-line function built around one giant
@@ -75,23 +75,23 @@ driven directly on an arbitrary \texttt{OsiSolverInterface}/\texttt{OsiClpSolver
 \section{Public API surface}
 \begin{itemize}[leftmargin=1.4em, itemsep=1pt]
   \item \textbf{\swatch{capi} Construction \& lifecycle:} default / from-solver / from-model / copy
-    constructors, \texttt{operator=}, destructor (\ghc{2232}{lines 2232--2884}); \ghc{3071}{\texttt{initialize()}}
+    constructors, \texttt{operator=}, destructor (\ghc{2244}{lines 2244--2781}); \ghc{3087}{\texttt{initialize()}}
     sets up signal handlers and default parameters (replaces \texttt{CbcMain0}).
-  \item \textbf{\swatch{capi} High-level solve:} \ghc{3216}{\texttt{solve(file)}}, \ghc{3234}{\texttt{importModel(file)}},
-    \ghc{3250}{\texttt{solveLp(method)}} --- convenience one-call wrappers that chain
+  \item \textbf{\swatch{capi} High-level solve:} \ghc{3232}{\texttt{solve(file)}}, \ghc{3250}{\texttt{importModel(file)}},
+    \ghc{3266}{\texttt{solveLp(method)}} --- convenience one-call wrappers that chain
     \texttt{initialize()} + \texttt{run()} or solve the LP relaxation directly.
   \item \textbf{\swatch{capi} Result accessors:} \texttt{status()}, \texttt{objectiveValue()}, \texttt{bestBound()},
     \texttt{bestSolution()}, \texttt{numCols()}, \texttt{nodeCount()}, \texttt{iterationCount()}, \texttt{hasSolution()}
     --- valid after \texttt{solve()}/\texttt{run()} returns.
-  \item \textbf{\swatch{capi} Run (replaces \texttt{CbcMain1}):} \ghc{3203}{\texttt{run(argc,argv,\ldots)}} delegates to
-    \ghc{10393}{\texttt{run(deque,\ldots)}}, the primary command-queue--driven entry point and the root of the
+  \item \textbf{\swatch{capi} Run (replaces \texttt{CbcMain1}):} \ghc{3219}{\texttt{run(argc,argv,\ldots)}} delegates to
+    \ghc{10464}{\texttt{run(deque,\ldots)}}, the primary command-queue--driven entry point and the root of the
     pipeline in \S\ref{sec:pipeline}.
   \item \textbf{\swatch{capi} Individual solve actions (\S\ref{sec:actions}):} \ghc{1220}{\texttt{preRootLPStrenghtening(solver)}},
     \ghc{1269}{\texttt{applyLpMethod(solver)}}, \ghc{1135}{\texttt{strengthenBounds(solver)}}, \ghc{1198}{\texttt{strengthenCliques(solver,\ldots)}} --- the pre-root-LP strengthening, LP-relaxation
     solve, bound-propagation, and clique-strengthening actions used by the pipeline below, each independently
     callable and each accepting an optional target solver (defaulting to \texttt{model\_.solver()}).
-  \item \textbf{\swatch{capi} Heuristic / cut-generator configuration:} \ghc{10367}{\texttt{configureHeuristics()}},
-    \ghc{10373}{\texttt{configureCutGenerators()}} --- public wrappers exposing internal BAB setup so callers can
+  \item \textbf{\swatch{capi} Heuristic / cut-generator configuration:} \ghc{10438}{\texttt{configureHeuristics()}},
+    \ghc{10444}{\texttt{configureCutGenerators()}} --- public wrappers exposing internal BAB setup so callers can
     invoke it directly on a model without going through \texttt{run()}.
   \item \textbf{User extensions:} \texttt{addUserFunction()}, \texttt{setUserCallBack()},
     \texttt{addCutGenerator()} register \texttt{CbcUser} / \texttt{CbcStopNow} / \texttt{CglCutGenerator}
@@ -117,8 +117,8 @@ every LP/bound-propagation/clique option configured on this \texttt{CbcSolver} (
     optimization is left entirely to \texttt{applyLpMethod()} downstream. Used to be steps 1--2 of
     \texttt{applyLpMethod()}, run unconditionally on every call including plain LP-only actions; now a standalone
     action so the BAB pipeline can gate it behind the \texttt{-preRootLPStrenghtening} meta switch (default on,
-    see \ghc{7178}{\texttt{babPreRootLPStrenghtening()}} in \S\ref{sec:pipeline}), while callers that still want
-    the old combined behavior (\ghc{1601}{\texttt{runSolveContinuous()}}, for the LP-only CLI commands) call it
+    see \ghc{7212}{\texttt{babPreRootLPStrenghtening()}} in \S\ref{sec:pipeline}), while callers that still want
+    the old combined behavior (\ghc{1617}{\texttt{runSolveContinuous()}}, for the LP-only CLI commands) call it
     explicitly before \texttt{applyLpMethod()}.
   \item \textbf{\swatch{capi} \ghc{1269}{\texttt{applyLpMethod(OsiClpSolverInterface\,*targetSolver=nullptr,}}
     \texttt{int forcedMethod=-1)}} --- the unified root-LP-relaxation solver, and the \emph{only} place that
@@ -130,8 +130,8 @@ every LP/bound-propagation/clique option configured on this \texttt{CbcSolver} (
     lets a caller pin the LP method (a \texttt{CbcParameters::LPMethod} value) for this call
     only, bypassing \texttt{-lpMethod=auto}/\texttt{recommend} and LP racing --- used by the \texttt{DUALSIMPLEX}/\texttt{PRIMALSIMPLEX}/
     \texttt{BARRIER} CLI commands, which used to hand-duplicate this entire option-setting sequence instead of
-    calling it. Used internally by \ghc{5592}{\texttt{solveInitialLp()}} (root LP of the BAB pipeline) and, via
-    \ghc{1601}{\texttt{runSolveContinuous()}}, by the \texttt{SOLVECONTINUOUS}/\texttt{DUALSIMPLEX}/\texttt{PRIMALSIMPLEX}/
+    calling it. Used internally by \ghc{5620}{\texttt{solveInitialLp()}} (root LP of the BAB pipeline) and, via
+    \ghc{1617}{\texttt{runSolveContinuous()}}, by the \texttt{SOLVECONTINUOUS}/\texttt{DUALSIMPLEX}/\texttt{PRIMALSIMPLEX}/
     \texttt{BARRIER} actions; exposed publicly so the exact same, fully-configured solve (with any forced method)
     can be driven on any solver instance.
   \item \textbf{\swatch{capi} \ghc{1135}{\texttt{strengthenBounds(OsiSolverInterface\,*solver=nullptr)}}} ---
@@ -139,18 +139,18 @@ every LP/bound-propagation/clique option configured on this \texttt{CbcSolver} (
     MILP-based, up to \texttt{-boundPropMaxRounds} rounds via \texttt{CbcBoundPropagation}), falling back
     to legacy singleton-only tightening when propagation is off but \texttt{-singletonBounds} is on. Shared by
     \texttt{preRootLPStrenghtening()} (step 1) and the standalone \texttt{BOUNDPROP} action
-    (\ghc{7089}{\texttt{runBoundPropagation()}}), which previously duplicated the same level-mapping and
+    (\ghc{7123}{\texttt{runBoundPropagation()}}), which previously duplicated the same level-mapping and
     \texttt{CbcBoundPropagation::run()} call inline.
   \item \textbf{\swatch{capi} \ghc{1198}{\texttt{strengthenCliques(solver, mode, strengthenMode, \ldots)}}} ---
     (re)builds the conflict graph of the target solver and strengthens set-packing/partitioning cliques against
     it (extend/dominate), resolving the LP afterwards only in \texttt{"after"} mode. Thin \texttt{CbcSolver}-level
     wrapper filling in this solver's own model/handler/\texttt{mipStart\_} context around the lower-level free
     function that does the actual conflict-graph work; used by \texttt{preRootLPStrenghtening()}'s ``before''
-    step, by the standalone \texttt{CLIQUESTRENGTHEN} action (\ghc{7113}{\texttt{runCliqueStrengthening()}}, new
+    step, by the standalone \texttt{CLIQUESTRENGTHEN} action (\ghc{7147}{\texttt{runCliqueStrengthening()}}, new
     --- clique strengthening previously had no manually-triggerable action, only reachable indirectly through
-    \texttt{applyLpMethod()}), and by \ghc{7793}{\texttt{babPostPreprocessCleanup()}}'s ``after'' step.
+    \texttt{applyLpMethod()}), and by \ghc{7845}{\texttt{babPostPreprocessCleanup()}}'s ``after'' step.
 \end{itemize}
-As part of exposing these, a dead-code duplicate was removed from \ghc{5592}{\texttt{solveInitialLp()}}: a
+As part of exposing these, a dead-code duplicate was removed from \ghc{5620}{\texttt{solveInitialLp()}}: a
 second clique-strengthening pass and a second \texttt{model\_.initialSolve()} call, both gated on
 \texttt{lpMethodResult > 0} --- a condition that could never hold, since \texttt{applyLpMethod()} only ever
 returned \texttt{-1} or \texttt{0} and already performed both the clique pass and the LP solve internally. Now
@@ -158,26 +158,26 @@ that bound propagation and clique merging have moved out into \texttt{preRootLPS
 \texttt{applyLpMethod()} always returns \texttt{0} (kept as an \texttt{int} for interface stability).
 
 \section{The branch-and-bound pipeline}\label{sec:pipeline}
-\ghc{10393}{\texttt{run()}} dispatches on the current \texttt{CbcParam} command. Besides simple one-shot actions
+\ghc{10464}{\texttt{run()}} dispatches on the current \texttt{CbcParam} command. Besides simple one-shot actions
 (\S\ref{sec:other}), the \textbf{\texttt{BAB}} command drives the solver's core pipeline, implemented as seven
 cooperating private methods called in sequence (see the full diagram on the next page):
 \begin{enumerate}[leftmargin=1.6em, itemsep=1pt]
-  \item \ghc{7178}{\texttt{babPreRootLPStrenghtening()}} --- gated by the \texttt{-preRootLPStrenghtening} meta
+  \item \ghc{7212}{\texttt{babPreRootLPStrenghtening()}} --- gated by the \texttt{-preRootLPStrenghtening} meta
     switch (default on); prints the ``Root LP relaxation'' section banner, then runs
     \ghc{1220}{\texttt{preRootLPStrenghtening()}} (bound propagation + clique merging ``before'') once, ahead of
     the root LP solve. \emph{New phase}, extracted out of \texttt{applyLpMethod()}'s former steps 1--2.
-  \item \ghc{7214}{\texttt{babSetupAndRootLp()}} --- cutoff sign flip, legacy \texttt{OsiSolverLink} path,
-    solves the root LP via \ghc{5592}{\texttt{solveInitialLp()}} $\to$ \ghc{1269}{\texttt{applyLpMethod()}}.
-  \item \ghc{7555}{\texttt{babConfigureBabModel()}} --- (re)builds \texttt{babModel\_} from \texttt{model\_}, configures
-    the conflict-graph branching ranker (\ghh{798}{\texttt{RankerConfig}}), tunes factorization frequency.
-  \item \ghc{3630}{\texttt{preprocess()}} --- runs \texttt{CglPreProcess} when preprocessing is enabled.
-  \item \ghc{7793}{\texttt{babPostPreprocessCleanup()}} --- cgraph/clique-strengthening cleanup (via
+  \item \ghc{7248}{\texttt{babSetupAndRootLp()}} --- cutoff sign flip, legacy \texttt{OsiSolverLink} path,
+    solves the root LP via \ghc{5620}{\texttt{solveInitialLp()}} $\to$ \ghc{1269}{\texttt{applyLpMethod()}}.
+  \item \ghc{7598}{\texttt{babConfigureBabModel()}} --- (re)builds \texttt{babModel\_} from \texttt{model\_}, configures
+    the conflict-graph branching ranker (\ghh{844}{\texttt{RankerConfig}}), tunes factorization frequency.
+  \item \ghc{3651}{\texttt{preprocess()}} --- runs \texttt{CglPreProcess} when preprocessing is enabled.
+  \item \ghc{7845}{\texttt{babPostPreprocessCleanup()}} --- cgraph/clique-strengthening cleanup (via
     \ghc{1198}{\texttt{strengthenCliques()}}), post-preprocess bound tightening.
-  \item \ghc{7911}{\texttt{babConfigureSearchModel()}} --- knapsack expansion, cost-based priorities, and
-    invokes \ghc{10367}{\texttt{configureHeuristics()}} / \ghc{10373}{\texttt{configureCutGenerators()}}.
-  \item \ghc{8303}{\texttt{babExecuteSearchAndPostprocess()}} --- SOS/priority setup, the actual
+  \item \ghc{7973}{\texttt{babConfigureSearchModel()}} --- knapsack expansion, cost-based priorities, and
+    invokes \ghc{10438}{\texttt{configureHeuristics()}} / \ghc{10444}{\texttt{configureCutGenerators()}}.
+  \item \ghc{8374}{\texttt{babExecuteSearchAndPostprocess()}} --- SOS/priority setup, the actual
     \texttt{babModel\_->branchAndBound()} call, search-statistics bookkeeping, and finally
-    \ghc{4871}{\texttt{postprocess()}} to translate the solution back and report results.
+    \ghc{4892}{\texttt{postprocess()}} to translate the solution back and report results.
 \end{enumerate}
 Each phase returns a status code consumed by \texttt{run()} to decide whether to continue, \texttt{break}
 the \texttt{BAB} case, or \texttt{return} from \texttt{run()} outright --- preserving the exact control flow of the
@@ -186,32 +186,32 @@ loop'' (infeasibility proved) or ``continue'' into \texttt{babSetupAndRootLp()};
 
 \section{Other \texttt{run()} actions}\label{sec:other}
 \begin{itemize}[leftmargin=1.4em, itemsep=1pt]
-  \item \textbf{\swatch{cother} IMPORT:} private \ghc{3326}{\texttt{importModel(inputQueue,\ldots)}} reads an MPS/LP/GMPL file.
+  \item \textbf{\swatch{cother} IMPORT:} private \ghc{3347}{\texttt{importModel(inputQueue,\ldots)}} reads an MPS/LP/GMPL file.
   \item \textbf{\swatch{cother} SOLVECONTINUOUS / DUALSIMPLEX / PRIMALSIMPLEX / BARRIER:} private
-    \ghc{1601}{\texttt{runSolveContinuous(forcedMethod,\ldots)}} calls \ghc{1220}{\texttt{preRootLPStrenghtening()}}
+    \ghc{1617}{\texttt{runSolveContinuous(forcedMethod,\ldots)}} calls \ghc{1220}{\texttt{preRootLPStrenghtening()}}
     unconditionally (preserving these commands' historical combined behavior), sets up the shared LP progress
     handler, calls \ghc{1269}{\texttt{applyLpMethod()}} (forcing dual/primal/barrier for the latter three
     commands), maps the resulting Clp status onto \texttt{model\_}/\texttt{babModel\_}, and populates the AMPL
     info buffer. These four commands used to each keep an independent $\sim$200--450-line copy of this sequence;
     the CLP-method commands additionally hand-duplicated \texttt{applyLpMethod()}'s entire \texttt{ClpSolve}
     option-setting logic.
-  \item \textbf{\swatch{cother} BOUNDPROP:} \ghc{7089}{\texttt{runBoundPropagation()}} runs standalone bound propagation
+  \item \textbf{\swatch{cother} BOUNDPROP:} \ghc{7123}{\texttt{runBoundPropagation()}} runs standalone bound propagation
     (thin CLI wrapper around \ghc{1135}{\texttt{strengthenBounds()}}).
-  \item \textbf{\swatch{cother} CLIQUESTRENGTHEN:} \ghc{7113}{\texttt{runCliqueStrengthening()}} runs standalone
+  \item \textbf{\swatch{cother} CLIQUESTRENGTHEN:} \ghc{7147}{\texttt{runCliqueStrengthening()}} runs standalone
     clique strengthening, ``before'' mode/no resolve (thin CLI wrapper around
     \ghc{1198}{\texttt{strengthenCliques()}}). \emph{New action} --- clique strengthening previously had no
     manually-triggerable command, mirroring \texttt{BOUNDPROP}/\texttt{runBoundPropagation()}.
-  \item \textbf{\swatch{cother} CHECKSOLUTION:} \ghc{7134}{\texttt{runCheckSolution()}} writes a solution-validation report.
-  \item \textbf{\swatch{cother} WRITESOL / PRINTSOL / \ldots:} \ghc{5935}{\texttt{writeSolution()}} writes solutions in various formats.
-  \item \textbf{\swatch{cutil} Bookkeeping:} \ghc{3031}{\texttt{printParamChanges()}} prints a parameter-change
-    banner at the top of the \texttt{BAB} case; \ghc{2887}{\texttt{resetRunState()}} is declared/defined but
+  \item \textbf{\swatch{cother} CHECKSOLUTION:} \ghc{7168}{\texttt{runCheckSolution()}} writes a solution-validation report.
+  \item \textbf{\swatch{cother} WRITESOL / PRINTSOL / \ldots:} \ghc{5969}{\texttt{writeSolution()}} writes solutions in various formats.
+  \item \textbf{\swatch{cutil} Bookkeeping:} \ghc{3047}{\texttt{printParamChanges()}} prints a parameter-change
+    banner at the top of the \texttt{BAB} case; \ghc{2903}{\texttt{resetRunState()}} is declared/defined but
     currently \emph{never called} (orphaned --- dashed outline in the diagram).
 \end{itemize}
 
 \section{State organization}\label{sec:state}
-\ghh{90}{Private data} falls into two groups. \textbf{Core state} (\ghh{390}{\texttt{model\_}}, \texttt{babModel\_},
+\ghh{386}{Private data} falls into two groups. \textbf{Core state} (\ghh{390}{\texttt{model\_}}, \texttt{babModel\_},
 \texttt{parameters\_}, \texttt{cutGenerator\_}, \texttt{userFunction\_}, \ldots) existed in the original class.
-\textbf{Cross-phase state} (\ghh{420}{lines 420--631}) --- preprocessing (\texttt{process\_}, \texttt{saveSolver\_}),
+\textbf{Cross-phase state} (\ghh{420}{lines 420--684}) --- preprocessing (\texttt{process\_}, \texttt{saveSolver\_}),
 solve-control flags, LP/barrier options, cut-generator modes, branching input (priorities/SOS/pseudo-costs),
 MIP start, knapsack-expansion buffers, debug, lot-sizing, and timing/statistics --- used to be \emph{local
 variables} inside the monolithic \texttt{run()}. Promoting them to member fields is what let \texttt{run()}
@@ -257,25 +257,25 @@ code, so each call arrow is coloured like the method it leaves):}\quad
   ]
 
   % ================= Row 0: convenience one-call wrappers =================
-  \node[api] (solve)     at (-2.0, 16.6) {\ghc{3216}{solve(file)}};
-  \node[api] (importpub) at (1.4, 16.6)  {\ghc{3234}{importModel(file)}};
-  \node[api] (runargv)   at (4.8, 16.6) {\ghc{3203}{run(argc,argv)}};
+  \node[api] (solve)     at (-2.0, 16.6) {\ghc{3232}{solve(file)}};
+  \node[api] (importpub) at (1.4, 16.6)  {\ghc{3250}{importModel(file)}};
+  \node[api] (runargv)   at (4.8, 16.6) {\ghc{3219}{run(argc,argv)}};
 
   % ================= Row 1: initialize() + dispatcher hub =================
-  \node[api] (initcall)  at (-0.3, 14.9) {\ghc{3071}{initialize()}};
-  \node[api] (rundeque) at (4.8, 13.2) {\ghc{10393}{\textbf{run(deque)}}\\[1pt]\footnotesize command dispatcher};
+  \node[api] (initcall)  at (-0.3, 14.9) {\ghc{3087}{initialize()}};
+  \node[api] (rundeque) at (4.8, 13.2) {\ghc{10464}{\textbf{run(deque)}}\\[1pt]\footnotesize command dispatcher};
 
   % ================= Row 2: dispatch fan-out (non-BAB actions; evenly spaced ~3.2 apart =================
   % so that no two of these wider/taller multi-line boxes touch). "case BAB" now sits at
   % the far LEFT, directly above babPreRootLPStrenghtening() (the pipeline's first node),
   % so the babcase->preroot edge is a short local drop instead of a long cross-diagram line.
-  \node[util] (paramchg) at (-11.6, 12.3) {\ghc{3031}{printParamChanges()}\\{\tiny called first in BAB case}};
+  \node[util] (paramchg) at (-11.6, 12.3) {\ghc{3047}{printParamChanges()}\\{\tiny called first in BAB case}};
   \node[bab] (babcase)   at (-9.9, 10.6) {\textbf{case BAB}\\ 7-phase pipeline $\downarrow$};
-  \node[oth] (imppriv)   at (-6.4, 10.6) {\ghc{3326}{importModel(}\\\ghc{3326}{inputQueue)}\\{\tiny case IMPORT}};
-  \node[oth] (boundprop) at (-3.2, 10.6) {\ghc{7089}{runBound-}\\\ghc{7089}{Propagation()}\\{\tiny case BOUNDPROP}};
-  \node[oth] (cliquestr) at (0.0, 10.6) {\ghc{7113}{runClique-}\\\ghc{7113}{Strengthening()}\\{\tiny case CLIQUESTRENGTHEN}};
-  \node[oth] (checksol)  at (3.2, 10.6) {\ghc{7134}{runCheck-}\\\ghc{7134}{Solution()}\\{\tiny case CHECKSOLUTION}};
-  \node[oth] (writesol)  at (6.4, 10.6) {\ghc{5935}{writeSolution()}\\{\tiny case WRITESOL/\ldots}};
+  \node[oth] (imppriv)   at (-6.4, 10.6) {\ghc{3347}{importModel(}\\\ghc{3347}{inputQueue)}\\{\tiny case IMPORT}};
+  \node[oth] (boundprop) at (-3.2, 10.6) {\ghc{7123}{runBound-}\\\ghc{7123}{Propagation()}\\{\tiny case BOUNDPROP}};
+  \node[oth] (cliquestr) at (0.0, 10.6) {\ghc{7147}{runClique-}\\\ghc{7147}{Strengthening()}\\{\tiny case CLIQUESTRENGTHEN}};
+  \node[oth] (checksol)  at (3.2, 10.6) {\ghc{7168}{runCheck-}\\\ghc{7168}{Solution()}\\{\tiny case CHECKSOLUTION}};
+  \node[oth] (writesol)  at (6.4, 10.6) {\ghc{5969}{writeSolution()}\\{\tiny case WRITESOL/\ldots}};
   \node[oth] (applylp)   at (9.9, 10.6) {\ghc{1269}{applyLpMethod(solver)}\\{\tiny case SOLVECONTINUOUS+}\\{\tiny\itshape runs preRootLP-Strenghtening() first}};
 
   % ================= Row 2.5: the two actions applyLpMethod() delegates to =================
@@ -287,40 +287,40 @@ code, so each call arrow is coloured like the method it leaves):}\quad
     {\ghc{1198}{strengthenCliques()}\\{\tiny\itshape also from preRootLP-Strenghtening()}};
 
   % ================= Row 3: the 7-phase BAB pipeline (left to right chain) =================
-  \node[bab] (preroot)    at (-8.7, 7.8) {\ghc{7178}{babPreRootLP-}\\\ghc{7178}{Strenghtening()}};
-  \node[bab] (setup)      at (-5.6, 7.8) {\ghc{7214}{babSetupAnd-}\\\ghc{7214}{RootLp()}};
-  \node[bab] (cfgbab)     at (-2.5, 7.8) {\ghc{7555}{babConfigure-}\\\ghc{7555}{BabModel()}};
-  \node[bab] (prep)       at (0.6, 7.8)  {\ghc{3630}{preprocess()}};
-  \node[bab] (postpp)     at (3.7, 7.8)  {\ghc{7793}{babPostPreprocess-}\\\ghc{7793}{Cleanup()}};
-  \node[bab] (cfgsearch)  at (6.8, 7.8)  {\ghc{7911}{babConfigure-}\\\ghc{7911}{SearchModel()}};
-  \node[bab] (execsearch) at (10.4, 7.8) {\ghc{8303}{babExecuteSearch-}\\\ghc{8303}{AndPostprocess()}};
+  \node[bab] (preroot)    at (-8.7, 7.8) {\ghc{7212}{babPreRootLP-}\\\ghc{7212}{Strenghtening()}};
+  \node[bab] (setup)      at (-5.6, 7.8) {\ghc{7248}{babSetupAnd-}\\\ghc{7248}{RootLp()}};
+  \node[bab] (cfgbab)     at (-2.5, 7.8) {\ghc{7598}{babConfigure-}\\\ghc{7598}{BabModel()}};
+  \node[bab] (prep)       at (0.6, 7.8)  {\ghc{3651}{preprocess()}};
+  \node[bab] (postpp)     at (3.7, 7.8)  {\ghc{7845}{babPostPreprocess-}\\\ghc{7845}{Cleanup()}};
+  \node[bab] (cfgsearch)  at (6.8, 7.8)  {\ghc{7973}{babConfigure-}\\\ghc{7973}{SearchModel()}};
+  \node[bab] (execsearch) at (10.4, 7.8) {\ghc{8374}{babExecuteSearch-}\\\ghc{8374}{AndPostprocess()}};
 
   % ================= Row 4: pipeline sub-calls =================
   \node[api] (prerootstr) at (-8.7, 5.6) {\ghc{1220}{preRootLP-}\\\ghc{1220}{Strenghtening()}\\{\tiny\itshape no auto-resolve}};
-  \node[bab] (solveilp) at (-5.6, 5.6) {\ghc{5592}{solveInitialLp()}};
-  \node[api] (cfgheur)  at (5.5, 5.6)  {\ghc{10367}{configureHeuristics()}};
-  \node[api] (cfgcuts)  at (8.5, 5.6)  {\ghc{10373}{configureCut-}\\\ghc{10373}{Generators()}};
-  \node[bab] (postp)    at (11.6, 5.6) {\ghc{4871}{postprocess()}};
+  \node[bab] (solveilp) at (-5.6, 5.6) {\ghc{5620}{solveInitialLp()}};
+  \node[api] (cfgheur)  at (5.5, 5.6)  {\ghc{10438}{configureHeuristics()}};
+  \node[api] (cfgcuts)  at (8.5, 5.6)  {\ghc{10444}{configureCut-}\\\ghc{10444}{Generators()}};
+  \node[bab] (postp)    at (11.6, 5.6) {\ghc{4892}{postprocess()}};
 
   % ================= Row 5: bookkeeping helpers =================
   % (resetRunState() is a true orphan -- no callers/callees drawn -- so it is parked in the
   % empty top-left corner near the other Row-0/Row-1 nodes rather than out on its own on
   % the far right where it used to sit with acres of empty space around it)
-  \node[orph] (reset)    at (-9.7, 15.4) {\ghc{2887}{resetRunState()}\\{\tiny\itshape declared, never called}};
+  \node[orph] (reset)    at (-9.7, 15.4) {\ghc{2903}{resetRunState()}\\{\tiny\itshape declared, never called}};
 
   % ================= Data / state panels (bottom band, spanning full width) =================
   % solveLp(method) sits right next to the Core state panel it is the sole connection to
   % (a standalone/bypass API, dashed) instead of far away in Row 0, so that link is a short
   % straight edge instead of a long line crossing the whole diagram.
-  \node[leafapi] (solveLp) at (-9.7, 2.4) {\ghc{3250}{solveLp(method)}\\{\tiny\itshape standalone --- reads/solves}\\{\tiny\itshape model\_.solver() directly,}\\{\tiny\itshape bypasses initialize()/run()}};
+  \node[leafapi] (solveLp) at (-9.7, 2.4) {\ghc{3266}{solveLp(method)}\\{\tiny\itshape standalone --- reads/solves}\\{\tiny\itshape model\_.solver() directly,}\\{\tiny\itshape bypasses initialize()/run()}};
   \node[dat, text width=8.4cm, minimum height=1.7cm] (dataA) at (-3.0, 2.4) {
-    \textbf{Core state} (\ghh{390}{CbcSolver.hpp:390--398})\\
+    \textbf{Core state} (\ghh{390}{CbcSolver.hpp:390--413})\\
     \texttt{model\_}, \texttt{babModel\_}, \texttt{parameters\_},\\
     \texttt{cutGenerator\_[]}, \texttt{userFunction\_[]},\\
     \texttt{originalSolver\_}, \texttt{originalCoinModel\_}
   };
   \node[dat, text width=8.4cm, minimum height=1.7cm] (dataB) at (6.5, 2.4) {
-    \textbf{Cross-phase state} (\ghh{420}{CbcSolver.hpp:420--631})\\
+    \textbf{Cross-phase state} (\ghh{420}{CbcSolver.hpp:420--684})\\
     preprocessing, solve-control flags, LP/barrier options,\\
     cut-generator modes, branching input (priorities/SOS),\\
     MIP start, knapsack expansion, debug, timing/stats

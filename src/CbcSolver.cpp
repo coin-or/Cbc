@@ -1649,12 +1649,23 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   // Guard entire setup: applyLpMethod() will setLogLevel(0) when
   // noPrinting() is true, so capturing logLevel here (before that call)
   // would incorrectly preserve a non-zero level.
+  //
+  // Gate on both LOGLEVEL (-log=N, the overall Cbc verbosity knob) and
+  // LPLOGLEVEL (-lpLog=N, the LP-solver-specific knob), the same pair the
+  // BAB pipeline's solveInitialLp() uses -- NOT lpSolver->logLevel(), which
+  // is ClpSimplex's own internal log level and is never synced by -log=N
+  // (only LPLOGLEVEL touches it directly). Using lpSolver->logLevel() alone
+  // made "-log=0" silence the "Non-default parameters" banner but NOT this
+  // progress table, since ClpSimplex's own logLevel_ stayed at its default.
+  const int cbcLogLevelSC = model_.messageHandler()->logLevel();
+  const int lpLogLevelSC = parameters_[CbcParam::LPLOGLEVEL]->intVal();
   auto lpScState = std::make_shared< ClpLpPhaseState >();
   lpScState->fp = model_.messageHandler()->filePointer();
   lpScState->utf8 = CbcOutput::useUtf8();
   lpScState->compact = CbcOutput::useCompact();
-  lpScState->logLevel = (lpSolver && !parameters_.noPrinting())
-    ? lpSolver->logLevel()
+  lpScState->logLevel = (lpSolver && !parameters_.noPrinting()
+    && cbcLogLevelSC >= 1 && lpLogLevelSC >= 1)
+    ? lpLogLevelSC
     : 0;
   lpScState->iterFreq = 0;
   lpScState->timeFreq = 5.0;
@@ -3050,6 +3061,16 @@ void CbcSolver::printParamChanges()
 {
   if (paramChanges_.empty())
     return;
+  // This writes directly to stdout via fprintf, bypassing the message
+  // handler's own log-level filtering entirely -- so it must explicitly
+  // check the current log level itself, otherwise the "Non-default
+  // parameters" banner (and every individual change, including the very
+  // "logLevel N -> 0" entry that requested silence) would always print
+  // regardless of how quiet the caller asked to be.
+  if (model_.messageHandler()->logLevel() < 1) {
+    paramChanges_.clear();
+    return;
+  }
   const bool u8 = CbcOutput::useUtf8();
   const char *arrow = u8 ? " \xe2\x86\x92 " : " -> ";
   FILE *fp = stdout;

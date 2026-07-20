@@ -1,0 +1,457 @@
+/*
+ * mip-c-solve — manual driver to solve one mip-sanity-data instance through
+ * Cbc's C interface (Cbc_C_Interface.h) and exercise/validate the API that
+ * matters for that path: loading the instance, applying the suggested
+ * node/time limits from limits.tsv, calling Cbc_solve(), then querying the
+ * best solution and the whole solution pool (Cbc_bestSolution /
+ * Cbc_numberSavedSolutions / Cbc_savedSolution / Cbc_savedSolutionObj) and
+ * the final status accessors (Cbc_status, Cbc_secondaryStatus,
+ * Cbc_isProvenOptimal, Cbc_isProvenInfeasible, ...).
+ *
+ * Unlike cbc_validate_sol (which validates a .sol file already produced by
+ * the `cbc` command-line executable), this tool solves the instance itself,
+ * in-process, purely through the C API — useful to manually sanity-check
+ * that interface end to end. Cbc's own solve messages (from Cbc_readMps and
+ * Cbc_solve) are deliberately left unsuppressed, so this doubles as a way to
+ * eyeball exactly what Cbc prints during a normal solve.
+ *
+ * After Cbc_solve() returns, this tool:
+ *   a) checks the feasibility of every produced solution — the best solution
+ *      and every solution saved in the pool — using Cbc_checkFeasibility
+ *      (bounds, integrality, row activity), reporting any violation;
+ *   b) recomputes each solution's objective from its vector and the model's
+ *      objective coefficients, and compares it against the value reported by
+ *      the C interface (Cbc_getObjValue / Cbc_savedSolutionObj);
+ *   c) if optimality is claimed (Cbc_isProvenOptimal), cross-checks the
+ *      reported objective against mip-sanity-data's bks.tsv best-known value
+ *      (and, if infeasibility is claimed, cross-checks against bks.tsv's
+ *      expected status too).
+ *
+ * Usage:
+ *   mip-c-solve <instance-name> [options]
+ *
+ * Exit codes:
+ *   0  solve completed and every check above passed
+ *   1  one or more violations/mismatches found
+ *   2  usage / file / instance-lookup error
+ */
+
+#include "Cbc_C_Interface.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <unistd.h>
+#include <vector>
+
+/* ── Tolerances (same defaults as cbc_validate_sol) ────────────────────── */
+
+static double OBJ_TOL = 1e-4;     /* relative: C-interface obj vs recomputed */
+static double BKS_ABS_TOL = 1e-4; /* absolute tolerance vs best-known objective */
+static double BKS_PCT_TOL = 0.01; /* percent tolerance vs best-known objective */
+
+/* ── Small TSV lookup helper ────────────────────────────────────────────── */
+
+static std::vector<std::string> splitTab(const std::string &line)
+{
+  std::vector<std::string> fields;
+  std::stringstream ss(line);
+  std::string field;
+  while (std::getline(ss, field, '\t'))
+    fields.push_back(field);
+  return fields;
+}
+
+/* Returns the row (split on tab) whose first column equals key, or an empty
+ * vector if not found / file missing. */
+static std::vector<std::string> lookupRow(const std::string &tsvPath, const std::string &key)
+{
+  std::ifstream in(tsvPath);
+  if (!in.is_open())
+    return {};
+  std::string line;
+  bool first = true;
+  while (std::getline(in, line)) {
+    if (first) { first = false; continue; } /* skip header */
+    if (line.empty())
+      continue;
+    std::vector<std::string> fields = splitTab(line);
+    if (!fields.empty() && fields[0] == key)
+      return fields;
+  }
+  return {};
+}
+
+static bool fileExists(const std::string &path)
+{
+  std::ifstream f(path);
+  return f.good();
+}
+
+/* Directory containing this executable (used to locate the default
+ * mip-sanity-data checkout next to it, mirroring run-mip-sanity-tests). */
+static std::string exeDir()
+{
+  char buf[4096];
+  ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+  if (n <= 0)
+    return ".";
+  buf[n] = '\0';
+  std::string path(buf);
+  size_t slash = path.find_last_of('/');
+  return (slash == std::string::npos) ? "." : path.substr(0, slash);
+}
+
+static void printUsage(const char *progName)
+{
+  fprintf(stderr,
+    "Usage: %s <instance-name> [options]\n"
+    "\n"
+    "Solves one mip-sanity-data instance through Cbc's C interface\n"
+    "(Cbc_C_Interface.h), applying the suggested limits.tsv node/time\n"
+    "limits, then validates the best solution and the whole solution pool\n"
+    "(feasibility, objective consistency, optimality/infeasibility claims\n"
+    "vs bks.tsv).\n"
+    "\n"
+    "Options:\n"
+    "  --data-dir=PATH        mip-sanity-data checkout (default: <exe-dir>/mip-sanity-data)\n"
+    "  --threads=N            Threads passed to Cbc (default: 1)\n"
+    "  --node-limit=N         Override node limit (default: from limits.tsv; 0 = unlimited)\n"
+    "  --time-limit=SEC       Override time limit in seconds (default: from limits.tsv, or 120)\n"
+    "  --log-level=N          Cbc_setLogLevel (default: leave Cbc's own default)\n"
+    "  --expected-status=S    Override bks.tsv expected status (optimal|infeasible)\n"
+    "  --expected-obj=VAL     Override bks.tsv expected objective\n"
+    "  --verbose              Also print nonzero variable values for every solution\n"
+    "  -h, --help             Show this help\n"
+    "\n"
+    "Exit code: 0 = OK,  1 = violations/mismatches found,  2 = usage/file error\n",
+    progName);
+}
+
+/* ── Feasibility check + report for one solution vector ────────────────── */
+
+static bool checkOneSolution(Cbc_Model *m, const double *x, const char *label,
+    double reportedObj, bool haveReportedObj, bool verbose,
+    std::vector<std::string> &violations)
+{
+  int ncols = Cbc_getNumCols(m);
+  double maxViolRow, maxViolCol;
+  int rowIdx, colIdx;
+  char feasible = Cbc_checkFeasibility(m, x, &maxViolRow, &rowIdx, &maxViolCol, &colIdx);
+
+  const double *objCoef = Cbc_getObjCoefficients(m);
+  double computedObj = 0.0;
+  for (int j = 0; j < ncols; ++j)
+    computedObj += objCoef[j] * x[j];
+
+  printf("  [%s] computed obj = %.10g", label, computedObj);
+  if (haveReportedObj)
+    printf("   (C-interface reported = %.10g)", reportedObj);
+  printf("\n");
+
+  if (verbose) {
+    printf("    nonzero variables:");
+    int printed = 0;
+    for (int j = 0; j < ncols && printed < 40; ++j) {
+      if (fabs(x[j]) > 1e-9) {
+        char nameBuf[512];
+        Cbc_getColName(m, j, nameBuf, sizeof(nameBuf));
+        printf(" %s=%.6g", nameBuf, x[j]);
+        ++printed;
+      }
+    }
+    if (printed == 40)
+      printf(" ...");
+    printf("\n");
+  }
+
+  bool ok = true;
+
+  if (!feasible) {
+    ok = false;
+    char buf[512];
+    if (rowIdx >= 0) {
+      char rowName[512];
+      Cbc_getRowName(m, rowIdx, rowName, sizeof(rowName));
+      snprintf(buf, sizeof(buf),
+        "  %s: row feasibility violated, row %d (%s), max violation=%.3e",
+        label, rowIdx, rowName, maxViolRow);
+      violations.push_back(buf);
+    }
+    if (colIdx >= 0) {
+      char colName[512];
+      Cbc_getColName(m, colIdx, colName, sizeof(colName));
+      snprintf(buf, sizeof(buf),
+        "  %s: column bound/integrality violated, col %d (%s), max violation=%.3e",
+        label, colIdx, colName, maxViolCol);
+      violations.push_back(buf);
+    }
+  } else {
+    printf("    feasibility: OK (max row viol=%.3e, max col viol=%.3e)\n", maxViolRow, maxViolCol);
+  }
+
+  if (haveReportedObj) {
+    double denom = std::max(1.0, fabs(reportedObj));
+    double objDelta = fabs(computedObj - reportedObj) / denom;
+    if (objDelta > OBJ_TOL) {
+      ok = false;
+      char buf[256];
+      snprintf(buf, sizeof(buf),
+        "  %s: OBJ MISMATCH computed=%.10g reported=%.10g rel_delta=%.3e (exceeds tol %.1e)",
+        label, computedObj, reportedObj, objDelta, OBJ_TOL);
+      violations.push_back(buf);
+    }
+  }
+
+  return ok;
+}
+
+int main(int argc, char *argv[])
+{
+  std::string dataDir;
+  int threads = 1;
+  long nodeLimitOverride = -1; /* -1 = use limits.tsv */
+  double timeLimitOverride = -1.0;
+  int logLevelOverride = -1;
+  std::string expectedStatusOverride;
+  double expectedObjOverride = 0.0;
+  bool haveExpectedObjOverride = false;
+  bool verbose = false;
+
+  std::vector<std::string> positional;
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    auto valueOf = [&](const std::string &prefix) -> std::string {
+      return arg.substr(prefix.size());
+    };
+    if (arg == "-h" || arg == "--help") {
+      printUsage(argv[0]);
+      return 2;
+    } else if (arg.rfind("--data-dir=", 0) == 0) {
+      dataDir = valueOf("--data-dir=");
+    } else if (arg.rfind("--threads=", 0) == 0) {
+      threads = atoi(valueOf("--threads=").c_str());
+    } else if (arg.rfind("--node-limit=", 0) == 0) {
+      nodeLimitOverride = atol(valueOf("--node-limit=").c_str());
+    } else if (arg.rfind("--time-limit=", 0) == 0) {
+      timeLimitOverride = atof(valueOf("--time-limit=").c_str());
+    } else if (arg.rfind("--log-level=", 0) == 0) {
+      logLevelOverride = atoi(valueOf("--log-level=").c_str());
+    } else if (arg.rfind("--expected-status=", 0) == 0) {
+      expectedStatusOverride = valueOf("--expected-status=");
+      std::transform(expectedStatusOverride.begin(), expectedStatusOverride.end(),
+        expectedStatusOverride.begin(), ::tolower);
+    } else if (arg.rfind("--expected-obj=", 0) == 0) {
+      expectedObjOverride = atof(valueOf("--expected-obj=").c_str());
+      haveExpectedObjOverride = true;
+    } else if (arg == "--verbose") {
+      verbose = true;
+    } else if (!arg.empty() && arg[0] == '-') {
+      fprintf(stderr, "Error: unknown option '%s'\n\n", arg.c_str());
+      printUsage(argv[0]);
+      return 2;
+    } else {
+      positional.push_back(arg);
+    }
+  }
+
+  if (positional.size() != 1) {
+    fprintf(stderr, "Error: expected exactly one instance name\n\n");
+    printUsage(argv[0]);
+    return 2;
+  }
+  const std::string instance = positional[0];
+
+  if (dataDir.empty())
+    dataDir = exeDir() + "/mip-sanity-data";
+
+  const std::string mpsPath = dataDir + "/mips/" + instance + ".mps.gz";
+  if (!fileExists(mpsPath)) {
+    fprintf(stderr, "Error: instance file not found: %s\n", mpsPath.c_str());
+    fprintf(stderr, "       (looked under data-dir '%s' — pass --data-dir=PATH to override)\n",
+      dataDir.c_str());
+    return 2;
+  }
+
+  /* ── Suggested limits (limits.tsv), with CLI overrides ─────────────────── */
+  long nodeLimit = 0;      /* 0 = unlimited, matches run-mip-sanity-tests default */
+  double timeLimit = 120.0;
+  double hardKill = 180.0;
+  {
+    std::vector<std::string> row = lookupRow(dataDir + "/limits.tsv", instance);
+    if (row.size() >= 5) {
+      nodeLimit = atol(row[2].c_str());
+      timeLimit = atof(row[3].c_str());
+      hardKill = atof(row[4].c_str());
+    }
+  }
+  if (nodeLimitOverride >= 0)
+    nodeLimit = nodeLimitOverride;
+  if (timeLimitOverride >= 0.0)
+    timeLimit = timeLimitOverride;
+
+  /* ── Best-known reference (bks.tsv), with CLI overrides ────────────────── */
+  std::string expectedStatus;
+  bool haveExpectedObj = false;
+  double expectedObj = 0.0;
+  {
+    std::vector<std::string> row = lookupRow(dataDir + "/bks.tsv", instance);
+    if (row.size() >= 3) {
+      expectedStatus = row[1];
+      std::transform(expectedStatus.begin(), expectedStatus.end(), expectedStatus.begin(), ::tolower);
+      expectedObj = atof(row[2].c_str());
+      haveExpectedObj = true;
+    }
+  }
+  if (!expectedStatusOverride.empty())
+    expectedStatus = expectedStatusOverride;
+  if (haveExpectedObjOverride) {
+    expectedObj = expectedObjOverride;
+    haveExpectedObj = true;
+  }
+
+  printf("=== mip-c-solve: %s ===\n", instance.c_str());
+  printf("  instance file : %s\n", mpsPath.c_str());
+  printf("  threads       : %d\n", threads);
+  printf("  node limit    : %s\n", nodeLimit > 0 ? std::to_string(nodeLimit).c_str() : "unlimited");
+  printf("  time limit    : %.0f s  (hard-kill reference: %.0f s, not enforced here)\n", timeLimit, hardKill);
+  if (!expectedStatus.empty())
+    printf("  bks.tsv       : status=%s%s\n", expectedStatus.c_str(),
+      haveExpectedObj ? (std::string("  objective=") + std::to_string(expectedObj)).c_str() : "");
+  else
+    printf("  bks.tsv       : no reference found for this instance\n");
+  printf("\n--- Cbc output (unmodified) ------------------------------------------\n");
+
+  /* ── Load & solve, deliberately NOT silencing Cbc's own messages ───────── */
+  Cbc_Model *m = Cbc_newModel();
+  int readErr = Cbc_readMps(m, mpsPath.c_str());
+  if (readErr) {
+    fprintf(stderr, "Error: Cbc_readMps failed to read '%s' (code %d)\n", mpsPath.c_str(), readErr);
+    Cbc_deleteModel(m);
+    return 2;
+  }
+
+  char threadsStr[32];
+  snprintf(threadsStr, sizeof(threadsStr), "%d", threads);
+  Cbc_setParameter(m, "threads", threadsStr);
+  if (nodeLimit > 0)
+    Cbc_setMaximumNodes(m, (int)nodeLimit);
+  Cbc_setMaximumSeconds(m, timeLimit);
+  if (logLevelOverride >= 0)
+    Cbc_setLogLevel(m, logLevelOverride);
+
+  Cbc_solve(m);
+
+  printf("------------------------------------------------------------------------\n\n");
+
+  /* ── Status accessors ───────────────────────────────────────────────────── */
+  int status = Cbc_status(m);
+  int secStatus = Cbc_secondaryStatus(m);
+  int isOptimal = Cbc_isProvenOptimal(m);
+  int isInfeasible = Cbc_isProvenInfeasible(m);
+  int isAbandoned = Cbc_isAbandoned(m);
+  int nodeCount = Cbc_getNodeCount(m);
+  int numSaved = Cbc_numberSavedSolutions(m);
+  const double *best = Cbc_bestSolution(m);
+
+  printf("=== Status (queried via the C interface) ===\n");
+  printf("  Cbc_status()            = %d\n", status);
+  printf("  Cbc_secondaryStatus()   = %d\n", secStatus);
+  printf("  Cbc_isProvenOptimal()   = %d\n", isOptimal);
+  printf("  Cbc_isProvenInfeasible()= %d\n", isInfeasible);
+  printf("  Cbc_isAbandoned()       = %d\n", isAbandoned);
+  printf("  Cbc_getNodeCount()      = %d\n", nodeCount);
+  printf("  Cbc_numberSavedSolutions() = %d\n", numSaved);
+  if (best)
+    printf("  Cbc_getObjValue()       = %.10g\n", Cbc_getObjValue(m));
+  printf("  Cbc_getBestPossibleObjValue() = %.10g\n", Cbc_getBestPossibleObjValue(m));
+  printf("\n");
+
+  std::vector<std::string> violations;
+
+  /* ── a) + b) feasibility & objective consistency for every solution ────── */
+  if (best) {
+    printf("=== Best solution ===\n");
+    checkOneSolution(m, best, "best", Cbc_getObjValue(m), true, verbose, violations);
+    printf("\n");
+  } else if (isInfeasible) {
+    printf("No integer-feasible solution (infeasibility proven) — nothing to check.\n\n");
+  } else {
+    printf("No integer-feasible solution was found — nothing to check.\n\n");
+  }
+
+  if (numSaved > 0) {
+    printf("=== Solution pool (%d saved solution(s)) ===\n", numSaved);
+    for (int i = 0; i < numSaved; ++i) {
+      const double *sol = Cbc_savedSolution(m, i);
+      double obj = Cbc_savedSolutionObj(m, i);
+      char label[64];
+      snprintf(label, sizeof(label), "pool #%d", i);
+      if (sol)
+        checkOneSolution(m, sol, label, obj, true, verbose, violations);
+      else
+        printf("  [%s] Cbc_savedSolution returned NULL\n", label);
+    }
+    printf("\n");
+  }
+
+  /* ── c) optimality / infeasibility claims vs bks.tsv ───────────────────── */
+  printf("=== Cross-check vs bks.tsv ===\n");
+  if (isOptimal) {
+    if (expectedStatus == "infeasible") {
+      violations.push_back(
+        "MISMATCH: Cbc_isProvenOptimal() is true, but bks.tsv says this instance "
+        "is infeasible. This is a solver bug.");
+    } else if (expectedStatus == "optimal" && haveExpectedObj) {
+      double reportedObj = Cbc_getObjValue(m);
+      double tolAbs = std::max(BKS_ABS_TOL, fabs(expectedObj) * BKS_PCT_TOL / 100.0);
+      double delta = fabs(reportedObj - expectedObj);
+      if (delta > tolAbs) {
+        char buf[512];
+        snprintf(buf, sizeof(buf),
+          "MISMATCH: claimed-optimal objective %.10g does not match best-known "
+          "value %.10g (delta=%.3e exceeds tol=%.3e = max(abs=%.1e, pct=%.4g%%))",
+          reportedObj, expectedObj, delta, tolAbs, BKS_ABS_TOL, BKS_PCT_TOL);
+        violations.push_back(buf);
+      } else {
+        printf("  Optimal objective matches best-known value (delta=%.3e <= tol=%.3e): OK\n",
+          delta, tolAbs);
+      }
+    } else {
+      printf("  Cbc claims optimality; no comparable bks.tsv reference available.\n");
+    }
+  } else if (isInfeasible) {
+    if (expectedStatus == "optimal") {
+      violations.push_back(
+        "MISMATCH: Cbc_isProvenInfeasible() is true, but bks.tsv says this "
+        "instance has an optimal solution. This is a solver bug.");
+    } else if (expectedStatus == "infeasible") {
+      printf("  Infeasibility claim matches bks.tsv: OK\n");
+    } else {
+      printf("  Cbc claims infeasibility; no comparable bks.tsv reference available.\n");
+    }
+  } else {
+    printf("  Run stopped without an optimality/infeasibility proof (status=%d, secondary=%d) — "
+      "no bks.tsv cross-check applies.\n", status, secStatus);
+  }
+  printf("\n");
+
+  /* ── Results ────────────────────────────────────────────────────────────── */
+  bool ok = violations.empty();
+  if (ok) {
+    printf("RESULT: OK\n");
+  } else {
+    printf("RESULT: FAILED\n\n");
+    printf("--- VIOLATIONS FOUND (%zu) -----------------------------------------\n", violations.size());
+    for (const auto &v : violations)
+      printf("%s\n", v.c_str());
+    printf("\n");
+  }
+
+  Cbc_deleteModel(m);
+  return ok ? 0 : 1;
+}

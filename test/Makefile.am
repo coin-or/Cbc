@@ -27,8 +27,26 @@ test: cbc_validate_sol$(EXEEXT)
 
 .PHONY: test
 
-noinst_PROGRAMS = cbc_validate_sol
+########################################################################
+#                    Manual C-interface solve utility                  #
+########################################################################
+#
+# mip-c-solve: solves a single mip-sanity-data instance in-process through
+# Cbc's C interface (Cbc_C_Interface.h), applying limits.tsv's suggested
+# node/time limits, then queries and validates the best solution and the
+# whole solution pool (feasibility, objective consistency, and
+# optimality/infeasibility claims vs bks.tsv). Unlike cbc_validate_sol, it
+# does not rely on a `.sol` file produced by the `cbc` executable — it drives
+# Cbc_solve() itself and leaves Cbc's own solve messages unsuppressed, so it
+# doubles as a way to manually inspect the C interface end to end. See
+# `mip-c-solve --help` for usage.
+
+noinst_PROGRAMS = cbc_validate_sol mip-c-solve
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
 cbc_validate_sol_LDADD = ../src/libCbc.la
+
+mip_c_solve_SOURCES = mip-c-solve.cpp
+
+mip_c_solve_LDADD = ../src/libCbc.la

@@ -1961,6 +1961,40 @@ static void Cbc_applyDualPivot(Cbc_Model *model, ClpSimplex *clps)
   }
 }
 
+// Wraps a single Clp solve call (initialSolve() for a cold solve, or
+// resolve() for warm-start reoptimization) with a CbcRootLpEventHandler
+// (modern tabular progress output), active only when the configured log
+// level is >= 1. Shared by the legacy cold-solve path (Cbc_solveLPColdLegacy)
+// and the warm-start resolve() path in Cbc_solveLinearProgram(), so both
+// solve modes use the same modern output format when verbosity is enabled.
+template < typename SolveFn >
+static void Cbc_withRootLpProgress(Cbc_Model *model, OsiClpSolverInterface *solver,
+  ClpSimplex *clps, SolveFn &&solveFn)
+{
+  const int lpLogLevel = model->int_param[INT_PARAM_LOG_LEVEL];
+  CbcRootLpEventHandler *lpProgressHandler = nullptr;
+  int savedClpLogLevel = -1;
+  if (lpLogLevel >= 1) {
+    savedClpLogLevel = clps->logLevel();
+    clps->setLogLevel(0);
+    lpProgressHandler = new CbcRootLpEventHandler(
+      solver->messageHandler(), lpLogLevel, /*iterFreq=*/0, /*timeFreq=*/5.0);
+    clps->passInEventHandler(lpProgressHandler);
+    delete lpProgressHandler;
+    lpProgressHandler = dynamic_cast< CbcRootLpEventHandler * >(clps->eventHandler());
+  }
+
+  solveFn();
+
+  if (savedClpLogLevel >= 0) {
+    if (lpProgressHandler)
+      lpProgressHandler->printFinalStatus();
+    clps->setLogLevel(savedClpLogLevel);
+    ClpEventHandler defaultHandler;
+    clps->passInEventHandler(&defaultHandler);
+  }
+}
+
 // Cold "from scratch" LP solve for the two legacy method/option combinations
 // CbcSolver's applyLpMethod()/runSolveContinuous() cannot express through its
 // public parameter surface: LPM_BarrierNoCross (no CbcParameters knob exists
@@ -1993,32 +2027,11 @@ static int Cbc_solveLPColdLegacy(Cbc_Model *model, OsiClpSolverInterface *solver
   }
   solver->setSolveOptions(clpOptions);
 
-  // Root LP progress output via event handler (modern output format)
-  const int lpLogLevel = model->int_param[INT_PARAM_LOG_LEVEL];
-  CbcRootLpEventHandler *lpProgressHandler = nullptr;
-  int savedClpLogLevel = -1;
-  if (lpLogLevel >= 1) {
-    savedClpLogLevel = clps->logLevel();
-    clps->setLogLevel(0);
-    lpProgressHandler = new CbcRootLpEventHandler(
-      solver->messageHandler(), lpLogLevel, /*iterFreq=*/0, /*timeFreq=*/5.0);
-    clps->passInEventHandler(lpProgressHandler);
-    delete lpProgressHandler;
-    lpProgressHandler = dynamic_cast< CbcRootLpEventHandler * >(clps->eventHandler());
-  }
-
-  solver->initialSolve();
-
-  if (savedClpLogLevel >= 0) {
-    if (lpProgressHandler)
-      lpProgressHandler->printFinalStatus();
-    clps->setLogLevel(savedClpLogLevel);
-    ClpEventHandler defaultHandler;
-    clps->passInEventHandler(&defaultHandler);
-  }
+  Cbc_withRootLpProgress(model, solver, clps, [&]() { solver->initialSolve(); });
 
   return Cbc_mapLpResult(model, solver, clps);
 }
+
 
 // Cold "from scratch" LP solve for the common case: delegates method
 // selection (dual/primal/barrier/auto/racing/recommend) and the actual solve
@@ -2087,6 +2100,14 @@ static int Cbc_solveLPColdViaCbcSolver(Cbc_Model *model, OsiClpSolverInterface *
 
   cbcSolver.run(inputQueue);
 
+  // applyLpMethod() solves via ClpSimplex::initialSolve()/racing directly
+  // (not OsiClpSolverInterface::initialSolve()), so `solver`'s own
+  // lastAlgorithm_ tracking is never updated by that call. Without this,
+  // solver->basisIsAvailable() would stay permanently false and every
+  // subsequent Cbc_resolve()/warm-start call above would silently fall back
+  // to a full cold solve instead of reusing the basis just computed here.
+  solver->setLastAlgorithm(1);
+
   return Cbc_mapLpResult(model, solver, clps);
 }
 
@@ -2113,16 +2134,32 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     cbc_annouced = 1;
   }
 
+  // Whether *any* solve (LP or MIP root relaxation) has happened on this
+  // model since creation or the last Cbc_reset(): if so, `solver` already
+  // holds a usable warm-start basis and a cheap resolve() should be used
+  // instead of a full cold solve, regardless of what solver->basisIsAvailable()
+  // reports. basisIsAvailable() is NOT a reliable signal for this: Osi
+  // deliberately sets lastAlgorithm_ = 999 (making basisIsAvailable() return
+  // false) on any bound change that could invalidate the *guaranteed-optimal*
+  // status of the current solution (see OsiClpSolverInterface::setColLower/
+  // setColUpper) -- but the underlying basis object is still perfectly usable
+  // as a warm start for resolve(), it just isn't known to still be optimal.
+  // Using basisIsAvailable() alone here would make every reoptimization after
+  // a bound/row change silently fall back to an expensive full cold solve.
+  const bool priorSolveExists = (model->lastOptimization != ModelNotOptimized);
+
   model->lastOptimization = ContinuousOptimization;
 
   // Dual pivot algorithm choice: applies whether we warm-start (resolve())
   // or cold-start below.
   Cbc_applyDualPivot(model, clps);
 
-  if (solver->basisIsAvailable()) {
+  if (priorSolveExists || solver->basisIsAvailable()) {
     // Warm-start reoptimization -- the configured LP method has no effect
-    // here: Clp just continues from the existing basis.
-    solver->resolve();
+    // here: Clp just continues from the existing basis. Still uses the
+    // modern tabular progress output (same as the cold paths) when the
+    // configured log level allows it.
+    Cbc_withRootLpProgress(model, solver, clps, [&]() { solver->resolve(); });
     return Cbc_mapLpResult(model, solver, clps);
   }
 

@@ -1278,6 +1278,11 @@ Cbc_solveLinearProgram(Cbc_Model *model);
  * adding/removing rows, or modifying coefficients: it reuses the current
  * basis, so the configured LP method has no effect on this path.
  *
+ * Like Cbc_solveLinearProgram(), respects the configured log level: at
+ * INT_PARAM_LOG_LEVEL >= 1 a modern progress table is printed for this
+ * reoptimization too (note this means logging is verbose if resolve is
+ * called many times in a tight loop -- set the log level to 0 to silence it).
+ *
  * If no basis is available, falls back to Cbc_solveLinearProgram(), which
  * performs a full cold-start solve honoring the configured LP method.
  *

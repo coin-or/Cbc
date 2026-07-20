@@ -46,11 +46,13 @@ typedef struct Cbc_Model Cbc_Model;
  *  If a problem with integer variables, this affects only the root node.
  * */
 enum LPMethod {
-  LPM_Auto           = 0,  /*! Solver will decide automatically which method to use */
+  LPM_Auto           = 0,  /*! Solver will decide automatically which method to use: picks LPM_Racing when running in parallel (threads >= 2) or LPM_Recommend when running sequentially (threads == 1) */
   LPM_Dual           = 1,  /*! Dual simplex */
   LPM_Primal         = 2,  /*! Primal simplex */
   LPM_Barrier        = 3,  /*! The barrier algorithm */
-  LPM_BarrierNoCross = 4   /*! Barrier algorithm, not to be followed by crossover */
+  LPM_BarrierNoCross = 4,  /*! Barrier algorithm, not to be followed by crossover */
+  LPM_Racing         = 5,  /*! Opportunistic parallel LP racing: multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (INT_PARAM_THREADS). */
+  LPM_Recommend      = 6   /*! ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features. Runs sequentially. */
 };
 
 /*! Whether specific presolve reductions should be disabled
@@ -129,7 +131,7 @@ enum IntParam {
   INT_PARAM_CGRAPH                  = 17, /*! Conflict graph: controls if the conflict graph is created or not. 0: off, 1: auto, 2: on 3: fast weaker clique sep */
   INT_PARAM_CLIQUE_MERGING          = 18, /*! Clique merging options: 0: off , 1 auto , 2 before solving LP, 3 after solving LP and pre-processing */
   INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19, /*! Maximum number of nodes processed without improving best solution, after a feasible solution is found */
-  INT_PARAM_LP_FAST_PREPROCESS      = 20, /*! Fast MILP preprocessing before LP solve (Cbc_resolve / Cbc_solveLinearProgram). 0: off (default, pure LP relaxation); 1: singleton bound tightening only; 2: singletons + knapsack-based bound tightening (milpbt); 3: fixpoint (milpbt until no new fixings). Has no effect on MIP solves (Cbc_solve), which control preprocessing via the fastPreProcessLevel parameter. */
+  INT_PARAM_LP_FAST_PREPROCESS      = 20, /*! Deprecated, no longer has any effect: Cbc_resolve()/Cbc_solveLinearProgram() only solve the LP relaxation as-is and no longer perform bound-tightening preprocessing. Kept only so existing code that sets this parameter keeps compiling/linking. Has no effect on MIP solves (Cbc_solve) either, which control preprocessing via the fastPreProcessLevel parameter. */
   INT_PARAM_MAX_ITER                = 21, /*! Maximum number of simplex iterations for LP solves (Cbc_resolve / Cbc_solveLinearProgram). Default INT_MAX (no limit). */
 };
 #define N_INT_PARAMS 22
@@ -1240,11 +1242,29 @@ Cbc_solve(Cbc_Model *model);
  **/
 /** Solves the LP relaxation (or re-solves after modifications).
  *
- * If a basis is available (from a previous solve), uses warm-start
- * (resolve). Otherwise does a full initial solve.
+ * Always operates directly on the OsiClpSolverInterface/CbcModel stored in
+ * the C interface (never a copy), so the optimal basis it produces remains
+ * available for later reoptimization (e.g. via Cbc_resolve()).
  *
- * Uses the LP method set via Cbc_setLPmethod() or Cbc_setParam("lpMethod",...).
- * Respects time limit, tolerances, and log level from the current parameters.
+ * If a basis is already available (from a previous solve), this is a fast
+ * warm-start reoptimization (OsiSolverInterface::resolve()) -- in that case
+ * the configured LP method (Cbc_setLPmethod()/lpMethod parameter) has no
+ * effect, since Clp simply continues from the existing basis.
+ *
+ * Otherwise this performs a full "cold" initial solve, using
+ * CbcSolver::runSolveContinuous()/applyLpMethod() -- the same machinery
+ * used by the `cbc` command line's -initialSolve/-dualSimplex/-primalSimplex/
+ * -barrier actions -- so the configured LP method
+ * (Cbc_setLPmethod()/lpMethod parameter: dual, primal, barrier, auto, racing,
+ * recommend) is fully honored, including the racing (parallel) and
+ * ML-recommended configurations.
+ *
+ * Only solves (or resolves) the LP relaxation as given -- it does not
+ * perform any bound-tightening/preprocessing of the model (see
+ * INT_PARAM_LP_FAST_PREPROCESS, now deprecated/no-op).
+ *
+ * Respects time limit, iteration limit, tolerances, dual pivot algorithm,
+ * and log level from the current parameters.
  *
  * @param model problem object
  * @return 0=optimal, 1=stopped, 2=infeasible, 3=unbounded
@@ -1255,10 +1275,11 @@ Cbc_solveLinearProgram(Cbc_Model *model);
 /** Re-solves the LP using the current basis (warm start).
  *
  * This is the fast path for reoptimization after bound changes,
- * adding/removing rows, or modifying coefficients. Uses dual simplex
- * by default (efficient for bound changes and added constraints).
+ * adding/removing rows, or modifying coefficients: it reuses the current
+ * basis, so the configured LP method has no effect on this path.
  *
- * If no basis is available, falls back to Cbc_solveLinearProgram().
+ * If no basis is available, falls back to Cbc_solveLinearProgram(), which
+ * performs a full cold-start solve honoring the configured LP method.
  *
  * @param model problem object
  * @return 0=optimal, 1=stopped, 2=infeasible, 3=unbounded, -1=error

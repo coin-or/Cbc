@@ -41,7 +41,7 @@ test: cbc_validate_sol$(EXEEXT)
 # doubles as a way to manually inspect the C interface end to end. See
 # `mip-c-solve --help` for usage.
 
-noinst_PROGRAMS = cbc_validate_sol mip-c-solve
+noinst_PROGRAMS = cbc_validate_sol mip-c-solve lp-relaxation-test
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -50,3 +50,19 @@ cbc_validate_sol_LDADD = ../src/libCbc.la
 mip_c_solve_SOURCES = mip-c-solve.cpp
 
 mip_c_solve_LDADD = ../src/libCbc.la
+
+########################################################################
+#              LP-relaxation solve/resolve tests (C interface)         #
+########################################################################
+#
+# lp-relaxation-test: targeted tests for Cbc_solveLinearProgram()/
+# Cbc_resolve() -- root LP relaxation solves under different LPMethod/
+# DualPivot/LPReductions settings, warm-start reoptimization (variable
+# fixing and constraint add/remove), and LP solution validation (bounds,
+# reduced-cost complementary slackness). Expected LP relaxation objectives
+# were computed independently (two external solvers agreed exactly) and
+# cross-checked against Cbc's own solve. See `lp-relaxation-test --help`.
+
+lp_relaxation_test_SOURCES = lp-relaxation-test.cpp
+
+lp_relaxation_test_LDADD = ../src/libCbc.la

@@ -96,7 +96,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT)
+noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
+	lp-relaxation-test$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -117,6 +118,9 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_lp_relaxation_test_OBJECTS = lp-relaxation-test.$(OBJEXT)
+lp_relaxation_test_OBJECTS = $(am_lp_relaxation_test_OBJECTS)
+lp_relaxation_test_DEPENDENCIES = ../src/libCbc.la
 am_mip_c_solve_OBJECTS = mip-c-solve.$(OBJEXT)
 mip_c_solve_OBJECTS = $(am_mip_c_solve_OBJECTS)
 mip_c_solve_DEPENDENCIES = ../src/libCbc.la
@@ -136,7 +140,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/Osi
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/cbc_validate_sol.Po \
-	./$(DEPDIR)/mip-c-solve.Po
+	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -156,7 +160,8 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(cbc_validate_sol_SOURCES) $(mip_c_solve_SOURCES)
+SOURCES = $(cbc_validate_sol_SOURCES) $(lp_relaxation_test_SOURCES) \
+	$(mip_c_solve_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -350,6 +355,20 @@ cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 cbc_validate_sol_LDADD = ../src/libCbc.la
 mip_c_solve_SOURCES = mip-c-solve.cpp
 mip_c_solve_LDADD = ../src/libCbc.la
+
+########################################################################
+#              LP-relaxation solve/resolve tests (C interface)         #
+########################################################################
+#
+# lp-relaxation-test: targeted tests for Cbc_solveLinearProgram()/
+# Cbc_resolve() -- root LP relaxation solves under different LPMethod/
+# DualPivot/LPReductions settings, warm-start reoptimization (variable
+# fixing and constraint add/remove), and LP solution validation (bounds,
+# reduced-cost complementary slackness). Expected LP relaxation objectives
+# were computed independently (two external solvers agreed exactly) and
+# cross-checked against Cbc's own solve. See `lp-relaxation-test --help`.
+lp_relaxation_test_SOURCES = lp-relaxation-test.cpp
+lp_relaxation_test_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:
@@ -392,6 +411,10 @@ cbc_validate_sol$(EXEEXT): $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_DEPEND
 	@rm -f cbc_validate_sol$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_LDADD) $(LIBS)
 
+lp-relaxation-test$(EXEEXT): $(lp_relaxation_test_OBJECTS) $(lp_relaxation_test_DEPENDENCIES) $(EXTRA_lp_relaxation_test_DEPENDENCIES) 
+	@rm -f lp-relaxation-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(lp_relaxation_test_OBJECTS) $(lp_relaxation_test_LDADD) $(LIBS)
+
 mip-c-solve$(EXEEXT): $(mip_c_solve_OBJECTS) $(mip_c_solve_DEPENDENCIES) $(EXTRA_mip_c_solve_DEPENDENCIES) 
 	@rm -f mip-c-solve$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(mip_c_solve_OBJECTS) $(mip_c_solve_LDADD) $(LIBS)
@@ -403,6 +426,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc_validate_sol.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lp-relaxation-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-c-solve.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -533,6 +557,7 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
+	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -580,6 +605,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
+	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

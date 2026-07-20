@@ -1747,12 +1747,14 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
       babModel_->setProblemStatus(iStatus);
       babModel_->setSecondaryStatus(iStatus2);
     }
-    int cbRc = callBack(&model_, 1);
-    if (cbRc) {
-      delete babModel_;
-      babModel_ = nullptr;
-      returnCode = cbRc;
-      return 3;
+    if (callBack != NULL) {
+      int cbRc = callBack(&model_, 1);
+      if (cbRc) {
+        delete babModel_;
+        babModel_ = nullptr;
+        returnCode = cbRc;
+        return 3;
+      }
     }
   }
   if (statusUserFunction_[0]) {

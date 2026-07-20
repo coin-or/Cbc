@@ -1065,6 +1065,66 @@ struct LpAutoSettings {
   int scalingMode; ///< clp->scaling() mode; -1 = leave user setting
 };
 
+// ─── Protected reoptimization settings ────────────────────────────────────
+// A one-shot LP method choice (e.g. the ML auto/recommend tag, or racing's
+// per-thread configs) may reconfigure a handful of ClpSimplex knobs purely
+// to speed up *that single solve*. Those knobs are also read by every later
+// warm-started resolve() -- feasibility pump passes, cut generation, strong
+// branching, and B&B node reoptimizations -- which instead rely on Cbc's own
+// tuned defaults (steepest-edge pivots, mild perturbation, normal scaling)
+// to reoptimize quickly from a warm basis. If a one-shot override is left in
+// place after its solve, every later resolve silently inherits it, which can
+// turn a fast warm-started reoptimization into a slow, near-cold one.
+//
+// ClpProtectedLpSettings + captureProtectedLpSettings()/restoreProtectedLpSettings()
+// bundle exactly the knobs that must be snapshotted before such a one-shot
+// override and put back afterward. Any code path that temporarily reconfigures
+// `clp` for a single solve (not a persistent, user-requested setting) should
+// capture before mutating and restore right after that solve completes.
+//
+// Currently covers: dual row pivot algorithm, primal column pivot algorithm
+// (both may be wrapped in their Positive-Edge variant by applyPositiveEdge(),
+// or replaced outright, e.g. autoS.pesteep's ClpDualRowSteepest(3)), the
+// scaling mode, and the perturbation value. Extend this struct (and its
+// capture/restore functions) if a future one-shot override starts touching
+// another persistent ClpSimplex/OsiClpSolverInterface setting.
+struct ClpProtectedLpSettings {
+  ClpDualRowPivot *dualPivot = nullptr;
+  ClpPrimalColumnPivot *primalPivot = nullptr;
+  int scalingFlag = -1;
+  int perturbation = -1;
+};
+
+static ClpProtectedLpSettings
+captureProtectedLpSettings(ClpSimplex *clp)
+{
+  ClpProtectedLpSettings saved;
+  saved.dualPivot = clp->dualRowPivot()->clone();
+  saved.primalPivot = clp->primalColumnPivot()->clone();
+  saved.scalingFlag = clp->scalingFlag();
+  saved.perturbation = clp->perturbation();
+  return saved;
+}
+
+// Restores everything captureProtectedLpSettings() snapshotted, then frees
+// the clones. Safe to call at most once per capture (clears the pointers).
+static void
+restoreProtectedLpSettings(ClpSimplex *clp, ClpProtectedLpSettings &saved)
+{
+  if (saved.dualPivot) {
+    clp->setDualRowPivotAlgorithm(*saved.dualPivot);
+    delete saved.dualPivot;
+    saved.dualPivot = nullptr;
+  }
+  if (saved.primalPivot) {
+    clp->setPrimalColumnPivotAlgorithm(*saved.primalPivot);
+    delete saved.primalPivot;
+    saved.primalPivot = nullptr;
+  }
+  clp->scaling(saved.scalingFlag);
+  clp->setPerturbation(saved.perturbation);
+}
+
 // Parse a parameter tag (from CbcLpParamScorer) into a LpAutoSettings struct.
 // Tag format examples:
 //   dual_pesteep_psineg1   primal_idiot30_pertvm1483   primal_sprint
@@ -1331,6 +1391,10 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   // PSI, objective scaling, and vector mode modify the ClpSimplex object in
   // place.  They MUST be applied before racing (step 4) so that every racing
   // thread clone inherits them.
+  // Holds the pre-root-solve state so autoLpMode's one-shot pivot/scaling/
+  // perturbation overrides can be undone once the root solve finishes (see
+  // ClpProtectedLpSettings above, and the restore call further below).
+  ClpProtectedLpSettings savedLpSettings;
 #ifndef CBC_OTHER_SOLVER
   if (clp) {
     // NOTE: all CLP parameters are stored in parameters_.clpParameters(), NOT in
@@ -1338,6 +1402,20 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
     ClpParameters &clpP = parameters_.clpParameters();
 
     if (!canRace) {
+      // autoLpMode's settings (pivot rule, scaling, perturbation) are chosen
+      // purely to speed up *this one* root-relaxation solve -- e.g. a
+      // primal/idiot/sprint recommendation typically disables perturbation
+      // (pertValue=100) and may switch off scaling. Unlike a user's explicit
+      // -psi/-pertValue/-scaling choice (which is meant to persist for the
+      // whole run), these are a one-shot override: applying them directly to
+      // `clp` would otherwise leave them in place for every later warm-started
+      // resolve (feasibility pump passes, cut generation, B&B nodes), which
+      // rely on Cbc's tuned defaults (dual-friendly steepest edge, mild
+      // perturbation) for fast reoptimization. Save the pre-existing state so
+      // it can be restored once the root solve completes (see below).
+      if (autoLpMode)
+        savedLpSettings = captureProtectedLpSettings(clp);
+
       // When auto mode picked a steepest-edge pivot, install it before the PSI
       // wrapper so that applyPositiveEdge() can wrap it correctly.
       if (autoS.pesteep) {
@@ -1583,6 +1661,17 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   model2->setSpecialOptions(model2->specialOptions() | COIN_CBC_USING_CLP);
   model2->initialSolve(solveOptions);
   clearClpTimeLimits(model2);
+
+  // Undo autoLpMode's one-shot pivot/scaling/perturbation overrides now that
+  // the root solve is done -- see the matching capture in step 2 above.
+  // Without this, e.g. a primal/idiot/sprint recommendation that turns
+  // perturbation off (pertValue=100), or a psi/pesteep pivot override, would
+  // leave every later warm-started resolve (feasibility pump, cut generation,
+  // B&B nodes) running without Cbc's tuned anti-degeneracy perturbation and
+  // pivot rules, causing far more iterations per resolve than the fast
+  // dual-based reoptimization those callers expect.
+  if (clp && savedLpSettings.dualPivot)
+    restoreProtectedLpSettings(clp, savedLpSettings);
 
   basisHasValues_ = 1;
 

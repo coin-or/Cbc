@@ -836,6 +836,29 @@ private:
     CbcSolverStatistics &statistics, int &returnCode,
     int callBack(CbcModel *currentSolver, int whereFrom));
 
+  /** Handle the legacy OsiSolverLink/quadratic-objective detection and
+      solve path, split out of babSetupAndRootLp() (COIN_HAS_LINK branch;
+      a no-op stub is compiled instead when either CBC_OTHER_SOLVER or
+      !COIN_HAS_LINK applies — those macros aren't visible from this
+      header, only from CbcSolver.cpp, which #define's COIN_HAS_LINK
+      itself). If the current objective is quadratic, this rebuilds
+      model_'s solver as an OsiSolverLink loaded from a CoinModel, solves
+      the linearized SLP relaxation with an inner CbcModel (its own cut
+      generators and heuristics), records the best solution found as
+      model_'s incumbent, and (if the problem is convex) adds an
+      outer-approximation cut to storedAmpl.
+      \param solver         model_.solver(), possibly reassigned to the new
+                              OsiSolverLink.
+      \param lpSolver       Reassigned to match the new solver, when a
+                              quadratic objective is found.
+      \return 0=success (caller continues), 1=break BAB (infeasible via
+              tightenPrimalBounds)
+  */
+  int babSetupQuadraticLink(OsiSolverInterface *&solver,
+    OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
+    CoinModel *&coinModel, CglStored &storedAmpl, int &preProcess,
+    int &testOsiParameters, int &complicatedInteger, bool &biLinearProblem);
+
   /** Configuration for the conflict-graph branching ranker, collected from
       parameters in run() before `case CbcParam::BAB:` is reached and
       consumed by babConfigureBabModel(). Field names mirror the run()-scope

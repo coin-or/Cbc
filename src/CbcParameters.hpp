@@ -173,11 +173,12 @@ public:
     - ClqOff:
     - ClqAfter:
     - ClqBefore:
+    - ClqBoth:
     - ClqEndMarker:
 
   */
 
-  enum ClqStrMode { ClqStrOff = 0, ClqStrBefore, ClqStrAfter, ClqStrEndMarker };
+  enum ClqStrMode { ClqStrOff = 0, ClqStrBefore, ClqStrAfter, ClqStrBoth, ClqStrEndMarker };
 
   /*! \brief What node strategy to use
 

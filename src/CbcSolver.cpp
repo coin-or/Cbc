@@ -1292,10 +1292,10 @@ bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn)
   // Strengthens set-packing/partitioning cliques using the conflict graph,
   // then does a quick raw LP warm-start inside the function.  The full
   // configured LP solve happens later, in applyLpMethod().
-  if (clqstrMode_ == "before") {
+  if (clqstrMode_ == "before" || clqstrMode_ == "both") {
     double clqTime = CoinWallclockTime();
     int clqExtended = 0, clqDominated = 0;
-    strengthenCliques(solver, clqstrMode_, 2, &clqExtended, &clqDominated);
+    strengthenCliques(solver, "before", 2, &clqExtended, &clqDominated);
     clqTime = CoinWallclockTime() - clqTime;
     statistics_.cgraph_time += solver->getCGraphBuildTime();
     statistics_.cgraph_density = solver->getCGraphDensity();
@@ -8008,7 +8008,7 @@ int CbcSolver::babPostPreprocessCleanup(
     parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
     clqstrMode = "off";
   }
-  if (clqstrMode == "after") {
+  if (clqstrMode == "after" || clqstrMode == "both") {
     if (!babModel_->maximumSecondsReached()) {
       int clqExtended = 0, clqDominated = 0;
       // Use preprocHandler when available so that Coin0011I and Cgl0015I
@@ -8017,7 +8017,7 @@ int CbcSolver::babPostPreprocessCleanup(
       CoinMessageHandler *clqHandler = preprocHandler
         ? static_cast< CoinMessageHandler * >(preprocHandler)
         : babModel_->messageHandler();
-      strengthenCliques(babModel_->solver(), clqstrMode, 4,
+      strengthenCliques(babModel_->solver(), "after", 4,
         &clqExtended, &clqDominated, clqHandler);
       statistics.cgraph_time += babModel_->solver()->getCGraphBuildTime();
       statistics.cgraph_density = babModel_->solver()->getCGraphDensity();

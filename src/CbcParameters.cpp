@@ -1627,6 +1627,7 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("after", CbcParameters::ClqStrAfter);
   parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("off", CbcParameters::ClqStrOff);
   parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("before", CbcParameters::ClqStrBefore);
+  parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("both", CbcParameters::ClqStrBoth);
 
   parameters_[CbcParam::BRANCHPRIORITY]->setup(
       "branch!Priorities", "What rule (if any) to use in prioritizing variables for branching",

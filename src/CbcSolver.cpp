@@ -2425,7 +2425,7 @@ CbcSolver::CbcSolver()
   , residualCapacityMode_(CbcParameters::CGOff)
   , zerohalfMode_(CbcParameters::CGIfMove)
   , cgraphMode_("on")
-  , clqstrMode_("after")
+  , clqstrMode_("both")
   , bkPivotingStrategy_(3)
   , maxCallsBK_(1000)
   , bkClqExtMethod_(4)
@@ -3122,7 +3122,7 @@ void CbcSolver::resetRunState()
   residualCapacityMode_ = CbcParameters::CGOff;
   zerohalfMode_ = CbcParameters::CGIfMove;
   cgraphMode_ = "on";
-  clqstrMode_ = "after";
+  clqstrMode_ = "both";
   bkPivotingStrategy_ = 3;
   maxCallsBK_ = 1000;
   bkClqExtMethod_ = 4;
@@ -3261,7 +3261,7 @@ void CbcSolver::initialize()
 #endif
   parameters_[CbcParam::CLIQUECUTS]->setVal("ifmove");
   parameters_[CbcParam::ODDWHEELCUTS]->setVal("off");
-  parameters_[CbcParam::CLQSTRENGTHENING]->setVal("after");
+  parameters_[CbcParam::CLQSTRENGTHENING]->setVal("both");
   parameters_[CbcParam::USECGRAPH]->setVal("on");
   parameters_[CbcParam::AGGREGATEMIXED]->setVal(1);
   parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
@@ -7017,7 +7017,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   // Set up likely cut generators and defaults
   parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
   parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
-  parameters[CbcParam::CLQSTRENGTHENING]->setVal("after");
+  parameters[CbcParam::CLQSTRENGTHENING]->setVal("both");
   parameters[CbcParam::USECGRAPH]->setVal("on");
   parameters[CbcParam::AGGREGATEMIXED]->setVal(1);
   parameters[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
@@ -11030,7 +11030,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     int &GMIMode = GMIMode_;
 
     cgraphMode_ = "on";
-    clqstrMode_ = "after";
+    clqstrMode_ = "both";
     std::string &cgraphMode = cgraphMode_;
     std::string &clqstrMode = clqstrMode_;
     // Conflict-graph branching ranker configuration (collected from params,

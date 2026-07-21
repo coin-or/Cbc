@@ -128,7 +128,7 @@ Normally if AMPL says there are SOS variables they should be used, but sometimes
 
 Whether and when to perform Clique Strengthening preprocessing routine
 
-**Values:** `off`, `before`, `after`, `both` (default: `after`)
+**Values:** `off`, `before`, `after`, `both` (default: `both`)
 
 ### `-preprocess`
 

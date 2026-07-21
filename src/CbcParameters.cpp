@@ -775,7 +775,7 @@ void CbcParameters::setDefaults(int strategy) {
   // Now set up  parameters according to overall strategies
   switch (strategy) {
    case CbcParameters::DefaultStrategy:
-     parameters_[CbcParam::CLQSTRENGTHENING]->setDefault("after");
+     parameters_[CbcParam::CLQSTRENGTHENING]->setDefault("both");
      parameters_[CbcParam::BRANCHPRIORITY]->setDefault("off");
      parameters_[CbcParam::CHECKTIMEFREQ]->setDefault("often");
      parameters_[CbcParam::CUTOFFCONSTRAINT]->setDefault("off");

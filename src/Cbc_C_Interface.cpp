@@ -2370,282 +2370,280 @@ Cbc_solve(Cbc_Model *model)
 {
   Cbc_cleanOptResults(model);
 
-  int res = Cbc_solveLinearProgram(model);
+  /* Caller explicitly asked to solve only the LP relaxation
+   * (Cbc_setSolveRelax): dispatch to Cbc_solveLinearProgram() and skip
+   * building a CbcModel/CbcSolver entirely -- no point going through the
+   * B&B machinery just to stop at the root. */
+  if (model->relax_ == 1) {
+    int res = Cbc_solveLinearProgram(model);
 
-  if (res == 1)
-    return 1;
-  if (res==2 || res==3)
-    return 0;
+    if (res == 1)
+      return 1;
+    if (res == 2 || res == 3)
+      return 0;
 
-  OsiClpSolverInterface *solver = model->solver_;
-
-  if (solver->isProvenPrimalInfeasible() || solver->isProvenDualInfeasible() ||
-      solver->isAbandoned() || solver->isIterationLimitReached() || model->relax_ == 1
-      || ((solver->getNumIntegers()+model->nSos)==0)) {
+    OsiClpSolverInterface *solver = model->solver_;
     if (solver->isProvenOptimal() || solver->isIterationLimitReached()) {
       model->obj_value = solver->getObjValue();
-      Cbc_updateSlack(model, solver->getRowActivity() );
+      Cbc_updateSlack(model, solver->getRowActivity());
       model->x = solver->getColSolution();
       model->rSlk = model->slack->data();
       model->rActv = solver->getRowActivity();
     }
-
     return 0;
   }
 
-  /*  MIP Optimization */
-  {
-    model->lastOptimization = IntegerOptimization;
-    OsiClpSolverInterface linearProgram(*solver);
-    CbcModel cbcModel(linearProgram);
-    try {
-      /* stored lazy Constraints */
-      if (model->lazyConstrs) {
-        cbcModel.addCutGenerator(model->lazyConstrs, 1, "Stored LazyConstraints", true, 1);
-        model->cutCBAtSol = 1;
-      }
+  model->lastOptimization = IntegerOptimization;
+  OsiClpSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface linearProgram(*solver);
+  CbcModel cbcModel(linearProgram);
+  try {
+    /* stored lazy Constraints */
+    if (model->lazyConstrs) {
+      cbcModel.addCutGenerator(model->lazyConstrs, 1, "Stored LazyConstraints", true, 1);
+      model->cutCBAtSol = 1;
+    }
 
-      Cbc_EventHandler *cbc_eh = NULL;
-      if (model->inc_callback!=NULL || model->progr_callback!=NULL)
-      {
-        cbc_eh = new Cbc_EventHandler(&cbcModel);
+    Cbc_EventHandler *cbc_eh = NULL;
+    if (model->inc_callback!=NULL || model->progr_callback!=NULL)
+    {
+      cbc_eh = new Cbc_EventHandler(&cbcModel);
 #ifdef CBC_THREAD
-        cbc_eh->cbcMutex = &(model->cbcMutexEvent);
+      cbc_eh->cbcMutex = &(model->cbcMutexEvent);
 #endif
 
-        if (model->inc_callback) {
-          cbc_eh->inc_callback = model->inc_callback;
-          cbc_eh->appData = model->icAppData;
-        }
-        if (model->progr_callback) {
-          cbc_eh->progr_callback = model->progr_callback;
-          cbc_eh->pgAppData = model->pgrAppData;
-        }
+      if (model->inc_callback) {
+        cbc_eh->inc_callback = model->inc_callback;
+        cbc_eh->appData = model->icAppData;
+      }
+      if (model->progr_callback) {
+        cbc_eh->progr_callback = model->progr_callback;
+        cbc_eh->pgAppData = model->pgrAppData;
+      }
 
-        cbcModel.passInEventHandler(cbc_eh);
-      } // callbacks
+      cbcModel.passInEventHandler(cbc_eh);
+    } // callbacks
 
-      /* initial solution */
-      if (model->iniSol)
-        cbcModel.setBestSolution(model->iniSol->data(), Cbc_getNumCols(model), model->iniObj, true);
+    /* initial solution */
+    if (model->iniSol)
+      cbcModel.setBestSolution(model->iniSol->data(), Cbc_getNumCols(model), model->iniObj, true);
 
-      // add cut generator if necessary
-      if (model->cut_callback) {
-        cbcModel.setKeepNamesPreproc(true);
+    // add cut generator if necessary
+    if (model->cut_callback) {
+      cbcModel.setKeepNamesPreproc(true);
 
-        CglCallback cglCb;
-        cglCb.appdata = model->cutCBData;
-        cglCb.cut_callback_ = model->cut_callback;
+      CglCallback cglCb;
+      cglCb.appdata = model->cutCBData;
+      cglCb.cut_callback_ = model->cut_callback;
 #ifdef CBC_THREAD
-        cglCb.cbcMutex = &(model->cbcMutexCG);
+      cglCb.cbcMutex = &(model->cbcMutexCG);
 #endif
-        cbcModel.addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
-      }
+      cbcModel.addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
+    }
 
-      if (model->cutCBAtSol) {
-        /* lazy constraints require no pre-processing and no heuristics */
-        Cbc_setParameter(model, "preprocess", "off");
-        Cbc_setParameter(model, "heur", "off");
-        Cbc_setParameter(model, "cgraph", "off");
-        Cbc_setParameter(model, "clqstr", "off");
-      } else {
-        switch (model->int_param[INT_PARAM_CGRAPH]) {
-          case 0:
-            Cbc_setParameter(model, "cgraph", "off");
-            break;
-          case 2:
-            Cbc_setParameter(model, "cgraph", "on");
-            break;
-          case 3:
-            Cbc_setParameter(model, "cgraph", "clq");
-            break;
-        }
-      }
-
-      switch (model->int_param[INT_PARAM_CLIQUE_MERGING]) {
+    if (model->cutCBAtSol) {
+      /* lazy constraints require no pre-processing and no heuristics */
+      Cbc_setParameter(model, "preprocess", "off");
+      Cbc_setParameter(model, "heur", "off");
+      Cbc_setParameter(model, "cgraph", "off");
+      Cbc_setParameter(model, "clqstr", "off");
+    } else {
+      switch (model->int_param[INT_PARAM_CGRAPH]) {
         case 0:
-          Cbc_setParameter(model, "clqstr", "off");
+          Cbc_setParameter(model, "cgraph", "off");
           break;
         case 2:
-          Cbc_setParameter(model, "clqstr", "before");
+          Cbc_setParameter(model, "cgraph", "on");
           break;
         case 3:
-          Cbc_setParameter(model, "clqstr", "after");
+          Cbc_setParameter(model, "cgraph", "clq");
           break;
       }
-
-      Cbc_MessageHandler *cbcmh  = NULL;
-
-      if (model->userCallBack) {
-        cbcmh = new Cbc_MessageHandler( model );
-        cbcmh->setCallBack(model->userCallBack);
-        cbcmh->setModel(model);
-        cbcModel.passInMessageHandler(cbcmh);
-      }
-
-      // --- Use CbcSolver for parameter handling and solve ---
-      CbcSolver cbcSolver(cbcModel);
-      cbcSolver.initialize();
-      cbcSolver.parameters().disableWelcomePrinting();
-
-      // adds SOSs if any
-      Cbc_addAllSOS(model, *cbcSolver.model());
-
-      // adds MIPStart if any
-      Cbc_addMS(model, *cbcSolver.model());
-
-      // Build command queue from string parameters set via Cbc_setParam/Cbc_setParameter
-      std::deque< std::string > inputQueue;
-      for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
-        std::string param = model->vcbcOptions[i];
-        std::string val = model->cbcOptions[param];
-        if (val.size()) {
-          std::stringstream ss;
-          ss << "-" << param << "=" << val;
-          inputQueue.push_back(ss.str().c_str());
-        } else {
-          std::stringstream ss;
-          ss << "-" << param;
-          inputQueue.push_back(ss.str());
-        }
-      }
-      // add in from options file
-      if (getenv("COIN_CBC_OPTIONS")) {
-	FILE * fp =fopen(getenv("COIN_CBC_OPTIONS"),"r");
-	if (fp) {
-	  char line[512];
-	  int logLevel = Cbc_getLogLevel(model);
-	  if (logLevel)
-	    printf("Adding options from file %s\n",getenv("COIN_CBC_OPTIONS"));
-	  while (fgets(line, 200, fp)) {
-	    if (line[0]=='*')
-	      continue;
-	    int nchar = strlen(line);
-	    if (nchar<2)
-	      continue;
-	    if (line[0]!='-') {
-	      memmove(line+1,line,nchar+1);
-	      nchar++;
-	      line[0]='-';
-	    }
-	    char *pos=line;
-	    char *put=line;
-	    while (true) {
-	      while (*pos != '\n' && *pos != '\0'
-		     && *pos != ' ' && *pos != '\t')
-		pos++;
-	      char save = *pos;
-	      *pos = '\0';
-	      if (strlen(put)) {
-		inputQueue.push_back(put);
-		if (logLevel)
-		  std::cout << put << " ";
-	      }
-	      if (save == ' ' || save == '\t') {
-		pos++;
-		while (*pos == ' ' || *pos == '\t')
-		  pos++;
-		put = pos;
-	      } else {
-		break;
-	      }
-	    }
-	  }
-	  if (logLevel)
-	    std::cout << std::endl;
-	  fclose(fp);
-	} else {
-	  fprintf(stderr, "Unable to open COIN_CBC_OPTIONS file %s\n",
-		  getenv("COIN_CBC_OPTIONS"));
-	  fflush(stderr);
-	}
-      }
-
-      // Translate typed C interface parameters to command-queue strings.
-      // This replaces the manual cbcModel.setXxx() + parameters.setParamVal() boilerplate.
-      {
-        auto addParam = [&](const char *n, double v) {
-          char buf[64]; snprintf(buf, sizeof(buf), "%g", v);
-          std::string s = std::string("-") + n + "=" + buf;
-          inputQueue.push_back(s);
-        };
-        auto addParamI = [&](const char *n, int v) {
-          char buf[32]; snprintf(buf, sizeof(buf), "%d", v);
-          std::string s = std::string("-") + n + "=" + buf;
-          inputQueue.push_back(s);
-        };
-
-        if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX)
-          addParam("sec", model->dbl_param[DBL_PARAM_TIME_LIMIT]);
-        if (model->int_param[INT_PARAM_MAX_NODES] != INT_MAX)
-          addParamI("maxN", model->int_param[INT_PARAM_MAX_NODES]);
-        if (model->int_param[INT_PARAM_MAX_SOLS] != INT_MAX)
-          addParamI("maxSo", model->int_param[INT_PARAM_MAX_SOLS]);
-        if (model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX)
-          addParam("cutoff", model->dbl_param[DBL_PARAM_CUTOFF]);
-        addParam("allow", model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]);
-        addParam("ratio", model->dbl_param[DBL_PARAM_GAP_RATIO]);
-        addParam("integerT", model->dbl_param[DBL_PARAM_INT_TOL]);
-        addParamI("log", model->int_param[INT_PARAM_LOG_LEVEL]);
-        addParamI("strong", model->int_param[INT_PARAM_STRONG_BRANCHING]);
-        addParamI("trust", model->int_param[INT_PARAM_NUMBER_BEFORE]);
-        if (model->int_param[INT_PARAM_CUT_PASS] != -1)
-          addParamI("passC", model->int_param[INT_PARAM_CUT_PASS]);
-        if (model->int_param[INT_PARAM_CUT_PASS_IN_TREE] != 1)
-          addParamI("passt", model->int_param[INT_PARAM_CUT_PASS_IN_TREE]);
-        if (model->int_param[INT_PARAM_FPUMP_ITS] != 30)
-          addParamI("passF", model->int_param[INT_PARAM_FPUMP_ITS]);
-        addParamI("maxSaved", model->int_param[INT_PARAM_MAX_SAVED_SOLS]);
-        addParamI("multiple", model->int_param[INT_PARAM_MULTIPLE_ROOTS]);
-#ifdef CBC_THREAD
-        if (model->int_param[INT_PARAM_THREADS] >= 1)
-          addParamI("threads", model->int_param[INT_PARAM_THREADS]);
-#endif
-        if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX)
-          addParam("maxSecondsBest", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
-        if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX)
-          addParamI("maxNodesBest", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
-      }
-
-      // LP progress was already printed by Cbc_solveLinearProgram(); suppress it
-      inputQueue.push_back("-lpIterFreq=0");
-      inputQueue.push_back("-lpTimeFreq=0");
-      inputQueue.push_back("-solve");
-      inputQueue.push_back("-quit");
-
-      OsiBabSolver defaultC;
-      if (model->cutCBAtSol) {
-        defaultC.setSolverType(4);
-        cbcSolver.model()->solver()->setAuxiliaryInfo(&defaultC);
-        cbcSolver.model()->passInSolverCharacteristics(&defaultC);
-      }
-
-      if (!model->problemSummaryPrinted) {
-        CbcOutput::printProblemSummary(cbcSolver.model()->messageHandler(),
-          *cbcSolver.model()->solver(), model->int_param[INT_PARAM_LOG_LEVEL]);
-      }
-      model->problemSummaryPrinted = 0;
-
-      cbcSolver.model()->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
-      cbcSolver.model()->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
-      cbcSolver.model()->setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
-
-      cbcSolver.run(inputQueue, cbc_callb);
-
-      Cbc_getMIPOptimizationResults( model, *cbcSolver.model() );
-
-      if (cbc_eh)
-        delete cbc_eh;
-
-      if (cbcmh)
-        delete cbcmh;
-    } catch (CoinError &e) {
-      fprintf( stderr, "%s ERROR: %s::%s, %s\n", "Cbc_solve",
-        e.className().c_str(), e.methodName().c_str(), e.message().c_str());
-      fflush(stderr);
-      abort();
     }
-  } /* end of MIP optimization */
+
+    switch (model->int_param[INT_PARAM_CLIQUE_MERGING]) {
+      case 0:
+        Cbc_setParameter(model, "clqstr", "off");
+        break;
+      case 2:
+        Cbc_setParameter(model, "clqstr", "before");
+        break;
+      case 3:
+        Cbc_setParameter(model, "clqstr", "after");
+        break;
+    }
+
+    Cbc_MessageHandler *cbcmh  = NULL;
+
+    if (model->userCallBack) {
+      cbcmh = new Cbc_MessageHandler( model );
+      cbcmh->setCallBack(model->userCallBack);
+      cbcmh->setModel(model);
+      cbcModel.passInMessageHandler(cbcmh);
+    }
+
+    // --- Use CbcSolver for parameter handling and solve ---
+    CbcSolver cbcSolver(cbcModel);
+    cbcSolver.initialize();
+    cbcSolver.parameters().disableWelcomePrinting();
+
+    // adds SOSs if any
+    Cbc_addAllSOS(model, *cbcSolver.model());
+
+    // adds MIPStart if any
+    Cbc_addMS(model, *cbcSolver.model());
+
+    // Build command queue from string parameters set via Cbc_setParam/Cbc_setParameter
+    std::deque< std::string > inputQueue;
+    for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
+      std::string param = model->vcbcOptions[i];
+      std::string val = model->cbcOptions[param];
+      if (val.size()) {
+        std::stringstream ss;
+        ss << "-" << param << "=" << val;
+        inputQueue.push_back(ss.str().c_str());
+      } else {
+        std::stringstream ss;
+        ss << "-" << param;
+        inputQueue.push_back(ss.str());
+      }
+    }
+    // add in from options file
+    if (getenv("COIN_CBC_OPTIONS")) {
+FILE * fp =fopen(getenv("COIN_CBC_OPTIONS"),"r");
+if (fp) {
+  char line[512];
+  int logLevel = Cbc_getLogLevel(model);
+  if (logLevel)
+    printf("Adding options from file %s\n",getenv("COIN_CBC_OPTIONS"));
+  while (fgets(line, 200, fp)) {
+    if (line[0]=='*')
+      continue;
+    int nchar = strlen(line);
+    if (nchar<2)
+      continue;
+    if (line[0]!='-') {
+      memmove(line+1,line,nchar+1);
+      nchar++;
+      line[0]='-';
+    }
+    char *pos=line;
+    char *put=line;
+    while (true) {
+      while (*pos != '\n' && *pos != '\0'
+       && *pos != ' ' && *pos != '\t')
+  pos++;
+      char save = *pos;
+      *pos = '\0';
+      if (strlen(put)) {
+  inputQueue.push_back(put);
+  if (logLevel)
+    std::cout << put << " ";
+      }
+      if (save == ' ' || save == '\t') {
+  pos++;
+  while (*pos == ' ' || *pos == '\t')
+    pos++;
+  put = pos;
+      } else {
+  break;
+      }
+    }
+  }
+  if (logLevel)
+    std::cout << std::endl;
+  fclose(fp);
+} else {
+  fprintf(stderr, "Unable to open COIN_CBC_OPTIONS file %s\n",
+    getenv("COIN_CBC_OPTIONS"));
+  fflush(stderr);
+}
+    }
+
+    // Translate typed C interface parameters to command-queue strings.
+    // This replaces the manual cbcModel.setXxx() + parameters.setParamVal() boilerplate.
+    {
+      auto addParam = [&](const char *n, double v) {
+        char buf[64]; snprintf(buf, sizeof(buf), "%g", v);
+        std::string s = std::string("-") + n + "=" + buf;
+        inputQueue.push_back(s);
+      };
+      auto addParamI = [&](const char *n, int v) {
+        char buf[32]; snprintf(buf, sizeof(buf), "%d", v);
+        std::string s = std::string("-") + n + "=" + buf;
+        inputQueue.push_back(s);
+      };
+
+      if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX)
+        addParam("sec", model->dbl_param[DBL_PARAM_TIME_LIMIT]);
+      if (model->int_param[INT_PARAM_MAX_NODES] != INT_MAX)
+        addParamI("maxN", model->int_param[INT_PARAM_MAX_NODES]);
+      if (model->int_param[INT_PARAM_MAX_SOLS] != INT_MAX)
+        addParamI("maxSo", model->int_param[INT_PARAM_MAX_SOLS]);
+      if (model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX)
+        addParam("cutoff", model->dbl_param[DBL_PARAM_CUTOFF]);
+      addParam("allow", model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]);
+      addParam("ratio", model->dbl_param[DBL_PARAM_GAP_RATIO]);
+      addParam("integerT", model->dbl_param[DBL_PARAM_INT_TOL]);
+      addParamI("log", model->int_param[INT_PARAM_LOG_LEVEL]);
+      addParamI("strong", model->int_param[INT_PARAM_STRONG_BRANCHING]);
+      addParamI("trust", model->int_param[INT_PARAM_NUMBER_BEFORE]);
+      if (model->int_param[INT_PARAM_CUT_PASS] != -1)
+        addParamI("passC", model->int_param[INT_PARAM_CUT_PASS]);
+      if (model->int_param[INT_PARAM_CUT_PASS_IN_TREE] != 1)
+        addParamI("passt", model->int_param[INT_PARAM_CUT_PASS_IN_TREE]);
+      if (model->int_param[INT_PARAM_FPUMP_ITS] != 30)
+        addParamI("passF", model->int_param[INT_PARAM_FPUMP_ITS]);
+      addParamI("maxSaved", model->int_param[INT_PARAM_MAX_SAVED_SOLS]);
+      addParamI("multiple", model->int_param[INT_PARAM_MULTIPLE_ROOTS]);
+#ifdef CBC_THREAD
+      if (model->int_param[INT_PARAM_THREADS] >= 1)
+        addParamI("threads", model->int_param[INT_PARAM_THREADS]);
+#endif
+      if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX)
+        addParam("maxSecondsBest", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
+      if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX)
+        addParamI("maxNodesBest", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
+    }
+
+    // LP progress was already printed by Cbc_solveLinearProgram(); suppress it
+    inputQueue.push_back("-lpIterFreq=0");
+    inputQueue.push_back("-lpTimeFreq=0");
+    inputQueue.push_back("-solve");
+    inputQueue.push_back("-quit");
+
+    OsiBabSolver defaultC;
+    if (model->cutCBAtSol) {
+      defaultC.setSolverType(4);
+      cbcSolver.model()->solver()->setAuxiliaryInfo(&defaultC);
+      cbcSolver.model()->passInSolverCharacteristics(&defaultC);
+    }
+
+    if (!model->problemSummaryPrinted) {
+      CbcOutput::printProblemSummary(cbcSolver.model()->messageHandler(),
+        *cbcSolver.model()->solver(), model->int_param[INT_PARAM_LOG_LEVEL]);
+    }
+    model->problemSummaryPrinted = 0;
+
+    cbcSolver.model()->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
+    cbcSolver.model()->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
+    cbcSolver.model()->setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
+
+    cbcSolver.run(inputQueue, cbc_callb);
+
+    Cbc_getMIPOptimizationResults( model, *cbcSolver.model() );
+
+    if (cbc_eh)
+      delete cbc_eh;
+
+    if (cbcmh)
+      delete cbcmh;
+  } catch (CoinError &e) {
+    fprintf( stderr, "%s ERROR: %s::%s, %s\n", "Cbc_solve",
+      e.className().c_str(), e.methodName().c_str(), e.message().c_str());
+    fflush(stderr);
+    abort();
+  }
 
   return model->mipStatus;
 }

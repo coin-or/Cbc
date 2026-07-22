@@ -29,6 +29,15 @@
  *
  * Usage:
  *   mip-c-solve <instance-name> [options]
+ *   mip-c-solve <instanceFileName> <timeLimit> <nodesLimit> [options]
+ *
+ * The first form looks up <instance-name> in the mip-sanity-data checkout
+ * (mips/<name>.mps.gz), applying limits.tsv/bks.tsv automatically. The
+ * second, generic form takes any MPS/MPS.gz/LP file directly plus an
+ * explicit time limit (seconds) and node limit (0 = unlimited) — handy for
+ * quickly checking, against any instance, that the C interface solves it
+ * the same way the `cbc` command line would (e.g.
+ * `cbc <file> -sec <timeLimit> -maxNodes <nodesLimit> -solve`).
  *
  * Exit codes:
  *   0  solve completed and every check above passed
@@ -92,6 +101,17 @@ static bool fileExists(const std::string &path)
   return f.good();
 }
 
+/* True if path's extension (ignoring a trailing .gz) is ".lp" (case-insensitive). */
+static bool looksLikeLpFile(const std::string &path)
+{
+  std::string p = path;
+  std::transform(p.begin(), p.end(), p.begin(), ::tolower);
+  if (p.size() >= 3 && p.substr(p.size() - 3) == ".gz")
+    p = p.substr(0, p.size() - 3);
+  return p.size() >= 3 && p.substr(p.size() - 3) == ".lp";
+}
+
+
 /* Directory containing this executable (used to locate the default
  * mip-sanity-data checkout next to it, mirroring run-mip-sanity-tests). */
 static std::string exeDir()
@@ -110,15 +130,23 @@ static void printUsage(const char *progName)
 {
   fprintf(stderr,
     "Usage: %s <instance-name> [options]\n"
+    "       %s <instanceFileName> <timeLimit> <nodesLimit> [options]\n"
     "\n"
-    "Solves one mip-sanity-data instance through Cbc's C interface\n"
-    "(Cbc_C_Interface.h), applying the suggested limits.tsv node/time\n"
-    "limits, then validates the best solution and the whole solution pool\n"
-    "(feasibility, objective consistency, optimality/infeasibility claims\n"
-    "vs bks.tsv).\n"
+    "First form: solves one mip-sanity-data instance through Cbc's C\n"
+    "interface (Cbc_C_Interface.h), applying the suggested limits.tsv\n"
+    "node/time limits, then validates the best solution and the whole\n"
+    "solution pool (feasibility, objective consistency, optimality/\n"
+    "infeasibility claims vs bks.tsv).\n"
+    "\n"
+    "Second form: solves any MPS/MPS.gz/LP file directly, with an explicit\n"
+    "time limit (seconds) and node limit (0 = unlimited) — no mip-sanity-data\n"
+    "lookup is performed. Useful to quickly check that the C interface solves\n"
+    "an arbitrary instance the same way the `cbc` command line would (e.g.\n"
+    "`cbc <file> -sec <timeLimit> -maxNodes <nodesLimit> -solve`).\n"
     "\n"
     "Options:\n"
     "  --data-dir=PATH        mip-sanity-data checkout (default: <exe-dir>/mip-sanity-data)\n"
+    "                         (ignored in the <instanceFileName> <timeLimit> <nodesLimit> form)\n"
     "  --threads=N            Threads passed to Cbc (default: 1)\n"
     "  --node-limit=N         Override node limit (default: from limits.tsv; 0 = unlimited)\n"
     "  --time-limit=SEC       Override time limit in seconds (default: from limits.tsv, or 120)\n"
@@ -129,7 +157,7 @@ static void printUsage(const char *progName)
     "  -h, --help             Show this help\n"
     "\n"
     "Exit code: 0 = OK,  1 = violations/mismatches found,  2 = usage/file error\n",
-    progName);
+    progName, progName);
 }
 
 /* ── Feasibility check + report for one solution vector ────────────────── */
@@ -259,78 +287,109 @@ int main(int argc, char *argv[])
     }
   }
 
-  if (positional.size() != 1) {
-    fprintf(stderr, "Error: expected exactly one instance name\n\n");
+  const bool directMode = (positional.size() == 3);
+  if (positional.size() != 1 && !directMode) {
+    fprintf(stderr, "Error: expected either one instance name, or "
+      "<instanceFileName> <timeLimit> <nodesLimit>\n\n");
     printUsage(argv[0]);
     return 2;
   }
-  const std::string instance = positional[0];
 
-  if (dataDir.empty())
-    dataDir = exeDir() + "/mip-sanity-data";
-
-  const std::string mpsPath = dataDir + "/mips/" + instance + ".mps.gz";
-  if (!fileExists(mpsPath)) {
-    fprintf(stderr, "Error: instance file not found: %s\n", mpsPath.c_str());
-    fprintf(stderr, "       (looked under data-dir '%s' — pass --data-dir=PATH to override)\n",
-      dataDir.c_str());
-    return 2;
-  }
-
-  /* ── Suggested limits (limits.tsv), with CLI overrides ─────────────────── */
-  long nodeLimit = 0;      /* 0 = unlimited, matches run-mip-sanity-tests default */
+  std::string instance;   /* label used only for printing/errors */
+  std::string mpsPath;    /* file actually passed to Cbc_readMps/Cbc_readLp */
+  long nodeLimit = 0;     /* 0 = unlimited, matches run-mip-sanity-tests default */
   double timeLimit = 120.0;
-  double hardKill = 180.0;
-  {
-    std::vector<std::string> row = lookupRow(dataDir + "/limits.tsv", instance);
-    if (row.size() >= 5) {
-      nodeLimit = atol(row[2].c_str());
-      timeLimit = atof(row[3].c_str());
-      hardKill = atof(row[4].c_str());
-    }
-  }
-  if (nodeLimitOverride >= 0)
-    nodeLimit = nodeLimitOverride;
-  if (timeLimitOverride >= 0.0)
-    timeLimit = timeLimitOverride;
-
-  /* ── Best-known reference (bks.tsv), with CLI overrides ────────────────── */
+  double hardKill = -1.0; /* -1 = not applicable (direct mode) */
   std::string expectedStatus;
   bool haveExpectedObj = false;
   double expectedObj = 0.0;
-  {
-    std::vector<std::string> row = lookupRow(dataDir + "/bks.tsv", instance);
-    if (row.size() >= 3) {
-      expectedStatus = row[1];
-      std::transform(expectedStatus.begin(), expectedStatus.end(), expectedStatus.begin(), ::tolower);
-      expectedObj = atof(row[2].c_str());
+
+  if (directMode) {
+    /* Generic form: mip-c-solve <instanceFileName> <timeLimit> <nodesLimit> */
+    mpsPath = positional[0];
+    instance = mpsPath;
+    if (!fileExists(mpsPath)) {
+      fprintf(stderr, "Error: instance file not found: %s\n", mpsPath.c_str());
+      return 2;
+    }
+    timeLimit = atof(positional[1].c_str());
+    nodeLimit = atol(positional[2].c_str());
+    if (nodeLimitOverride >= 0)
+      nodeLimit = nodeLimitOverride;
+    if (timeLimitOverride >= 0.0)
+      timeLimit = timeLimitOverride;
+    if (!expectedStatusOverride.empty())
+      expectedStatus = expectedStatusOverride;
+    if (haveExpectedObjOverride) {
+      expectedObj = expectedObjOverride;
       haveExpectedObj = true;
     }
-  }
-  if (!expectedStatusOverride.empty())
-    expectedStatus = expectedStatusOverride;
-  if (haveExpectedObjOverride) {
-    expectedObj = expectedObjOverride;
-    haveExpectedObj = true;
+  } else {
+    /* mip-sanity-data instance-name lookup form */
+    instance = positional[0];
+
+    if (dataDir.empty())
+      dataDir = exeDir() + "/mip-sanity-data";
+
+    mpsPath = dataDir + "/mips/" + instance + ".mps.gz";
+    if (!fileExists(mpsPath)) {
+      fprintf(stderr, "Error: instance file not found: %s\n", mpsPath.c_str());
+      fprintf(stderr, "       (looked under data-dir '%s' — pass --data-dir=PATH to override)\n",
+        dataDir.c_str());
+      return 2;
+    }
+
+    /* Suggested limits (limits.tsv), with CLI overrides */
+    hardKill = 180.0;
+    std::vector<std::string> limRow = lookupRow(dataDir + "/limits.tsv", instance);
+    if (limRow.size() >= 5) {
+      nodeLimit = atol(limRow[2].c_str());
+      timeLimit = atof(limRow[3].c_str());
+      hardKill = atof(limRow[4].c_str());
+    }
+    if (nodeLimitOverride >= 0)
+      nodeLimit = nodeLimitOverride;
+    if (timeLimitOverride >= 0.0)
+      timeLimit = timeLimitOverride;
+
+    /* Best-known reference (bks.tsv), with CLI overrides */
+    std::vector<std::string> bksRow = lookupRow(dataDir + "/bks.tsv", instance);
+    if (bksRow.size() >= 3) {
+      expectedStatus = bksRow[1];
+      std::transform(expectedStatus.begin(), expectedStatus.end(), expectedStatus.begin(), ::tolower);
+      expectedObj = atof(bksRow[2].c_str());
+      haveExpectedObj = true;
+    }
+    if (!expectedStatusOverride.empty())
+      expectedStatus = expectedStatusOverride;
+    if (haveExpectedObjOverride) {
+      expectedObj = expectedObjOverride;
+      haveExpectedObj = true;
+    }
   }
 
   printf("=== mip-c-solve: %s ===\n", instance.c_str());
   printf("  instance file : %s\n", mpsPath.c_str());
   printf("  threads       : %d\n", threads);
   printf("  node limit    : %s\n", nodeLimit > 0 ? std::to_string(nodeLimit).c_str() : "unlimited");
-  printf("  time limit    : %.0f s  (hard-kill reference: %.0f s, not enforced here)\n", timeLimit, hardKill);
+  if (hardKill >= 0.0)
+    printf("  time limit    : %.0f s  (hard-kill reference: %.0f s, not enforced here)\n", timeLimit, hardKill);
+  else
+    printf("  time limit    : %.0f s\n", timeLimit);
   if (!expectedStatus.empty())
     printf("  bks.tsv       : status=%s%s\n", expectedStatus.c_str(),
       haveExpectedObj ? (std::string("  objective=") + std::to_string(expectedObj)).c_str() : "");
-  else
+  else if (!directMode)
     printf("  bks.tsv       : no reference found for this instance\n");
   printf("\n--- Cbc output (unmodified) ------------------------------------------\n");
 
   /* ── Load & solve, deliberately NOT silencing Cbc's own messages ───────── */
   Cbc_Model *m = Cbc_newModel();
-  int readErr = Cbc_readMps(m, mpsPath.c_str());
+  const bool isLp = looksLikeLpFile(mpsPath);
+  int readErr = isLp ? Cbc_readLp(m, mpsPath.c_str()) : Cbc_readMps(m, mpsPath.c_str());
   if (readErr) {
-    fprintf(stderr, "Error: Cbc_readMps failed to read '%s' (code %d)\n", mpsPath.c_str(), readErr);
+    fprintf(stderr, "Error: %s failed to read '%s' (code %d)\n",
+      isLp ? "Cbc_readLp" : "Cbc_readMps", mpsPath.c_str(), readErr);
     Cbc_deleteModel(m);
     return 2;
   }

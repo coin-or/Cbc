@@ -31,15 +31,17 @@ test: cbc_validate_sol$(EXEEXT)
 #                    Manual C-interface solve utility                  #
 ########################################################################
 #
-# mip-c-solve: solves a single mip-sanity-data instance in-process through
-# Cbc's C interface (Cbc_C_Interface.h), applying limits.tsv's suggested
-# node/time limits, then queries and validates the best solution and the
-# whole solution pool (feasibility, objective consistency, and
-# optimality/infeasibility claims vs bks.tsv). Unlike cbc_validate_sol, it
-# does not rely on a `.sol` file produced by the `cbc` executable — it drives
-# Cbc_solve() itself and leaves Cbc's own solve messages unsuppressed, so it
-# doubles as a way to manually inspect the C interface end to end. See
-# `mip-c-solve --help` for usage.
+# mip-c-solve: solves a single mip-sanity-data instance (by name, applying
+# limits.tsv's suggested node/time limits) OR any arbitrary MPS/MPS.gz/LP
+# file (given directly as `mip-c-solve <file> <timeLimit> <nodesLimit>`)
+# in-process through Cbc's C interface (Cbc_C_Interface.h), then queries and
+# validates the best solution and the whole solution pool (feasibility,
+# objective consistency, and optimality/infeasibility claims vs bks.tsv when
+# available). Unlike cbc_validate_sol, it does not rely on a `.sol` file
+# produced by the `cbc` executable — it drives Cbc_solve() itself and leaves
+# Cbc's own solve messages unsuppressed, so it doubles as a way to manually
+# inspect the C interface end to end and confirm it behaves like the `cbc`
+# command line for any instance. See `mip-c-solve --help` for usage.
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve lp-relaxation-test
 

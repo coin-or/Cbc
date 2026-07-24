@@ -737,6 +737,34 @@ const char *CBC_LINKAGE Cbc_getVersion()
   return CBC_VERSION;
 }
 
+// Returns `name` unless it is empty, in which case a unique default name is
+// generated for row/column `idx` instead -- matching the "R"/"C" + 7-digit
+// zero-padded index format OsiSolverInterface::dfltRowColName() itself would
+// use for an unnamed row/column ('rc' is 'r' for rows, 'c' for columns).
+//
+// This matters because OsiNameDiscipline is set to 1 for this solver (see
+// Cbc_newModel()), so OsiSolverInterface::setRowName()/setColName() store
+// whatever name they are given verbatim -- including an empty string. If
+// every unnamed row/column were stored with the SAME empty-string name, any
+// name-based lookup (e.g. python-mip's Model.translate()/var_by_name(), used
+// by lazy-constraints/cut-generator callbacks, or Cbc_getColNameIndex()/
+// Cbc_getRowNameIndex() for C callers that opt into
+// Cbc_storeNameIndexes()) would silently resolve all of them to whichever
+// row/column was stored/indexed last. Generating a unique name here keeps
+// such lookups reliable even when callers (like the MIP cut/lazy-constraint
+// callback path) set CbcModel::setKeepNamesPreproc(true), which otherwise
+// would keep these (duplicate, empty) stored names instead of falling back
+// to auto-generated ones via CbcModel::branchAndBound()'s dropNames().
+static std::string Cbc_rowColNameOrDefault(char rc, const char *name, int idx)
+{
+  if (name && name[0] != '\0')
+    return std::string(name);
+
+  char defaultName[16];
+  snprintf(defaultName, sizeof(defaultName), "%c%07d", toupper(rc), idx);
+  return std::string(defaultName);
+}
+
 static void Cbc_flushCols(Cbc_Model *model) {
   if (model->nCols == 0)
     return;
@@ -752,8 +780,10 @@ static void Cbc_flushCols(Cbc_Model *model) {
         solver->setInteger( colsBefore+i );
   }
 
-  for ( int i=0 ; i<model->nCols; ++i )
-    solver->setColName( colsBefore+i, std::string(model->cNames+model->cNameStart[i]) );
+  for ( int i=0 ; i<model->nCols; ++i ) {
+    const char *colName = model->cNames+model->cNameStart[i];
+    solver->setColName( colsBefore+i, Cbc_rowColNameOrDefault('c', colName, colsBefore+i) );
+  }
 
   model->nCols = 0;
   model->cStart[0] = 0;
@@ -773,8 +803,8 @@ static void Cbc_flushRows(Cbc_Model *model) {
   for ( int i=0 ; i<model->nRows; ++i )
   {
     const int rIdx = rowsBefore+i;
-    const std::string rName = std::string(model->rNames+model->rNameStart[i]);
-    solver->setRowName(rIdx, rName);
+    const char *rowName = model->rNames+model->rNameStart[i];
+    solver->setRowName(rIdx, Cbc_rowColNameOrDefault('r', rowName, rIdx));
   }
 
   model->nRows = 0;
@@ -3781,8 +3811,12 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
 
   if (model->colNameIndex)
   {
+    // Keyed the same way Cbc_flushCols() will eventually name this column on
+    // the actual solver (see Cbc_rowColNameOrDefault()), so a later
+    // Cbc_getColNameIndex() lookup stays consistent even for unnamed columns.
+    int newColIdx = Cbc_getNumCols(model)-1;
     NameIndex &colNameIndex = *((NameIndex  *)model->colNameIndex);
-    colNameIndex[std::string(name)] = Cbc_getNumCols(model)-1;
+    colNameIndex[Cbc_rowColNameOrDefault('c', name, newColIdx)] = newColIdx;
   }
 }
 
@@ -3828,8 +3862,12 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
 
   if (model->rowNameIndex)
   {
+    // Keyed the same way Cbc_flushRows() will eventually name this row on
+    // the actual solver (see Cbc_rowColNameOrDefault()), so a later
+    // Cbc_getRowNameIndex() lookup stays consistent even for unnamed rows.
+    int newRowIdx = Cbc_getNumRows(model)-1;
     NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
-    rowNameIndex[std::string(name)] = Cbc_getNumRows(model)-1;
+    rowNameIndex[Cbc_rowColNameOrDefault('r', name, newRowIdx)] = newRowIdx;
   }
 }
 

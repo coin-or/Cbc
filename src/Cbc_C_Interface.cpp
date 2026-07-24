@@ -2319,6 +2319,7 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
   } /* saving solution pool */
 
   Cbc_updateSlack(model, cbcModel.getRowActivity() );
+  model->rSlk = model->slack->data();
   /* storing row activity in MIP sol */
   memcpy(model->mipRowActivity->data(), cbcModel.getRowActivity(), sizeof(double)*numRows );
 

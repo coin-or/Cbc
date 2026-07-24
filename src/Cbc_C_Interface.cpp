@@ -2035,11 +2035,41 @@ static int Cbc_solveLPColdLegacy(Cbc_Model *model, OsiClpSolverInterface *solver
 
 // Cold "from scratch" LP solve for the common case: delegates method
 // selection (dual/primal/barrier/auto/racing/recommend) and the actual solve
-// to CbcSolver::runSolveContinuous()/applyLpMethod() -- the very same code
-// path used by the `cbc` command line's -initialSolve/-dualSimplex/
-// -primalSimplex/-barrier actions -- so any new LP solution method added
-// there (e.g. LP racing, the ML-recommended configuration) is automatically
-// available here too, without duplicating any of that setup/solve logic.
+// to CbcSolver::applyLpMethod() directly -- the same option-translation/
+// solve logic used internally by the `cbc` command line's -initialSolve/
+// -dualSimplex/-primalSimplex/-barrier actions and by the root-LP solve in
+// the BAB pipeline -- so any new LP solution method added there (e.g. LP
+// racing, the ML-recommended configuration) is automatically available here
+// too, without duplicating any of that setup/solve logic.
+//
+// Deliberately calls applyLpMethod() directly instead of going through
+// CbcSolver::run()'s "-initialSolve" action (which dispatches to
+// runSolveContinuous()): the latter unconditionally also runs
+// preRootLPStrenghtening() (bound propagation + clique merging "before")
+// first, which is inappropriate for a plain LP-relaxation solve --
+// Cbc_C_Interface.h documents that Cbc_solveLinearProgram()/Cbc_resolve()
+// "only solve the LP relaxation as-is and no longer perform bound-tightening
+// preprocessing". Left enabled, that preprocessing silently mutates results
+// in ways callers don't expect:
+//  - Clique strengthening (CglCliqueStrengthening::strengthenCliques())
+//    calls solver->deleteRows() directly on `solver` -- the model's own
+//    persistent OsiSolverInterface, not a clone (see assignSolver() below)
+//    -- permanently shrinking the caller's constraint matrix and corrupting
+//    row indices for any later access (e.g. Model.copy()/constr.expr in
+//    python-mip).
+//  - Bound propagation tightens variable bounds directly from rows (e.g.
+//    turning "x >= b" into a column lower bound), which can make those rows
+//    non-binding at the LP optimum -- so their dual price reads as 0 instead
+//    of the true shadow price, breaking algorithms that rely on duals (e.g.
+//    column generation pricing).
+// applyLpMethod() is the documented, supported entry point for this exact
+// use case ("expose[d] here so the exact same, fully-configured root-LP
+// solve can be triggered directly on an arbitrary OsiClpSolverInterface --
+// e.g. one owned by an external caller such as the C interface"), and never
+// touches bound propagation/clique strengthening -- those were extracted
+// into the separate preRootLPStrenghtening() step precisely so callers like
+// this one can opt out of them while still reusing the LP-method/racing/
+// ClpSolve-option logic.
 //
 // Builds a throwaway CbcSolver wrapping `solver` directly via assignSolver()
 // (never a clone): the resulting optimal basis stays in `solver` itself --
@@ -2095,10 +2125,26 @@ static int Cbc_solveLPColdViaCbcSolver(Cbc_Model *model, OsiClpSolverInterface *
      // Cbc_solveLPColdLegacy() by the caller instead.
   inputQueue.push_back(std::string("-lpMethod=") + lpmKwd[model->lp_method]);
 
-  inputQueue.push_back("-initialSolve");
+  // No action token (e.g. "-initialSolve") is pushed here: run() below is
+  // used only to parse the parameter-setting tokens above into
+  // cbcSolver.parameters()/doIdiot_/doSprint_ -- ending the queue with
+  // "-quit" so it returns immediately without executing any solve action
+  // (in particular, without dispatching to runSolveContinuous(), which
+  // would otherwise unconditionally also run preRootLPStrenghtening() --
+  // see this function's doc comment above). The actual solve is triggered
+  // explicitly below via applyLpMethod(), which reads its configuration
+  // from those same already-set parameters.
   inputQueue.push_back("-quit");
 
   cbcSolver.run(inputQueue);
+
+  // The single unified LP-solve entry point (model-level LP settings, LP
+  // racing, full ClpSolve solve with all configured options) -- see this
+  // function's doc comment above for why this is called directly instead of
+  // via CbcSolver::run()'s "-initialSolve" action. Operates directly on
+  // `solver` (passed explicitly rather than relying on
+  // cbcSolver.model()->solver(), even though they are the same object here).
+  cbcSolver.applyLpMethod(solver, -1);
 
   // applyLpMethod() solves via ClpSimplex::initialSolve()/racing directly
   // (not OsiClpSolverInterface::initialSolve()), so `solver`'s own
@@ -2106,6 +2152,10 @@ static int Cbc_solveLPColdViaCbcSolver(Cbc_Model *model, OsiClpSolverInterface *
   // solver->basisIsAvailable() would stay permanently false and every
   // subsequent Cbc_resolve()/warm-start call above would silently fall back
   // to a full cold solve instead of reusing the basis just computed here.
+  // Unlike the previous "-initialSolve"-via-run() version of this function,
+  // applyLpMethod() is always actually invoked above (no bound-propagation-
+  // skip case can occur here any more, since that preprocessing step is no
+  // longer run in this path at all), so this is now unconditional.
   solver->setLastAlgorithm(1);
 
   return Cbc_mapLpResult(model, solver, clps);

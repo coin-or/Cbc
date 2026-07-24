@@ -2371,10 +2371,14 @@ Cbc_solve(Cbc_Model *model)
   Cbc_cleanOptResults(model);
 
   /* Caller explicitly asked to solve only the LP relaxation
-   * (Cbc_setSolveRelax): dispatch to Cbc_solveLinearProgram() and skip
-   * building a CbcModel/CbcSolver entirely -- no point going through the
-   * B&B machinery just to stop at the root. */
-  if (model->relax_ == 1) {
+   * (Cbc_setSolveRelax), OR the model has no integer/SOS entities at all
+   * (it's really just an LP): dispatch to Cbc_solveLinearProgram() and
+   * skip building a CbcModel/CbcSolver entirely -- no point going through
+   * the B&B machinery just to stop at the root, and doing so for the
+   * degenerate 0-integer/SOS case currently mis-reports
+   * isProvenInfeasible() (next-branch regression from commit 609c9c48). */
+  if (model->relax_ == 1 ||
+      (model->solver_->getNumIntegers() + model->nSos) == 0) {
     int res = Cbc_solveLinearProgram(model);
 
     if (res == 1)

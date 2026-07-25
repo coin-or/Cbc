@@ -5791,8 +5791,10 @@ int CbcSolver::solveInitialLp(
     lpState->lastPrintTime = lpState->startTime;
     // The "Root LP relaxation" section banner is now printed earlier, by
     // babPreRootLPStrenghtening() (so bound-propagation/clique-strengthening
-    // messages appear inside the same section) -- leave title empty here so
-    // lpPhaseOpenTable only prints the table header, not a repeated banner.
+    // messages appear inside the same section) -- clear the title here (it
+    // defaults to "LP solve") so lpPhaseOpenTable only prints the table
+    // header, not a repeated/redundant banner.
+    lpState->title.clear();
     lpMsgHandler = new ClpLpMsgHandler(lpState);
     ClpLpEventHandler tmpEvt(lpState);
     lpSavedMsg = clpModel->pushMessageHandler(lpMsgHandler, lpMsgOldDefault);

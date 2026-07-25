@@ -13670,6 +13670,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         case CbcParam::HELP:
           printHelp(parameters, clpParameters);
           break;
+        case CbcParam::PRINTVERSION:
+          CbcParamUtils::doVersionParam(*cbcParam);
+          return 0;
         case CbcParam::WRITESTATS: {
           cbcParam->readValue(inputQueue, fileName, &message);
           CoinParamUtils::processFile(fileName,

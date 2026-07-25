@@ -10444,9 +10444,12 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
     printHistory("branch.log" /*,babModel_*/);
 #endif
     returnCode = 0;
-    // Print conflict-graph ranker summary if active (logLevel >= 1).
+    // Print conflict-graph ranker summary if active. This is diagnostic
+    // detail about an internal branching heuristic, not something a typical
+    // user needs to see -- gate it behind logLevel >= 2 (verbose) rather
+    // than the default logLevel >= 1 so it doesn't clutter normal output.
     // babModel_ holds a copy of the ranker with accumulated counters.
-    if (cbcLogLevel >= 1) {
+    if (cbcLogLevel >= 2) {
       const CbcBranchingRanker *rk = babModel_->branchingRanker();
       if (rk && rk->isActive()) {
         char buf[512];

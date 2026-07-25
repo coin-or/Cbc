@@ -16,6 +16,37 @@
 #include "CoinPackedMatrix.hpp"
 #include "OsiSolverInterface.hpp"
 
+bool CbcPostprocessSolutionIsFeasible(
+  OsiSolverInterface *saveSolver,
+  OsiSolverInterface *originalSolver,
+  double tolerance)
+{
+  int nCols = originalSolver->getNumCols();
+  if (saveSolver->getNumCols() < nCols)
+    return false; // unexpected column-count mismatch: let the repair handle it
+
+  const double *sol = saveSolver->getColSolution();
+  const CoinPackedMatrix *rowMtx = originalSolver->getMatrixByRow();
+  const double *rowLb = originalSolver->getRowLower();
+  const double *rowUb = originalSolver->getRowUpper();
+  int nRows = originalSolver->getNumRows();
+  const int *starts = rowMtx->getVectorStarts();
+  const int *lengths = rowMtx->getVectorLengths();
+  const int *indices = rowMtx->getIndices();
+  const double *elements = rowMtx->getElements();
+  for (int r = 0; r < nRows; r++) {
+    double lhs = 0.0;
+    const int s = starts[r];
+    const int rl = lengths[r];
+    for (int k = 0; k < rl; k++)
+      lhs += elements[s + k] * sol[indices[s + k]];
+    double infeas = std::max(rowLb[r] - lhs, lhs - rowUb[r]);
+    if (infeas > tolerance)
+      return false;
+  }
+  return true;
+}
+
 void CbcRepairPostprocessSolution(
   OsiSolverInterface *saveSolver,
   OsiSolverInterface *originalSolver,
@@ -117,6 +148,20 @@ void CbcRepairPostprocessSolution(
   // for reconstructing the full original-space B&B solution.
   // NOTE: if a singleton row forces a different value than the oracle, the singleton
   // wins (oracle can be incorrect for OsiPresolve-complemented variables).
+  // NOTE: some presolve reductions (e.g. CoinPresolveDupcol's duplicate-column
+  // merging) map SEVERAL original columns onto a single presolved column whose
+  // solved value is the AGGREGATE (sum) of the originals, not any one of their
+  // individual values.  originalColumns() only names one "kept" representative
+  // original column for such a merged presolved column, with no information on
+  // how the aggregate should be split back across the originals — only
+  // CglPreProcess::postProcess()'s dedicated postsolve logic (e.g.
+  // dupcol_action::postsolve) knows how to do that split correctly.  A reliable
+  // tell-tale sign of this situation: the aggregate babBest value, rounded, falls
+  // outside the original column's own bounds (e.g. babBest=2 for a 0/1 binary).
+  // When that happens we must NOT anchor oracle[orig] to the (clamped) aggregate
+  // value, since doing so silently overwrites the already-correct value that
+  // postProcess() placed in repSol.  We simply skip the oracle for that column,
+  // leaving whatever postProcess() computed (or a later phase) in place.
   std::vector< double > oracle(nCols, std::numeric_limits< double >::quiet_NaN());
   if (babModel && babModel->bestSolution()) {
     const double *babBest = babModel->bestSolution();
@@ -124,8 +169,12 @@ void CbcRepairPostprocessSolution(
     const int *origColsMap = process.originalColumns(); // preprocessed → original
     for (int pre = 0; pre < nBabCols; pre++) {
       int orig = origColsMap ? origColsMap[pre] : pre;
-      if (orig >= 0 && orig < nCols && originalSolver->isInteger(orig))
-        oracle[orig] = floor(babBest[pre] + 0.5);
+      if (orig >= 0 && orig < nCols && originalSolver->isInteger(orig)) {
+        double rounded = floor(babBest[pre] + 0.5);
+        if (rounded < origColLb[orig] - 1e-7 || rounded > origColUb[orig] + 1e-7)
+          continue; // aggregate/merged-column value: unreliable for this original column
+        oracle[orig] = rounded;
+      }
     }
   }
 

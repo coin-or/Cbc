@@ -5246,7 +5246,21 @@ int CbcSolver::postprocess(
       // constraint violations in those rows.
       {
         OsiClpSolverInterface *fullModel = originalSolver_ ? originalSolver_ : getClpSolver(originalSolver);
-        CbcRepairPostprocessSolution(saveSolver_, fullModel, babModel_, process);
+        // The repair pass's row-by-row propagation/tabu-search phases can be
+        // expensive on large models, and (as found investigating a postprocess
+        // infeasibility on MIPLIB's "fiball") its own heuristics can introduce
+        // NEW violations in rows it isn't even aware of (it only reasons about
+        // pure-integer rows) when "fixing" a row that wasn't actually broken.
+        // So only invoke it when the back-substituted solution genuinely has a
+        // constraint violation somewhere in the full original model.
+        if (fullModel && CbcPostprocessSolutionIsFeasible(saveSolver_, fullModel)) {
+          buffer.str("");
+          buffer << "Postprocess solution already feasible - skipping repair pass"
+                 << std::endl;
+          printGeneralMessage(model_, buffer.str());
+        } else {
+          CbcRepairPostprocessSolution(saveSolver_, fullModel, babModel_, process);
+        }
       }
       // saveSolver_->resolve();
       if (true /*!saveSolver_->isProvenOptimal()*/) {

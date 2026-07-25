@@ -38,4 +38,16 @@ void CbcRepairPostprocessSolution(
   CbcModel *babModel,
   CglPreProcess &process);
 
+// Cheap feasibility check: recomputes every row's activity from saveSolver's
+// current solution against originalSolver's row bounds/matrix (the full,
+// pre-LP-presolve constraint set) and returns true iff every row is satisfied
+// within tolerance. Intended to be called BEFORE CbcRepairPostprocessSolution
+// so that its (potentially expensive, and occasionally harmful — see the
+// "fiball" postprocess-infeasibility investigation) repair phases are only
+// invoked when actually needed.
+bool CbcPostprocessSolutionIsFeasible(
+  OsiSolverInterface *saveSolver,
+  OsiSolverInterface *originalSolver,
+  double tolerance = 1.0e-6);
+
 #endif // CbcPostprocessRepair_H

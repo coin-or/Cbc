@@ -21,8 +21,22 @@ public:
   /** Elapsed total time */
   double seconds = 0.0;
 
-  /** Best solution fount in the search */
-  double obj = 0.0;
+  /** Best solution found in the search.
+   *
+   * Defaults to the same "no solution" sentinel CbcModel::bestObjective_
+   * uses (see CbcModel.cpp, e.g. `std::min(bestObjective_, 1.0e50)`), NOT
+   * 0.0. This field is only overwritten once CbcSolver::run() actually
+   * reaches the branch-and-bound completion code (case CbcParam::BAB,
+   * `statistics.obj = babModel_->getObjValue();`); if the run stops earlier
+   * -- e.g. the root LP relaxation itself is proven infeasible/unbounded or
+   * hits the time limit before B&B ever starts (see
+   * CbcSolver::solveInitialLp()) -- this field is left untouched. A 0.0
+   * default there would be silently misread by -writeStat CSV consumers as
+   * a genuine (and often wrong) objective value of zero instead of "no
+   * solution found"; 1e50 is unambiguous and already the sentinel every
+   * other "no solution" consumer in this codebase checks for.
+   */
+  double obj = 1.0e50;
 
   /** CPU time */
   double sys_seconds = 0.0;

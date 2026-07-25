@@ -5906,10 +5906,27 @@ int CbcSolver::solveInitialLp(
     const char *msg[] = { "infeasible", "unbounded", "stopped",
       "difficulties", "other" };
     buffer.str("");
-    if (iStatus == 3 && clpSolver->secondaryStatus() == 9)
+    // Record what actually happened in `statistics.result` too -- B&B never
+    // starts on this path (see the early `break`/`return 1` in the
+    // CbcParam::BAB case of run(), triggered by babSetupAndRootLp()
+    // returning 1 here), so the "result"/"objective" fields normally set
+    // right before B&B completion (case CbcParam::BAB block, further down
+    // in this file) are never reached. Without this, a -writeStat CSV
+    // consumer would see a blank "result" and the "no solution" 1e50
+    // sentinel `obj` default and could misclassify e.g. a timed-out root LP
+    // relaxation as "solved" with some other, unrelated objective.
+    if (iStatus == 3 && clpSolver->secondaryStatus() == 9) {
       buffer << "LP relaxation stopped on time limit";
-    else
+      statistics.result = "Stopped on time limit";
+    } else {
       buffer << "Problem is " << msg[iStatus - 1];
+      if (iStatus == 1)
+        statistics.result = "Linear relaxation infeasible";
+      else if (iStatus == 2)
+        statistics.result = "Linear relaxation unbounded";
+      else
+        statistics.result = std::string("Problem is ") + msg[iStatus - 1];
+    }
     buffer << " - " << CoinCpuTime() - time1a << " seconds";
     printGeneralMessage(model_, buffer.str());
     return 1;
@@ -5933,6 +5950,10 @@ int CbcSolver::solveInitialLp(
       babModel_->setProblemStatus(1);
       babModel_->setSecondaryStatus(4);
     }
+    // See the comment on the `clpSolver->status() > 0` branch above: B&B
+    // never starts here either, so record the timeout in `statistics.result`
+    // ourselves (the "obj" field is left at its 1e50 "no solution" default).
+    statistics.result = "Stopped on time limit";
     return 1;
   }
   if (model_.getMaximumNodes() == -987654321) {
@@ -5980,6 +6001,10 @@ int CbcSolver::solveInitialLp(
       babModel_->setProblemStatus(0);
       babModel_->setSecondaryStatus(1);
     }
+    // B&B never starts here either (see the comment on the
+    // `clpSolver->status() > 0` branch above) -- record it in
+    // `statistics.result` ourselves.
+    statistics.result = "Linear relaxation infeasible";
     return 1;
   }
   if (clpSolver->dualBound() == 1.0e10) {

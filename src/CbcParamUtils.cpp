@@ -18,6 +18,15 @@
 #include <sstream>
 #include <vector>
 
+// __has_feature() is a Clang-only builtin; on GCC and other compilers it is
+// not defined at all, which breaks "defined(__has_feature) && __has_feature(...)"
+// checks below (the preprocessor still tries to expand the call-like token
+// once defined(__has_feature) short-circuits to false, which is a syntax
+// error, not simply a false condition). Provide the standard portable shim.
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+
 #include "CoinUtilsConfig.h"
 #include "CoinBuildInfo.hpp"
 

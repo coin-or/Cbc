@@ -207,6 +207,37 @@ void CbcHeuristicFPump::resetModel(CbcModel * model)
   model_ = model;
 }
 
+// Propagate the CBC-level remaining time budget (model_->getMaximumSeconds()
+// minus time already elapsed, in whichever mode -- elapsed/wall or CPU --
+// model_ is configured for) onto a freshly cloned LP solver, as an absolute
+// Clp-level deadline (ClpMaxWallSeconds/ClpMaxSeconds), so that a single
+// initialSolve()/resolve() on that clone cannot silently run past the
+// overall solve's time limit. Every fresh clone created by cloneBut() in
+// this file's Feasibility Pump / post-pump local-search code must call this
+// immediately after cloning, and before any solve on it -- a clone created
+// via OsiClpSolverInterface::clone() does NOT automatically get a
+// correctly up-to-date deadline: it only inherits whatever (possibly stale,
+// possibly never-set) absolute deadline its origin solver happened to carry
+// at that instant, not "whatever time remains from now". Omitting this
+// propagation is exactly what let a single feasibility-pump-driven Clp
+// solve run for tens of seconds past the user's requested -seconds limit
+// with no way to interrupt it, since Clp only checks its own deadline (and
+// only if one was actually set) every 10 simplex iterations / at
+// (re)factorization -- it never consults CbcModel's own time bookkeeping.
+static void propagateRemainingTime(CbcModel *model, OsiSolverInterface *solver)
+{
+  if (model->getMaximumSeconds() >= 1.0e10)
+    return; // no user time limit in effect
+  OsiClpSolverInterface *clpSolver = getClpSolver(solver);
+  if (!clpSolver)
+    return;
+  double remaining = std::max(model->getMaximumSeconds() - model->getCurrentSeconds(), 0.0);
+  if (model->useElapsedTime())
+    clpSolver->getModelPtr()->setMaximumWallSeconds(remaining);
+  else
+    clpSolver->getModelPtr()->setMaximumSeconds(remaining);
+}
+
 /**************************BEGIN MAIN PROCEDURE ***********************************/
 
 // See if feasibility pump will give better solution
@@ -2076,6 +2107,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     delete[] saveObjective;
     if (usedColumn && !exitAll) {
       OsiSolverInterface *newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
+      propagateRemainingTime(model_, newSolver);
 #if 0 //def CBC_HAS_CLP
 	    OsiClpSolverInterface * clpSolver
 	      = dynamic_cast<OsiClpSolverInterface *> (newSolver);
@@ -2246,6 +2278,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #endif
           delete newSolver;
           newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
+          propagateRemainingTime(model_, newSolver);
           newSolutionValue = -saveOffset;
           //double newSumInfeas = 0.0;
           const double *obj = newSolver->getObjCoefficients();
@@ -2731,6 +2764,15 @@ int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
       // new CbcModel
       model_ = new CbcModel(*solver);
       model_->findIntegers(true);
+      // Propagate the outer model's time budget: a freshly constructed
+      // CbcModel starts with CbcStartSeconds==0 and the default (unlimited)
+      // maximum time, so without this the recursive solutionInternal() call
+      // below would run with a full fresh time budget instead of whatever
+      // remains of the overall solve's deadline.
+      model_->setMaximumSeconds(saveModel->getMaximumSeconds());
+      model_->setUseElapsedTime(saveModel->useElapsedTime());
+      model_->setDblParam(CbcModel::CbcStartSeconds,
+        saveModel->getDblParam(CbcModel::CbcStartSeconds));
       // set cutoff
       solver->setDblParam(OsiDualObjectiveLimit, cutoff);
       model_->setCutoff(cutoff);

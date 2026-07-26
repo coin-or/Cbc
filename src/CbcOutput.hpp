@@ -47,7 +47,14 @@ class ClpSimplex;
  */
 class CBCLIB_EXPORT CbcPreprocHandler : public CoinMessageHandler {
 public:
-  CbcPreprocHandler(FILE *fp, bool utf8, int logLevel);
+  /** searchElapsedAtStart: how many seconds of the *overall* search had
+   *  already elapsed (per the model's getCurrentSeconds()) when this
+   *  preprocessing phase began. Used only to make the per-row "Time(s)"
+   *  column show elapsed-since-overall-search-start rather than
+   *  elapsed-since-this-phase-start; phase-duration reporting
+   *  (printPhaseEnd()) is unaffected. */
+  CbcPreprocHandler(FILE *fp, bool utf8, int logLevel,
+    double searchElapsedAtStart = 0.0);
 
   /** Destructor: auto-closes the preprocessing section if not already closed.
    *  This ensures the section banner is always printed even on early exits
@@ -93,6 +100,7 @@ private:
   bool utf8_;
   bool compact_;
   double phaseStartTime_; // wall-clock time at construction
+  double searchElapsedAtStart_ = 0.0; // overall-search elapsed time at construction
   bool headerPrinted_ = false;
   bool tableClosed_ = false; // set by printTableEnd()
   bool phaseClosed_ = false; // set by printPhaseEnd()
@@ -236,8 +244,13 @@ public:
 
   // --- Events called by CbcHeuristicFPump::solutionInternal() ---
 
-  /** Called once at the very start, with the initial fractional state. */
-  void onStart(int numFrac, double suminf);
+  /** Called once at the very start, with the initial fractional state.
+   *  searchElapsedAtStart: overall-search elapsed seconds (per the model's
+   *  getCurrentSeconds()) at this moment -- used only to make the per-row
+   *  "Time(s)" column show elapsed-since-overall-search-start rather than
+   *  elapsed-since-this-FP-phase-start. The phase-duration summary printed
+   *  by onEnd() ("best X in Ys") is unaffected. */
+  void onStart(int numFrac, double suminf, double searchElapsedAtStart = 0.0);
 
   /** Record a solution found during the current pass.
    *  Will show as a '*' row on the next onPass() call.
@@ -282,6 +295,7 @@ private:
   bool tableClosed_ = false;
   bool inPhase_ = false;
   double startTime_ = 0.0;
+  double searchElapsedAtStart_ = 0.0; // overall-search elapsed time at onStart()
   double lastPrintTime_ = 0.0;
   int lastPrintPass_ = 0;
   int printedRows_ = 0;      ///< rows printed so far (first 10 are always shown)

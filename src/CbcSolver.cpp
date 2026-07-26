@@ -4129,7 +4129,8 @@ int CbcSolver::preprocess(
         if (ll >= 1) {
           FILE *fp = babModel_->messageHandler()->filePointer();
           bool u8 = CbcOutput::useUtf8();
-          preprocHandler = new CbcPreprocHandler(fp, u8, ll);
+          preprocHandler = new CbcPreprocHandler(fp, u8, ll,
+            babModel_->getCurrentSeconds());
           process.passInMessageHandler(preprocHandler);
           fprintf(fp, "\n%s\n\n",
             CoinTable::phaseStart("Preprocessing", u8).c_str());
@@ -5788,7 +5789,18 @@ int CbcSolver::solveInitialLp(
     lpState->logLevel = logLevel;
     lpState->iterFreq = lpIterFreq;
     lpState->timeFreq = lpTimeFreq;
-    lpState->startTime = CoinWallclockTime();
+    // Make sure the model's overall-search start time is already captured
+    // (applyLpMethod() below would otherwise be the first to set it) so
+    // getCurrentSeconds() is meaningful here.
+    if (!model_.getDblParam(CbcModel::CbcStartSeconds))
+      model_.setDblParam(CbcModel::CbcStartSeconds,
+        model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
+    // Shift the local wall-clock reference back by however much overall
+    // search time has already elapsed (problem loading, bound tightening,
+    // clique strengthening, ...), so every "CoinWallclockTime() -
+    // startTime" computation in ClpOutput.cpp yields time elapsed since
+    // the *overall search* began, not just since this LP phase started.
+    lpState->startTime = CoinWallclockTime() - model_.getCurrentSeconds();
     lpState->lastPrintTime = lpState->startTime;
     // The "Root LP relaxation" section banner is now printed earlier, by
     // babPreRootLPStrenghtening() (so bound-propagation/clique-strengthening

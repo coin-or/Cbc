@@ -413,7 +413,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     printf("DOing general with %d out of %d\n", general, numberIntegers);
 #endif
   if (fpOutput_ && fpOutput_->isActive()) {
-    fpOutput_->onStart(numberUnsatisfied, sumUnsatisfied);
+    fpOutput_->onStart(numberUnsatisfied, sumUnsatisfied, model_->getCurrentSeconds());
   } else {
     sprintf(pumpPrint, "Initial state - %d integers unsatisfied sum - %g",
       numberUnsatisfied, sumUnsatisfied);

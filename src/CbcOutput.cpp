@@ -174,12 +174,14 @@ int CbcImportHandler::print()
   return 0; // always suppress immediate printing
 }
 
-CbcPreprocHandler::CbcPreprocHandler(FILE *fp, bool utf8, int logLevel)
+CbcPreprocHandler::CbcPreprocHandler(FILE *fp, bool utf8, int logLevel,
+  double searchElapsedAtStart)
   : CoinMessageHandler(fp)
   , fp_(fp)
   , utf8_(utf8)
   , compact_(CbcOutput::useCompact())
   , phaseStartTime_(CoinWallclockTime())
+  , searchElapsedAtStart_(searchElapsedAtStart)
 {
   setLogLevel(logLevel);
 }
@@ -202,12 +204,13 @@ void CbcPreprocHandler::printTableRow(int pass, int fixed, int tightened,
 {
   if (!fp_) return;
   const char *bar = tableBar(utf8_, compact_);
-  // Preprocessing time column: elapsed time since this preprocessing phase
-  // started (phaseStartTime_, captured in the constructor), consistent with
-  // the phase-end summary line below (printPhaseEnd() uses the same diff).
-  // Must NOT use a raw CoinWallclockTime() value here -- that's an absolute
-  // wall-clock reading, not an elapsed duration.
-  const std::string timeStr = fmtTime(CoinWallclockTime() - phaseStartTime_);
+  // Preprocessing time column: elapsed time since the *overall search*
+  // began (searchElapsedAtStart_, captured at construction, plus elapsed
+  // time within this phase) -- NOT just since this preprocessing phase
+  // started. Must NOT use a raw CoinWallclockTime() value here -- that's
+  // an absolute wall-clock reading, not an elapsed duration.
+  const std::string timeStr = fmtTime(
+    (CoinWallclockTime() - phaseStartTime_) + searchElapsedAtStart_);
   fprintf(fp_, "  %*d%s%*d%s%*d%s%*d%s%*d%s%*s\n",
     PP_W_PASS,  pass,         bar,
     PP_W_FIXED, fixed,        bar,
@@ -1699,10 +1702,11 @@ CbcFPumpOutput::CbcFPumpOutput(FILE *fp, bool utf8, int logLevel,
 {
 }
 
-void CbcFPumpOutput::onStart(int numFrac, double suminf)
+void CbcFPumpOutput::onStart(int numFrac, double suminf, double searchElapsedAtStart)
 {
   if (!isActive()) return;
   startTime_ = CoinWallclockTime();
+  searchElapsedAtStart_ = searchElapsedAtStart;
   lastPrintTime_ = startTime_;
   inPhase_ = true;
   prevSuminf_ = suminf;
@@ -1800,11 +1804,11 @@ void CbcFPumpOutput::onPass(int round, int pass, int numFrac, double suminf,
   // `now` is a raw wall-clock reading, used only for the shouldPrint()
   // interval-gating diff and lastPrintTime_ bookkeeping (both raw-vs-raw
   // diffs, safe). The value actually printed in the "Time(s)" column must
-  // instead be phase-scoped (elapsed since this FP phase's own onStart()),
-  // i.e. `now - startTime_`, so it lines up with the phase summary printed
-  // by onEnd() ("best X in Ys"), which computes its duration the same way.
-  // Printing the raw reading here previously made the last table row's
-  // time disagree with the phase-end summary immediately below it.
+  // instead show elapsed time since the *overall search* began
+  // (searchElapsedAtStart_ + elapsed-within-this-FP-phase), NOT just
+  // elapsed since this FP phase's own onStart(). The phase summary printed
+  // by onEnd() ("best X in Ys") intentionally keeps reporting FP's own
+  // phase duration and is unaffected by searchElapsedAtStart_.
   double now = CoinWallclockTime();
   bool hasPendingSol = pendingSolution_;
 
@@ -1849,7 +1853,8 @@ void CbcFPumpOutput::onPass(int round, int pass, int numFrac, double suminf,
   }
 
   double bestSolToShow = hasPendingSol ? pendingObj_ : 1e30;
-  printRow(hasPendingSol, round, pass, fracBuf, sumBuf, status, bestSolToShow, now - startTime_);
+  printRow(hasPendingSol, round, pass, fracBuf, sumBuf, status, bestSolToShow,
+    (now - startTime_) + searchElapsedAtStart_);
 
   lastPrintTime_ = now;
   lastPrintPass_ = pass;
@@ -1873,7 +1878,7 @@ void CbcFPumpOutput::onNoSolutionInRetry()
   if (!isActive()) return;
   if (!headerPrinted_ || lastPass_ == 0) return;
   if (!lastPrinted_) {
-    double elapsed = CoinWallclockTime() - startTime_;
+    double elapsed = (CoinWallclockTime() - startTime_) + searchElapsedAtStart_;
     char fracBuf[24], sumBuf[24];
     std::snprintf(fracBuf, sizeof(fracBuf), "%d",   lastNumFrac_val_);
     std::snprintf(sumBuf,  sizeof(sumBuf),  "%.4f", lastSuminf_val_);
@@ -1898,7 +1903,7 @@ void CbcFPumpOutput::onEnd(double bestSol, double /*elapsed_cpu*/, int rounds, i
   if (!isActive()) return;
   // Always show the last pass if it wasn't printed (frequency limiting may have skipped it).
   if (headerPrinted_ && !lastPrinted_ && lastPass_ > 0) {
-    double elapsed = CoinWallclockTime() - startTime_;
+    double elapsed = (CoinWallclockTime() - startTime_) + searchElapsedAtStart_;
     char fracBuf[24], sumBuf[24];
     std::snprintf(fracBuf, sizeof(fracBuf), "%d",    lastNumFrac_val_);
     std::snprintf(sumBuf,  sizeof(sumBuf),  "%.4f",  lastSuminf_val_);
@@ -2111,7 +2116,13 @@ void CbcCutGenOutput::onPass(int pass, int rows, int tight, int frac, double sum
   char objBuf[24], suminfBuf[16];
   std::snprintf(objBuf,    sizeof(objBuf),    "%.6g", obj);
   std::snprintf(suminfBuf, sizeof(suminfBuf), "%.4g", suminf);
-  const std::string timeBuf = fmtTime(CoinWallclockTime());
+  // t is the solve-scoped elapsed time (model->getCurrentSeconds()) parsed
+  // from CbcModel's own CBC_ROOT_DETAIL message -- use it directly rather
+  // than an independent raw CoinWallclockTime() reading, which has no
+  // notion of "since this solve started" and previously made this column
+  // print a raw (and, since CoinWallclockTime() became absolute epoch time,
+  // huge and meaningless) timestamp instead of an elapsed duration.
+  const std::string timeBuf = fmtTime(t);
   fprintf(fp_, "  %*d%s%*d%s%*d%s%*d%s%*s%s%*s%s%*s\n",
     CG_W_PASS,   pass,             bar,
     CG_W_ROWS,   rows,             bar,

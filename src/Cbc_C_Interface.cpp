@@ -1488,6 +1488,15 @@ Cbc_readLp(Cbc_Model *model, const char *filename)
   return result;
 }
 
+/** Activates the OsiRowCutDebugger with a known reference solution. See
+ * Cbc_C_Interface.h for details. */
+void CBC_LINKAGE
+Cbc_activateRowCutDebugger(Cbc_Model *model, const double *solution,
+  char enforceOptimality)
+{
+  model->solver_->activateRowCutDebugger(solution, enforceOptimality != 0);
+}
+
 /** @brief If Cbc was built with gzip compressed files support
   *
   * @return 1 if yes, 0 otherwise

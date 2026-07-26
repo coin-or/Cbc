@@ -43,7 +43,7 @@ test: cbc_validate_sol$(EXEEXT)
 # inspect the C interface end to end and confirm it behaves like the `cbc`
 # command line for any instance. See `mip-c-solve --help` for usage.
 
-noinst_PROGRAMS = cbc_validate_sol mip-c-solve lp-relaxation-test
+noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -52,6 +52,22 @@ cbc_validate_sol_LDADD = ../src/libCbc.la
 mip_c_solve_SOURCES = mip-c-solve.cpp
 
 mip_c_solve_LDADD = ../src/libCbc.la
+
+########################################################################
+#           Row-cut-debugger diagnostic for wrong-answer bugs          #
+########################################################################
+#
+# mip-debug-cuts: activates Osi's row-cut debugger (Cbc_activateRowCutDebugger)
+# with a known-correct reference solution (e.g. a certified optimum from
+# mip-sanity-data/sols) and solves the instance. Any cut, bound-fixing, or
+# branching decision that would exclude the reference solution is flagged
+# during the search -- useful for diagnosing WRONG_OBJ/INFEASIBLE_WRONG
+# regressions. Requires a --debug (non-NDEBUG) Cbc build for the CoinAssert
+# checks in CbcModel/CglXXX to actually raise. See `mip-debug-cuts --help`.
+
+mip_debug_cuts_SOURCES = mip-debug-cuts.cpp
+
+mip_debug_cuts_LDADD = ../src/libCbc.la
 
 ########################################################################
 #              LP-relaxation solve/resolve tests (C interface)         #

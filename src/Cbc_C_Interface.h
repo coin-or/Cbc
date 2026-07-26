@@ -857,6 +857,32 @@ Cbc_readMps(Cbc_Model *model, const char *filename);
 CBCLIB_EXPORT int CBC_LINKAGE
 Cbc_readLp(Cbc_Model *model, const char *filename);
 
+/** @brief Activates the OsiRowCutDebugger with a known reference solution
+  *
+  * Every cut/bound-fixing generated during the subsequent Cbc_solve() call
+  * is checked against \p solution; the search reports a diagnostic (and, in
+  * a non-NDEBUG/--debug build, raises a CoinError) as soon as a cut or bound
+  * change would exclude it. Use this to identify which cut generator, bound
+  * propagation pass, or branching decision incorrectly prunes a known-valid
+  * (e.g. certified optimal) solution when Cbc reports a wrong answer.
+  *
+  * @param model problem object. Must be called after Cbc_readMps/Cbc_readLp
+  *        (or the problem has otherwise been fully built) and before
+  *        Cbc_solve().
+  * @param solution full-length primal solution vector (one entry per
+  *        column, in the same order as the model's columns). Only the
+  *        integer variables need to be exact; continuous variables are
+  *        recomputed by solving the LP relaxation with the integers fixed,
+  *        unless \p enforceOptimality is 0.
+  * @param enforceOptimality if nonzero (default behaviour), fill in
+  *        continuous variable values by solving the LP relaxation with
+  *        integers fixed at \p solution's values; if zero, use the
+  *        continuous values supplied in \p solution as-is.
+  **/
+CBCLIB_EXPORT void CBC_LINKAGE
+Cbc_activateRowCutDebugger(Cbc_Model *model, const double *solution,
+  char enforceOptimality);
+
 /** @brief Read the optimal basis for the linear program
   *
   * @param model problem object

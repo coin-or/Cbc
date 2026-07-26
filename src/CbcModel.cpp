@@ -6283,16 +6283,23 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
     setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1);
     currentNode_ = NULL;
-    /* setBestSolution() -> checkSolution() has already fixed the integer
-       variables to their solution values in continuousSolver_ and
-       reoptimised it (via initialSolve()/resolve()) to obtain the accurate
-       continuous values for the remaining (e.g. preprocessing-eliminated)
-       variables. The resolve() below is only a paranoia failsafe for the
-       case where that reoptimisation did NOT leave the solver in a proven
-       optimal state (which should be rare) - skip it when unnecessary, as
-       it duplicates a full LP solve that can be expensive on large models. */
-    if (!continuousSolver_->isProvenOptimal())
-      continuousSolver_->resolve();
+    /* setBestSolution() -> checkSolution() fixes the integer variables to
+       their solution values in continuousSolver_ and, when its own internal
+       safety-check block runs, reoptimises it to obtain accurate continuous
+       values. However continuousSolver_->isProvenOptimal() can be left
+       stale-true (reflecting an earlier, different candidate solution that
+       was checked previously) even when the bounds have since changed to
+       reflect a NEW best solution - e.g. when the "reduced cost fixing"
+       restart mechanism (CbcHeuristic::smallBranchAndBound(), invoked with
+       fixVariables=0) updates bestObjective_/bestSolution_ without touching
+       continuousSolver_'s bounds. Guarding this resolve() on isProvenOptimal()
+       (as a previous "optimisation" did) can therefore skip it precisely when
+       it is needed, leaving continuousSolver_ - which is both the source of
+       the final reported objective/bound AND the seed cloned for any further
+       nested restart search - stuck on a stale, worse LP state. Always
+       resolve here unconditionally so continuousSolver_ genuinely reflects
+       bestSolution_'s fixed bounds. */
+    continuousSolver_->resolve();
     // Deal with funny variables
     if ((moreSpecialOptions2_ & 32768) != 0)
       cleanBounds(continuousSolver_, NULL);

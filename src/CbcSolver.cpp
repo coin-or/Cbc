@@ -1467,6 +1467,13 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   // clp model, so every cloned thread inherits PSI, objScale, and vector mode.
   if (canRace) {
     ClpRacingSolver racer(clp, racingThreads);
+    // See the CbcStartSeconds guard at the top of solveInitialLp() -- by
+    // this point the model's overall-search start time is guaranteed to
+    // already be set, so getCurrentSeconds() is meaningful here. This makes
+    // the racing progress rows (printed at intervals from whichever thread
+    // reaches them) show elapsed-since-overall-search-start, consistent
+    // with every other progress table.
+    racer.setSearchElapsedAtStart(model_.getCurrentSeconds());
     racer.solve();
     if (racer.winnerIndex() >= 0) {
       clp->setNumberIterations(racer.winnerIterations());
@@ -5754,6 +5761,14 @@ int CbcSolver::solveInitialLp(
   std::ostringstream buffer;
 
   double time1a = CoinCpuTime();
+  // Ensure the model's overall-search start time is captured before any
+  // LP-racing / progress-table timing reads it below via getCurrentSeconds()
+  // -- otherwise it would default to 0 and yield a huge, meaningless elapsed
+  // value (this used to only be set much later, inside applyLpMethod(),
+  // *after* LP racing had already run and read a stale/zero start time).
+  if (!model_.getDblParam(CbcModel::CbcStartSeconds))
+    model_.setDblParam(CbcModel::CbcStartSeconds,
+      model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
   OsiSolverInterface *solver = model_.solver();
   OsiClpSolverInterface *si = getClpSolver(solver);
   CoinMessageHandler *lpSavedMsg = nullptr;
@@ -5789,17 +5804,13 @@ int CbcSolver::solveInitialLp(
     lpState->logLevel = logLevel;
     lpState->iterFreq = lpIterFreq;
     lpState->timeFreq = lpTimeFreq;
-    // Make sure the model's overall-search start time is already captured
-    // (applyLpMethod() below would otherwise be the first to set it) so
-    // getCurrentSeconds() is meaningful here.
-    if (!model_.getDblParam(CbcModel::CbcStartSeconds))
-      model_.setDblParam(CbcModel::CbcStartSeconds,
-        model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
     // Shift the local wall-clock reference back by however much overall
     // search time has already elapsed (problem loading, bound tightening,
     // clique strengthening, ...), so every "CoinWallclockTime() -
     // startTime" computation in ClpOutput.cpp yields time elapsed since
     // the *overall search* began, not just since this LP phase started.
+    // (CbcStartSeconds is guaranteed to already be set, see top of this
+    // function.)
     lpState->startTime = CoinWallclockTime() - model_.getCurrentSeconds();
     lpState->lastPrintTime = lpState->startTime;
     // The "Root LP relaxation" section banner is now printed earlier, by

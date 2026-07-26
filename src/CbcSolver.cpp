@@ -5244,8 +5244,14 @@ int CbcSolver::postprocess(
       // full pre-LP-presolve model (originalSolver_) when available, because
       // the LP solve dropping redundant rows from model_.solver() can hide
       // constraint violations in those rows.
+      OsiClpSolverInterface *fullModel = originalSolver_ ? originalSolver_ : getClpSolver(originalSolver);
+      // saveSolverFeasible tracks whether saveSolver_'s current solution is
+      // already row/bound-feasible for the full original model. It is
+      // (re)computed before and, if the repair pass ran, after that pass, so
+      // it can also be used below to decide whether originalSolver->resolve()
+      // is needed at all (see LP2 note below).
+      bool saveSolverFeasible = fullModel && CbcPostprocessSolutionIsFeasible(saveSolver_, fullModel);
       {
-        OsiClpSolverInterface *fullModel = originalSolver_ ? originalSolver_ : getClpSolver(originalSolver);
         // The repair pass's row-by-row propagation/tabu-search phases can be
         // expensive on large models, and (as found investigating a postprocess
         // infeasibility on MIPLIB's "fiball") its own heuristics can introduce
@@ -5253,57 +5259,80 @@ int CbcSolver::postprocess(
         // pure-integer rows) when "fixing" a row that wasn't actually broken.
         // So only invoke it when the back-substituted solution genuinely has a
         // constraint violation somewhere in the full original model.
-        if (fullModel && CbcPostprocessSolutionIsFeasible(saveSolver_, fullModel)) {
+        if (saveSolverFeasible) {
           buffer.str("");
           buffer << "Postprocess solution already feasible - skipping repair pass"
                  << std::endl;
           printGeneralMessage(model_, buffer.str());
         } else {
           CbcRepairPostprocessSolution(saveSolver_, fullModel, babModel_, process);
+          // Repair may have fixed the violations it targeted -- recheck so
+          // the LP2 skip below can still trigger when it did.
+          saveSolverFeasible = fullModel && CbcPostprocessSolutionIsFeasible(saveSolver_, fullModel);
         }
       }
-      // saveSolver_->resolve();
-      if (true /*!saveSolver_->isProvenOptimal()*/) {
-        // try all slack
-        CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(
-          babModel_->solver()->getEmptyWarmStart());
-        saveSolver_->setWarmStart(basis);
-        delete basis;
-        saveSolver_->initialSolve();
-#ifdef COIN_DEVELOP
-        saveSolver_->writeMps("inf2");
-#endif
-        OsiClpSolverInterface *osiclp = getClpSolver(saveSolver_);
-        if (CBC_SKIP_CLP_TEST || osiclp)
-          osiclp->getModelPtr()->checkUnscaledSolution();
-      }
-      // assert(saveSolver_->isProvenOptimal());
 #ifndef CBC_OTHER_SOLVER
       // and original solver
+      // Note: saveSolver_->initialSolve() (a cold-start LP re-solve of
+      // saveSolver_) used to run here, but its result was never used --
+      // bestSolution is populated from originalSolver->getColSolution()
+      // below, and the bounds copied to originalSolver just below
+      // (saveSolver_->getColLower()/getColUpper()) were already set by the
+      // repair-pass/rounding block above, not by this LP solve. On large,
+      // ill-conditioned instances this cold start (no presolve, no warm
+      // start honoured by initialSolve()) could run for minutes; removing
+      // it eliminates that cost with no change in the returned solution
+      // (mipster commit 7219119e independently found and fixed the same
+      // dead LP solve).
       originalSolver->setDblParam(OsiDualObjectiveLimit,
         COIN_DBL_MAX);
       assert(n >= originalSolver->getNumCols());
       n = originalSolver->getNumCols();
       originalSolver->setColLower(saveSolver_->getColLower());
       originalSolver->setColUpper(saveSolver_->getColUpper());
-      // basis
-      CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(
-        babModel_->solver()->getWarmStart());
-      originalSolver->setBasis(*basis);
-      delete basis;
-      originalSolver->resolve();
-      if (!originalSolver->isProvenOptimal()) {
-        // try all slack
+      // LP2: recovers values (mainly for continuous variables) in the full
+      // original variable space consistent with the now-fixed integer
+      // bounds. This LP can be almost as expensive as the root relaxation
+      // itself on large/ill-conditioned instances (e.g. dano3mip took 100+s
+      // here under a debug/ASan build) since only the ~500 integer columns
+      // are fixed -- everything else starts essentially unconstrained.
+      //
+      // Two ways to shrink or skip this solve:
+      //  (a) if saveSolver_'s current solution is already feasible for the
+      //      full original model's rows (checked above for the repair
+      //      pass), no re-optimization is needed at all for a valid MIP
+      //      solution -- just carry that solution over directly.
+      //  (b) otherwise, tighten/fix as many additional (mostly continuous)
+      //      bounds as possible via bound propagation given the fixed
+      //      integers, before resolving, so the LP that Clp actually has to
+      //      pivot on is as small as possible.
+      if (saveSolverFeasible) {
+        originalSolver->setColSolution(saveSolver_->getColSolution());
+      } else {
+        CbcBoundPropagation bp;
+        const double bpRemaining = std::max(
+          babModel_->getMaximumSeconds() - babModel_->getCurrentSeconds(), 1.0);
+        bp.run(originalSolver, NULL, 0, CbcBoundPropagation::MILPbt, 20,
+          babModel_->useElapsedTime(), bpRemaining, CoinGetTimeOfDay());
+        // basis
         CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(
-          babModel_->solver()->getEmptyWarmStart());
+          babModel_->solver()->getWarmStart());
         originalSolver->setBasis(*basis);
         delete basis;
-        originalSolver->initialSolve();
-        OsiClpSolverInterface *osiclp = getClpSolver(originalSolver);
-        if (CBC_SKIP_CLP_TEST || osiclp)
-          osiclp->getModelPtr()->checkUnscaledSolution();
+        originalSolver->resolve();
+        if (!originalSolver->isProvenOptimal()) {
+          // try all slack
+          CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(
+            babModel_->solver()->getEmptyWarmStart());
+          originalSolver->setBasis(*basis);
+          delete basis;
+          originalSolver->initialSolve();
+          OsiClpSolverInterface *osiclp = getClpSolver(originalSolver);
+          if (CBC_SKIP_CLP_TEST || osiclp)
+            osiclp->getModelPtr()->checkUnscaledSolution();
+        }
+        // assert(originalSolver->isProvenOptimal());
       }
-      // assert(originalSolver->isProvenOptimal());
 #endif
       babModel_->assignSolver(saveSolver_);
       memcpy(bestSolution, originalSolver->getColSolution(),
@@ -5337,7 +5366,19 @@ int CbcSolver::postprocess(
     babModel_->setBestSolution(
       bestSolution, n, babModel_->getMinimizationObjValue());
 #ifndef CBC_OTHER_SOLVER
-    // and put back in very original solver
+    // Copy bestSolution back into originalSolver and fix integer bounds.
+    // A full LP re-solve used to run here (with OsiDoPresolveInResolve
+    // enabled), but its result was dead: babExecuteSearchAndPostprocess()
+    // unconditionally overwrites lpSolver->primalColumnSolution() from
+    // bestSolution right after postprocess() returns, recomputes the row
+    // solution as A*bestSolution, and sets the objective from
+    // babModel_->getObjValue() -- so this resolve's own solution/duals were
+    // always discarded. On large/ill-conditioned instances it could run for
+    // tens of seconds; removing it eliminates that cost with no behavior
+    // change (mipster commit 7219119e independently found and fixed the
+    // same dead LP solve, calling it "LP3").
+    // TODO: if dual values on the original model are ever needed (e.g. for
+    // sensitivity analysis after the solve), reinstate a resolve here.
     {
       ClpSimplex *original = originalSolver->getModelPtr();
       double *lower = original->columnLower();
@@ -5352,46 +5393,6 @@ int CbcSolver::postprocess(
           upper[i] = solution[i];
         }
       }
-      // basis
-      CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(
-        babModel_->solver()->getWarmStart());
-      originalSolver->setBasis(*basis);
-      delete basis;
-      originalSolver->setDblParam(OsiDualObjectiveLimit,
-        COIN_DBL_MAX);
-#ifdef COIN_HAS_LINK
-      if (originalSolver->getMatrixByCol())
-        originalSolver->setHintParam(OsiDoPresolveInResolve, true,
-          OsiHintTry);
-#else
-      originalSolver->setHintParam(OsiDoPresolveInResolve, true,
-        OsiHintTry);
-#endif
-      originalSolver->resolve();
-      if (!originalSolver->isProvenOptimal()) {
-        // try all slack
-        CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(
-          babModel_->solver()->getEmptyWarmStart());
-        originalSolver->setBasis(*basis);
-        delete basis;
-        originalSolver->initialSolve();
-        OsiClpSolverInterface *osiclp = getClpSolver(originalSolver);
-        if (CBC_SKIP_CLP_TEST || osiclp)
-          osiclp->getModelPtr()->checkUnscaledSolution();
-#ifdef CLP_INVESTIGATE
-        if (!originalSolver->isProvenOptimal()) {
-          if (saveSolver_) {
-            printf(
-              "saveSolver_ and originalSolver matrices saved\n");
-            saveSolver_->writeMps("infA");
-          } else {
-            printf("originalSolver matrix saved\n");
-            originalSolver->writeMps("infB");
-          }
-        }
-#endif
-      }
-      // assert(originalSolver->isProvenOptimal());
     }
 #endif
     checkSOS(babModel_, babModel_->solver());

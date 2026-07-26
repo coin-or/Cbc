@@ -6283,7 +6283,16 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
     setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1);
     currentNode_ = NULL;
-    continuousSolver_->resolve();
+    /* setBestSolution() -> checkSolution() has already fixed the integer
+       variables to their solution values in continuousSolver_ and
+       reoptimised it (via initialSolve()/resolve()) to obtain the accurate
+       continuous values for the remaining (e.g. preprocessing-eliminated)
+       variables. The resolve() below is only a paranoia failsafe for the
+       case where that reoptimisation did NOT leave the solver in a proven
+       optimal state (which should be rare) - skip it when unnecessary, as
+       it duplicates a full LP solve that can be expensive on large models. */
+    if (!continuousSolver_->isProvenOptimal())
+      continuousSolver_->resolve();
     // Deal with funny variables
     if ((moreSpecialOptions2_ & 32768) != 0)
       cleanBounds(continuousSolver_, NULL);

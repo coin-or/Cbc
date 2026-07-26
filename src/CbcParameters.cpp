@@ -606,7 +606,6 @@ void CbcParameters::addCbcParams() {
   // Action params — solving
   parameters_[CbcParam::BAB]->setTopic("Solving");
   parameters_[CbcParam::SOLVECONTINUOUS]->setTopic("Solving");
-  parameters_[CbcParam::STRENGTHEN]->setTopic("Solving");
 
   // Action params — preprocessing
   parameters_[CbcParam::BOUNDPROP]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
@@ -1289,13 +1288,6 @@ void CbcParameters::addCbcSolverActionParams() {
   parameters_[CbcParam::STDIN]->setup(
       "stdin", "Switch to interactive command line mode", "",
       CoinParam::displayPriorityNone);
-
-  parameters_[CbcParam::STRENGTHEN]->setup(
-      "strengthen", "Create strengthened problem",
-      "This creates a new problem by applying the root node cuts. All tight "
-      "constraints will be in resulting problem.",
-      CoinParam::displayPriorityHigh);
-
 
   parameters_[CbcParam::WRITEGMPLSOL]->setup(
       "writeGSolu!tion", "Puts glpk solution to file",

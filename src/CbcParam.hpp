@@ -79,7 +79,6 @@ public:
       SOLVECONTINUOUS,
       STATISTICS,
       STDIN,
-      STRENGTHEN,
       WRITEGMPLSOL,
       WRITEGMPLSOL_OLD, // For backward compatibility
       WRITEMODEL,

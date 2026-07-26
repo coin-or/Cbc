@@ -5037,8 +5037,10 @@ int CbcSolver::postprocess(
   double time2 = CoinCpuTime() + CoinCpuTimeJustChildren();
   double totalTime = parameters_.getTotalTime() + (time2 - time1);
   int testOsiOptions = parameters_[CbcParam::TESTOSI]->intVal();
-  // In run(), cbcParamCode == CbcParam::BAB for this entire block.
-  // The else branch (STRENGTHEN) is kept for completeness.
+  // In run(), cbcParamCode == CbcParam::BAB for this entire block (the
+  // STRENGTHEN action, which used to select an alternate branch here, has
+  // been removed -- it was never wired to a push function after the run()
+  // refactor and had become dead code).
   int cbcParamCode = CbcParam::BAB;
 
   // TODO: saveCoinModel and saveTightenedModel are run()-scope locals used only
@@ -5456,9 +5458,6 @@ int CbcSolver::postprocess(
 #endif
   }
 #ifndef CBC_OTHER_SOLVER
-  // if (type==STRENGTHEN&&strengthenedModel)
-  // clpSolver = dynamic_cast< OsiClpSolverInterface*>
-  // (strengthenedModel);
   else if (statusUserFunction_[0])
     clpSolver = getClpSolver(babModel_->solver());
   lpSolver = clpSolver->getModelPtr();

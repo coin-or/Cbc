@@ -2320,6 +2320,41 @@ Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[])
   clqStr.strengthenCliques(n, rows);
 }
 
+// Runs MILP-based bound propagation on model->solver_, in place. Mirrors
+// Cbc_solveLPColdViaCbcSolver()'s approach (see that function's doc comment
+// above for the rationale): builds a throwaway CbcSolver wrapping `solver`
+// directly via assignSolver() (never a clone, and never owning it -- see
+// setModelOwnsSolver(false) below), so that the bounds tightened here are
+// the persistent ones in the C interface's own OsiClpSolverInterface, not a
+// copy that would be discarded when the throwaway CbcSolver is destroyed.
+//
+// Deliberately calls CbcSolver::strengthenBounds() directly -- the same
+// bound-propagation routine used internally by preRootLPStrenghtening() and
+// by the `cbc` command line's standalone -doBoundPropagation action -- and
+// not runBoundPropagation() (the CLI-action wrapper), since the latter
+// additionally checks/reports on CbcSolver's own goodModel_ bookkeeping,
+// which is never populated on this throwaway-CbcSolver path (goodModel_ is
+// only set when CbcSolver itself reads/loads the model, e.g. via readMps()).
+int CBC_LINKAGE
+Cbc_propagateBounds(Cbc_Model *model)
+{
+  Cbc_flush(model);
+  OsiClpSolverInterface *solver = model->solver_;
+
+  CbcSolver cbcSolver;
+  {
+    OsiSolverInterface *tmp = solver;
+    cbcSolver.model()->assignSolver(tmp, false);
+  }
+  cbcSolver.model()->setModelOwnsSolver(false);
+  cbcSolver.initialize();
+  cbcSolver.parameters().disableWelcomePrinting();
+  cbcSolver.model()->messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
+
+  bool ok = cbcSolver.strengthenBounds(solver);
+  return ok ? 0 : 1;
+}
+
 static void Cbc_cleanOptResults(Cbc_Model *model) {
   model->obj_value = COIN_DBL_MAX;
   model->mipStatus = -1;

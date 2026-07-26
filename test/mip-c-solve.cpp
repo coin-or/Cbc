@@ -52,6 +52,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <unistd.h>
@@ -101,6 +102,33 @@ static bool fileExists(const std::string &path)
   return f.good();
 }
 
+/* Parses mip-sanity-data's sols/<instance>.sol reference-solution format:
+ *   # Solution for model ...
+ *   # Objective value = ...
+ *   <colName> <value>
+ *   ...
+ * (comment lines start with '#'; one "name value" pair per remaining line).
+ * Returns a map from column name to value, empty if the file is missing,
+ * empty, or unreadable. */
+static std::map<std::string, double> parseReferenceSol(const std::string &path)
+{
+  std::map<std::string, double> values;
+  std::ifstream in(path);
+  if (!in.is_open())
+    return values;
+  std::string line;
+  while (std::getline(in, line)) {
+    if (line.empty() || line[0] == '#')
+      continue;
+    std::istringstream ss(line);
+    std::string name;
+    double value;
+    if (ss >> name >> value)
+      values[name] = value;
+  }
+  return values;
+}
+
 /* True if path's extension (ignoring a trailing .gz) is ".lp" (case-insensitive). */
 static bool looksLikeLpFile(const std::string &path)
 {
@@ -145,6 +173,17 @@ static void printUsage(const char *progName)
     "`cbc <file> -sec <timeLimit> -maxNodes <nodesLimit> -solve`).\n"
     "\n"
     "Options:\n"
+    "  --stage=STAGE          Which pipeline stage to exercise instead of a\n"
+    "                         full solve (default: solve). One of:\n"
+    "                           solve              Full Cbc_solve() (default)\n"
+    "                           bound-propagation  Cbc_propagateBounds() only --\n"
+    "                             reports how many column bounds were tightened\n"
+    "                             and whether infeasibility was proved, then exits\n"
+    "                             (no branch-and-bound is run). If bks.tsv marks\n"
+    "                             this instance optimal and a reference solution\n"
+    "                             exists (sols/<instance>.sol), also checks that\n"
+    "                             the tightened bounds do not exclude that\n"
+    "                             solution's values.\n"
     "  --data-dir=PATH        mip-sanity-data checkout (default: <exe-dir>/mip-sanity-data)\n"
     "                         (ignored in the <instanceFileName> <timeLimit> <nodesLimit> form)\n"
     "  --threads=N            Threads passed to Cbc (default: 1)\n"
@@ -241,6 +280,7 @@ static bool checkOneSolution(Cbc_Model *m, const double *x, const char *label,
 int main(int argc, char *argv[])
 {
   std::string dataDir;
+  std::string stage = "solve";
   int threads = 1;
   long nodeLimitOverride = -1; /* -1 = use limits.tsv */
   double timeLimitOverride = -1.0;
@@ -261,6 +301,14 @@ int main(int argc, char *argv[])
       return 2;
     } else if (arg.rfind("--data-dir=", 0) == 0) {
       dataDir = valueOf("--data-dir=");
+    } else if (arg.rfind("--stage=", 0) == 0) {
+      stage = valueOf("--stage=");
+      if (stage != "solve" && stage != "bound-propagation") {
+        fprintf(stderr, "Error: unknown --stage value '%s' (expected 'solve' or 'bound-propagation')\n\n",
+          stage.c_str());
+        printUsage(argv[0]);
+        return 2;
+      }
     } else if (arg.rfind("--threads=", 0) == 0) {
       threads = atoi(valueOf("--threads=").c_str());
     } else if (arg.rfind("--node-limit=", 0) == 0) {
@@ -385,6 +433,10 @@ int main(int argc, char *argv[])
 
   /* ── Load & solve, deliberately NOT silencing Cbc's own messages ───────── */
   Cbc_Model *m = Cbc_newModel();
+  Cbc_storeNameIndexes(m, 1); /* must precede readMps/readLp so column/row
+                                 name lookups (Cbc_getColNameIndex(), used
+                                 below by the bound-propagation stage's
+                                 reference-solution check) are populated */
   const bool isLp = looksLikeLpFile(mpsPath);
   int readErr = isLp ? Cbc_readLp(m, mpsPath.c_str()) : Cbc_readMps(m, mpsPath.c_str());
   if (readErr) {
@@ -394,14 +446,115 @@ int main(int argc, char *argv[])
     return 2;
   }
 
+  if (logLevelOverride >= 0)
+    Cbc_setLogLevel(m, logLevelOverride);
+
+  /* ── --stage=bound-propagation: exercise Cbc_propagateBounds() only,   ──
+   * skipping the full Cbc_solve() path entirely (no branch-and-bound). */
+  if (stage == "bound-propagation") {
+    int ncols = Cbc_getNumCols(m);
+    std::vector<double> lbBefore(ncols), ubBefore(ncols);
+    {
+      const double *lb0 = Cbc_getColLower(m);
+      const double *ub0 = Cbc_getColUpper(m);
+      for (int j = 0; j < ncols; ++j) {
+        lbBefore[j] = lb0[j];
+        ubBefore[j] = ub0[j];
+      }
+    }
+
+    int rc = Cbc_propagateBounds(m);
+
+    int nTightened = 0;
+    {
+      const double *lb1 = Cbc_getColLower(m);
+      const double *ub1 = Cbc_getColUpper(m);
+      for (int j = 0; j < ncols; ++j) {
+        if (lb1[j] > lbBefore[j] + 1e-9 || ub1[j] < ubBefore[j] - 1e-9)
+          ++nTightened;
+      }
+    }
+
+    printf("------------------------------------------------------------------------\n\n");
+    printf("=== Bound propagation stage ===\n");
+    printf("  Cbc_propagateBounds()  = %d (%s)\n", rc,
+      rc == 0 ? "ok, no infeasibility detected" : "infeasibility proved");
+    printf("  columns tightened     = %d / %d\n", nTightened, ncols);
+
+    std::vector<std::string> violations;
+    if (rc != 0 && expectedStatus == "optimal") {
+      violations.push_back(
+        "MISMATCH: Cbc_propagateBounds() claims infeasibility, but bks.tsv "
+        "says this instance has an optimal solution. This is a solver bug.");
+    }
+
+    /* If this instance's bks.tsv status is a confirmed "optimal" and a
+     * reference solution is available (mip-sanity-data/sols/<instance>.sol),
+     * make sure bound propagation did not tighten any variable's bounds past
+     * that solution's value: the updated bounds must not exclude the known
+     * optimal solution's values -- if they do, bound propagation is
+     * incorrectly cutting off the true optimum, a serious correctness bug
+     * (not just a performance one, since it can make CBC miss/misreport the
+     * optimal solution entirely on this and any other instance triggering
+     * the same faulty propagation rule). Only meaningful in instance-lookup
+     * mode (direct mode has no known instance name to look a reference
+     * solution up by).
+     */
+    if (!directMode && expectedStatus == "optimal") {
+      std::string solPath = dataDir + "/sols/" + instance + ".sol";
+      std::map<std::string, double> refSol = parseReferenceSol(solPath);
+      if (!refSol.empty()) {
+        const double *lb1 = Cbc_getColLower(m);
+        const double *ub1 = Cbc_getColUpper(m);
+        const double tol = 1e-6;
+        int nChecked = 0, nViolated = 0;
+        for (const auto &kv : refSol) {
+          int col = Cbc_getColNameIndex(m, kv.first.c_str());
+          if (col < 0)
+            continue;
+          ++nChecked;
+          double v = kv.second;
+          if (v < lb1[col] - tol || v > ub1[col] + tol) {
+            ++nViolated;
+            char buf[512];
+            snprintf(buf, sizeof(buf),
+              "MISMATCH: bound propagation excludes the reference optimal "
+              "solution -- column '%s' = %.10g falls outside its tightened "
+              "bounds [%.10g, %.10g] (sols/%s.sol). This is a solver bug.",
+              kv.first.c_str(), v, lb1[col], ub1[col], instance.c_str());
+            violations.push_back(buf);
+          }
+        }
+        printf("  reference solution     = sols/%s.sol (%d/%zu variables checked, %d violation(s))\n",
+          instance.c_str(), nChecked, refSol.size(), nViolated);
+      } else {
+        printf("  reference solution     = sols/%s.sol not found — skipping optimum-exclusion check\n",
+          instance.c_str());
+      }
+    }
+    printf("\n");
+
+    bool ok = violations.empty();
+    if (ok) {
+      printf("RESULT: OK\n");
+    } else {
+      printf("RESULT: FAILED\n\n");
+      printf("--- VIOLATIONS FOUND (%zu) -----------------------------------------\n", violations.size());
+      for (const auto &v : violations)
+        printf("%s\n", v.c_str());
+      printf("\n");
+    }
+
+    Cbc_deleteModel(m);
+    return ok ? 0 : 1;
+  }
+
   char threadsStr[32];
   snprintf(threadsStr, sizeof(threadsStr), "%d", threads);
   Cbc_setParameter(m, "threads", threadsStr);
   if (nodeLimit > 0)
     Cbc_setMaximumNodes(m, (int)nodeLimit);
   Cbc_setMaximumSeconds(m, timeLimit);
-  if (logLevelOverride >= 0)
-    Cbc_setLogLevel(m, logLevelOverride);
 
   Cbc_solve(m);
 

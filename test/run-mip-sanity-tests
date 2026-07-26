@@ -35,7 +35,23 @@
 #                          diff <(sort baseline.tsv) <(sort after-change.tsv)
 #   --update-data        Force `git submodule update` for mip-sanity-data before running
 #   --no-color           Disable ANSI colors
+#   --no-capi-tests      Skip the C API smoke tests (see below)
+#   --capi-jobs=N        Parallel jobs for the C API smoke tests (default: same as --jobs)
 #   -h, --help           Show this help
+#
+# In addition to the main `cbc`-executable suite above, this script also runs
+# a small, fast smoke-test pass over Cbc's C interface (Cbc_C_Interface.h),
+# via `mip-c-solve` (test/mip-c-solve.cpp), on a curated handful of instances
+# spanning different problem families. Each instance is exercised through
+# `mip-c-solve --stage=bound-propagation`, which calls Cbc_propagateBounds()
+# directly (no branch-and-bound) and checks its result is self-consistent
+# with bks.tsv (e.g. it must not claim infeasibility for an instance known to
+# have an optimal solution). This complements the main suite (which only
+# exercises the `cbc` command-line executable) by giving standalone C-API
+# entry points — like the ones added for individual solve-pipeline stages
+# (bound propagation, clique strengthening, ...) — their own regression
+# coverage, run in parallel just like the main suite. Pass --no-capi-tests to
+# skip this step (e.g. when only iterating on the `cbc` executable itself).
 #
 # Positional arguments (optional): one or more glob patterns to select a
 # subset of instances by name (e.g. `./run-mip-sanity-tests 'jssp_*' 'cvrp_*'`).
@@ -51,6 +67,8 @@ RESULTS_TSV=""
 CBC_BIN_OVERRIDE=""
 UPDATE_DATA=0
 FORCE_COLOR=1
+NO_CAPI_TESTS=0
+CAPI_JOBS=""
 PATTERNS=()
 
 for arg in "$@"; do
@@ -63,8 +81,10 @@ for arg in "$@"; do
     --results-tsv=*) RESULTS_TSV="${arg#*=}" ;;
     --update-data) UPDATE_DATA=1 ;;
     --no-color) FORCE_COLOR=0 ;;
+    --no-capi-tests) NO_CAPI_TESTS=1 ;;
+    --capi-jobs=*) CAPI_JOBS="${arg#*=}" ;;
     -h|--help)
-      sed -n '2,40p' "$0"
+      sed -n '2,41p' "$0"
       exit 0
       ;;
     -*)
@@ -502,7 +522,81 @@ if [[ ${#overtime_list[@]} -gt 0 ]]; then
   echo
 fi
 
-if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 ]]; then
+# ── 9. C API smoke tests (mip-c-solve --stage=bound-propagation) ───────────
+# A small, fast, separately-tracked pass exercising Cbc's C interface
+# (Cbc_C_Interface.h) directly, complementing the `cbc`-executable suite
+# above. See the header comment for rationale/details.
+capi_fail_list=()
+if [[ $NO_CAPI_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping C API smoke tests (--no-capi-tests).${RESET}"
+else
+  MIP_C_SOLVE="$SCRIPT_DIR/mip-c-solve"
+  if [[ ! -x "$MIP_C_SOLVE" ]]; then
+    echo "${CYAN}Building mip-c-solve...${RESET}"
+    make -C "$SCRIPT_DIR" mip-c-solve || {
+      echo "${RED}Error: failed to build mip-c-solve.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  # Curated handful of instances spanning different problem families (sizes,
+  # integer/binary mixes, and one confirmed-infeasible case) — kept small
+  # since this is meant to be a fast smoke test, not a full regression pass.
+  capi_instances=(10teams air03 arki001 bell3a blend2 cvrp_capacity_tight
+    markshare1 markshare2 noswot)
+  # Only keep ones actually present in this data-dir checkout.
+  capi_selected=()
+  for name in "${capi_instances[@]}"; do
+    [[ -f "$DATA_DIR/mips/$name.mps.gz" ]] && capi_selected+=("$name")
+  done
+
+  capi_jobs="${CAPI_JOBS:-$JOBS}"
+  echo
+  echo "${BOLD}=== C API smoke tests (${#capi_selected[@]} instance(s), jobs=$capi_jobs) ===${RESET}"
+
+  CAPI_RESULTS_DIR="$RESULTS_DIR/capi"
+  mkdir -p "$CAPI_RESULTS_DIR"
+
+  run_capi_one() {
+    local name="$1" data_dir="$2" results_dir="$3" mip_c_solve="$4"
+    local log="$results_dir/$name.capi.log"
+    if "$mip_c_solve" "$name" --stage=bound-propagation --log-level=0 \
+        --data-dir="$data_dir" >"$log" 2>&1; then
+      echo "  ${GREEN}✔ ${name}${RESET}"
+      echo PASS >"$results_dir/$name.capi.status"
+    else
+      echo "  ${RED}✗ ${name}${RESET}  ${DIM}(see $log)${RESET}"
+      echo FAIL >"$results_dir/$name.capi.status"
+    fi
+  }
+  export -f run_capi_one
+  export GREEN RED DIM RESET
+
+  printf '%s\n' "${capi_selected[@]}" | parallel --will-cite -j "$capi_jobs" --line-buffer \
+    run_capi_one {} "$DATA_DIR" "$CAPI_RESULTS_DIR" "$MIP_C_SOLVE"
+
+  for name in "${capi_selected[@]}"; do
+    status_file="$CAPI_RESULTS_DIR/$name.capi.status"
+    if [[ ! -f "$status_file" ]] || [[ "$(<"$status_file")" != "PASS" ]]; then
+      capi_fail_list+=("$name")
+    fi
+  done
+
+  echo
+  echo "${BOLD}$(row "C API tests passed" "$((${#capi_selected[@]} - ${#capi_fail_list[@]})) / ${#capi_selected[@]}")${RESET}"
+  echo
+
+  if [[ ${#capi_fail_list[@]} -gt 0 ]]; then
+    echo "${BOLD}${RED}=== C API smoke test failures ===${RESET}"
+    for name in "${capi_fail_list[@]}"; do
+      echo "${BOLD}${RED}─── $name (mip-c-solve --stage=bound-propagation) ────${RESET}"
+      cat "$CAPI_RESULTS_DIR/$name.capi.log" 2>/dev/null
+      echo
+    done
+  fi
+fi
+
+if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 || ${#capi_fail_list[@]} -gt 0 ]]; then
   exit 1
 fi
 exit 0

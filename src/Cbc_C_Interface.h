@@ -1337,7 +1337,23 @@ Cbc_strengthenPacking(Cbc_Model *model);
 CBCLIB_EXPORT void CBC_LINKAGE
 Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[]);
 
-
+/** @brief Runs MILP-based bound propagation on the model, in place.
+ *
+ * Tightens variable bounds using the constraint structure (the same
+ * bound-tightening routine used internally by the `cbc` command line's
+ * `-doBoundPropagation` action and, before every root LP solve, by
+ * `-preRootLPStrenghtening`), at the default "milpbt" aggression level
+ * (singleton-row tightening followed by MILP bound propagation, iterated
+ * up to the default round limit). Operates directly on the model's own
+ * solver -- not a copy -- so bounds tightened here persist for later
+ * calls (Cbc_solveLinearProgram(), Cbc_solve(), ...).
+ *
+ * @param model problem object
+ * @return 0 = bounds tightened (or nothing to tighten) successfully,
+ *         1 = infeasibility was proved while propagating bounds
+ **/
+CBCLIB_EXPORT int CBC_LINKAGE
+Cbc_propagateBounds(Cbc_Model *model);
 
 /*@}*/
 

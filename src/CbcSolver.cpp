@@ -322,21 +322,27 @@ static void checkValidityOfUpdatedBoundsWithMIPStart(std::map< std::string, doub
  * \param handler      Message handler used to announce updates and warnings.
  * \param model        CBC model leveraged for logging helper messages.
  * \param mipStartMap  Map of variable names to MIP-start values; entries are erased if invalidated.
+ * \param applyBounds  When false, skips applying any bound changes (and the MIP-start check),
+ *                      always returning 0 -- see the caller's doc comment (mode == "after") for
+ *                      why this is skipped there: measured empirically (across the full
+ *                      mip-sanity-data suite) to never find anything once CglPreProcess has
+ *                      already run its own presolve on the model.
  * \return Number of columns whose bounds were modified.
  */
 static int applyConflictGraphBoundUpdates(const CoinStaticConflictGraph *cgraph,
   OsiSolverInterface *solver,
   CoinMessageHandler *handler,
   CbcModel &model,
-  std::map< std::string, double > &mipStartMap)
+  std::map< std::string, double > &mipStartMap,
+  bool applyBounds)
 {
+  int nBoundsChanged = 0;
+  if (!applyBounds || !cgraph || !cgraph->updatedBounds().size())
+    return nBoundsChanged;
+
   handler->setMessageLimit(COIN_CGRAPH_FIX_VAR_DIFFER_MIPSTART, 10);
   double primalTolerance = 1e-8;
   solver->getDblParam(OsiPrimalTolerance, primalTolerance);
-
-  int nBoundsChanged = 0;
-  if (!cgraph || !cgraph->updatedBounds().size())
-    return nBoundsChanged;
 
   const double *colsLower = solver->getColLower();
   const double *colsUpper = solver->getColUpper();
@@ -382,6 +388,21 @@ static int applyConflictGraphBoundUpdates(const CoinStaticConflictGraph *cgraph,
  * from an existing MIP start, and then runs clique strengthening to extend or
  * dominate constraints. Depending on \p mode, the solver is re-solved either before
  * or after the strengthening pass to propagate the tightened model state.
+ *
+ * The conflict-graph-derived bound tightening (applyConflictGraphBoundUpdates()) is
+ * only actually applied when \p mode == "before" -- i.e. on the original (not yet
+ * MIP-preprocessed) model, right after CbcSolver::strengthenBounds() (the general
+ * CbcBoundPropagation engine, which this conflict-graph-embedded fixing logic was
+ * originally extracted from) has already run. Measured empirically across the full
+ * mip-sanity-data suite (471 instances): on that original model it is nearly but not
+ * fully redundant with strengthenBounds() (2/470 instances still found a handful of
+ * extra fixings there, both dense set-partitioning problems), but on the
+ * MIP-preprocessed model (mode == "after", following CglPreProcess) it never found
+ * anything (0/469) -- and neither does re-running the full strengthenBounds() engine
+ * there (CglPreProcess's own presolve already subsumes it). So bound tightening is
+ * skipped entirely in "after" mode; infeasible-implication detection/reporting
+ * (below) still runs in both modes, since it is independent diagnostic value, not
+ * bound-tightening.
  *
  * \param solver           Active solver instance that owns the conflict graph.
  * \param handler          Message handler used for logging diagnostics.
@@ -433,7 +454,8 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
     solver,
     handler,
     model,
-    mipStartMap);
+    mipStartMap,
+    mode == "before");
 
 #ifdef CGRAPH_DEEP_DIVE
   if (mipStart.size() > 0) {

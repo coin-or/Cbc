@@ -597,7 +597,7 @@ private:
     double obj;
     std::string method;
     long nodes;
-    double wallclock;   ///< CoinWallclockTime() at time of queuing
+    double wallclock;   ///< solve-scoped elapsed time (model->getCurrentSeconds()) at time of queuing
   };
   std::vector<PendingHeurRow> preProgressIncumbents_;
 

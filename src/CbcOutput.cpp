@@ -202,8 +202,12 @@ void CbcPreprocHandler::printTableRow(int pass, int fixed, int tightened,
 {
   if (!fp_) return;
   const char *bar = tableBar(utf8_, compact_);
-// Preprocessing time column: absolute wall-clock since program start.
-  const std::string timeStr = fmtTime(CoinWallclockTime());
+  // Preprocessing time column: elapsed time since this preprocessing phase
+  // started (phaseStartTime_, captured in the constructor), consistent with
+  // the phase-end summary line below (printPhaseEnd() uses the same diff).
+  // Must NOT use a raw CoinWallclockTime() value here -- that's an absolute
+  // wall-clock reading, not an elapsed duration.
+  const std::string timeStr = fmtTime(CoinWallclockTime() - phaseStartTime_);
   fprintf(fp_, "  %*d%s%*d%s%*d%s%*d%s%*d%s%*s\n",
     PP_W_PASS,  pass,         bar,
     PP_W_FIXED, fixed,        bar,
@@ -574,10 +578,9 @@ void CbcRootLpEventHandler::printFinalStatus(int numInts, int numFrac) const
 
   // Always show the last iteration if frequency limiting skipped it.
   if (shared_->lastPrintIter < iters) {
-    double now = CoinWallclockTime();
     printRow(iters, model_->objectiveValue(),
       model_->sumPrimalInfeasibilities(),
-      model_->sumDualInfeasibilities(), now);
+      model_->sumDualInfeasibilities(), elapsed);
   }
 
   printTableClose(fp, tbl);
@@ -638,11 +641,14 @@ int CbcRootLpEventHandler::event(Event whichEvent)
   if (!shared_->headerPrinted) {
     printHeader();
     shared_->headerPrinted = true;
-    // Print iteration 0 row (absolute wall-clock time)
+    // Print iteration 0 row. The "now"/"lastPrintTime" bookkeeping below
+    // uses raw CoinWallclockTime() readings purely as diffs (safe), but the
+    // printed "Time(s)" column must be elapsed time since this root LP
+    // relaxation started (shared_->startTime), not a raw wall-clock reading.
     double now = CoinWallclockTime();
     printRow(0, model_->objectiveValue(),
       model_->sumPrimalInfeasibilities(),
-      model_->sumDualInfeasibilities(), now);
+      model_->sumDualInfeasibilities(), now - shared_->startTime);
     shared_->lastPrintTime = now;
     shared_->lastPrintIter = 0;
     return -1;
@@ -680,7 +686,7 @@ int CbcRootLpEventHandler::event(Event whichEvent)
   if (doIter || doTime || doForce) {
     printRow(iter, model_->objectiveValue(),
       model_->sumPrimalInfeasibilities(),
-      model_->sumDualInfeasibilities(), now);
+      model_->sumDualInfeasibilities(), now - shared_->startTime);
     shared_->lastPrintTime = now;
     shared_->lastPrintIter = iter;
   }
@@ -1791,13 +1797,21 @@ void CbcFPumpOutput::onPass(int round, int pass, int numFrac, double suminf,
   lastNumFrac_val_ = numFrac;
   lastSuminf_val_  = suminf;
 
-  double elapsed = CoinWallclockTime();
+  // `now` is a raw wall-clock reading, used only for the shouldPrint()
+  // interval-gating diff and lastPrintTime_ bookkeeping (both raw-vs-raw
+  // diffs, safe). The value actually printed in the "Time(s)" column must
+  // instead be phase-scoped (elapsed since this FP phase's own onStart()),
+  // i.e. `now - startTime_`, so it lines up with the phase summary printed
+  // by onEnd() ("best X in Ys"), which computes its duration the same way.
+  // Printing the raw reading here previously made the last table row's
+  // time disagree with the phase-end summary immediately below it.
+  double now = CoinWallclockTime();
   bool hasPendingSol = pendingSolution_;
 
   if (!headerPrinted_)
     printTableHeader(numFrac, suminf);
 
-  if (!hasPendingSol && !shouldPrint(pass, elapsed)) {
+  if (!hasPendingSol && !shouldPrint(pass, now)) {
     lastPrinted_ = false;
     return;
   }
@@ -1835,9 +1849,9 @@ void CbcFPumpOutput::onPass(int round, int pass, int numFrac, double suminf,
   }
 
   double bestSolToShow = hasPendingSol ? pendingObj_ : 1e30;
-  printRow(hasPendingSol, round, pass, fracBuf, sumBuf, status, bestSolToShow, elapsed);
+  printRow(hasPendingSol, round, pass, fracBuf, sumBuf, status, bestSolToShow, now - startTime_);
 
-  lastPrintTime_ = elapsed;
+  lastPrintTime_ = now;
   lastPrintPass_ = pass;
   lastPrinted_   = true;
   printedRows_++;
@@ -1859,7 +1873,7 @@ void CbcFPumpOutput::onNoSolutionInRetry()
   if (!isActive()) return;
   if (!headerPrinted_ || lastPass_ == 0) return;
   if (!lastPrinted_) {
-    double elapsed = CoinWallclockTime();
+    double elapsed = CoinWallclockTime() - startTime_;
     char fracBuf[24], sumBuf[24];
     std::snprintf(fracBuf, sizeof(fracBuf), "%d",   lastNumFrac_val_);
     std::snprintf(sumBuf,  sizeof(sumBuf),  "%.4f", lastSuminf_val_);
@@ -1884,7 +1898,7 @@ void CbcFPumpOutput::onEnd(double bestSol, double /*elapsed_cpu*/, int rounds, i
   if (!isActive()) return;
   // Always show the last pass if it wasn't printed (frequency limiting may have skipped it).
   if (headerPrinted_ && !lastPrinted_ && lastPass_ > 0) {
-    double elapsed = CoinWallclockTime();
+    double elapsed = CoinWallclockTime() - startTime_;
     char fracBuf[24], sumBuf[24];
     std::snprintf(fracBuf, sizeof(fracBuf), "%d",    lastNumFrac_val_);
     std::snprintf(sumBuf,  sizeof(sumBuf),  "%.4f",  lastSuminf_val_);
@@ -2344,7 +2358,7 @@ void CbcBnBOutput::printRow(bool isIncumbent, long nodes, int onTree, int depth,
 }
 
 void CbcBnBOutput::onProgress(long nodes, int onTree, int depth, double bestSol,
-  double bestBound, double /*elapsed*/)
+  double bestBound, double elapsed)
 {
   lastOnTree_    = onTree;
   lastDepth_     = depth;
@@ -2354,28 +2368,37 @@ void CbcBnBOutput::onProgress(long nodes, int onTree, int depth, double bestSol,
   for (auto &pi : preProgressIncumbents_)
     printRow(true, pi.nodes, onTree, depth, pi.obj, pi.method.c_str(), bestBound, pi.wallclock);
   preProgressIncumbents_.clear();
-  printRow(false, nodes, onTree, depth, bestSol, nullptr, bestBound, CoinWallclockTime());
+  // Use the elapsed time parsed from CbcModel's own message (ultimately
+  // sourced from model->getCurrentSeconds(), i.e. elapsed-mode-aware and
+  // scoped to this solve's own start time) rather than an independent raw
+  // CoinWallclockTime() reading -- the two are NOT guaranteed to agree
+  // (e.g. CPU-time mode, or a reused CbcModel/CbcSolver solving a second,
+  // unrelated model in the same process), and disagreeing here is exactly
+  // what produces a progress table whose "Time" column doesn't match the
+  // phase-end/final summary time.
+  printRow(false, nodes, onTree, depth, bestSol, nullptr, bestBound, elapsed);
 }
 
 void CbcBnBOutput::queuePreProgressIncumbent(double obj, const char *method,
-  long nodes, double /*elapsed*/)
+  long nodes, double elapsed)
 {
-  // Record wall-clock time now (when the event is intercepted) so the time
-  // shown in the table reflects when the incumbent was actually found.
-  preProgressIncumbents_.push_back({ obj, method ? method : "", nodes, CoinWallclockTime() });
+  // Record the solve-scoped elapsed time (see onProgress() above) so the
+  // time shown in the table reflects model->getCurrentSeconds() consistently
+  // with every other row, not an independent raw wall-clock reading.
+  preProgressIncumbents_.push_back({ obj, method ? method : "", nodes, elapsed });
 }
 
 void CbcBnBOutput::onBnBIncumbent(double obj, long nodes, int depth,
-				  int ontree, double /*elapsed*/)
+				  int ontree, double elapsed)
 {
-  printRow(true, nodes, ontree, depth, obj, "B&B", lastBestBound_, CoinWallclockTime());
+  printRow(true, nodes, ontree, depth, obj, "B&B", lastBestBound_, elapsed);
 }
 
 void CbcBnBOutput::onHeurIncumbent(double obj, const char *method,
 				   int ontree, int depth,
-  long nodes, double /*elapsed*/)
+  long nodes, double elapsed)
 {
-  printRow(true, nodes, ontree, depth, obj, method, lastBestBound_, CoinWallclockTime());
+  printRow(true, nodes, ontree, depth, obj, method, lastBestBound_, elapsed);
 }
 
 void CbcBnBOutput::onStopReason(const char *reason)
@@ -2415,7 +2438,7 @@ void CbcBnBOutput::closeTable()
 }
 
 void CbcBnBOutput::onComplete(bool optimal, double bestSol, double bestBound,
-  long iters, long nodes, double /*elapsed*/)
+  long iters, long nodes, double elapsed)
 {
   // Flush pre-B&B incumbents (e.g. Proximity Search) if the time limit fired
   // before the first onProgress() call — they would otherwise be silently dropped.
@@ -2427,7 +2450,18 @@ void CbcBnBOutput::onComplete(bool optimal, double bestSol, double bestBound,
   closeTable();
   inPhase_ = false;
 
-  const double now = CoinWallclockTime();
+  // Use the elapsed time parsed from CbcModel's own "Search completed"/
+  // "Partial search" message (sourced from model->getCurrentSeconds(), the
+  // solve-scoped, elapsed-mode-aware clock used for every actual time-limit
+  // check) rather than an independent raw CoinWallclockTime() reading. The
+  // latter previously caused this final summary line's "Time:" to disagree
+  // -- sometimes by a large margin -- with both the progress table above it
+  // and with the "Total time" reported at program exit (most visibly across
+  // long-running feasibility-pump phases, and always when a CbcModel or
+  // CbcSolver instance is reused to solve more than one model in the same
+  // process, since a raw CoinWallclockTime() reading has no notion of "since
+  // this solve started").
+  const double now = elapsed;
 
   // Build summary line for ✔
   std::string reasonPart = stopReason_.empty() ? "" : " (" + stopReason_ + ")";

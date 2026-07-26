@@ -223,6 +223,15 @@ public:
     /** \brief Maximum time without improving the best solution found, checked only if a
      * feasible solution is already available */
     CbcMaxSecondsNotImproving,
+    /** \brief Maximum amount of memory (resident set size), in bytes, this
+     *  process may use before terminating the search during branch and
+     *  bound. Only checked during branch and bound (not, e.g., during
+     *  preprocessing). A double is used since byte counts routinely exceed
+     *  INT_MAX; it can exactly represent integers up to 2^53, far more than
+     *  enough for any realistic memory size. Defaults to the total physical
+     *  memory installed on the machine, if it can be determined -- i.e.
+     *  "all the memory" -- otherwise defaults to "not checked". */
+    CbcMaxMemory,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastDblParam
   };
@@ -748,6 +757,29 @@ public:
   /// Current time since start of branchAndbound
   double getCurrentSeconds() const;
 
+  /** Set the
+        \link CbcModel::CbcMaxMemory maximum amount of memory \endlink
+        (resident set size, in bytes) this process may use before the
+        search is terminated during branch and bound. Accepts any
+        non-negative value; use a very large value (or leave at the
+        default) to effectively disable the check.
+    */
+  inline bool setMaximumMemory(double value)
+  {
+    return setDblParam(CbcMaxMemory, value);
+  }
+  /** Get the
+        \link CbcModel::CbcMaxMemory maximum amount of memory \endlink
+        (resident set size, in bytes) this process may use before the
+        search is terminated during branch and bound.
+    */
+  inline double getMaximumMemory() const
+  {
+    return getDblParam(CbcMaxMemory);
+  }
+  /// Return true if the memory limit has been reached during branch and bound
+  bool isMemoryLimitReached() const;
+
   /// Return true if maximum time reached
   bool maximumSecondsReached() const;
 
@@ -1176,6 +1208,7 @@ public:
         6 stopped on solutions
         7 linear relaxation unbounded
         8 stopped on iteration limit
+        9 stopped on memory limit
     */
   inline int secondaryStatus() const
   {

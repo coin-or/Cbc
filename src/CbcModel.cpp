@@ -116,6 +116,7 @@ extern int gomory_try;
 
 #include "CoinMpsIO.hpp"
 #include "CoinTime.hpp"
+#include "CoinMemUsage.hpp"
 
 #include "CbcCompareActual.hpp"
 #include "CbcCompareObjective.hpp"
@@ -5935,6 +5936,10 @@ void CbcModel::branchAndBound(int doStatistics)
       handler_->message(CBC_MAXTIME, messages_) << CoinMessageEol;
       secondaryStatus_ = 4;
       status_ = 1;
+    } else if (isMemoryLimitReached()) {
+      handler_->message(CBC_MAXMEMORY, messages_) << CoinMessageEol;
+      secondaryStatus_ = 9;
+      status_ = 1;
     } else if (numberSolutions_ >= intParam_[CbcMaxNumSol]) {
       handler_->message(CBC_MAXSOLS, messages_) << CoinMessageEol;
       secondaryStatus_ = 6;
@@ -6589,6 +6594,21 @@ CoinWarmStartBasis *CbcModel::getEmptyBasis(int ns, int na) const
   return (emptyBasis);
 }
 
+/** Default value for the maximum-memory stopping criterion (dblParam_
+    [CbcMaxMemory]): the total physical memory installed on the machine,
+    in bytes -- i.e. "all the memory", as requested -- if it can be
+    determined; otherwise a very large sentinel meaning "not checked",
+    following the same convention used for CbcMaximumSeconds/
+    CbcMaxSecondsNotImproving above (1.0e100).
+*/
+static double cbcDefaultMaxMemoryBytes()
+{
+  size_t totalPhysical = CoinGetTotalPhysicalMemory();
+  if (totalPhysical > 0)
+    return static_cast< double >(totalPhysical);
+  return 1.0e100;
+}
+
 /** Default Constructor
 
   Creates an empty model without an associated solver.
@@ -6752,6 +6772,7 @@ CbcModel::CbcModel()
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcMaxSecondsNotImproving] = 1.0e100;
+  dblParam_[CbcMaxMemory] = cbcDefaultMaxMemoryBytes();
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcOptimizationDirection] = 1.0;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
@@ -6944,6 +6965,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcMaxSecondsNotImproving] = 1.0e100;
+  dblParam_[CbcMaxMemory] = cbcDefaultMaxMemoryBytes();
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcOptimizationDirection] = 1.0;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
@@ -8314,6 +8336,35 @@ bool CbcModel::isNodeLimitReached() const
     return false;
   else
     return numberNodes_+numberExtraNodes_ >= intParam_[CbcMaxNumNode];
+}
+// Memory limit reached? (only meaningful during branch and bound)
+bool CbcModel::isMemoryLimitReached() const
+{
+  double maxMemory = dblParam_[CbcMaxMemory];
+  // Sentinel value (see cbcDefaultMaxMemoryBytes()) meaning "not checked".
+  if (maxMemory > 0.99e100)
+    return false;
+  size_t currentUsage = CoinGetCurrentMemUsage();
+  // 0 means the current usage could not be determined on this platform;
+  // in that case we can't meaningfully compare against the limit.
+  if (currentUsage == 0)
+    return false;
+  bool hitMaxMemory = (static_cast< double >(currentUsage) >= maxMemory);
+  if (parentModel_ && !hitMaxMemory) {
+    // In a sub tree
+    double parentMaxMemory = parentModel_->dblParam_[CbcMaxMemory];
+    if (parentMaxMemory <= 0.99e100)
+      hitMaxMemory = (static_cast< double >(currentUsage) >= parentMaxMemory);
+  }
+  if (hitMaxMemory) {
+    // Set eventHappened_ so will by-pass as much stuff as possible
+    eventHappened_ = true;
+    if (parentModel_) {
+      // need to set stuff
+      parentModel_->sayEventHappened();
+    }
+  }
+  return hitMaxMemory;
 }
 // Time limit reached?
 bool CbcModel::isSecondsLimitReached() const
@@ -20543,7 +20594,7 @@ void CbcModel::setOptionalInteger(int index)
 
 bool CbcModel::stoppingCriterionReached() const
 {
-  return (isNodeLimitReached() || numberSolutions_ >= intParam_[CbcMaxNumSol] || stoppedOnGap_ || eventHappened_ || maximumSecondsReached() || (numberSolutions_ && (intParam_[CbcMaxNodesNotImproving] != COIN_INT_MAX && (numberNodes_ - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImproving]))) || (!(maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_)));
+  return (isNodeLimitReached() || numberSolutions_ >= intParam_[CbcMaxNumSol] || stoppedOnGap_ || eventHappened_ || maximumSecondsReached() || isMemoryLimitReached() || (numberSolutions_ && (intParam_[CbcMaxNodesNotImproving] != COIN_INT_MAX && (numberNodes_ - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImproving]))) || (!(maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_)));
 }
 
 // Return true if maximum time reached

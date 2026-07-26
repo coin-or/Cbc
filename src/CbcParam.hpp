@@ -120,6 +120,7 @@ public:
 
       // String Parameters
       FIRSTSTRINGPARAM,
+      MAXMEMORY,
       PRINTMASK,
       OUTPUTPRECISION,
       LASTSTRINGPARAM,

@@ -5525,7 +5525,8 @@ int CbcSolver::postprocess(
       "user ctrl-c",
       "solution limit",
       "Linear relaxation unbounded",
-      "Problem proven infeasible"
+      "Problem proven infeasible",
+      "memory limit"
     };
     int iStat = babModel_->status();
     int iStat2 = babModel_->secondaryStatus();
@@ -13524,6 +13525,16 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
           break;
         case CbcParam::OUTPUTPRECISION:
+          if ((status = cbcParam->readValue(inputQueue, field, &message))) {
+            printGeneralMessage(model_, message);
+            continue;
+          }
+          if (cbcParam->setVal(field, &message)) {
+            printGeneralMessage(model_, message);
+            continue;
+          }
+          break;
+        case CbcParam::MAXMEMORY:
           if ((status = cbcParam->readValue(inputQueue, field, &message))) {
             printGeneralMessage(model_, message);
             continue;

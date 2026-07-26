@@ -13,6 +13,8 @@
 #endif
 
 #include <cassert>
+#include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <sstream>
@@ -33,6 +35,7 @@
 #include "CoinParam.hpp"
 #include "CoinFileIO.hpp"
 #include "CoinFinite.hpp"
+#include "CoinMemUsage.hpp"
 
 #include "ClpConfig.h"
 
@@ -1432,6 +1435,104 @@ int pushCbcModelIntParam(CoinParam &param)
   }
 
   return (retval);
+}
+
+//###########################################################################
+//###########################################################################
+
+/*
+  Parse a memory size specification: an optional leading number (integer or
+  decimal), followed by an optional unit suffix, or one of the special
+  keywords meaning "no limit". See the declaration in CbcParamUtils.hpp for
+  full details.
+*/
+bool parseMemorySize(const std::string &value, double &bytesOut)
+{
+  // Trim surrounding whitespace.
+  size_t begin = value.find_first_not_of(" \t");
+  if (begin == std::string::npos)
+    return false;
+  size_t end = value.find_last_not_of(" \t");
+  std::string str = value.substr(begin, end - begin + 1);
+
+  // Lower-case copy, used only for keyword/suffix matching.
+  std::string lower = str;
+  for (size_t i = 0; i < lower.size(); i++)
+    lower[i] = static_cast<char>(tolower(static_cast<unsigned char>(lower[i])));
+
+  if (lower == "unlimited" || lower == "off" || lower == "none") {
+    bytesOut = 1.0e100;
+    return true;
+  }
+  if (lower == "all") {
+    size_t totalPhysical = CoinGetTotalPhysicalMemory();
+    bytesOut = (totalPhysical > 0) ? static_cast<double>(totalPhysical) : 1.0e100;
+    return true;
+  }
+
+  // Split into the leading numeric part and a trailing unit suffix (if any).
+  size_t numEnd = 0;
+  while (numEnd < lower.size() &&
+         (isdigit(static_cast<unsigned char>(lower[numEnd])) ||
+          lower[numEnd] == '.' || lower[numEnd] == '+' || lower[numEnd] == '-' ||
+          lower[numEnd] == 'e'))
+    numEnd++;
+  if (numEnd == 0)
+    return false;
+
+  std::string numPart = lower.substr(0, numEnd);
+  std::string suffix = lower.substr(numEnd);
+
+  char *endPtr = NULL;
+  double number = strtod(numPart.c_str(), &endPtr);
+  if (endPtr == NULL || *endPtr != '\0' || number < 0.0)
+    return false;
+
+  double multiplier;
+  if (suffix.empty() || suffix == "b") {
+    multiplier = 1.0;
+  } else if (suffix == "k" || suffix == "kb") {
+    multiplier = 1024.0;
+  } else if (suffix == "m" || suffix == "mb") {
+    multiplier = 1024.0 * 1024.0;
+  } else if (suffix == "g" || suffix == "gb") {
+    multiplier = 1024.0 * 1024.0 * 1024.0;
+  } else if (suffix == "t" || suffix == "tb") {
+    multiplier = 1024.0 * 1024.0 * 1024.0 * 1024.0;
+  } else {
+    return false;
+  }
+
+  bytesOut = number * multiplier;
+  return true;
+}
+
+/*
+  Function to push the memory-limit parameter. Parses the string value
+  (which may carry a unit suffix, e.g. "10gb") and, on success, sets the
+  model's maximum-memory stopping criterion.
+*/
+int pushCbcModelMaxMemoryParam(CoinParam &param)
+{
+  CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
+  CbcModel *model = cbcParam.model();
+  std::string str = cbcParam.strVal();
+
+  if (!model)
+    return 0;
+  if (str.empty())
+    return 0;
+
+  double bytes;
+  if (!parseMemorySize(str, bytes)) {
+    std::cerr << "Invalid value for maxMemory: `" << str << "'. Expected a "
+              << "number optionally followed by a unit (b, k/kb, m/mb, "
+              << "g/gb, t/tb), or 'unlimited'/'off'/'none'." << std::endl;
+    return -1;
+  }
+
+  model->setMaximumMemory(bytes);
+  return 0;
 }
 
 //###########################################################################

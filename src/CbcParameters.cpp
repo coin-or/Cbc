@@ -9,6 +9,7 @@
 #include "CoinPragma.hpp"
 
 #include <cassert>
+#include <iostream>
 
 #include "CbcParameters.hpp"
 #include "CbcParamUtils.hpp"
@@ -718,6 +719,7 @@ void CbcParameters::addCbcParams() {
                     CbcParam::MAXNODESNOTIMPROVING,
                     CbcParam::MAXSECONDSNOTIMPROVING})
     parameters_[code]->setTopic("Stopping");
+  parameters_[CbcParam::MAXMEMORY]->setTopic("Stopping");
 
   // Model params — Tolerances
   for (int code : {CbcParam::INTEGERTOLERANCE, CbcParam::INCREMENT,
@@ -765,6 +767,7 @@ void CbcParameters::setDefaults(int strategy) {
   parameters_[CbcParam::MODELFILE]->setDefault(std::string("prob.mod"));
   parameters_[CbcParam::NEXTSOLFILE]->setDefault(std::string("next.sol"));
   parameters_[CbcParam::PRINTMASK]->setDefault("");
+  parameters_[CbcParam::MAXMEMORY]->setDefault("");
   parameters_[CbcParam::OUTPUTPRECISION]->setDefault("%15.15g");
   parameters_[CbcParam::PRIORITYFILE]->setDefault(std::string("priorities.txt"));
   parameters_[CbcParam::SOLUTIONFILE]->setDefault(std::string("opt.sol"));
@@ -1061,6 +1064,29 @@ void CbcParameters::synchronizeModel() {
 #endif
     if (fabs(doubleValue)<1.0e40)
       model_->setCutoff(doubleValue);
+
+    // specific case for maxMemory: a string (may carry a unit suffix, e.g.
+    // "10gb") that needs parsing before it can be applied to the model; an
+    // empty value means "leave the model's own default (all installed
+    // physical memory, if it could be determined) alone".
+    std::string maxMemoryStr;
+    parameters_[CbcParam::MAXMEMORY]->getVal(maxMemoryStr);
+    if (!maxMemoryStr.empty()) {
+      double maxMemoryBytes;
+      if (CbcParamUtils::parseMemorySize(maxMemoryStr, maxMemoryBytes)) {
+#ifdef PRINT_CBC_CHANGES
+        double modelMaxMemory = model_->getMaximumMemory();
+        if (maxMemoryBytes!=modelMaxMemory)
+          printf("changing MAXMEMORY from %g to %g at line %d\n",modelMaxMemory,maxMemoryBytes,__LINE__+1);
+#endif
+        model_->setMaximumMemory(maxMemoryBytes);
+      } else {
+        std::cerr << "Invalid value for maxMemory: `" << maxMemoryStr
+                   << "'. Expected a number optionally followed by a unit "
+                   << "(b, k/kb, m/mb, g/gb, t/tb), or 'unlimited'/'off'/"
+                   << "'none'/'all'. Ignoring." << std::endl;
+      }
+    }
 
     if (clpParameters_.getModel())
       clpParameters_.synchronizeModel();
@@ -1585,6 +1611,22 @@ void CbcParameters::addCbcSolverStrParams() {
       "characters.  The default is '' (unset) so all variables are printed. "
       "This is only active if model has names.");
   parameters_[CbcParam::PRINTMASK]->setPushFunc(CbcParamUtils::doPrintMaskParam);
+
+  parameters_[CbcParam::MAXMEMORY]->setup(
+      "maxMem!ory", "Maximum amount of memory to use during branch and bound",
+      "This limits the resident memory this process may use once branch and "
+      "bound has started; the search is stopped (much like hitting the node "
+      "or time limit) if it is exceeded. It is not checked outside of branch "
+      "and bound (e.g. during preprocessing or the initial LP solve). "
+      "Accepts a plain number of bytes, or a number followed by a unit "
+      "suffix: b (bytes, the default), k or kb (KiB), m or mb (MiB), g or "
+      "gb (GiB), t or tb (TiB) -- e.g. '10gb' or '500m'. The keywords "
+      "'unlimited', 'off' and 'none' disable the check, and 'all' explicitly "
+      "requests the default of using all installed physical memory as the "
+      "limit. By default, the limit is the total physical memory installed "
+      "on the machine (i.e. 'all the memory'), if it can be determined; "
+      "otherwise the check is disabled by default.");
+  parameters_[CbcParam::MAXMEMORY]->setPushFunc(CbcParamUtils::pushCbcModelMaxMemoryParam);
 
   parameters_[CbcParam::OUTPUTPRECISION]->setup(
       "precision!Output", "Handle format precision with string print mask",

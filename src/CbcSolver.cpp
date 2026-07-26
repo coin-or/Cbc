@@ -4193,8 +4193,20 @@ int CbcSolver::preprocess(
         /* Infeasible - but most real problems are not
            infeasible - so try simpler preprocessing which
            is less affected by tolerance issues */
-        // Case B: LP relaxation infeasible — double check with resolve()
-        solver2->resolve();
+        // Case B: LP relaxation infeasible — double check with resolve().
+        // Cap it to the remaining overall-search time budget: an unbounded
+        // resolve() here (e.g. a degenerate/stalling warm start left behind
+        // by a preprocessing pass that itself hit the time limit) can by
+        // itself blow through the whole time limit unnoticed.
+        {
+          OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
+          double remaining = babModel_->getMaximumSeconds() - babModel_->getCurrentSeconds();
+          if (clpSolver2 && remaining < 1.0e8)
+            clpSolver2->getModelPtr()->setMaximumWallSeconds(std::max(remaining, 0.0));
+          solver2->resolve();
+          if (clpSolver2 && remaining < 1.0e8)
+            clpSolver2->getModelPtr()->setMaximumWallSeconds(1.0e100);
+        }
         if (!solver2->isProvenOptimal()) {
           process.clean();
           solver2 = process.preProcessNonDefault(*saveSolver_,

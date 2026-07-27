@@ -34,6 +34,22 @@
 #                        and compare it against a later run, e.g.:
 #                          diff <(sort baseline.tsv) <(sort after-change.tsv)
 #   --update-data        Force `git submodule update` for mip-sanity-data before running
+#   --cut-stats          Also collect Cbc's built-in `-csvStatistics`/-writeStatistics
+#                        output for every instance (one CSV per instance, under
+#                        <results-dir>/cutstats/<name>.stats.csv) and print an
+#                        end-of-run summary: total cuts and total time spent per
+#                        cut generator, aggregated across the whole suite (only
+#                        generators that actually produced at least one cut are
+#                        shown). Useful for spotting suite-wide regressions in a
+#                        specific cut generator (much fewer cuts, or much slower)
+#                        after a code change, e.g. when comparing a build with a
+#                        cut generator's "fast path" on vs. off. Off by default
+#                        since it adds a small amount of overhead per instance.
+#   --cut-stats-tsv=PATH Where to save the per-generator aggregate summary
+#                        (tab-separated: generator, total_cuts, total_time_s)
+#                        for later comparison across runs (default:
+#                        <results-dir>/cut-stats.tsv). Only written when
+#                        --cut-stats is passed.
 #   --no-color           Disable ANSI colors
 #   --no-capi-tests      Skip the C API smoke tests (see below)
 #   --capi-jobs=N        Parallel jobs for the C API smoke tests (default: same as --jobs)
@@ -69,6 +85,8 @@ UPDATE_DATA=0
 FORCE_COLOR=1
 NO_CAPI_TESTS=0
 CAPI_JOBS=""
+CUT_STATS=0
+CUT_STATS_TSV=""
 PATTERNS=()
 
 for arg in "$@"; do
@@ -80,11 +98,13 @@ for arg in "$@"; do
     --results-dir=*) RESULTS_DIR="${arg#*=}" ;;
     --results-tsv=*) RESULTS_TSV="${arg#*=}" ;;
     --update-data) UPDATE_DATA=1 ;;
+    --cut-stats) CUT_STATS=1 ;;
+    --cut-stats-tsv=*) CUT_STATS_TSV="${arg#*=}" ;;
     --no-color) FORCE_COLOR=0 ;;
     --no-capi-tests) NO_CAPI_TESTS=1 ;;
     --capi-jobs=*) CAPI_JOBS="${arg#*=}" ;;
     -h|--help)
-      sed -n '2,41p' "$0"
+      sed -n '2,73p' "$0"
       exit 0
       ;;
     -*)
@@ -166,6 +186,11 @@ echo "${DIM}Using validator: $VALIDATOR${RESET}"
 # ── 4. Build the instance list ──────────────────────────────────────────────
 mkdir -p "$RESULTS_DIR"
 [[ -z "$RESULTS_TSV" ]] && RESULTS_TSV="$RESULTS_DIR/results.tsv"
+[[ -z "$CUT_STATS_TSV" ]] && CUT_STATS_TSV="$RESULTS_DIR/cut-stats.tsv"
+CUT_STATS_DIR="$RESULTS_DIR/cutstats"
+if [[ $CUT_STATS -eq 1 ]]; then
+  mkdir -p "$CUT_STATS_DIR"
+fi
 shopt -s nullglob
 all_instances=()
 for f in "$DATA_DIR"/mips/*.mps.gz; do
@@ -249,6 +274,7 @@ run_one() {
   local name="$1"
   local data_dir="$2" results_dir="$3" cbc_bin="$4" validator="$5" total="$6"
   local progress_count_file="$7" progress_lock="$8"
+  local cut_stats="${9:-0}" cut_stats_dir="${10:-}"
 
   local mps="$data_dir/mips/$name.mps.gz"
   local sol="$results_dir/$name.sol"
@@ -274,6 +300,12 @@ run_one() {
   local node_args=()
   if [[ "$node_limit" != "0" ]]; then
     node_args=(-maxNodes "$node_limit")
+  fi
+
+  local stats_pre_args=() stats_post_args=()
+  if [[ "$cut_stats" == "1" ]]; then
+    stats_pre_args=(-csvStatistics "$cut_stats_dir/$name.stats.csv")
+    stats_post_args=(-writeStatistics)
   fi
 
   # Prints one progress line as soon as this instance is done (visible while
@@ -318,8 +350,11 @@ run_one() {
   # validator can misparse as a corrupt/partial solution and report as a
   # false failure. Always start from a clean file.
   rm -f "$sol"
+  if [[ "$cut_stats" == "1" ]]; then
+    rm -f "$cut_stats_dir/$name.stats.csv"
+  fi
   timeout -k 10 "${hard_kill}s" "$cbc_bin" "$mps" -threads 1 -sec "$time_limit" \
-    "${node_args[@]}" -solve -solu "$sol" >"$cbc_log" 2>&1
+    "${node_args[@]}" "${stats_pre_args[@]}" -solve -solu "$sol" "${stats_post_args[@]}" >"$cbc_log" 2>&1
   local cbc_rc=$?
   end_ts=$(date +%s.%N)
   elapsed="$(awk -v a="$start_ts" -v b="$end_ts" 'BEGIN{printf "%.1f", b-a}')"
@@ -395,7 +430,7 @@ trap 'rm -f "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK"' EXIT
 echo "${DIM}Running... (results stream in as instances finish; order is by completion, not by name)${RESET}"
 printf '%s\n' "${instances[@]}" | parallel --will-cite -j "$JOBS" --line-buffer \
   run_one {} "$DATA_DIR" "$RESULTS_DIR" "$CBC_BIN" "$VALIDATOR" "${#instances[@]}" \
-  "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK"
+  "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK" "$CUT_STATS" "$CUT_STATS_DIR"
 echo
 
 # ── 7. Aggregate results from the .status files already printed above ──────
@@ -492,6 +527,78 @@ if [[ "$maxnodes_name" != "-" ]]; then
   echo "  Most nodes processed:      ${maxnodes_name}  ($(with_commas "$maxnodes_val") nodes)"
 fi
 echo
+
+# ── 7b. Cut-generator statistics (only with --cut-stats) ────────────────────
+# Aggregates every per-instance `-csvStatistics`/-writeStatistics CSV
+# (Cbc's built-in CbcSolverStatistics feature; see CbcSolverStatistics.cpp)
+# collected under $CUT_STATS_DIR by run_one above. The CSV's generator
+# columns are always the same fixed, canonical set (2 columns per
+# generator: "<Name>_cuts","<Name>_time"), independent of which cut
+# generators actually fired for a given instance -- see
+# CbcSolverStatistics::writeCsv's canonicalGeneratorNames() -- so this list
+# must be kept in sync with that function if generators are ever added
+# there.
+if [[ $CUT_STATS -eq 1 ]]; then
+  CUT_GENERATOR_NAMES=(Clique FlowCover Gomory "Gomory(2)" GomoryL1 GomoryL2 \
+    Knapsack LiftAndProject MixedIntegerRounding2 OddWheel Probing \
+    Reduce-and-split "Reduce-and-split(2)" TwoMirCuts TwoMirCutsL1 \
+    TwoMirCutsL2 ZeroHalf)
+
+  printf 'generator\ttotal_cuts\ttotal_time_s\n' >"$CUT_STATS_TSV"
+
+  # Only the CURRENT run's selected instances -- not every *.stats.csv that
+  # happens to be sitting in $CUT_STATS_DIR (which may hold stale files left
+  # over from an earlier, broader ./test invocation against the same
+  # --results-dir, e.g. a prior full-suite run before a later subset run).
+  cutstats_files=()
+  for name in "${instances[@]}"; do
+    f="$CUT_STATS_DIR/$name.stats.csv"
+    [[ -f "$f" ]] && cutstats_files+=("$f")
+  done
+
+  if [[ ${#cutstats_files[@]} -eq 0 ]]; then
+    echo "${YELLOW}--cut-stats was given but no per-instance stats CSVs were found under $CUT_STATS_DIR${RESET}"
+  else
+    # FIXED_COLUMNS below must match CbcSolverStatistics.cpp's own
+    # FIXED_COLUMNS-equivalent layout: 18 fixed columns (Name..cgraph_density)
+    # before the first generator's "_cuts" column.
+    awk -F',' -v names="${CUT_GENERATOR_NAMES[*]}" -v OFS='\t' '
+      BEGIN {
+        n = split(names, genArr, " ")
+        fixedCols = 18
+      }
+      FNR == 1 { next }  # skip each files header line
+      NF < fixedCols + 2*n { next }  # malformed/short line — skip
+      {
+        for (i = 1; i <= n; i++) {
+          cutsCol = fixedCols + (i-1)*2 + 1
+          timeCol = fixedCols + (i-1)*2 + 2
+          totalCuts[i] += $cutsCol
+          totalTime[i] += $timeCol
+        }
+      }
+      END {
+        for (i = 1; i <= n; i++) {
+          if (totalCuts[i] > 0)
+            printf "%s\t%d\t%.2f\n", genArr[i], totalCuts[i], totalTime[i]
+        }
+      }
+    ' "${cutstats_files[@]}" | sort -t$'\t' -k2,2 -rn >>"$CUT_STATS_TSV"
+
+    echo "${BOLD}=== Cut generator statistics (aggregated across ${#cutstats_files[@]} instance(s); generators with 0 cuts omitted) ===${RESET}"
+    if [[ $(tail -n +2 "$CUT_STATS_TSV" | wc -l) -eq 0 ]]; then
+      echo "  ${DIM}(no cuts were generated by any generator across the suite)${RESET}"
+    else
+      printf "  %-24s %14s %14s\n" "Generator" "Total cuts" "Total time(s)"
+      rule; echo
+      while IFS=$'\t' read -r gen cuts time; do
+        printf "  %-24s %14s %14s\n" "$gen" "$(with_commas "$cuts")" "$time"
+      done < <(tail -n +2 "$CUT_STATS_TSV")
+    fi
+    echo "${DIM}Per-generator aggregate saved to $CUT_STATS_TSV${RESET}"
+    echo
+  fi
+fi
 
 # ── 8. Full details for anything that didn't pass ───────────────────────────
 report_failure() {

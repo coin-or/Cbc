@@ -4311,9 +4311,15 @@ void CbcModel::branchAndBound(int doStatistics)
   double rootObjectiveValue = solver_->getObjValue();
   numberFixedAtRoot_ = 0;
   numberFixedNow_ = 0;
-  // switch off timing in cut generators
-  for (int i=0;i<numberCutGenerators_;i++)
-    generator_[i]->setTiming(false);
+  // NOTE: cut generators used to have their timing() flag switched off here
+  // ("switch off timing in cut generators"), right after the root LP solve
+  // and before any cut generation (root or tree-search) actually ran. Since
+  // it was never turned back on, CbcCutGenerator::timeInCutGenerator() (and
+  // therefore CbcSolverStatistics's cut_time/per-generator time fields, used
+  // by -writeStatistics) always reported exactly 0 for every run -- the vast
+  // majority of cut-generation time (spent in the tree search, not just the
+  // root) was silently never measured. Timing is left on for the whole
+  // search now so this data is actually meaningful.
 #ifdef CBC_MORE_USE_GLOBAL_CUTS
   // sort global cuts
   if ((specialOptions_ & 2048) == 0) {

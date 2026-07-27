@@ -98,6 +98,9 @@ public:
   /** Number of cuts per cut generator */
   int *number_cuts = NULL;
 
+  /** Time spent (seconds) per cut generator (0 if timing() not enabled) */
+  double *time_generators = NULL;
+
   /** Cut generator name */
   const char **name_generators = NULL;
 

@@ -2557,6 +2557,7 @@ CbcSolver::~CbcSolver()
   delete[] lotsize_;
   delete[] statistics_.number_cuts;
   delete[] statistics_.name_generators;
+  delete[] statistics_.time_generators;
 #ifdef COINUTILS_HAS_GLPK
   if (coin_glp_prob_) {
     glp_free(coin_glp_prob_);
@@ -3076,6 +3077,8 @@ void CbcSolver::resetRunState()
   statistics_.number_cuts = nullptr;
   delete[] statistics_.name_generators;
   statistics_.name_generators = nullptr;
+  delete[] statistics_.time_generators;
+  statistics_.time_generators = nullptr;
 #ifdef COINUTILS_HAS_GLPK
   if (coin_glp_prob_) {
     glp_free(coin_glp_prob_);
@@ -10582,6 +10585,10 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
     delete[] statistics.name_generators;
   statistics.name_generators = new const char *[numberGenerators];
 
+  if (statistics.time_generators != NULL)
+    delete[] statistics.time_generators;
+  statistics.time_generators = new double[numberGenerators];
+
   statistics.number_generators = numberGenerators;
 
   char timing[30];
@@ -10590,6 +10597,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
     CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);
     statistics.name_generators[iGenerator] = generator->cutGeneratorName();
     statistics.number_cuts[iGenerator] = generator->numberCutsInTotal();
+    statistics.time_generators[iGenerator] = 0.0;
     buffer.str("");
     buffer << generator->cutGeneratorName() << " was tried "
            << generator->numberTimesEntered() << " times and created "
@@ -10598,6 +10606,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
     if (generator->timing()) {
       buffer << " (" << generator->timeInCutGenerator() << " seconds)";
       statistics.cut_time += generator->timeInCutGenerator();
+      statistics.time_generators[iGenerator] = generator->timeInCutGenerator();
     }
     CglStored *stored = dynamic_cast< CglStored * >(generator->generator());
     if (stored && !generator->numberCutsInTotal()) {
@@ -13875,8 +13884,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 
   if (statistics_.name_generators != NULL)
     delete[] statistics_.name_generators;
+  if (statistics_.time_generators != NULL)
+    delete[] statistics_.time_generators;
   statistics_.number_cuts = NULL;
   statistics_.name_generators = NULL;
+  statistics_.time_generators = NULL;
   // By now all memory should be freed
 #ifdef DMALLOC
   // dmalloc_log_unfreed();

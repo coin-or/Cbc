@@ -168,6 +168,21 @@ if [[ -z "$CBC_BIN" || ! -x "$CBC_BIN" ]]; then
 fi
 echo "${DIM}Using cbc: $CBC_BIN${RESET}"
 
+# ── ASLR workaround for TSan on aarch64 ─────────────────────────────────────
+# On aarch64 kernels with high mmap ASLR entropy, TSan-instrumented binaries
+# abort with "FATAL: ThreadSanitizer: unexpected memory mapping ..." because
+# mmap addresses land outside the fixed VA range TSan's shadow memory
+# expects. Detect a TSan build via its libtsan dependency and disable ASLR
+# for the cbc invocation (mirrors the same workaround in cbc-workspace's
+# ./config and ./build). Exported so GNU parallel workers pick it up too.
+ASLR_WRAP=""
+if [[ "$(uname -m)" == "aarch64" ]] && command -v setarch >/dev/null 2>&1 \
+    && ldd "$CBC_BIN" 2>/dev/null | grep -q 'libtsan\.so'; then
+  ASLR_WRAP="setarch aarch64 -R"
+  echo "${DIM}Detected TSan build on aarch64 — running cbc under 'setarch -R' to avoid a known TSan ASLR limitation.${RESET}"
+fi
+export ASLR_WRAP
+
 # ── 3. Locate/build the validator ───────────────────────────────────────────
 VALIDATOR="$SCRIPT_DIR/cbc_validate_sol"
 if [[ ! -x "$VALIDATOR" ]]; then
@@ -353,7 +368,7 @@ run_one() {
   if [[ "$cut_stats" == "1" ]]; then
     rm -f "$cut_stats_dir/$name.stats.csv"
   fi
-  timeout -k 10 "${hard_kill}s" "$cbc_bin" "$mps" -threads 1 -sec "$time_limit" \
+  timeout -k 10 "${hard_kill}s" ${ASLR_WRAP:+$ASLR_WRAP} "$cbc_bin" "$mps" -threads 1 -sec "$time_limit" \
     "${node_args[@]}" "${stats_pre_args[@]}" -solve -solu "$sol" "${stats_post_args[@]}" >"$cbc_log" 2>&1
   local cbc_rc=$?
   end_ts=$(date +%s.%N)
@@ -406,7 +421,7 @@ run_one() {
     val_args+=(--expected-obj "$expected_obj")
   fi
 
-  "$validator" "${val_args[@]}" "$mps" "$sol" >"$val_log" 2>&1
+  ${ASLR_WRAP:+$ASLR_WRAP} "$validator" "${val_args[@]}" "$mps" "$sol" >"$val_log" 2>&1
   local val_rc=$?
 
   if [[ $val_rc -eq 0 ]]; then
@@ -667,7 +682,7 @@ else
   run_capi_one() {
     local name="$1" data_dir="$2" results_dir="$3" mip_c_solve="$4"
     local log="$results_dir/$name.capi.log"
-    if "$mip_c_solve" "$name" --stage=bound-propagation --log-level=0 \
+    if ${ASLR_WRAP:+$ASLR_WRAP} "$mip_c_solve" "$name" --stage=bound-propagation --log-level=0 \
         --data-dir="$data_dir" >"$log" 2>&1; then
       echo "  ${GREEN}✔ ${name}${RESET}"
       echo PASS >"$results_dir/$name.capi.status"

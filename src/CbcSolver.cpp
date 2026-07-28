@@ -970,10 +970,10 @@ static void printGeneralQueryHelp(int verbose,
 
 static int initialPumpTune = -1;
 
-#ifdef CGL_WRITEMPS
+// debugSolution/debugNumberColumns are defined in Osi/src/Osi/OsiPresolve.cpp;
+// only extern-declare them here (see CbcBoundPropagation.cpp too).
 extern double *debugSolution;
 extern int debugNumberColumns;
-#endif
 
 static CbcModel *currentBranchModel = NULL;
 

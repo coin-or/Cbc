@@ -1499,16 +1499,12 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
     racer.solve();
     if (racer.winnerIndex() >= 0) {
       clp->setNumberIterations(racer.winnerIterations());
-      if (model_.messageHandler()->logLevel() > 0) {
-        static const char *names[] = { "dual", "primal+idiot", "primal+sprint" };
-        const int w = racer.winnerIndex();
-        char msg[200];
-        std::snprintf(msg, sizeof(msg),
-          "LP racing: winner=%s time=%.2fs iters=%d",
-          (w >= 0 && w < 3 ? names[w] : "unknown"),
-          racer.winnerTime(), racer.winnerIterations());
-        model_.messageHandler()->message(0, "", msg, ' ') << CoinMessageEol;
-      }
+      // Which config won (and its time/iterations) is now reported as part
+      // of the unified LP progress table's closing summary line (see
+      // ClpLpPhaseState::racingWinner / ClpLpTable::printFinalStatus() in
+      // ClpOutput.cpp), which ClpRacingSolver::solve() populates directly --
+      // no separate message needed here (a standalone print here used to
+      // interleave with, and visually break, that table).
       basisHasValues_ = 1;
       return 0;
     }

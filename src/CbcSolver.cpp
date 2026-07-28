@@ -13531,6 +13531,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           if (cbcParam->setVal(field, &message)) {
             printGeneralMessage(model_, message);
             continue;
+          } else if (!message.empty()) {
+            paramChanges_.push_back(message);
           }
           break;
         case CbcParam::OUTPUTPRECISION:
@@ -13541,6 +13543,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           if (cbcParam->setVal(field, &message)) {
             printGeneralMessage(model_, message);
             continue;
+          } else if (!message.empty()) {
+            paramChanges_.push_back(message);
           }
           break;
         case CbcParam::MAXMEMORY:
@@ -13551,6 +13555,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           if (cbcParam->setVal(field, &message)) {
             printGeneralMessage(model_, message);
             continue;
+          } else if (!message.empty()) {
+            paramChanges_.push_back(message);
           }
           break;
         case CbcParam::WRITEMODEL: {

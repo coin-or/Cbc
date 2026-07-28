@@ -41,6 +41,7 @@ inline void set_omp_threads(int n)
 } // namespace
 #elif defined(CLP_USE_OPENBLAS)
 extern "C" void openblas_set_num_threads(int num_threads);
+inline void set_openblas_threads(int n) { openblas_set_num_threads(n); }
 inline void set_omp_threads(int) {}
 #endif
 

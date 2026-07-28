@@ -1294,11 +1294,12 @@ int CbcOutputHandler::print()
         if (p) {
           double obj, elapsed; long nodes;
 	  int depth, ontree;
-	  long int iterations;
+          // Note: "%*ld" (iterations) is assignment-suppressed, so it has no
+          // corresponding argument/pointer and does not count toward nGot.
           int nGot = std::sscanf(p, "Integer solution of %lf found after %*ld iterations and %ld nodes %d depth %d ontree (%lf",
-				 &obj, &iterations,&nodes, &depth,
+				 &obj, &nodes, &depth,
 				 &ontree, &elapsed);
-	  if (nGot == 6)
+	  if (nGot == 5)
             bnbOut_->onBnBIncumbent(obj, nodes, depth, ontree, elapsed);
         }
         return 0;

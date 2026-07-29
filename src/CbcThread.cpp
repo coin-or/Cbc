@@ -283,7 +283,8 @@ CbcThread::CbcThread()
   , thisModel_(NULL)
   , node_(NULL)
   , // filled in every time
-  createdNode_(NULL)
+  nodeObjectiveValue_(COIN_DBL_MAX)
+  , createdNode_(NULL)
   , // filled in every time on return
   returnCode_(-1)
   , // -1 available, 0 busy, 1 finished , 2??

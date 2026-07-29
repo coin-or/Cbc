@@ -175,7 +175,21 @@ public:
   /// Set node
   inline void setNode(CbcNode *node)
   {
+    // Snapshot the objective value here (while it is still only touched by
+    // whichever thread currently owns it: the master thread just picked it
+    // off the tree, or this worker just finished processing it) so that
+    // other threads can inspect nodeObjectiveValue() without dereferencing
+    // node_, which may be concurrently mutated/deleted by this worker while
+    // it processes the node (see CbcModel::branchAndBound's periodic
+    // printing, which used to read child->node()->objectiveValue()).
+    nodeObjectiveValue_.store(node ? node->objectiveValue() : COIN_DBL_MAX,
+      std::memory_order_release);
     node_.store(node, std::memory_order_release);
+  }
+  /// Get snapshot of node's objective value (safe to call cross-thread)
+  inline double nodeObjectiveValue() const
+  {
+    return nodeObjectiveValue_.load(std::memory_order_acquire);
   }
   /// Get created node
   inline CbcNode *createdNode() const
@@ -347,6 +361,10 @@ public: // private:
   CbcModel *baseModel_;
   CbcModel *thisModel_;
   std::atomic<CbcNode *> node_; // filled in every time
+  // Snapshot of node_'s objective value, updated alongside node_ (see
+  // setNode()/nodeObjectiveValue()) so other threads can inspect it without
+  // dereferencing node_ itself.
+  std::atomic<double> nodeObjectiveValue_;
   std::atomic<CbcNode *> createdNode_; // filled in every time on return
   CbcThread *master_; // points back to master thread
   std::atomic<int> returnCode_; // -1 available, 0 busy, 1 finished , 2??

@@ -5320,8 +5320,14 @@ void CbcModel::branchAndBound(int doStatistics)
           double objectiveValue = checkCutoffForRestart;
           // Save the best solution so far.
           CbcSerendipity heuristic(*this);
+          // bestSolution_/bestObjective_ can be concurrently updated by a
+          // worker thread (under lockThread()) inside doOneNode(), so read
+          // them here under the same lock; setInputSolution() copies the
+          // array immediately, so it's safe to call while holding the lock.
+          lockThread();
           if (bestSolution_)
             heuristic.setInputSolution(bestSolution_, bestObjective_);
+          unlockThread();
           // Magic number
           heuristic.setFractionSmall(0.8);
           // `pumpTune' to stand-alone solver for explanations.
@@ -5579,10 +5585,14 @@ void CbcModel::branchAndBound(int doStatistics)
         int numberThreads = master_->numberThreads();
         for (int i = 0; i < numberThreads; i++) {
           CbcThread *child = master_->child(i);
-          CbcNode *childNode = child->node(); // single atomic load
-          if (childNode) {
+          // Use the atomic objective-value snapshot rather than
+          // dereferencing child->node() here: the worker thread may be
+          // concurrently processing (and possibly deleting) that very node,
+          // and objectiveValue_ itself can be mutated while doOneNode runs,
+          // so reading it directly from another thread is a data race.
+          double value = child->nodeObjectiveValue();
+          if (value < COIN_DBL_MAX) {
             // adjust
-            double value = childNode->objectiveValue();
             bestPossibleObjective_ = std::min(bestPossibleObjective_, value);
           }
         }
@@ -15210,10 +15220,20 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
         numberHeuristicSolutions_++;
       numberSolutions_++;
       handler_->clearBuffer();
+      // In multi-threaded search, tree_ may alias the shared base model's
+      // tree (see CbcThread.cpp's "tree_ = baseModel->tree_"), which the
+      // master thread concurrently pushes to under lockThread()/
+      // unlockThread() (see CbcModel::moveToModel()). Reading its size()
+      // here for the solution-found message, without the same lock, is a
+      // data race (found by ThreadSanitizer) -- so take the lock (a no-op
+      // when not multi-threaded) around the read.
+      lockThread();
+      int treeSize = tree_->size();
+      unlockThread();
       if (how != CBC_ROUNDING) {
         handler_->message(how, messages_)
           << trueBestObjValue() << numberIterations_ << numberNodes
-	  << currentDepth_ << tree_->size()
+	  << currentDepth_ << treeSize
           << getCurrentSeconds() << CoinMessageEol;
         dealWithEventHandler(CbcEventHandler::solution, objectiveValue,
           solution);
@@ -15225,7 +15245,7 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
           name = "Reduced search";
         handler_->message(CBC_ROUNDING, messages_)
           << trueBestObjValue() << name << numberIterations_ << numberNodes
-	  << currentDepth_ << tree_->size()
+	  << currentDepth_ << treeSize
           << getCurrentSeconds() << CoinMessageEol;
         dealWithEventHandler(CbcEventHandler::heuristicSolution, objectiveValue,
           solution);
@@ -15344,9 +15364,15 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
         } else {
           assert(lastHeuristic_);
           const char *name = lastHeuristic_->heuristicName();
+          // See the lockThread()/unlockThread() comment above (first
+          // tree_->size() use in this function) -- same shared-tree data
+          // race applies here.
+          lockThread();
+          int treeSize = tree_->size();
+          unlockThread();
           handler_->message(CBC_ROUNDING, messages_)
             << trueBestObjValue() << name << numberIterations_ << numberNodes
-	    << currentDepth_ << tree_->size()
+	    << currentDepth_ << treeSize
             << getCurrentSeconds() << CoinMessageEol;
         }
       }

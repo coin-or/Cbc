@@ -5486,9 +5486,14 @@ void CbcModel::branchAndBound(int doStatistics)
         if (!eventHandler->event(CbcEventHandler::solution)) {
           eventHappened_ = true; // exit
         }
-        newCutoff = getCutoff();
       }
       lockThread();
+      // getCutoff() can be concurrently updated by a worker thread's
+      // setCutoff() call inside doOneNode(), so read it under the lock
+      // taken just above (found racing by ThreadSanitizer).
+      if (eventHandler) {
+        newCutoff = getCutoff();
+      }
       /*
               Clean the tree to reflect the new solution, then see if the
               node comparison predicate wants to make any changes. If so,
@@ -20656,9 +20661,17 @@ bool CbcModel::maximumSecondsReached() const
     eventHappened_ = true;
     if (parentModel_) {
       // need to set stuff
+      // Multiple worker threads of this (possibly multi-threaded) model can
+      // reach here concurrently and all try to propagate the same event to
+      // the shared parentModel_ -- serialize with this model's own lock
+      // (found racing by ThreadSanitizer between two of this model's own
+      // worker threads). const_cast is safe: locking doesn't mutate any
+      // logical state of *this, only serializes access to parentModel_.
+      const_cast<CbcModel *>(this)->lockThread();
       parentModel_->sayEventHappened();
       parentModel_->setProblemStatus(1);
       parentModel_->setSecondaryStatus(4);
+      const_cast<CbcModel *>(this)->unlockThread();
     }
   }
   return hitMaxTime;

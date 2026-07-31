@@ -54,6 +54,346 @@ class CglTwomir;
 // #############################################################################
 // #############################################################################
 
+/*! \brief User-settable solve options and cross-phase bookkeeping for
+           CbcSolver, with all defaults declared inline.
+
+    Every field here has value semantics (no owned heap), so this base is
+    copied wholesale by CbcSolver's copy constructor and assignment
+    operator, and restored to defaults by CbcSolver::resetRunState() via a
+    single `CbcSolverOptions::operator=(CbcSolverOptions())`.
+
+    The point of splitting these out is that each default is written down
+    exactly once, at the declaration. Previously the same ~100 values were
+    spelled out twice -- once in CbcSolver's constructor initializer list
+    and again in resetRunState() -- so updating one and forgetting the
+    other silently changed behavior depending on whether a CbcSolver was
+    freshly constructed or reused across runs.
+
+    Protected rather than public: these are CbcSolver's internals, exposed
+    to it by inheritance only so that existing code can keep referring to
+    `preSolve_` and friends unqualified.
+*/
+class CbcSolverOptions {
+protected:
+  ///@name Cross-phase state from CbcMain1 (previously local variables)
+  //@{
+
+  // --- Solve control flags ---
+  /// Whether a valid model is loaded
+  bool goodModel_ = false;
+  /// Whether in interactive mode
+  bool interactiveMode_ = false;
+  /// False if user changed any cut/heuristic settings
+  bool defaultSettings_ = true;
+  /// Presolve level (0=off, 5=default)
+  int preSolve_ = 5;
+  /// Preprocessing level (0=off, 4=default)
+  int preProcess_ = 4;
+  /// Whether to use strategy
+  bool useStrategy_ = false;
+  /// Whether presolve writes to file
+  bool preSolveFile_ = false;
+  /// Whether strong branching was changed by user
+  bool strongChanged_ = false;
+  /// Whether FPump was changed by user
+  bool pumpChanged_ = false;
+  /// Max cut passes at root (-1234567 = auto)
+  int cutPass_ = -1234567;
+  /// Max cut passes in tree (-1234567 = auto)
+  int cutPassInTree_ = -1234567;
+  /// Preprocessing tuning flags
+  int tunePreProcess_ = 0;
+  /// Test OSI parameters flag
+  int testOsiParameters_ = -1;
+  /// 0 normal, 1 from AMPL or MIQP etc (2 allows cuts)
+  int complicatedInteger_ = 0;
+  /// Feasibility pump tuning parameter
+  int initialPumpTune_ = 1003;
+  /// Reduced cost fixing threshold
+  double djFix_ = 1.0e100;
+  /// Tighten factor
+  double tightenFactor_ = 0.0;
+  /// Normal cutoff increment
+  double normalIncrement_ = 0.0;
+  /// Return mode (0=untouched, 1=updated, 2=as babModel)
+  int returnMode_ = 1;
+  /// Solve result (0=optimal, 3=stopped, 6=infeasible, -1=not solved)
+  int integerStatus_ = -1;
+  /// Total number of valid commands processed
+  int numberGoodCommands_ = 0;
+  /// Node strategy
+  int nodeStrategy_ = 0;
+  /// Whether dominated cuts are used
+  bool dominatedCuts_ = false;
+  /// SOS handling flag
+  int doSOS_ = 1;
+  /// Verbose level
+  int verbose_ = 0;
+  /// Cost-based priorities mode
+  int useCosts_ = 0;
+  /// Whether to use input solution (-1 = no)
+  int useSolution_ = -1;
+  /// Index of current best solution
+  int currentBestSolution_ = 0;
+
+  // --- LP solver control ---
+  /// Idiot crash method (-1 = auto)
+  int doIdiot_ = -1;
+  /// Output format (2 = default)
+  int outputFormat_ = 2;
+  /// SLP value
+  int slpValue_ = -1;
+  /// C++ code generation value
+  int cppValue_ = -1;
+  /// Print options
+  int printOptions_ = 0;
+  /// Print mode
+  int printMode_ = 0;
+  /// Presolve options
+  int presolveOptions_ = 0;
+  /// Substitution level
+  int substitution_ = 3;
+  /// Dualize level
+  int dualize_ = 3;
+  /// Crash method
+  int doCrash_ = 0;
+  /// Vector mode
+  int doVector_ = 0;
+  /// Sprint method (-1 = auto)
+  int doSprint_ = -1;
+  /// Scaling method
+  int doScaling_ = 4;
+
+  // --- Barrier solver control ---
+  /// Cholesky type
+  int choleskyType_ = 0;
+  /// Gamma for barrier
+  int gamma_ = 0;
+  /// Barrier scaling
+  int scaleBarrier_ = 0;
+  /// KKT method
+  int doKKT_ = 0;
+  /// Crossover method (2 = do unless quadratic)
+  int crossover_ = 2;
+  /// Whether problem is bilinear
+  bool biLinearProblem_ = false;
+
+  // --- Cut generator modes ---
+  // Each field is a CbcParameters::CutStrategy value (CGOff/CGOn/CGRoot/
+  // CGIfMove/CGForceOn/...) controlling whether/how often the named cut
+  // generator is installed on babModel_ by configureCutGenerators().
+  /// Gomory mixed-integer cuts strategy
+  int gomoryMode_ = CbcParameters::CGIfMove;
+  /// Probing cuts strategy
+  int probingMode_ = CbcParameters::CGIfMove;
+  /// Knapsack cover cuts strategy
+  int knapsackMode_ = CbcParameters::CGIfMove;
+  /// Reduce-and-split cuts strategy
+  int redsplitMode_ = CbcParameters::CGOff;
+  /// Reduce-and-split (v2) cuts strategy
+  int redsplit2Mode_ = CbcParameters::CGOff;
+  /// Gomory mixed-integer (alternative implementation) cuts strategy
+  int GMIMode_ = CbcParameters::CGOff;
+  /// Clique cuts strategy
+  int cliqueMode_ = CbcParameters::CGIfMove;
+  /// Legacy (pre-conflict-graph) clique cuts strategy
+  int oldCliqueMode_ = CbcParameters::CGIfMove;
+  /// Odd-wheel cuts strategy
+  int oddWheelMode_ = CbcParameters::CGOff;
+  /// Mixed-integer-rounding cuts strategy
+  int mixedMode_ = CbcParameters::CGIfMove;
+  /// Mixed-integer-rounding cut rounding sub-strategy
+  int mixedRoundStrategy_ = 1;
+  /// Flow-cover cuts strategy
+  int flowMode_ = CbcParameters::CGIfMove;
+  /// Two-step MIR (twomir) cuts strategy
+  int twomirMode_ = CbcParameters::CGIfMove;
+  /// Lift-and-project cuts strategy
+  int landpMode_ = CbcParameters::CGOff;
+  /// Residual capacity cuts strategy
+  int residualCapacityMode_ = CbcParameters::CGOff;
+  /// Zero-half cuts strategy
+  int zerohalfMode_ = CbcParameters::CGIfMove;
+  /// Conflict graph mode ("on"/"off"/"clq")
+  std::string cgraphMode_ = "on";
+  /// Clique strengthening mode ("before"/"after"/"off")
+  std::string clqstrMode_ = "both";
+  /// BK clique pivoting strategy
+  int bkPivotingStrategy_ = 3;
+  /// Max calls to BK
+  int maxCallsBK_ = 1000;
+  /// BK clique extension method
+  int bkClqExtMethod_ = 4;
+  /// Odd wheel extension method
+  int oddWExtMethod_ = 2;
+
+  // --- MIP start ---
+  std::vector< std::pair< std::string, double > > mipStart_;
+  std::vector< std::pair< std::string, double > > mipStartBefore_;
+  std::string mipStartFile_;
+
+  // --- Import control ---
+  /// Whether MPS/LP read errors are tolerated (0=fail on error, nonzero=continue)
+  int allowImportErrors_ = 0;
+  /// Whether original row/column names are kept on import (0=discard, nonzero=keep)
+  int keepImportNames_ = 1;
+
+  // --- Names ---
+  /// Maximum row/column name length recorded for the current model (0 if names unavailable)
+  int lengthName_ = 0;
+  /// Row names for the current model, indexed by row number
+  std::vector< std::string > rowNames_;
+  /// Column names for the current model, indexed by column number
+  std::vector< std::string > columnNames_;
+
+  // --- Debug ---
+  /// Number of entries in debugValues_ (-1 if not loaded)
+  int numberDebugValues_ = -1;
+  /// Whether a debug basis has been loaded (-1=not loaded, 1=loaded)
+  int basisHasValues_ = 0;
+
+  // --- Timing ---
+  /// Accumulated CPU time across the run (seconds)
+  double totalTime_ = 0.0;
+  /// CPU time reference point (seconds), reset at various phase boundaries
+  double time0_ = 0.0;
+  /// Elapsed (wall-clock) time reference point (seconds)
+  double time0Elapsed_ = 0.0;
+
+  // --- Input queue copies ---
+  std::deque< std::string > saveInputQueue_;
+  //@}
+};
+
+// #############################################################################
+// #############################################################################
+
+/*! \brief Heap-owning, per-run state for CbcSolver, with all defaults
+           declared inline.
+
+    Unlike CbcSolverOptions, these fields own raw allocations, so they are
+    deliberately NOT propagated by copy: a copied or assigned CbcSolver
+    starts with a clean per-run slate rather than aliasing (and eventually
+    double-freeing) the source's arrays. That was already the behavior of
+    the hand-written copy constructor and assignment operator; making the
+    base non-copyable turns it into a rule the compiler enforces.
+
+    freePerRunState() is the single cleanup list, shared by
+    ~CbcSolverPerRunState() and resetPerRunState(). It used to be written
+    out twice -- once in CbcSolver's destructor and once in
+    resetRunState() -- with the destructor's list a strict superset.
+*/
+class CbcSolverPerRunState {
+protected:
+  CbcSolverPerRunState() = default;
+  ~CbcSolverPerRunState() { freePerRunState(); }
+
+  /*! Per-run state is never copied (see class comment); a CbcSolver copy
+      gets a default-constructed base instead. Move-assignment exists only
+      to back resetPerRunState(). */
+  CbcSolverPerRunState(const CbcSolverPerRunState &) = delete;
+  CbcSolverPerRunState &operator=(const CbcSolverPerRunState &) = delete;
+  CbcSolverPerRunState &operator=(CbcSolverPerRunState &&) = default;
+
+  /*! Release every allocation owned by this base. Leaves the pointers
+      dangling, so callers must either be destructing or immediately
+      re-seed defaults (which is what resetPerRunState() does). */
+  void freePerRunState();
+
+  /*! Free all per-run allocations and restore every field to its declared
+      default, ready for another run() on the same CbcSolver. */
+  void resetPerRunState()
+  {
+    freePerRunState();
+    *this = CbcSolverPerRunState();
+  }
+
+  ///@name Per-run state
+  //@{
+  /// Updated model (created during B&B, deleted after)
+  CbcModel *babModel_ = nullptr;
+  /// Pre-preprocessing solver clone (saved for postprocessing)
+  OsiSolverInterface *saveSolver_ = nullptr;
+
+  // --- Branching input (from AMPL or priority files) ---
+  /// Per-column branching priority (one entry per column), or NULL if unset
+  int *priorities_ = nullptr;
+  /// Per-column forced branch direction (-1/0/1), or NULL if unset
+  int *branchDirection_ = nullptr;
+  /// Per-column down-branch pseudocost, or NULL if unset
+  double *pseudoDown_ = nullptr;
+  /// Per-column up-branch pseudocost, or NULL if unset
+  double *pseudoUp_ = nullptr;
+  /// Per-column starting solution values supplied by AMPL, or NULL if unset
+  double *solutionIn_ = nullptr;
+  /// Per-column priorities supplied together with solutionIn_, or NULL if unset
+  int *prioritiesIn_ = nullptr;
+  /// Number of SOS (special ordered sets) constraints supplied by AMPL
+  int numberSOS_ = 0;
+  /// Start index (into sosIndices_/sosReference_) of each SOS, size numberSOS_+1
+  int *sosStart_ = nullptr;
+  /// Column indices referenced by each SOS, concatenated per sosStart_
+  int *sosIndices_ = nullptr;
+  /// Type (1 or 2) of each SOS, one entry per SOS
+  char *sosType_ = nullptr;
+  /// Reference row weights for each SOS entry, concatenated per sosStart_
+  double *sosReference_ = nullptr;
+  /// AMPL "cut" markers (columns that must remain in the model), or NULL if unset
+  int *cut_ = nullptr;
+  /// Per-SOS branching priority, one entry per SOS, or NULL if unset
+  int *sosPriority_ = nullptr;
+
+  // --- Knapsack expansion ---
+  /// Map from original model column to expanded-knapsack sub-model column, or NULL
+  int *whichColumn_ = nullptr;
+  /// Start index (into knapsackRow_) of each expanded knapsack row, size numberKnapsack_+1
+  int *knapsackStart_ = nullptr;
+  /// Original model row index of each expanded knapsack, one entry per knapsackStart_ range
+  int *knapsackRow_ = nullptr;
+  /// Number of knapsack constraints expanded
+  int numberKnapsack_ = 0;
+
+  // --- Debug ---
+  /// Reference solution values loaded via -debug/-checkSolution, or NULL if unset
+  double *debugValues_ = nullptr;
+
+  // --- Statistics ---
+  /*! Solve statistics. Lives with the per-run state rather than the
+      copied options because it owns three raw arrays (number_cuts,
+      name_generators, time_generators) that freePerRunState() releases;
+      copying it would alias them. Consistent with the previous
+      hand-written copy constructor and assignment operator, neither of
+      which propagated it. */
+  CbcSolverStatistics statistics_;
+
+  // --- Lot sizing ---
+  /// One semi-continuous/lot-sizing variable: allowed range [low,high] plus its column index
+  struct LotStruct {
+    /// Lower bound of the allowed lot-sizing range (in addition to 0)
+    double low;
+    /// Upper bound of the allowed lot-sizing range
+    double high;
+    /// Column index this lot-sizing entry applies to
+    int column;
+  };
+  /// Lot-sizing entries collected from the model, one per lot-sized column
+  LotStruct *lotsize_ = nullptr;
+  /// Number of entries in lotsize_
+  int numberLotSizing_ = 0;
+
+  // --- GLPK state ---
+#ifdef COINUTILS_HAS_GLPK
+  /// GLPK MathProg translator, used when importing a GMPL/AMPL-style model via GLPK
+  glp_tran *coin_glp_tran_ = nullptr;
+  /// GLPK problem instance backing coin_glp_tran_'s translated model
+  glp_prob *coin_glp_prob_ = nullptr;
+#endif
+  //@}
+};
+
+// #############################################################################
+// #############################################################################
+
 /*! \brief Top-level driver class for the CBC MIP solver.
 
     Encapsulates the full solve pipeline: parameter initialization,
@@ -87,7 +427,8 @@ class CglTwomir;
     compatibility and delegate to this class internally.
 */
 
-class CBCLIB_EXPORT CbcSolver {
+class CBCLIB_EXPORT CbcSolver : public CbcSolverOptions,
+                                public CbcSolverPerRunState {
 
 public:
   ///@name Constructors and destructors
@@ -386,299 +727,44 @@ public:
 private:
   ///@name Core state (existed in original CbcSolver class)
   //@{
+  // Per-run and option state live in the CbcSolverPerRunState and
+  // CbcSolverOptions bases, where each field's default is declared inline
+  // exactly once. Only state that is neither (owned for the lifetime of
+  // the CbcSolver, or needing a non-trivial copy) is declared here.
   /// Reference model
   CbcModel model_;
-  /// Updated model (created during B&B, deleted after)
-  CbcModel *babModel_;
   /// User functions
-  CbcUser **userFunction_;
+  CbcUser **userFunction_ = nullptr;
   /// Status of user functions (0=not used, 1=needs load, 2=available, 3=loaded)
-  int *statusUserFunction_;
+  int *statusUserFunction_ = nullptr;
   /// Original solver (will contain output solutions)
-  OsiClpSolverInterface *originalSolver_;
+  OsiClpSolverInterface *originalSolver_ = nullptr;
   /// Original CoinModel
-  CoinModel *originalCoinModel_;
+  CoinModel *originalCoinModel_ = nullptr;
   /// Cut generators
-  CglCutGenerator **cutGenerator_;
+  CglCutGenerator **cutGenerator_ = nullptr;
   /// Number of user functions
-  int numberUserFunctions_;
+  int numberUserFunctions_ = 0;
   /// Number of cut generators
-  int numberCutGenerators_;
+  int numberCutGenerators_ = 0;
   /// Stop-now callback
-  CbcStopNow *callBack_;
+  CbcStopNow *callBack_ = nullptr;
   /// CPU time at instantiation
-  double startTime_;
+  double startTime_ = 0.0;
   /// Parameters
   ClpParameters clpParameters_;
   CbcParameters parameters_;
   /// Whether to suppress printing
-  bool noPrinting_;
+  bool noPrinting_ = false;
   /// Where to start reading commands
-  int readMode_;
-  //@}
-
-  ///@name Cross-phase state from CbcMain1 (previously local variables)
-  //@{
+  int readMode_ = 1;
 
   // --- Preprocessing state ---
   /// Preprocessing engine
   CglPreProcess process_;
-  /// Pre-preprocessing solver clone (saved for postprocessing)
-  OsiSolverInterface *saveSolver_;
-
-  // --- Solve control flags ---
-  /// Whether a valid model is loaded
-  bool goodModel_;
-  /// Whether in interactive mode
-  bool interactiveMode_;
-  /// False if user changed any cut/heuristic settings
-  bool defaultSettings_;
-  /// Presolve level (0=off, 5=default)
-  int preSolve_;
-  /// Preprocessing level (0=off, 4=default)
-  int preProcess_;
-  /// Whether to use strategy
-  bool useStrategy_;
-  /// Whether presolve writes to file
-  bool preSolveFile_;
-  /// Whether strong branching was changed by user
-  bool strongChanged_;
-  /// Whether FPump was changed by user
-  bool pumpChanged_;
-  /// Max cut passes at root (-1234567 = auto)
-  int cutPass_;
-  /// Max cut passes in tree (-1234567 = auto)
-  int cutPassInTree_;
-  /// Preprocessing tuning flags
-  int tunePreProcess_;
-  /// Test OSI parameters flag
-  int testOsiParameters_;
-  /// 0 normal, 1 from AMPL or MIQP etc (2 allows cuts)
-  int complicatedInteger_;
-  /// Feasibility pump tuning parameter
-  int initialPumpTune_;
-  /// Reduced cost fixing threshold
-  double djFix_;
-  /// Tighten factor
-  double tightenFactor_;
-  /// Normal cutoff increment
-  double normalIncrement_;
-  /// Return mode (0=untouched, 1=updated, 2=as babModel)
-  int returnMode_;
-  /// Solve result (0=optimal, 3=stopped, 6=infeasible, -1=not solved)
-  int integerStatus_;
-  /// Total number of valid commands processed
-  int numberGoodCommands_;
-  /// Node strategy
-  int nodeStrategy_;
-  /// Whether dominated cuts are used
-  bool dominatedCuts_;
-  /// SOS handling flag
-  int doSOS_;
-  /// Verbose level
-  int verbose_;
-  /// Cost-based priorities mode
-  int useCosts_;
-  /// Whether to use input solution (-1 = no)
-  int useSolution_;
-  /// Index of current best solution
-  int currentBestSolution_;
-
-  // --- LP solver control ---
-  /// Idiot crash method (-1 = auto)
-  int doIdiot_;
-  /// Output format (2 = default)
-  int outputFormat_;
-  /// SLP value
-  int slpValue_;
-  /// C++ code generation value
-  int cppValue_;
-  /// Print options
-  int printOptions_;
-  /// Print mode
-  int printMode_;
-  /// Presolve options
-  int presolveOptions_;
-  /// Substitution level
-  int substitution_;
-  /// Dualize level
-  int dualize_;
-  /// Crash method
-  int doCrash_;
-  /// Vector mode
-  int doVector_;
-  /// Sprint method (-1 = auto)
-  int doSprint_;
-  /// Scaling method
-  int doScaling_;
-
-  // --- Barrier solver control ---
-  /// Cholesky type
-  int choleskyType_;
-  /// Gamma for barrier
-  int gamma_;
-  /// Barrier scaling
-  int scaleBarrier_;
-  /// KKT method
-  int doKKT_;
-  /// Crossover method (2 = do unless quadratic)
-  int crossover_;
-  /// Whether problem is bilinear
-  bool biLinearProblem_;
-
-  // --- Cut generator modes ---
-  // Each field is a CbcParameters::CutStrategy value (CGOff/CGOn/CGRoot/
-  // CGIfMove/CGForceOn/...) controlling whether/how often the named cut
-  // generator is installed on babModel_ by configureCutGenerators().
-  /// Gomory mixed-integer cuts strategy
-  int gomoryMode_;
-  /// Probing cuts strategy
-  int probingMode_;
-  /// Knapsack cover cuts strategy
-  int knapsackMode_;
-  /// Reduce-and-split cuts strategy
-  int redsplitMode_;
-  /// Reduce-and-split (v2) cuts strategy
-  int redsplit2Mode_;
-  /// Gomory mixed-integer (alternative implementation) cuts strategy
-  int GMIMode_;
-  /// Clique cuts strategy
-  int cliqueMode_;
-  /// Legacy (pre-conflict-graph) clique cuts strategy
-  int oldCliqueMode_;
-  /// Odd-wheel cuts strategy
-  int oddWheelMode_;
-  /// Mixed-integer-rounding cuts strategy
-  int mixedMode_;
-  /// Mixed-integer-rounding cut rounding sub-strategy
-  int mixedRoundStrategy_;
-  /// Flow-cover cuts strategy
-  int flowMode_;
-  /// Two-step MIR (twomir) cuts strategy
-  int twomirMode_;
-  /// Lift-and-project cuts strategy
-  int landpMode_;
-  /// Residual capacity cuts strategy
-  int residualCapacityMode_;
-  /// Zero-half cuts strategy
-  int zerohalfMode_;
-  /// Conflict graph mode ("on"/"off"/"clq")
-  std::string cgraphMode_;
-  /// Clique strengthening mode ("before"/"after"/"off")
-  std::string clqstrMode_;
-  /// BK clique pivoting strategy
-  int bkPivotingStrategy_;
-  /// Max calls to BK
-  int maxCallsBK_;
-  /// BK clique extension method
-  int bkClqExtMethod_;
-  /// Odd wheel extension method
-  int oddWExtMethod_;
-
-  // --- Branching input (from AMPL or priority files) ---
-  /// Per-column branching priority (one entry per column), or NULL if unset
-  int *priorities_;
-  /// Per-column forced branch direction (-1/0/1), or NULL if unset
-  int *branchDirection_;
-  /// Per-column down-branch pseudocost, or NULL if unset
-  double *pseudoDown_;
-  /// Per-column up-branch pseudocost, or NULL if unset
-  double *pseudoUp_;
-  /// Per-column starting solution values supplied by AMPL, or NULL if unset
-  double *solutionIn_;
-  /// Per-column priorities supplied together with solutionIn_, or NULL if unset
-  int *prioritiesIn_;
-  /// Number of SOS (special ordered sets) constraints supplied by AMPL
-  int numberSOS_;
-  /// Start index (into sosIndices_/sosReference_) of each SOS, size numberSOS_+1
-  int *sosStart_;
-  /// Column indices referenced by each SOS, concatenated per sosStart_
-  int *sosIndices_;
-  /// Type (1 or 2) of each SOS, one entry per SOS
-  char *sosType_;
-  /// Reference row weights for each SOS entry, concatenated per sosStart_
-  double *sosReference_;
-  /// AMPL "cut" markers (columns that must remain in the model), or NULL if unset
-  int *cut_;
-  /// Per-SOS branching priority, one entry per SOS, or NULL if unset
-  int *sosPriority_;
-
-  // --- MIP start ---
-  std::vector< std::pair< std::string, double > > mipStart_;
-  std::vector< std::pair< std::string, double > > mipStartBefore_;
-  std::string mipStartFile_;
-
-  // --- Knapsack expansion ---
-  /// Map from original model column to expanded-knapsack sub-model column, or NULL
-  int *whichColumn_;
-  /// Start index (into knapsackRow_) of each expanded knapsack row, size numberKnapsack_+1
-  int *knapsackStart_;
-  /// Original model row index of each expanded knapsack, one entry per knapsackStart_ range
-  int *knapsackRow_;
-  /// Number of knapsack constraints expanded
-  int numberKnapsack_;
-
-  // --- Import control ---
-  /// Whether MPS/LP read errors are tolerated (0=fail on error, nonzero=continue)
-  int allowImportErrors_;
-  /// Whether original row/column names are kept on import (0=discard, nonzero=keep)
-  int keepImportNames_;
-
-  // --- Names ---
-  /// Maximum row/column name length recorded for the current model (0 if names unavailable)
-  int lengthName_;
-  /// Row names for the current model, indexed by row number
-  std::vector< std::string > rowNames_;
-  /// Column names for the current model, indexed by column number
-  std::vector< std::string > columnNames_;
-
-  // --- Debug ---
-  /// Reference solution values loaded via -debug/-checkSolution, or NULL if unset
-  double *debugValues_;
-  /// Number of entries in debugValues_ (-1 if not loaded)
-  int numberDebugValues_;
-  /// Whether a debug basis has been loaded (-1=not loaded, 1=loaded)
-  int basisHasValues_;
-
-  // --- Lot sizing ---
-  /// One semi-continuous/lot-sizing variable: allowed range [low,high] plus its column index
-  struct LotStruct {
-    /// Lower bound of the allowed lot-sizing range (in addition to 0)
-    double low;
-    /// Upper bound of the allowed lot-sizing range
-    double high;
-    /// Column index this lot-sizing entry applies to
-    int column;
-  };
-  /// Lot-sizing entries collected from the model, one per lot-sized column
-  LotStruct *lotsize_;
-  /// Number of entries in lotsize_
-  int numberLotSizing_;
-
-  // --- GLPK state ---
-#ifdef COINUTILS_HAS_GLPK
-  /// GLPK MathProg translator, used when importing a GMPL/AMPL-style model via GLPK
-  glp_tran *coin_glp_tran_;
-  /// GLPK problem instance backing coin_glp_tran_'s translated model
-  glp_prob *coin_glp_prob_;
-#endif
-
-  // --- Timing ---
-  /// Accumulated CPU time across the run (seconds)
-  double totalTime_;
-  /// CPU time reference point (seconds), reset at various phase boundaries
-  double time0_;
-  /// Elapsed (wall-clock) time reference point (seconds)
-  double time0Elapsed_;
-
-  // --- Statistics ---
-  CbcSolverStatistics statistics_;
 
   // --- Stored AMPL cuts ---
   // (managed internally during run, not exposed)
-
-  // --- Input queue copies ---
-  std::deque< std::string > saveInputQueue_;
 
   /// Collected parameter-change messages (printed as a section before solve)
   std::vector< std::string > paramChanges_;

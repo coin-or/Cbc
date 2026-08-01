@@ -432,7 +432,13 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
     return false;
 
   solver->getColType(true); // Ensure column types are up to date
-  solver->checkCGraph(handler);
+  {
+    double remaining = model.getMaximumSeconds() - model.getCurrentSeconds();
+    double cgTimeLimit = (remaining > 0.0 && model.getMaximumSeconds() < 1.0e8)
+      ? CoinWallclockTime() + remaining
+      : -1.0;
+    solver->checkCGraph(handler, cgTimeLimit);
+  }
   const CoinStaticConflictGraph *cgraph = solver->getCGraph();
   if (cgraph == NULL)
     return false;

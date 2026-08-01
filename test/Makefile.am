@@ -81,8 +81,16 @@ mip_debug_cuts_LDADD = ../src/libCbc.la
 # complementary slackness), and the LP settings that must survive into a
 # reoptimize -- notably INT_PARAM_PERT_VALUE, where Clp's default is
 # "perturbation off" but Cbc's tuned default is the mild 50 that fast
-# warm-started reoptimization relies on, so a path that fails to forward it
-# is a pure LP-performance regression no objective check would catch.
+# warm-started reoptimization relies on, and DBL_PARAM_PSI, where a Positive
+# Edge pivot rule requested for the root solve must still be installed on
+# every later resolve. Both are pure LP-performance regressions that no
+# objective check would catch, since the LP still reaches the same optimum.
+# Also covers the LP time limit: Clp keeps CPU and wall-clock deadlines as two
+# independent parameters and checks both, so the limit must be armed on the one
+# INT_PARAM_ELAPSED_TIME selects (it defaults to wall clock) and only that one,
+# and "no limit" must disarm rather than arm a far-future deadline -- under LP
+# racing, enforcing a wall-clock budget as CPU time would cut it short by
+# roughly the thread count.
 # Expected LP relaxation objectives were computed independently (two external
 # solvers agreed exactly) and cross-checked against Cbc's own solve. Run as
 # part of the regression suite by run-mip-sanity-tests (--no-lp-tests skips

@@ -1970,35 +1970,80 @@ static int Cbc_mapLpResult(Cbc_Model *model, OsiClpSolverInterface *solver, ClpS
 // (warm-started resolve() or a cold ClpSolve-driven solve simply continues
 // with whatever pivot algorithm is currently installed), so it is applied
 // unconditionally before either path runs below.
+//
+// Because it runs before *every* solve -- including each Cbc_resolve() -- it
+// overwrites whatever pivot rule is currently installed. That matters for
+// DBL_PARAM_PSI: a positive psi asks for Positive Edge pivoting, which the
+// cold path requests via the "-psi" token, and which CbcSolver implements by
+// *wrapping* the installed pivot rules in their PE variants (see
+// applyPositiveEdge() in CbcSolver.cpp). Re-installing a plain
+// ClpDualRowSteepest here would silently strip that wrapper off the dual side
+// on the first reoptimization while leaving the primal side wrapped, so the
+// requested pivot rule would apply to the root LP only, asymmetrically, and
+// never to any of the reoptimizations. Unlike the one-shot overrides CbcSolver
+// protects with ClpProtectedLpSettings (which exist purely to speed up a single
+// root solve and are deliberately rolled back afterwards), psi is a persistent
+// user-requested setting, so it must be re-asserted rather than restored away.
 static void Cbc_applyDualPivot(Cbc_Model *model, ClpSimplex *clps)
 {
+  // Mirrors applyPositiveEdge()'s convention: PE is active only for psi > 0.
+  // DBL_PARAM_PSI defaults to -1.0, following the sign convention of Clp's own
+  // ClpParam::PSI default (-0.5): negative means "PE off, remembering |psi| as
+  // the factor to use if it is switched on". That is why DP_PESteepest passes
+  // fabs() -- it honors an explicitly selected PE pivot even while psi is still
+  // at that negative default.
+  const double psi = model->dbl_param[DBL_PARAM_PSI];
+  const bool positiveEdge = (psi > 0.0);
+
+  // Three of the five choices are steepest edge differing only in
+  // ClpDualRowSteepest's mode, so they share the single install below rather
+  // than repeating the PE/plain branch five times. -1 means "handled inline".
+  int steepestMode = -1;
   switch (model->dualp) {
-    case DP_Auto: {
-      ClpDualRowSteepest asteep(3);
-      clps->setDualRowPivotAlgorithm(asteep);
+    case DP_Auto:
+      steepestMode = 3;
       break;
-    }
-    case DP_Dantzig: {
-      ClpDualRowDantzig dantzig;
-      clps->setDualRowPivotAlgorithm(dantzig);
+    case DP_Partial: // steepest, but examining only a subset of the choices
+      steepestMode = 2;
       break;
-    }
-    case DP_Partial: {
-      ClpDualRowSteepest bsteep(2);
-      clps->setDualRowPivotAlgorithm(bsteep);
+    case DP_Steepest:
+      // ClpDualRowSteepest's own default mode, named explicitly so the PE
+      // variant wraps that same mode rather than ClpPEDualRowSteepest's
+      // independently-defaulted one.
+      steepestMode = ClpDualRowSteepest().mode();
       break;
-    }
-    case DP_Steepest: {
-      ClpDualRowSteepest csteep;
-      clps->setDualRowPivotAlgorithm(csteep);
+    case DP_Dantzig:
+      if (positiveEdge) {
+        ClpPEDualRowDantzig p(psi);
+        clps->setDualRowPivotAlgorithm(p);
+      } else {
+        ClpDualRowDantzig dantzig;
+        clps->setDualRowPivotAlgorithm(dantzig);
+      }
       break;
-    }
     case DP_PESteepest: {
-      ClpPEDualRowSteepest p(fabs(model->dbl_param[DBL_PARAM_PSI]));
+      // Explicitly selected PE, so it applies even while psi is still at its
+      // negative "PE off" default -- hence fabs() to recover the factor.
+      ClpPEDualRowSteepest p(fabs(psi));
       clps->setDualRowPivotAlgorithm(p);
       break;
     }
   }
+  if (steepestMode >= 0) {
+    if (positiveEdge) {
+      ClpPEDualRowSteepest p(psi, steepestMode);
+      clps->setDualRowPivotAlgorithm(p);
+    } else {
+      ClpDualRowSteepest steep(steepestMode);
+      clps->setDualRowPivotAlgorithm(steep);
+    }
+  }
+
+  // The primal column pivot is left untouched deliberately: the C interface
+  // exposes no parameter selecting one (there is no PrimalPivot counterpart to
+  // DualPivot), so whatever is installed is either Clp's default or the PE
+  // variant the cold path's "-psi" token already produced -- and in the latter
+  // case it is already what psi asks for, so there is nothing to re-assert.
 }
 
 // Wraps a single Clp solve call (initialSolve() for a cold solve, or
@@ -2294,7 +2339,33 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   clps->setSmallElementValue(model->dbl_param[DBL_PARAM_ZERO_TOL]);
   clps->setRandomSeed( model->int_param[INT_PARAM_RANDOM_SEED] );
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
-  clps->setMaximumSeconds(model->dbl_param[DBL_PARAM_TIME_LIMIT]);
+  // Time limit, in whichever clock INT_PARAM_ELAPSED_TIME selects. Mirrors
+  // CbcSolver's applyClpTimeLimit()/clearClpTimeLimits() pair, and matters on
+  // both counts:
+  //   - ClpSimplex keeps CPU and wall-clock deadlines in two separate
+  //     parameters, each with -1.0 as its sole "no limit" sentinel, and
+  //     hitMaximumIterations() tests both. Setting only the CPU one meant
+  //     INT_PARAM_ELAPSED_TIME (which defaults to 1, i.e. wall clock) was
+  //     silently ignored for LP solves. Under LP racing that is not a cosmetic
+  //     difference: CPU time accrues once per racing thread, so a budget of N
+  //     seconds was being enforced after roughly N/threads seconds of wall
+  //     time. The unselected clock is cleared rather than left alone so that
+  //     lowering the limit, or switching clocks, between two resolves cannot
+  //     leave a stale deadline from the previous solve still armed.
+  //   - COIN_DBL_MAX ("no limit" in the C interface) is not Clp's sentinel:
+  //     setMaximumSeconds() stores value + CoinCpuTime() for any value >= 0,
+  //     so the default limit landed as a finite-but-astronomical deadline that
+  //     only failed to trigger because hitMaximumIterations() happens to skip
+  //     CPU deadlines >= 4.0e7. Passing -1.0 states "no limit" outright.
+  const double lpTimeLimit = model->dbl_param[DBL_PARAM_TIME_LIMIT];
+  const double lpBudget = (lpTimeLimit >= COIN_DBL_MAX) ? -1.0 : lpTimeLimit;
+  if (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) {
+    clps->setMaximumWallSeconds(lpBudget);
+    clps->setMaximumSeconds(-1.0);
+  } else {
+    clps->setMaximumSeconds(lpBudget);
+    clps->setMaximumWallSeconds(-1.0);
+  }
   clps->setMaximumIterations(model->int_param[INT_PARAM_MAX_ITER]);
 
   if (! cbc_annouced) {

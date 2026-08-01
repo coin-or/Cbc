@@ -76,10 +76,17 @@
 # DualPivot/LPReductions setting, each checked against independently computed
 # reference objectives; warm-start reoptimization after fixing variables and
 # after removing/re-adding a binding row; and the LP settings that must survive
-# into a reoptimize (notably INT_PARAM_PERT_VALUE — Clp's default is
-# "perturbation off" while Cbc's tuned default is the mild 50 that fast
-# warm-started reoptimization relies on, so a path that fails to forward it is
-# a pure LP-performance regression that no objective check would catch). This is
+# into a reoptimize (INT_PARAM_PERT_VALUE — Clp's default is "perturbation off"
+# while Cbc's tuned default is the mild 50 that fast warm-started
+# reoptimization relies on — and DBL_PARAM_PSI, whose Positive Edge pivot rule
+# must stay installed on every later resolve rather than being stripped after
+# the root solve; both are pure LP-performance regressions that no objective
+# check would catch, as the LP still reaches the same optimum). It also checks
+# the LP limits: Clp holds CPU and wall-clock deadlines in two independent
+# parameters and tests both, so the time limit must be armed on whichever clock
+# INT_PARAM_ELAPSED_TIME selects (wall clock by default) and only that one, with
+# "no limit" disarming it outright — arming a wall-clock budget as CPU time
+# would, under LP racing, cut it short by roughly the thread count. This is
 # a single fast in-process binary rather than a parallel per-instance pass, so
 # it needs no jobs setting. Pass --no-lp-tests to skip it.
 #

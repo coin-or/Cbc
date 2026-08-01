@@ -41,12 +41,15 @@
 
 #include "Cbc_C_Interface.h"
 #include "ClpSimplex.hpp"
+#include "ClpPEDualRowDantzig.hpp"
+#include "ClpPEDualRowSteepest.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <typeinfo>
 #include <unistd.h>
 #include <vector>
 
@@ -93,6 +96,49 @@ int clpPerturbation(Cbc_Model *m)
   OsiClpSolverInterface *osi =
     static_cast<OsiClpSolverInterface *>(Cbc_getSolverPtr(m));
   return osi->getModelPtr()->perturbation();
+}
+
+/* The two time-limit deadlines actually armed on the ClpSimplex. Each is an
+ * absolute deadline (Clp stores limit + now()) with -1.0 as the sole "no limit"
+ * sentinel, and hitMaximumIterations() tests both -- so which one is set, not
+ * just its value, decides whether INT_PARAM_ELAPSED_TIME is honored. There is
+ * no maximumWallSeconds() getter, hence the getDblParam() for that one. */
+void clpTimeLimits(Cbc_Model *m, double &cpuDeadline, double &wallDeadline)
+{
+  ClpSimplex *clps =
+    static_cast<OsiClpSolverInterface *>(Cbc_getSolverPtr(m))->getModelPtr();
+  cpuDeadline = clps->maximumSeconds();
+  wallDeadline = -1.0;
+  clps->getDblParam(ClpMaxWallSeconds, wallDeadline);
+}
+
+/* Whether the dual pivot rule currently installed on the ClpSimplex is a
+ * Positive Edge variant. Note the test is only meaningful in this direction:
+ * the PE classes *derive* from the plain ones, so casting to the plain type
+ * would match a PE object too and could never distinguish them. */
+bool clpDualPivotIsPE(Cbc_Model *m)
+{
+  OsiClpSolverInterface *osi =
+    static_cast<OsiClpSolverInterface *>(Cbc_getSolverPtr(m));
+  ClpDualRowPivot *d = osi->getModelPtr()->dualRowPivot();
+  return dynamic_cast<ClpPEDualRowSteepest *>(d) != nullptr
+      || dynamic_cast<ClpPEDualRowDantzig *>(d) != nullptr;
+}
+
+/* Identity of the installed dual pivot rule: its exact dynamic type plus, for
+ * the steepest-edge family, its mode. Both matter -- re-asserting psi must
+ * neither change the rule's class nor silently drift its mode (e.g. lose
+ * DP_Partial's mode 2 to ClpPEDualRowSteepest's own default of 3), and the
+ * type name alone would not catch the latter. */
+std::string clpDualPivotIdentity(Cbc_Model *m)
+{
+  OsiClpSolverInterface *osi =
+    static_cast<OsiClpSolverInterface *>(Cbc_getSolverPtr(m));
+  ClpDualRowPivot *d = osi->getModelPtr()->dualRowPivot();
+  std::string id = typeid(*d).name();
+  if (ClpDualRowSteepest *s = dynamic_cast<ClpDualRowSteepest *>(d))
+    id += " mode=" + std::to_string(s->mode());
+  return id;
 }
 
 std::string exeDir()
@@ -546,6 +592,283 @@ void testPerturbationPaths(const std::string &dataDir, const std::string &inst)
   }
 }
 
+/* ── Test 5: Positive Edge pivoting survives reoptimization ─────────────── */
+
+/* Companion to Test 4, for the other persistent LP setting that has to reach
+ * every solve rather than just the root one: DBL_PARAM_PSI.
+ *
+ * A positive psi asks for Positive Edge pivoting, which Cbc implements by
+ * *wrapping* the installed pivot rules in their PE variants. The cold path
+ * requests it via a "-psi" token, but the pivot rule is (re)installed before
+ * every solve, including each Cbc_resolve() -- so re-installing a plain
+ * ClpDualRowSteepest there used to strip the PE wrapper off the dual side on
+ * the first reoptimization while leaving the primal side wrapped. The
+ * requested pivot rule then applied to the root LP only, asymmetrically, and
+ * to none of the reoptimizations.
+ *
+ * Like Test 4 this is invisible to objective checks -- the LP still reaches
+ * the same optimum, just with more degenerate pivots -- so it asserts on the
+ * pivot rule actually installed on the ClpSimplex.
+ *
+ * Note psi is deliberately *not* treated like the one-shot overrides CbcSolver
+ * rolls back via ClpProtectedLpSettings (auto-mode pivot/scaling/perturbation
+ * choices that exist only to speed up a single root solve): it is a persistent
+ * user-requested setting, so the correct behavior is to re-assert it. */
+void testPositiveEdgePersistence(const std::string &dataDir,
+  const std::string &inst, double expectedLpObj)
+{
+  printf("\n=== Test 5: DBL_PARAM_PSI (Positive Edge) survives reoptimization — %s ===\n",
+    inst.c_str());
+
+  const std::string mpsPath = dataDir + "/mips/" + inst + ".mps.gz";
+
+  /* Without psi, no PE wrapper should appear anywhere -- guards against the
+   * fix over-applying and turning PE on when it was never requested. */
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    if (Cbc_solveLinearProgram(m) == 0) {
+      check(!clpDualPivotIsPE(m), "psi unset: cold solve installs a plain (non-PE) dual pivot");
+      Cbc_resolve(m);
+      check(!clpDualPivotIsPE(m), "psi unset: reoptimize keeps a plain (non-PE) dual pivot");
+    }
+    Cbc_deleteModel(m);
+  }
+
+  /* With psi > 0, the PE dual pivot must be in place after the cold solve and
+   * still in place after reoptimizing -- on both the CbcSolver-driven cold
+   * path and the legacy one, and with DP_Auto (which does not itself name a
+   * PE rule) as well as an explicitly selected DP_PESteepest. */
+  struct Case {
+    const char *label;
+    LPMethod method;
+    DualPivot pivot;
+  };
+  const Case cases[] = {
+    { "CbcSolver cold path, DP_Auto",       LPM_Auto,           DP_Auto },
+    { "CbcSolver cold path, DP_Dual",       LPM_Dual,           DP_Auto },
+    { "CbcSolver cold path, DP_Steepest",   LPM_Dual,           DP_Steepest },
+    { "CbcSolver cold path, DP_Partial",    LPM_Dual,           DP_Partial },
+    { "CbcSolver cold path, DP_Dantzig",    LPM_Dual,           DP_Dantzig },
+    { "CbcSolver cold path, DP_PESteepest", LPM_Dual,           DP_PESteepest },
+    { "legacy cold path (BarrierNoCross)",  LPM_BarrierNoCross, DP_Auto },
+  };
+  for (const Case &c : cases) {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    Cbc_setDblParam(m, DBL_PARAM_PSI, 0.5);
+    Cbc_setLPmethod(m, c.method);
+    Cbc_setDualPivot(m, c.pivot);
+    if (Cbc_solveLinearProgram(m) != 0) {
+      Cbc_deleteModel(m);
+      continue;
+    }
+    check(clpDualPivotIsPE(m),
+      std::string(c.label) + ": psi=0.5 installs a PE dual pivot for the cold solve");
+    const std::string coldPivot = clpDualPivotIdentity(m);
+
+    /* Reoptimize repeatedly, after fixing a few variables at their LP values
+     * so each resolve has real work to do. The pivot rule must stay PE, and
+     * stay the *same* PE variant: re-asserting psi must not drift the rule to
+     * a different mode (e.g. losing DP_Partial's mode 2 to the PE class's own
+     * default of 3) on each pass through. */
+    int ncols = Cbc_getNumCols(m);
+    const double *sol = Cbc_getColSolution(m);
+    std::vector<double> x(sol, sol + ncols);
+    for (int k = 0; k < 3; ++k) {
+      int lo = k * 2, hi = std::min(ncols, lo + 2);
+      for (int j = lo; j < hi; ++j) {
+        Cbc_setColLower(m, j, x[j]);
+        Cbc_setColUpper(m, j, x[j]);
+      }
+      Cbc_resolve(m);
+      check(clpDualPivotIsPE(m),
+        std::string(c.label) + ": PE dual pivot still installed after reoptimize");
+      check(clpDualPivotIdentity(m) == coldPivot,
+        std::string(c.label) + ": PE dual pivot rule and mode unchanged by reoptimize");
+    }
+    Cbc_deleteModel(m);
+  }
+
+  /* PE pivoting must not change the optimum it converges to -- it only avoids
+   * degenerate moves. Solved fresh (no fixed bounds) so the reference
+   * objective applies. */
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    Cbc_setDblParam(m, DBL_PARAM_PSI, 0.5);
+    if (Cbc_solveLinearProgram(m) == 0) {
+      checkClose(Cbc_getObjValue(m), expectedLpObj, 1e-6,
+        "psi=0.5 reaches the same LP optimum");
+      Cbc_resolve(m);
+      checkClose(Cbc_getObjValue(m), expectedLpObj, 1e-6,
+        "psi=0.5 reoptimize reaches the same LP optimum");
+      validateLpSolution(m, "psi=0.5 reoptimize");
+    }
+    Cbc_deleteModel(m);
+  }
+
+  /* A psi set *after* the first solve must take effect on the next resolve,
+   * mirroring the same guarantee Test 4 checks for INT_PARAM_PERT_VALUE. */
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    if (Cbc_solveLinearProgram(m) == 0) {
+      check(!clpDualPivotIsPE(m), "psi unset before first solve: no PE dual pivot");
+      Cbc_setDblParam(m, DBL_PARAM_PSI, 0.5);
+      Cbc_resolve(m);
+      check(clpDualPivotIsPE(m),
+        "DBL_PARAM_PSI set after the first solve takes effect on Cbc_resolve()");
+    }
+    Cbc_deleteModel(m);
+  }
+}
+
+/* ── Test 6: LP time limit uses the clock INT_PARAM_ELAPSED_TIME selects ── */
+
+/* Two failure modes that no objective check can catch, since a correctly
+ * solved LP looks identical either way:
+ *
+ *  - Clp keeps CPU and wall-clock deadlines as two independent parameters and
+ *    checks both, so arming only the CPU one makes INT_PARAM_ELAPSED_TIME (which
+ *    *defaults* to 1 = wall clock) a no-op for LP solves. Under LP racing that
+ *    matters materially: CPU time accrues once per racing thread, so an N-second
+ *    budget would be enforced after roughly N/threads seconds of wall time.
+ *
+ *  - COIN_DBL_MAX is the C interface's "no limit", but it is not Clp's:
+ *    setMaximumSeconds() stores value + now() for any value >= 0, so passing it
+ *    through arms a finite deadline rather than disarming the limit. -1.0 is
+ *    Clp's only "no limit" sentinel. */
+void testLpTimeLimitClock(const std::string &dataDir, const std::string &inst)
+{
+  printf("\n=== Test 6: LP time limit honors INT_PARAM_ELAPSED_TIME — %s ===\n",
+    inst.c_str());
+
+  const std::string mpsPath = dataDir + "/mips/" + inst + ".mps.gz";
+  double cpu = 0.0, wall = 0.0;
+
+  struct Path {
+    const char *label;
+    LPMethod method;
+    int noDualReds;
+  };
+  const Path paths[] = {
+    { "CbcSolver cold path (auto)",         LPM_Auto,             0 },
+    { "legacy cold path (LPR_NoDualReds)",  LPM_Auto,             1 },
+    { "legacy cold path (BarrierNoCross)",  LPM_BarrierNoCross,   0 },
+  };
+
+  /* Default (no limit set) must leave *both* deadlines disarmed, after the cold
+   * solve and after a reoptimize. */
+  for (const Path &p : paths) {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    Cbc_setLPmethod(m, p.method);
+    if (p.noDualReds)
+      Cbc_setDualReductionsType(m, LPR_NoDualReds);
+    const std::string lbl = std::string(p.label) + ": default time limit";
+    if (Cbc_solveLinearProgram(m) == 0) {
+      clpTimeLimits(m, cpu, wall);
+      check(cpu < 0.0 && wall < 0.0, lbl + " leaves both LP deadlines disarmed after cold solve");
+      Cbc_resolve(m);
+      clpTimeLimits(m, cpu, wall);
+      check(cpu < 0.0 && wall < 0.0, lbl + " leaves both LP deadlines disarmed after reoptimize");
+    }
+    Cbc_deleteModel(m);
+  }
+
+  /* An explicit limit must arm exactly the selected clock and disarm the other,
+   * on every path and on the reoptimize too. The deadlines are absolute, so the
+   * check is "armed / not armed" rather than an equality against 30. */
+  for (int elapsed = 1; elapsed >= 0; --elapsed) {
+    for (const Path &p : paths) {
+      Cbc_Model *m = Cbc_newModel();
+      Cbc_readMps(m, mpsPath.c_str());
+      Cbc_setLogLevel(m, 0);
+      Cbc_setLPmethod(m, p.method);
+      if (p.noDualReds)
+        Cbc_setDualReductionsType(m, LPR_NoDualReds);
+      Cbc_setIntParam(m, INT_PARAM_ELAPSED_TIME, elapsed);
+      Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, 30.0);
+      const std::string lbl = std::string(p.label) + ", ELAPSED_TIME=" +
+        std::to_string(elapsed) + " (" + (elapsed ? "wall" : "CPU") + ")";
+      if (Cbc_solveLinearProgram(m) == 0) {
+        /* Only the *unselected* clock can be asserted about after the cold
+         * solve: the CbcSolver path ends with clearClpTimeLimits(), which
+         * deliberately disarms both (its own -sec token carried the limit
+         * through the solve, routed via applyClpTimeLimit() and so likewise
+         * honoring the selected clock), whereas the legacy paths leave the
+         * deadline armed. Both agree that the wrong clock is never armed. */
+        clpTimeLimits(m, cpu, wall);
+        check(elapsed ? cpu < 0.0 : wall < 0.0,
+          lbl + ": cold solve never arms the unselected clock");
+        Cbc_resolve(m);
+        clpTimeLimits(m, cpu, wall);
+        check(elapsed ? (wall >= 0.0 && cpu < 0.0) : (cpu >= 0.0 && wall < 0.0),
+          lbl + ": reoptimize arms only the selected clock");
+      }
+      Cbc_deleteModel(m);
+    }
+  }
+
+  /* Switching clocks between two solves must not leave the previous solve's
+   * deadline armed -- otherwise a stale limit keeps firing on the wrong clock. */
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    Cbc_setIntParam(m, INT_PARAM_ELAPSED_TIME, 0);
+    Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, 30.0);
+    if (Cbc_solveLinearProgram(m) == 0) {
+      Cbc_setIntParam(m, INT_PARAM_ELAPSED_TIME, 1);
+      Cbc_resolve(m);
+      clpTimeLimits(m, cpu, wall);
+      check(wall >= 0.0 && cpu < 0.0,
+        "switching ELAPSED_TIME between solves disarms the previously armed clock");
+    }
+    Cbc_deleteModel(m);
+  }
+
+  /* Clearing the limit back to "no limit" must disarm, not re-arm. */
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, 30.0);
+    if (Cbc_solveLinearProgram(m) == 0) {
+      Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, COIN_DBL_MAX);
+      Cbc_resolve(m);
+      clpTimeLimits(m, cpu, wall);
+      check(cpu < 0.0 && wall < 0.0,
+        "resetting DBL_PARAM_TIME_LIMIT to COIN_DBL_MAX disarms both LP deadlines");
+    }
+    Cbc_deleteModel(m);
+  }
+
+  /* An iteration limit must be reported as truncated (1), not optimal (0), and
+   * must be visible through Osi's own predicate. */
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    Cbc_setIntParam(m, INT_PARAM_MAX_ITER, 3);
+    checkEqInt(Cbc_solveLinearProgram(m), 1,
+      "INT_PARAM_MAX_ITER=3 reports status 1 (truncated), not 0 (optimal)");
+    OsiClpSolverInterface *osi =
+      static_cast<OsiClpSolverInterface *>(Cbc_getSolverPtr(m));
+    check(osi->isIterationLimitReached(),
+      "INT_PARAM_MAX_ITER=3: Osi reports the iteration limit as reached");
+    check(!osi->isProvenOptimal(),
+      "INT_PARAM_MAX_ITER=3: LP is not claimed proven optimal");
+    Cbc_deleteModel(m);
+  }
+}
+
 } // namespace
 
 int main(int argc, char *argv[])
@@ -567,7 +890,12 @@ int main(int argc, char *argv[])
         "     complementary slackness);\n"
         "  4. LP racing (LPM_Racing) and its >= 2 threads precondition;\n"
         "  5. INT_PARAM_PERT_VALUE reaching Clp on every solve path, including\n"
-        "     warm-started reoptimization.\n"
+        "     warm-started reoptimization;\n"
+        "  6. DBL_PARAM_PSI (Positive Edge pivoting) likewise surviving into\n"
+        "     reoptimization, without the wrapper nesting on repeated solves;\n"
+        "  7. the LP time limit being armed on the clock INT_PARAM_ELAPSED_TIME\n"
+        "     selects (and only that one), \"no limit\" really disarming it, and\n"
+        "     INT_PARAM_MAX_ITER reporting truncation rather than optimality.\n"
         "\n"
         "  --data-dir=PATH  mip-sanity-data checkout to read instances from\n"
         "                   (default: <dir of this executable>/mip-sanity-data)\n"
@@ -610,6 +938,12 @@ int main(int argc, char *argv[])
 
   testPerturbationPaths(dataDir, "p0033");
   testPerturbationPaths(dataDir, "lseu");
+
+  testPositiveEdgePersistence(dataDir, "p0033", 2520.5717391304347);
+  testPositiveEdgePersistence(dataDir, "lseu", 834.6823529411765);
+
+  testLpTimeLimitClock(dataDir, "p0033");
+  testLpTimeLimitClock(dataDir, "lseu");
 
   printf("\n=== Summary ===\n");
   if (g_failures == 0) {

@@ -60,6 +60,7 @@ public:
       FIRSTACTIONPARAM,
       BAB,
       DEBUG,
+      DEBUGCUTS,
       ENVIRONMENT,
       END,
       EXIT,

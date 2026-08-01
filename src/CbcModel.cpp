@@ -11571,6 +11571,94 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
           &cleanLagrangeanSolver);
 #endif
       numberRowCutsAfter = theseCuts.sizeRowCuts();
+#ifdef CHECK_KNOWN_SOLUTION
+      // Diagnostic-only check (independent of `mustResolve`): the existing
+      // invalid-cut check further below only runs when the generator asked
+      // for a resolve, which some generators (e.g. plain row-cut-only passes)
+      // never do -- silently letting a bad cut slip through undetected right
+      // up until it is later reused as a global cut (see the `scan globalCuts_`
+      // block earlier in this loop, which checks unconditionally). Checking
+      // here, immediately after generation and before any resolve, pinpoints
+      // exactly which generator/pass produced the offending cut.
+      if ((specialOptions_ & 1) != 0 && numberRowCutsBefore < numberRowCutsAfter) {
+        // NOTE: getRowCutDebugger() itself calls onOptimalPath() and returns
+        // NULL whenever that's false -- and onOptimalPath() has been observed
+        // to return false unconditionally for the *preprocessed* root solver
+        // (integerVariable_ appears unset on the debugger CbcModel re-attaches
+        // post-preprocessing), which silently disables this whole class of
+        // checks. Use getRowCutDebuggerAlways() (bypasses onOptimalPath(),
+        // only requires the debugger to be `active()`) so we still catch
+        // genuinely invalid cuts and can attribute them to a generator.
+        OsiRowCutDebugger *debuggerNow = solver_->getRowCutDebuggerAlways();
+        for (int k = numberRowCutsBefore; debuggerNow && k < numberRowCutsAfter; k++) {
+          const OsiRowCut *thisCut = theseCuts.rowCutPtr(k);
+          if (debuggerNow->invalidCut(*thisCut)) {
+            printf("[pre-resolve check] Cut generator %d (%s) produced "
+                   "invalid cut (%dth in this go, pass %d)\n",
+              i, generator_[i]->cutGeneratorName(),
+              k - numberRowCutsBefore, currentPassNumber_);
+            const CoinPackedVector &row = thisCut->row();
+            int n = row.getNumElements();
+            const int *idx = row.getIndices();
+            const double *els = row.getElements();
+            const double *knownSol = debuggerNow->optimalSolution();
+            double lhsAtKnown = 0.0;
+            printf("[pre-resolve check]   cut lb=%.10g ub=%.10g nElements=%d\n",
+              thisCut->lb(), thisCut->ub(), n);
+            for (int jj = 0; jj < n; jj++) {
+              lhsAtKnown += els[jj] * knownSol[idx[jj]];
+              printf("[pre-resolve check]     col %d coef=%.10g knownVal=%.10g\n",
+                idx[jj], els[jj], knownSol[idx[jj]]);
+            }
+            printf("[pre-resolve check]   LHS at known solution = %.10g (must be in [%.10g,%.10g])\n",
+              lhsAtKnown, thisCut->lb(), thisCut->ub());
+          }
+        }
+      }
+      // Same idea but for COLUMN cuts (variable fixings): check whether any
+      // newly generated OsiColCut would fix a variable to a value that
+      // excludes the known reference solution -- this is what actually
+      // explains onOptimalPath() flipping false (a wrong *fixing*, not a
+      // wrong row cut) for this instance.
+      if ((specialOptions_ & 1) != 0 && numberColumnCutsBefore < theseCuts.sizeColCuts()) {
+        int numberColumnCutsNow = theseCuts.sizeColCuts();
+        OsiRowCutDebugger *debuggerNow2 = solver_->getRowCutDebuggerAlways();
+        for (int k = numberColumnCutsBefore; debuggerNow2 && k < numberColumnCutsNow; k++) {
+          const OsiColCut *thisColCut = theseCuts.colCutPtr(k);
+          const double *knownSolution = debuggerNow2->optimalSolution();
+          const CoinPackedVector &lbs = thisColCut->lbs();
+          const CoinPackedVector &ubs = thisColCut->ubs();
+          int nlb = lbs.getNumElements();
+          const int *lbIdx = lbs.getIndices();
+          const double *lbVal = lbs.getElements();
+          for (int jj = 0; jj < nlb; jj++) {
+            int col = lbIdx[jj];
+            if (knownSolution[col] < lbVal[jj] - 1.0e-6) {
+              printf("[pre-resolve check] Cut generator %d (%s) produced "
+                     "invalid COLUMN cut (bad new LB) on col %d (%s): "
+                     "known=%.6f new LB=%.6f (pass %d)\n",
+                i, generator_[i]->cutGeneratorName(), col,
+                solver_->getColName(col).c_str(), knownSolution[col],
+                lbVal[jj], currentPassNumber_);
+            }
+          }
+          int nub = ubs.getNumElements();
+          const int *ubIdx = ubs.getIndices();
+          const double *ubVal = ubs.getElements();
+          for (int jj = 0; jj < nub; jj++) {
+            int col = ubIdx[jj];
+            if (knownSolution[col] > ubVal[jj] + 1.0e-6) {
+              printf("[pre-resolve check] Cut generator %d (%s) produced "
+                     "invalid COLUMN cut (bad new UB) on col %d (%s): "
+                     "known=%.6f new UB=%.6f (pass %d)\n",
+                i, generator_[i]->cutGeneratorName(), col,
+                solver_->getColName(col).c_str(), knownSolution[col],
+                ubVal[jj], currentPassNumber_);
+            }
+          }
+        }
+      }
+#endif
       if (fullScan && generator_[i]->howOften() == 1000000 + SCANCUTS_PROBING) {
         CglProbing *probing = dynamic_cast< CglProbing * >(generator_[i]->generator());
         if (probing && (numberRowCutsBefore < numberRowCutsAfter || numberColumnCutsBefore < theseCuts.sizeColCuts())) {

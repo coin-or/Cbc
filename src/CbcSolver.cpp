@@ -4833,10 +4833,12 @@ int CbcSolver::postprocess(
         // So only invoke it when the back-substituted solution genuinely has a
         // constraint violation somewhere in the full original model.
         if (saveSolverFeasible) {
-          buffer.str("");
-          buffer << "Postprocess solution already feasible - skipping repair pass"
-                 << std::endl;
-          printGeneralMessage(model_, buffer.str());
+          if (model_.messageHandler()->logLevel() >= 2) {
+            buffer.str("");
+            buffer << "Postprocess solution already feasible - skipping repair pass"
+                   << std::endl;
+            printGeneralMessage(model_, buffer.str());
+          }
         } else {
           CbcRepairPostprocessSolution(saveSolver_, fullModel, babModel_, process);
           // Repair may have fixed the violations it targeted -- recheck so
@@ -13048,6 +13050,62 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 printf("%d %g\n", i, debugValues[i]);
             }
           }
+        } break;
+        case CbcParam::DEBUGCUTS: {
+          if (!goodModel) {
+            printGeneralWarning(model_, "** Current model not valid\n");
+            continue;
+          }
+          cbcParam->readValue(inputQueue, fileName, &message);
+          CoinParamUtils::processFile(fileName,
+            parameters[CbcParam::DIRECTORY]->dirName(),
+            &canOpen);
+          if (!canOpen) {
+            buffer.str("");
+            buffer << "Unable to open file " << fileName.c_str();
+            printGeneralMessage(model_, buffer.str());
+            continue;
+          }
+          // Parse the .sol file using the mipstart reader
+          std::vector<std::pair<std::string, double>> dbgColValues;
+          double dbgObj = COIN_DBL_MAX;
+          CbcMipStart::read(model_.solver(), fileName.c_str(), dbgColValues,
+            dbgObj, model_.messageHandler(), model_.messagesPointer());
+          if (dbgColValues.empty()) {
+            printGeneralWarning(model_,
+              "debugCuts: no solution values read — check file format\n");
+            continue;
+          }
+          // Build name -> column-index map from the current (original,
+          // pre-preprocessing) solver. debugValues_/numberDebugValues_ are
+          // consumed later (see babPostPreprocessCleanup()/
+          // babConfigureSearchModel() in this file) against the ORIGINAL
+          // column count and, when preprocessing shrinks/renumbers columns,
+          // are remapped there via process.originalColumns() (an index-based
+          // mapping, not name-based) -- so this name lookup only needs to
+          // happen once, here, against the model as loaded, regardless of
+          // whether -preprocess/-preprocNames is later turned on or off.
+          int nOrigCols = model_.solver()->getNumCols();
+          std::map< std::string, int > colNameMap;
+          for (int i = 0; i < nOrigCols; i++)
+            colNameMap[model_.solver()->getColName(i)] = i;
+          // Populate debugValues (zero = variable at zero, not in file)
+          delete[] debugValues;
+          debugValues = new double[nOrigCols]();
+          numberDebugValues = nOrigCols;
+          int matched = 0;
+          for (const auto &cv : dbgColValues) {
+            auto it = colNameMap.find(cv.first);
+            if (it != colNameMap.end()) {
+              debugValues[it->second] = cv.second;
+              ++matched;
+            }
+          }
+          buffer.str("");
+          buffer << "debugCuts: loaded " << matched << " of "
+                 << static_cast< int >(dbgColValues.size())
+                 << " values from " << fileName;
+          printGeneralMessage(model_, buffer.str());
         } break;
         case CbcParam::PRINTMASK:
           if ((status = cbcParam->readValue(inputQueue, field, &message))) {

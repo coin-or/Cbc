@@ -8957,6 +8957,20 @@ int CbcModel::reducedCostFix()
   ClpSimplex *clpSimplex = NULL;
   if (clpSolver)
     clpSimplex = clpSolver->getModelPtr();
+  if (clpSimplex && clpSimplex->status() == 3) {
+    // The LP was stopped on iterations/time (e.g. Cbc's remaining wall-clock
+    // budget expired mid-resolve, see resolve()'s propagation of
+    // CbcMaximumSeconds into Clp).  When that happens inside
+    // ClpSimplexDual's singular-basis recovery retries, Clp restores the
+    // last known good primal solution/basis status but does not get a
+    // chance to recompute matching duals/reduced costs (computeDuals() is
+    // skipped once problemStatus_ is left at 3), so getReducedCost() can
+    // return values that are inconsistent with the just-restored column
+    // statuses.  Fixing/tightening bounds from such stale reduced costs is
+    // unsafe (and trips the status-consistency asserts below), so just
+    // skip reduced cost fixing for this incomplete solve.
+    return 0;
+  }
   for (int i = 0; i < numberIntegers_; i++) {
     int iColumn = integerVariable_[i];
     double djValue = direction * reducedCost[iColumn];

@@ -54,6 +54,7 @@
 #   --no-capi-tests      Skip the C API smoke tests (see below)
 #   --capi-jobs=N        Parallel jobs for the C API smoke tests (default: same as --jobs)
 #   --no-lp-tests        Skip the LP-relaxation solve/reoptimize tests (see below)
+#   --no-lazy-tests      Skip the lazy-constraint / TSP tests (see below)
 #   -h, --help           Show this help
 #
 # In addition to the main `cbc`-executable suite above, this script also runs
@@ -70,7 +71,7 @@
 # coverage, run in parallel just like the main suite. Pass --no-capi-tests to
 # skip this step (e.g. when only iterating on the `cbc` executable itself).
 #
-# Finally, it runs the LP-relaxation tests (test/lp-relaxation-test.cpp), which
+# Then it runs the LP-relaxation tests (test/lp-relaxation-test.cpp), which
 # cover the *LP-only* C entry points Cbc_solveLinearProgram()/Cbc_resolve():
 # root LP solves under every LPMethod (including parallel LP racing) and
 # DualPivot/LPReductions setting, each checked against independently computed
@@ -90,6 +91,26 @@
 # a single fast in-process binary rather than a parallel per-instance pass, so
 # it needs no jobs setting. Pass --no-lp-tests to skip it.
 #
+# Last, it runs the lazy-constraint tests (test/lazy-constraint-test.cpp), which
+# cover Cbc_addLazyConstraint() and the at-solution cut callback — the C-API
+# feature that makes a cutting-plane TSP solver possible, by separating subtour
+# elimination constraints only against candidate integral solutions instead of
+# enumerating exponentially many of them up front. Small random TSP instances
+# (n = 8, 10, 12) are solved three ways — lazily, with the same constraints
+# added eagerly up front, and by an in-process Held-Karp dynamic program — and
+# the three optima must agree, on instances chosen so that the assignment
+# relaxation is strictly weaker than the tour optimum (so a lazy constraint that
+# never fires is caught, rather than passing by accident). Beyond the TSP, it
+# checks that the published solution is the point the search actually proved:
+# an externally supplied solution (a MIPStart, or one replayed from a previous
+# solve) has to be screened against the lazy constraints *and* confirmed at its
+# own bounds, since the end-of-search confirm gate re-resolves the continuous
+# solver and publishes whatever that produces. Every check verifies the returned
+# point, not just the returned number — integrality, row activity, and the
+# objective recomputed from the solution — because the failure modes here
+# publish a relaxation bound with isProvenOptimal() true rather than erroring
+# out. One fast in-process binary; pass --no-lazy-tests to skip it.
+#
 # Positional arguments (optional): one or more glob patterns to select a
 # subset of instances by name (e.g. `./run-mip-sanity-tests 'jssp_*' 'cvrp_*'`).
 set -uo pipefail
@@ -107,6 +128,7 @@ FORCE_COLOR=1
 NO_CAPI_TESTS=0
 CAPI_JOBS=""
 NO_LP_TESTS=0
+NO_LAZY_TESTS=0
 CUT_STATS=0
 CUT_STATS_TSV=""
 PATTERNS=()
@@ -126,6 +148,7 @@ for arg in "$@"; do
     --no-capi-tests) NO_CAPI_TESTS=1 ;;
     --capi-jobs=*) CAPI_JOBS="${arg#*=}" ;;
     --no-lp-tests) NO_LP_TESTS=1 ;;
+    --no-lazy-tests) NO_LAZY_TESTS=1 ;;
     -h|--help)
       # Print the header comment block: everything from line 2 up to (but not
       # including) the first line that is not a comment. Derived rather than
@@ -803,8 +826,64 @@ else
   fi
 fi
 
+# ── 11. Lazy-constraint / TSP tests (lazy-constraint-test) ─────────────────
+# Covers Cbc_addLazyConstraint() and the at-solution cut callback: random TSPs
+# solved lazily, eagerly and by Held-Karp must agree, on instances where the
+# assignment relaxation is strictly weaker than the tour optimum so a lazy
+# constraint that never fires is caught rather than passing by accident; plus
+# the screening and end-of-search confirmation of externally supplied solutions
+# (see the header comment). Like the LP tests, one fast in-process binary with
+# nothing to parallelize. Needs no --data-dir: the instances are generated.
+lazy_tests_failed=0
+if [[ $NO_LAZY_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping lazy-constraint tests (--no-lazy-tests).${RESET}"
+else
+  LAZY_CONSTRAINT_TEST="$SCRIPT_DIR/lazy-constraint-test"
+  if [[ ! -x "$LAZY_CONSTRAINT_TEST" ]]; then
+    echo "${CYAN}Building lazy-constraint-test...${RESET}"
+    make -C "$SCRIPT_DIR" lazy-constraint-test || {
+      echo "${RED}Error: failed to build lazy-constraint-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  echo
+  echo "${BOLD}=== Lazy-constraint / TSP tests ===${RESET}"
+
+  LAZY_RESULTS_DIR="$RESULTS_DIR/lazy-constraint"
+  mkdir -p "$LAZY_RESULTS_DIR"
+  lazy_log="$LAZY_RESULTS_DIR/lazy-constraint-test.log"
+
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$LAZY_CONSTRAINT_TEST" >"$lazy_log" 2>&1; then
+    lazy_checks_ok=$(grep -c '^  ok:' "$lazy_log" 2>/dev/null || true)
+    echo "  ${GREEN}✔ all ${lazy_checks_ok:-0} check(s) passed${RESET}  ${DIM}($lazy_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Lazy-constraint tests passed" "${lazy_checks_ok:-0} / ${lazy_checks_ok:-0}")${RESET}"
+  else
+    lazy_tests_failed=1
+    lazy_checks_ok=$(grep -c '^  ok:' "$lazy_log" 2>/dev/null || true)
+    lazy_checks_bad=$(grep -c '^  FAIL:' "$lazy_log" 2>/dev/null || true)
+    lazy_total=$(( ${lazy_checks_ok:-0} + ${lazy_checks_bad:-0} ))
+    echo "  ${RED}✗ ${lazy_checks_bad:-0} check(s) failed${RESET}  ${DIM}(see $lazy_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Lazy-constraint tests passed" "${lazy_checks_ok:-0} / $lazy_total")${RESET}"
+  fi
+  echo
+
+  if [[ $lazy_tests_failed -eq 1 ]]; then
+    echo "${BOLD}${RED}=== Lazy-constraint test failures ===${RESET}"
+    # Only the failing checks (plus the final RESULT line): the full log carries
+    # Cbc's own output for every solve, several per instance.
+    grep -E '^  FAIL:|^RESULT:' "$lazy_log" 2>/dev/null
+    echo
+    echo "${DIM}Full log: $lazy_log${RESET}"
+    echo
+  fi
+fi
+
 if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 \
-      || ${#capi_fail_list[@]} -gt 0 || $lp_tests_failed -ne 0 ]]; then
+      || ${#capi_fail_list[@]} -gt 0 || $lp_tests_failed -ne 0 \
+      || $lazy_tests_failed -ne 0 ]]; then
   exit 1
 fi
 exit 0

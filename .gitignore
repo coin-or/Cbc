@@ -33,4 +33,8 @@ dist
 
 # mip-sanity-data regression suite (test/)
 /test/cbc_validate_sol
+/test/lazy-constraint-test
+/test/lp-relaxation-test
+/test/mip-c-solve
+/test/mip-debug-cuts
 /test/sanity-results/

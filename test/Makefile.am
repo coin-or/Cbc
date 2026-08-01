@@ -43,7 +43,8 @@ test: cbc_validate_sol$(EXEEXT)
 # inspect the C interface end to end and confirm it behaves like the `cbc`
 # command line for any instance. See `mip-c-solve --help` for usage.
 
-noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test
+noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
+	lazy-constraint-test
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -99,3 +100,37 @@ mip_debug_cuts_LDADD = ../src/libCbc.la
 lp_relaxation_test_SOURCES = lp-relaxation-test.cpp
 
 lp_relaxation_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#               Lazy-constraint tests (C interface, TSP)               #
+########################################################################
+#
+# lazy-constraint-test: targeted tests for the C interface's lazy-constraint
+# machinery -- Cbc_addLazyConstraint() and Cbc_addCutCallback() with
+# atSolution=1 -- driven by the TSP with subtour elimination, which is the
+# canonical use of the feature (the SEC family is exponential, so it is stated
+# lazily and only violated members ever reach a solver).
+# The failure mode being guarded against is silent: a lazy constraint that is
+# ignored still yields an optimal-looking answer, just to a relaxation. The
+# assignment problem (degree constraints only) is exactly the TSP minus its
+# SECs and is strictly weaker on every instance used, so the two are told apart
+# by the objective alone. No fixture data is needed: instances come from a fixed
+# LCG and each reference optimum is computed in-process three independent ways
+# -- Held-Karp dynamic programming, the same MIP with SECs as ordinary rows, and
+# the same MIP with them lazy -- which must agree while the SEC-free bound must
+# come out strictly below. Published solutions are also walked as a successor
+# array, since an objective check alone would pass on two subtours priced as if
+# they were a tour.
+# Covers enforcement, the LP relaxation staying untightened, repeated Cbc_solve()
+# on one model (where the previous answer returns as a MIPStart, screened before
+# the model is flagged as carrying lazy constraints), constraints registered
+# between solves, Cbc_clone() deep-copying them, a SEC-violating MIPStart being
+# rejected rather than trusted in both objective senses, the cut-callback and
+# iterative-LP-cut-loop formulations, staged rows/columns reaching the solve at
+# all, and the whole solution pool rather than just the best solution. Run as
+# part of the regression suite by run-mip-sanity-tests (--no-lazy-tests skips
+# it). See `lazy-constraint-test --help`.
+
+lazy_constraint_test_SOURCES = lazy-constraint-test.cpp
+
+lazy_constraint_test_LDADD = ../src/libCbc.la

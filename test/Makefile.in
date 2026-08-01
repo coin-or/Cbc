@@ -97,7 +97,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
-	mip-debug-cuts$(EXEEXT) lp-relaxation-test$(EXEEXT)
+	mip-debug-cuts$(EXEEXT) lp-relaxation-test$(EXEEXT) \
+	lazy-constraint-test$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -118,6 +119,9 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_lazy_constraint_test_OBJECTS = lazy-constraint-test.$(OBJEXT)
+lazy_constraint_test_OBJECTS = $(am_lazy_constraint_test_OBJECTS)
+lazy_constraint_test_DEPENDENCIES = ../src/libCbc.la
 am_lp_relaxation_test_OBJECTS = lp-relaxation-test.$(OBJEXT)
 lp_relaxation_test_OBJECTS = $(am_lp_relaxation_test_OBJECTS)
 lp_relaxation_test_DEPENDENCIES = ../src/libCbc.la
@@ -143,6 +147,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/Osi
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/cbc_validate_sol.Po \
+	./$(DEPDIR)/lazy-constraint-test.Po \
 	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po \
 	./$(DEPDIR)/mip-debug-cuts.Po
 am__mv = mv -f
@@ -164,7 +169,8 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(cbc_validate_sol_SOURCES) $(lp_relaxation_test_SOURCES) \
+SOURCES = $(cbc_validate_sol_SOURCES) \
+	$(lazy_constraint_test_SOURCES) $(lp_relaxation_test_SOURCES) \
 	$(mip_c_solve_SOURCES) $(mip_debug_cuts_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -394,6 +400,38 @@ mip_debug_cuts_LDADD = ../src/libCbc.la
 # it). See `lp-relaxation-test --help`.
 lp_relaxation_test_SOURCES = lp-relaxation-test.cpp
 lp_relaxation_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#               Lazy-constraint tests (C interface, TSP)               #
+########################################################################
+#
+# lazy-constraint-test: targeted tests for the C interface's lazy-constraint
+# machinery -- Cbc_addLazyConstraint() and Cbc_addCutCallback() with
+# atSolution=1 -- driven by the TSP with subtour elimination, which is the
+# canonical use of the feature (the SEC family is exponential, so it is stated
+# lazily and only violated members ever reach a solver).
+# The failure mode being guarded against is silent: a lazy constraint that is
+# ignored still yields an optimal-looking answer, just to a relaxation. The
+# assignment problem (degree constraints only) is exactly the TSP minus its
+# SECs and is strictly weaker on every instance used, so the two are told apart
+# by the objective alone. No fixture data is needed: instances come from a fixed
+# LCG and each reference optimum is computed in-process three independent ways
+# -- Held-Karp dynamic programming, the same MIP with SECs as ordinary rows, and
+# the same MIP with them lazy -- which must agree while the SEC-free bound must
+# come out strictly below. Published solutions are also walked as a successor
+# array, since an objective check alone would pass on two subtours priced as if
+# they were a tour.
+# Covers enforcement, the LP relaxation staying untightened, repeated Cbc_solve()
+# on one model (where the previous answer returns as a MIPStart, screened before
+# the model is flagged as carrying lazy constraints), constraints registered
+# between solves, Cbc_clone() deep-copying them, a SEC-violating MIPStart being
+# rejected rather than trusted in both objective senses, the cut-callback and
+# iterative-LP-cut-loop formulations, staged rows/columns reaching the solve at
+# all, and the whole solution pool rather than just the best solution. Run as
+# part of the regression suite by run-mip-sanity-tests (--no-lazy-tests skips
+# it). See `lazy-constraint-test --help`.
+lazy_constraint_test_SOURCES = lazy-constraint-test.cpp
+lazy_constraint_test_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:
@@ -436,6 +474,10 @@ cbc_validate_sol$(EXEEXT): $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_DEPEND
 	@rm -f cbc_validate_sol$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_LDADD) $(LIBS)
 
+lazy-constraint-test$(EXEEXT): $(lazy_constraint_test_OBJECTS) $(lazy_constraint_test_DEPENDENCIES) $(EXTRA_lazy_constraint_test_DEPENDENCIES) 
+	@rm -f lazy-constraint-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(lazy_constraint_test_OBJECTS) $(lazy_constraint_test_LDADD) $(LIBS)
+
 lp-relaxation-test$(EXEEXT): $(lp_relaxation_test_OBJECTS) $(lp_relaxation_test_DEPENDENCIES) $(EXTRA_lp_relaxation_test_DEPENDENCIES) 
 	@rm -f lp-relaxation-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(lp_relaxation_test_OBJECTS) $(lp_relaxation_test_LDADD) $(LIBS)
@@ -455,6 +497,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc_validate_sol.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lazy-constraint-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lp-relaxation-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-c-solve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-debug-cuts.Po@am__quote@ # am--include-marker
@@ -587,6 +630,7 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
+	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
 	-rm -f ./$(DEPDIR)/mip-debug-cuts.Po
@@ -636,6 +680,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
+	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
 	-rm -f ./$(DEPDIR)/mip-debug-cuts.Po

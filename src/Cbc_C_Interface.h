@@ -51,7 +51,7 @@ enum LPMethod {
   LPM_Primal         = 2,  /*! Primal simplex */
   LPM_Barrier        = 3,  /*! The barrier algorithm */
   LPM_BarrierNoCross = 4,  /*! Barrier algorithm, not to be followed by crossover */
-  LPM_Racing         = 5,  /*! Opportunistic parallel LP racing: multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (INT_PARAM_THREADS). */
+  LPM_Racing         = 5,  /*! Opportunistic parallel LP racing: multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (INT_PARAM_THREADS); with fewer it silently degrades to LPM_Recommend. */
   LPM_Recommend      = 6   /*! ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features. Runs sequentially. */
 };
 
@@ -120,7 +120,7 @@ enum IntParam {
   INT_PARAM_FPUMP_ITS               = 6,  /*! Maximum number of iterations in the feasibility pump method. */
   INT_PARAM_MAX_SOLS                = 7,  /*! Maximum number of solutions generated during the search. Stops the search when this number of solutions is found. */
   INT_PARAM_CUT_PASS_IN_TREE        = 8,  /*! Maximum number of cuts passes in the search tree (with the exception of the root node). Default 1. */
-  INT_PARAM_THREADS                 = 9,  /*! Number of threads that can be used in the branch-and-bound method.*/
+  INT_PARAM_THREADS                 = 9,  /*! Number of threads that can be used in the branch-and-bound method. Also bounds the LP-relaxation solve (Cbc_solveLinearProgram): LPM_Racing needs >= 2 to race, and LPM_Auto only selects racing when >= 2 threads are available. */
   INT_PARAM_CUT_PASS                = 10, /*! Number of cut passes in the root node. Default -1, solver decides */
   INT_PARAM_LOG_LEVEL               = 11, /*! Verbosity level, from 0 to 2 */
   INT_PARAM_MAX_SAVED_SOLS          = 12, /*! Size of the pool to save the best solutions found during the search. */

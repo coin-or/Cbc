@@ -2129,6 +2129,17 @@ static int Cbc_solveLPColdViaCbcSolver(Cbc_Model *model, OsiClpSolverInterface *
   cbcSolver.parameters().disableWelcomePrinting();
   cbcSolver.model()->setUseElapsedTime(model->int_param[INT_PARAM_ELAPSED_TIME] == 1);
 
+  // Capture the search start time before applyLpMethod() runs. LP racing reads
+  // it through CbcModel::getCurrentSeconds() to timestamp its progress rows,
+  // and getCurrentSeconds() subtracts CbcStartSeconds from the current clock --
+  // so leaving it at 0 makes every racing progress row report raw epoch seconds
+  // instead of an elapsed time. CbcSolver::solveInitialLp() does this for the
+  // command-line/BAB paths, but this function deliberately bypasses it (see the
+  // doc comment above), so the same guard is needed here.
+  if (!cbcSolver.model()->getDblParam(CbcModel::CbcStartSeconds))
+    cbcSolver.model()->setDblParam(CbcModel::CbcStartSeconds,
+      cbcSolver.model()->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
+
   std::deque< std::string > inputQueue;
   auto addParamD = [&](const char *n, double v) {
     char buf[64]; snprintf(buf, sizeof(buf), "%.17g", v);
@@ -2152,6 +2163,29 @@ static int Cbc_solveLPColdViaCbcSolver(Cbc_Model *model, OsiClpSolverInterface *
     addParamI("idiot", model->int_param[INT_PARAM_IDIOT]);
   if (model->dbl_param[DBL_PARAM_PSI] > 0.0)
     addParamD("psi", model->dbl_param[DBL_PARAM_PSI]);
+  // Thread count: applyLpMethod() reads CbcParam::THREADS to decide whether LP
+  // racing can run at all (it needs >= 2, and raises a CoinError otherwise) and
+  // how many racing threads to start, as well as which way -lpMethod=auto
+  // resolves (racing when >= 2, the sequential ML recommendation when == 1).
+  // Without forwarding it here, every LP-relaxation solve saw THREADS unset and
+  // so behaved as single-threaded regardless of INT_PARAM_THREADS -- which made
+  // LPM_Racing (documented in Cbc_C_Interface.h as "Requires at least 2 threads
+  // (INT_PARAM_THREADS)") unreachable through the C interface.
+  //
+  // lpThreads is the count applyLpMethod() will actually see, so that the
+  // racing precondition below is checked against the same number rather than
+  // against the requested one: in a build without CBC_THREAD the token is not
+  // forwarded at all, THREADS stays at its default and racing is impossible no
+  // matter what INT_PARAM_THREADS asks for. Mirrors applyLpMethod()'s own
+  // computation, which reads THREADS modulo 100 (values >= 100 encode extra
+  // B&B behaviour).
+  int lpThreads = 1;
+#ifdef CBC_THREAD
+  if (model->int_param[INT_PARAM_THREADS] >= 1) {
+    addParamI("threads", model->int_param[INT_PARAM_THREADS]);
+    lpThreads = std::max(1, model->int_param[INT_PARAM_THREADS] % 100);
+  }
+#endif
 
   // Dual pivot is applied directly on clps by Cbc_applyDualPivot() (called
   // by the caller before this function), so it is not repeated here as an
@@ -2163,7 +2197,25 @@ static int Cbc_solveLPColdViaCbcSolver(Cbc_Model *model, OsiClpSolverInterface *
     "auto", "dual", "primal", "barrier", "barrier", "racing", "recommend"
   }; // index 4 (LPM_BarrierNoCross) is unreachable here -- routed to
      // Cbc_solveLPColdLegacy() by the caller instead.
-  inputQueue.push_back(std::string("-lpMethod=") + lpmKwd[model->lp_method]);
+  int lpMethod = model->lp_method;
+
+  // LP racing needs at least two threads to race with; applyLpMethod() treats
+  // being asked for it with one thread as a hard error (CoinError). Reaching
+  // that from here would abort the whole process -- including an embedding
+  // interpreter such as python-mip's -- over what is only a mis-set parameter,
+  // so the combination is resolved here instead: fall back to the sequential
+  // sibling method ("recommend", exactly what applyLpMethod() itself selects
+  // for -lpMethod=auto when a single thread is available) and say so once.
+  if (lpMethod == LPM_Racing && lpThreads < 2) {
+    if (model->int_param[INT_PARAM_LOG_LEVEL] >= 1) {
+      fprintf(stderr, "Cbc_solveLinearProgram: LP racing needs at least 2 "
+        "threads (INT_PARAM_THREADS is %d); using the sequential recommended "
+        "LP method instead.\n", model->int_param[INT_PARAM_THREADS]);
+      fflush(stderr);
+    }
+    lpMethod = LPM_Recommend;
+  }
+  inputQueue.push_back(std::string("-lpMethod=") + lpmKwd[lpMethod]);
 
   // No action token (e.g. "-initialSolve") is pushed here: run() below is
   // used only to parse the parameter-setting tokens above into
@@ -2176,15 +2228,29 @@ static int Cbc_solveLPColdViaCbcSolver(Cbc_Model *model, OsiClpSolverInterface *
   // from those same already-set parameters.
   inputQueue.push_back("-quit");
 
-  cbcSolver.run(inputQueue);
-
   // The single unified LP-solve entry point (model-level LP settings, LP
   // racing, full ClpSolve solve with all configured options) -- see this
   // function's doc comment above for why this is called directly instead of
   // via CbcSolver::run()'s "-initialSolve" action. Operates directly on
   // `solver` (passed explicitly rather than relying on
   // cbcSolver.model()->solver(), even though they are the same object here).
-  cbcSolver.applyLpMethod(solver, -1);
+  //
+  // Both calls are guarded: applyLpMethod() reports invalid LP-method/thread
+  // combinations by throwing CoinError (e.g. lpMethod=racing with a single
+  // thread), and an exception thrown across this C boundary would otherwise
+  // reach an extern "C" frame and terminate the process with nothing but
+  // "terminate called after throwing an instance of 'CoinError'". Translating
+  // it into a legible diagnostic first matches how Cbc_solve() below handles
+  // the same class of error.
+  try {
+    cbcSolver.run(inputQueue);
+    cbcSolver.applyLpMethod(solver, -1);
+  } catch (CoinError &e) {
+    fprintf(stderr, "%s ERROR: %s::%s, %s\n", "Cbc_solveLinearProgram",
+      e.className().c_str(), e.methodName().c_str(), e.message().c_str());
+    fflush(stdout); fflush(stderr);
+    abort();
+  }
 
   // applyLpMethod() solves via ClpSimplex::initialSolve()/racing directly
   // (not OsiClpSolverInterface::initialSolve()), so `solver`'s own
@@ -2212,6 +2278,19 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   // Tolerances, limits and log level: apply regardless of warm/cold path.
   solver->setDblParam( OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
   solver->setDblParam( OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL]);
+  // Perturbation, likewise: it is read by every simplex call, so it must be in
+  // effect on the warm-start resolve() path and the legacy cold path too --
+  // not just where it happens to be forwarded as a "-pertV" token (see
+  // Cbc_solveLPColdViaCbcSolver()). Clp's own default is 100 ("off") whereas
+  // Cbc's tuned default is the mild 50 that fast warm-started reoptimization
+  // relies on, so leaving this to the cold path alone means:
+  //   - a reoptimize following a legacy cold solve (LPR_NoDualReds /
+  //     LPM_BarrierNoCross, neither of which sets perturbation) runs with
+  //     perturbation off, and
+  //   - a Cbc_setIntParam(INT_PARAM_PERT_VALUE) issued after the first solve
+  //     is silently ignored on every subsequent Cbc_resolve().
+  // Setting it here makes INT_PARAM_PERT_VALUE authoritative on all paths.
+  clps->setPerturbation(model->int_param[INT_PARAM_PERT_VALUE]);
   clps->setSmallElementValue(model->dbl_param[DBL_PARAM_ZERO_TOL]);
   clps->setRandomSeed( model->int_param[INT_PARAM_RANDOM_SEED] );
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );

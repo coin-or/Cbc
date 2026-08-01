@@ -53,6 +53,7 @@
 #   --no-color           Disable ANSI colors
 #   --no-capi-tests      Skip the C API smoke tests (see below)
 #   --capi-jobs=N        Parallel jobs for the C API smoke tests (default: same as --jobs)
+#   --no-lp-tests        Skip the LP-relaxation solve/reoptimize tests (see below)
 #   -h, --help           Show this help
 #
 # In addition to the main `cbc`-executable suite above, this script also runs
@@ -68,6 +69,19 @@
 # (bound propagation, clique strengthening, ...) — their own regression
 # coverage, run in parallel just like the main suite. Pass --no-capi-tests to
 # skip this step (e.g. when only iterating on the `cbc` executable itself).
+#
+# Finally, it runs the LP-relaxation tests (test/lp-relaxation-test.cpp), which
+# cover the *LP-only* C entry points Cbc_solveLinearProgram()/Cbc_resolve():
+# root LP solves under every LPMethod (including parallel LP racing) and
+# DualPivot/LPReductions setting, each checked against independently computed
+# reference objectives; warm-start reoptimization after fixing variables and
+# after removing/re-adding a binding row; and the LP settings that must survive
+# into a reoptimize (notably INT_PARAM_PERT_VALUE — Clp's default is
+# "perturbation off" while Cbc's tuned default is the mild 50 that fast
+# warm-started reoptimization relies on, so a path that fails to forward it is
+# a pure LP-performance regression that no objective check would catch). This is
+# a single fast in-process binary rather than a parallel per-instance pass, so
+# it needs no jobs setting. Pass --no-lp-tests to skip it.
 #
 # Positional arguments (optional): one or more glob patterns to select a
 # subset of instances by name (e.g. `./run-mip-sanity-tests 'jssp_*' 'cvrp_*'`).
@@ -85,6 +99,7 @@ UPDATE_DATA=0
 FORCE_COLOR=1
 NO_CAPI_TESTS=0
 CAPI_JOBS=""
+NO_LP_TESTS=0
 CUT_STATS=0
 CUT_STATS_TSV=""
 PATTERNS=()
@@ -103,8 +118,13 @@ for arg in "$@"; do
     --no-color) FORCE_COLOR=0 ;;
     --no-capi-tests) NO_CAPI_TESTS=1 ;;
     --capi-jobs=*) CAPI_JOBS="${arg#*=}" ;;
+    --no-lp-tests) NO_LP_TESTS=1 ;;
     -h|--help)
-      sed -n '2,73p' "$0"
+      # Print the header comment block: everything from line 2 up to (but not
+      # including) the first line that is not a comment. Derived rather than
+      # hardcoded as a line range, which silently truncated the help text
+      # whenever the header grew.
+      sed -n '2,${/^#/!q; p;}' "$0"
       exit 0
       ;;
     -*)
@@ -718,7 +738,66 @@ else
   fi
 fi
 
-if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 || ${#capi_fail_list[@]} -gt 0 ]]; then
+# ── 10. LP-relaxation solve/reoptimize tests (lp-relaxation-test) ──────────
+# Covers the LP-only C entry points Cbc_solveLinearProgram()/Cbc_resolve():
+# every LPMethod (including parallel LP racing) and DualPivot/LPReductions
+# setting against independently computed reference objectives, warm-start
+# reoptimization after variable fixing and after removing/re-adding a binding
+# row, and the LP settings that must survive into a reoptimize (see the header
+# comment for why INT_PARAM_PERT_VALUE matters here). One fast in-process
+# binary, so unlike the passes above there is nothing to parallelize.
+lp_tests_failed=0
+if [[ $NO_LP_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping LP-relaxation tests (--no-lp-tests).${RESET}"
+else
+  LP_RELAXATION_TEST="$SCRIPT_DIR/lp-relaxation-test"
+  if [[ ! -x "$LP_RELAXATION_TEST" ]]; then
+    echo "${CYAN}Building lp-relaxation-test...${RESET}"
+    make -C "$SCRIPT_DIR" lp-relaxation-test || {
+      echo "${RED}Error: failed to build lp-relaxation-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  echo
+  echo "${BOLD}=== LP-relaxation solve/reoptimize tests ===${RESET}"
+
+  LP_RESULTS_DIR="$RESULTS_DIR/lp-relaxation"
+  mkdir -p "$LP_RESULTS_DIR"
+  lp_log="$LP_RESULTS_DIR/lp-relaxation-test.log"
+
+  # The binary prints one line per check; only the tally is echoed here, with
+  # the full log kept for inspection (and dumped below on failure).
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$LP_RELAXATION_TEST" --data-dir="$DATA_DIR" \
+      >"$lp_log" 2>&1; then
+    lp_checks_ok=$(grep -c '^  ok:' "$lp_log" 2>/dev/null || true)
+    echo "  ${GREEN}✔ all ${lp_checks_ok:-0} check(s) passed${RESET}  ${DIM}($lp_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "LP relaxation tests passed" "${lp_checks_ok:-0} / ${lp_checks_ok:-0}")${RESET}"
+  else
+    lp_tests_failed=1
+    lp_checks_ok=$(grep -c '^  ok:' "$lp_log" 2>/dev/null || true)
+    lp_checks_bad=$(grep -c '^  FAIL:' "$lp_log" 2>/dev/null || true)
+    lp_total=$(( ${lp_checks_ok:-0} + ${lp_checks_bad:-0} ))
+    echo "  ${RED}✗ ${lp_checks_bad:-0} check(s) failed${RESET}  ${DIM}(see $lp_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "LP relaxation tests passed" "${lp_checks_ok:-0} / $lp_total")${RESET}"
+  fi
+  echo
+
+  if [[ $lp_tests_failed -eq 1 ]]; then
+    echo "${BOLD}${RED}=== LP-relaxation test failures ===${RESET}"
+    # Only the failing checks (plus the final RESULT line): the full log
+    # interleaves Cbc's own LP solve output for every configuration tried.
+    grep -E '^  FAIL:|^RESULT:' "$lp_log" 2>/dev/null
+    echo
+    echo "${DIM}Full log: $lp_log${RESET}"
+    echo
+  fi
+fi
+
+if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 \
+      || ${#capi_fail_list[@]} -gt 0 || $lp_tests_failed -ne 0 ]]; then
   exit 1
 fi
 exit 0

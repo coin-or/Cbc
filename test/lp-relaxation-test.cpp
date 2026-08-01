@@ -23,12 +23,25 @@
  *      different LP method may legitimately return a different optimal
  *      basis/vertex, these checks validate feasibility & LP optimality
  *      conditions rather than expecting one specific basis.
+ *   4. LP racing (LPM_Racing) and its thread precondition: racing must
+ *      reach the same LP optimum as the sequential methods when >= 2
+ *      threads are available, and must degrade gracefully (not abort the
+ *      process) when asked for with a single thread.
+ *   5. Perturbation (INT_PARAM_PERT_VALUE) reaching Clp on *every* solve
+ *      path. Clp's own default is 100 ("off") whereas Cbc's tuned default
+ *      is the mild 50 that fast warm-started reoptimization relies on, so a
+ *      path that forgets to forward this silently reoptimizes with
+ *      perturbation off -- a pure performance regression that no
+ *      objective-value check can catch. These tests therefore read the
+ *      perturbation actually installed on the underlying ClpSimplex.
  *
  * Usage: lp-relaxation-test [--data-dir=PATH]
  * Exit code: 0 = all checks passed, 1 = one or more checks failed.
  */
 
 #include "Cbc_C_Interface.h"
+#include "ClpSimplex.hpp"
+#include "OsiClpSolverInterface.hpp"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -57,9 +70,29 @@ void checkClose(double actual, double expected, double tol, const std::string &m
     printf("  FAIL: %s (actual=%.10g expected=%.10g delta=%.3e > tol=%.3e)\n",
       msg.c_str(), actual, expected, delta, tol);
   } else {
-    printf("  ok:   %s (actual=%.10g expected=%.10g delta=%.3e)\n",
+    printf("  ok:   %s (actual=%.10g expected=%.10g delta=%.3e <= tol=%.3e)\n",
       msg.c_str(), actual, expected, delta, tol);
   }
+}
+
+void checkEqInt(int actual, int expected, const std::string &msg)
+{
+  if (actual != expected) {
+    ++g_failures;
+    printf("  FAIL: %s (actual=%d expected=%d)\n", msg.c_str(), actual, expected);
+  } else {
+    printf("  ok:   %s (=%d)\n", msg.c_str(), actual);
+  }
+}
+
+/* Perturbation actually installed on the ClpSimplex behind the C model --
+ * i.e. what the next simplex call will really use, as opposed to what was
+ * merely requested via Cbc_setIntParam(). */
+int clpPerturbation(Cbc_Model *m)
+{
+  OsiClpSolverInterface *osi =
+    static_cast<OsiClpSolverInterface *>(Cbc_getSolverPtr(m));
+  return osi->getModelPtr()->perturbation();
 }
 
 std::string exeDir()
@@ -325,6 +358,194 @@ void testResolveAfterConstraintChange(const std::string &dataDir, const std::str
   Cbc_deleteModel(m);
 }
 
+/* ── Test 3: LP racing and its thread precondition ─────────────────────── */
+
+/* LPM_Racing runs several LP configurations (dual, primal+Idiot,
+ * primal+Sprint) in parallel threads and takes the first to reach
+ * optimality. Two things are checked:
+ *   a) with >= 2 threads it must reach the same LP optimum as every
+ *      sequential method (the winner is a genuine LP optimum, not a
+ *      truncated/loosened one);
+ *   b) with a single thread it must NOT abort. Racing with one thread is a
+ *      hard error deep inside CbcSolver::applyLpMethod() (CoinError), and an
+ *      exception escaping through the extern "C" boundary would terminate
+ *      the calling process -- for an embedding interpreter (python-mip) that
+ *      turns a mis-set parameter into a crash. The C interface resolves the
+ *      combination up front instead, falling back to the sequential
+ *      recommended method.
+ * LPM_Auto is covered for both thread counts too, since it dispatches to
+ * racing / the sequential recommendation based on the same thread count. */
+void testRacingLp(const std::string &dataDir, const std::string &inst, double expectedLpObj)
+{
+  printf("\n=== Test 3: LP racing / thread precondition — %s ===\n", inst.c_str());
+
+  struct Cfg {
+    const char *label;
+    LPMethod method;
+    int threads;
+  };
+  const Cfg configs[] = {
+    { "racing, 4 threads",             LPM_Racing, 4 },
+    { "racing, 2 threads",             LPM_Racing, 2 },
+    { "racing, 1 thread (must not abort)", LPM_Racing, 1 },
+    { "racing, threads unset",         LPM_Racing, -1 },
+    { "auto, 4 threads",               LPM_Auto,   4 },
+    { "auto, 1 thread",                LPM_Auto,   1 },
+  };
+
+  const std::string mpsPath = dataDir + "/mips/" + inst + ".mps.gz";
+  for (const Cfg &cfg : configs) {
+    Cbc_Model *m = Cbc_newModel();
+    if (Cbc_readMps(m, mpsPath.c_str()) != 0) {
+      check(false, std::string("could not read instance ") + mpsPath);
+      Cbc_deleteModel(m);
+      continue;
+    }
+    Cbc_setLogLevel(m, 0);
+    Cbc_setLPmethod(m, cfg.method);
+    if (cfg.threads > 0)
+      Cbc_setIntParam(m, INT_PARAM_THREADS, cfg.threads);
+
+    int rc = Cbc_solveLinearProgram(m);
+    check(rc == 0, std::string(cfg.label) + ": Cbc_solveLinearProgram returned optimal (rc=0)");
+    if (rc == 0) {
+      checkClose(Cbc_getObjValue(m), expectedLpObj, 1e-6,
+        std::string(cfg.label) + ": LP relaxation objective matches reference");
+      validateLpSolution(m, cfg.label);
+    }
+    Cbc_deleteModel(m);
+  }
+
+  /* Racing leaves the winning thread's basis in the caller's solver, so a
+   * subsequent warm-started reoptimization must work off it as usual. */
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    Cbc_setLPmethod(m, LPM_Racing);
+    Cbc_setIntParam(m, INT_PARAM_THREADS, 4);
+    if (Cbc_solveLinearProgram(m) == 0) {
+      int ncols = Cbc_getNumCols(m);
+      std::vector<double> x(Cbc_getColSolution(m), Cbc_getColSolution(m) + ncols);
+      int nFix = std::min(ncols, 5);
+      for (int j = 0; j < nFix; ++j) {
+        Cbc_setColLower(m, j, x[j]);
+        Cbc_setColUpper(m, j, x[j]);
+      }
+      int rc = Cbc_resolve(m);
+      check(rc == 0, "racing: Cbc_resolve() after racing solve is optimal");
+      if (rc == 0)
+        checkClose(Cbc_getObjValue(m), expectedLpObj, 1e-6,
+          "racing: objective unchanged when reoptimizing after racing (basis reused)");
+    }
+    Cbc_deleteModel(m);
+  }
+}
+
+/* ── Test 4: perturbation reaches Clp on every solve path ──────────────── */
+
+/* Regression test for a silent LP-performance bug: INT_PARAM_PERT_VALUE was
+ * only forwarded to Clp on one of the three solve paths (as a "-pertV" token
+ * on the CbcSolver-driven cold path), so
+ *   - a reoptimize following a *legacy* cold solve (LPR_NoDualReds /
+ *     LPM_BarrierNoCross, neither of which touches perturbation) ran with
+ *     perturbation at Clp's default 100 = OFF, never getting Cbc's tuned 50;
+ *   - Cbc_setIntParam(INT_PARAM_PERT_VALUE) issued after the first solve was
+ *     silently ignored by every later Cbc_resolve().
+ * Both are invisible to objective checks -- the LP still solves to the same
+ * optimum, just slower -- so this asserts on the perturbation value actually
+ * installed on the ClpSimplex. */
+void testPerturbationPaths(const std::string &dataDir, const std::string &inst)
+{
+  printf("\n=== Test 4: INT_PARAM_PERT_VALUE honored on all solve paths — %s ===\n",
+    inst.c_str());
+
+  const std::string mpsPath = dataDir + "/mips/" + inst + ".mps.gz";
+
+  /* Default: Cbc's tuned 50 (mild perturbation), not Clp's 100 (off). */
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    checkEqInt(Cbc_getIntParam(m, INT_PARAM_PERT_VALUE), 50,
+      "default INT_PARAM_PERT_VALUE is Cbc's tuned 50 (not Clp's 100 = off)");
+    Cbc_solveLinearProgram(m);
+    checkEqInt(clpPerturbation(m), 50,
+      "default: perturbation installed on ClpSimplex after CbcSolver cold path");
+    Cbc_deleteModel(m);
+  }
+
+  /* Explicit value, on each of the three solve paths. 61 is arbitrary but
+   * distinct from both 50 and 100, so neither default can mask a failure. */
+  struct Path {
+    const char *label;
+    LPMethod method;
+    int noDualReds;
+  };
+  const Path paths[] = {
+    { "CbcSolver cold path (auto)",         LPM_Auto,             0 },
+    { "legacy cold path (LPR_NoDualReds)",  LPM_Auto,             1 },
+    { "legacy cold path (BarrierNoCross)",  LPM_BarrierNoCross,   0 },
+  };
+  for (const Path &p : paths) {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    Cbc_setIntParam(m, INT_PARAM_PERT_VALUE, 61);
+    Cbc_setLPmethod(m, p.method);
+    if (p.noDualReds)
+      Cbc_setDualReductionsType(m, LPR_NoDualReds);
+    Cbc_solveLinearProgram(m);
+    checkEqInt(clpPerturbation(m), 61,
+      std::string(p.label) + ": requested pertV=61 reached ClpSimplex");
+    Cbc_deleteModel(m);
+  }
+
+  /* After a legacy cold solve, a warm reoptimize must still be running with
+   * the configured perturbation rather than Clp's "off" default. */
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    Cbc_setDualReductionsType(m, LPR_NoDualReds);
+    if (Cbc_solveLinearProgram(m) == 0) {
+      int ncols = Cbc_getNumCols(m);
+      std::vector<double> x(Cbc_getColSolution(m), Cbc_getColSolution(m) + ncols);
+      int nFix = std::min(ncols, 5);
+      for (int j = 0; j < nFix; ++j) {
+        Cbc_setColLower(m, j, x[j]);
+        Cbc_setColUpper(m, j, x[j]);
+      }
+      Cbc_resolve(m);
+      checkEqInt(clpPerturbation(m), 50,
+        "reoptimize after legacy cold solve uses Cbc's tuned 50, not Clp's 100 (off)");
+    }
+    Cbc_deleteModel(m);
+  }
+
+  /* A perturbation change made *after* the first solve must take effect on
+   * the next Cbc_resolve(). */
+  {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_readMps(m, mpsPath.c_str());
+    Cbc_setLogLevel(m, 0);
+    if (Cbc_solveLinearProgram(m) == 0) {
+      Cbc_setIntParam(m, INT_PARAM_PERT_VALUE, 97);
+      int ncols = Cbc_getNumCols(m);
+      std::vector<double> x(Cbc_getColSolution(m), Cbc_getColSolution(m) + ncols);
+      int nFix = std::min(ncols, 5);
+      for (int j = 0; j < nFix; ++j) {
+        Cbc_setColLower(m, j, x[j]);
+        Cbc_setColUpper(m, j, x[j]);
+      }
+      Cbc_resolve(m);
+      checkEqInt(clpPerturbation(m), 97,
+        "INT_PARAM_PERT_VALUE set after the first solve takes effect on Cbc_resolve()");
+    }
+    Cbc_deleteModel(m);
+  }
+}
+
 } // namespace
 
 int main(int argc, char *argv[])
@@ -332,15 +553,47 @@ int main(int argc, char *argv[])
   std::string dataDir;
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
-    if (arg.rfind("--data-dir=", 0) == 0)
+    if (arg == "--help" || arg == "-h") {
+      printf(
+        "Usage: lp-relaxation-test [--data-dir=PATH]\n"
+        "\n"
+        "Targeted tests for the C interface's LP-relaxation-only entry points,\n"
+        "Cbc_solveLinearProgram() and Cbc_resolve(). Covers:\n"
+        "  1. root LP solves under every LPMethod/DualPivot/LPReductions setting,\n"
+        "     each checked against an independently computed reference objective;\n"
+        "  2. warm-start reoptimization (fixing variables; removing and re-adding\n"
+        "     a binding row);\n"
+        "  3. LP solution validation (bound feasibility, reduced-cost\n"
+        "     complementary slackness);\n"
+        "  4. LP racing (LPM_Racing) and its >= 2 threads precondition;\n"
+        "  5. INT_PARAM_PERT_VALUE reaching Clp on every solve path, including\n"
+        "     warm-started reoptimization.\n"
+        "\n"
+        "  --data-dir=PATH  mip-sanity-data checkout to read instances from\n"
+        "                   (default: <dir of this executable>/mip-sanity-data)\n"
+        "\n"
+        "Exit code: 0 = all checks passed, 1 = one or more checks failed.\n");
+      return 0;
+    }
+    if (arg.rfind("--data-dir=", 0) == 0) {
       dataDir = arg.substr(strlen("--data-dir="));
+      continue;
+    }
+    fprintf(stderr, "lp-relaxation-test: unrecognized argument '%s' "
+      "(try --help)\n", arg.c_str());
+    return 1;
   }
   if (dataDir.empty())
     dataDir = exeDir() + "/mip-sanity-data";
 
   /* Reference LP relaxation objectives below were computed independently
    * (two different external LP/MIP solvers agreed exactly) and cross-checked
-   * against Cbc's own LP relaxation solve before writing this test. */
+   * against Cbc's own LP relaxation solve before writing this test. All four
+   * were re-confirmed with HiGHS 1.13.1 (`solve_relaxation = true`,
+   * `presolve = off`; the "row removed" values against a copy of the MPS with
+   * that row and all its coefficients stripped):
+   *   p0033 2520.5717391304  p0033 less R127 2035.9932608696
+   *   lseu   834.6823529412  lseu  less R102  662.9019607843 */
   testRootLpMethods(dataDir, "p0033", 2520.5717391304347);
   testRootLpMethods(dataDir, "lseu", 834.6823529411765);
 
@@ -351,6 +604,12 @@ int main(int argc, char *argv[])
     "R127", 2035.9932608695651);
   testResolveAfterConstraintChange(dataDir, "lseu", 834.6823529411765,
     "R102", 662.9019607843137);
+
+  testRacingLp(dataDir, "p0033", 2520.5717391304347);
+  testRacingLp(dataDir, "lseu", 834.6823529411765);
+
+  testPerturbationPaths(dataDir, "p0033");
+  testPerturbationPaths(dataDir, "lseu");
 
   printf("\n=== Summary ===\n");
   if (g_failures == 0) {

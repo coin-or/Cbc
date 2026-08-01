@@ -380,11 +380,18 @@ mip_debug_cuts_LDADD = ../src/libCbc.la
 #
 # lp-relaxation-test: targeted tests for Cbc_solveLinearProgram()/
 # Cbc_resolve() -- root LP relaxation solves under different LPMethod/
-# DualPivot/LPReductions settings, warm-start reoptimization (variable
-# fixing and constraint add/remove), and LP solution validation (bounds,
-# reduced-cost complementary slackness). Expected LP relaxation objectives
-# were computed independently (two external solvers agreed exactly) and
-# cross-checked against Cbc's own solve. See `lp-relaxation-test --help`.
+# DualPivot/LPReductions settings (including parallel LP racing and its
+# >= 2 threads precondition), warm-start reoptimization (variable fixing and
+# constraint add/remove), LP solution validation (bounds, reduced-cost
+# complementary slackness), and the LP settings that must survive into a
+# reoptimize -- notably INT_PARAM_PERT_VALUE, where Clp's default is
+# "perturbation off" but Cbc's tuned default is the mild 50 that fast
+# warm-started reoptimization relies on, so a path that fails to forward it
+# is a pure LP-performance regression no objective check would catch.
+# Expected LP relaxation objectives were computed independently (two external
+# solvers agreed exactly) and cross-checked against Cbc's own solve. Run as
+# part of the regression suite by run-mip-sanity-tests (--no-lp-tests skips
+# it). See `lp-relaxation-test --help`.
 lp_relaxation_test_SOURCES = lp-relaxation-test.cpp
 lp_relaxation_test_LDADD = ../src/libCbc.la
 all: all-am

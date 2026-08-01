@@ -15208,7 +15208,57 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
       // Pretend solution never happened
       objectiveValue = cutoff + 1.0e30;
     }
+    /* Both lazy-constraint screens below -- this integrality check and
+       reallyValid()'s regeneration of the atSolution() generators -- read
+       solver_->getColSolution(), so they judge whatever vector the solver
+       happens to be holding rather than the candidate actually being
+       evaluated. Those coincide on the paths through the search: a node LP that
+       came out integral, or the end-of-search confirm gate once
+       atSolutionSolver_ has swapped in the solver saved when the incumbent was
+       found.
+
+       They do not coincide when a solution arrives from outside the search. A
+       MIPStart is applied by CbcSolver *before* branchAndBound() sets the 65536
+       flag, so saveBestSolution() never armed atSolutionSolver_ for it and the
+       confirm gate leaves solver_ on the root LP -- which the incumbent's own
+       cutoff has usually just made fractional. Every lazy constraint then reads
+       as violated, and because objectiveValue is bound by reference to
+       bestObjective_ the rejection writes cutoff + 1.0e30 straight into it. So
+       a model with a perfectly good proven optimum answers isProvenOptimal()
+       false and isProvenInfeasible() true, returning 1.8e308 as its objective:
+       not a worse answer but a wrong one, with no diagnostic.
+
+       Install the candidate for the duration of the screens so they judge what
+       they are meant to judge. Where the invariant already held this writes
+       back the values it just read, so no working path changes. */
+    double *saveScreenSolution = NULL;
+    /* Installing the candidate has one side effect to undo afterwards:
+       OsiClpSolverInterface::setColSolution() also sets lastAlgorithm_ = 999
+       ("can't guarantee optimal basis"), and basisIsAvailable() is exactly
+       lastAlgorithm_ == 1 || == 2. Before this block existed nothing here
+       touched that flag, so leaving it at 999 on exit would newly suppress
+       every needsOptimalBasis() generator for the rest of the pass -- the
+       gates in solveWithCuts() and CbcThread read it, and no resolve()
+       necessarily intervenes. Restore it once the original column values are
+       back, so nothing outside can tell the vector was ever swapped.
+
+       Deliberately *not* restored around the install: inside the screens the
+       column values really are inconsistent with the basis, so a generator
+       that needs an optimal basis should skip rather than derive tableau cuts
+       from a mismatched pair -- reallyValid() promotes what it returns to
+       globally valid. No generator registered atSolution() currently reports
+       needsOptimalBasis() (CglStored, which backs the C interface's lazy
+       constraints, inherits false), so this costs nothing today and stays
+       conservative if one ever does. */
+    int saveScreenAlgorithm = -1;
+    OsiClpSolverInterface *screenClpSolver = NULL;
     if ((moreSpecialOptions2_ & 65536) != 0) {
+      saveScreenSolution = CoinCopyOfArray(solver_->getColSolution(),
+        solver_->getNumCols());
+      screenClpSolver = dynamic_cast< OsiClpSolverInterface * >(solver_);
+      if (screenClpSolver)
+        saveScreenAlgorithm = screenClpSolver->lastAlgorithm();
+      solver_->setColSolution(solution);
       const double *colsol = solver_->getColSolution();
       for (int i = 0; i < numberIntegers_; i++) {
         int iColumn = integerVariable_[i];
@@ -15231,6 +15281,12 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
     if (!reallyValid() && objectiveValue < 1.0e20) {
       // Don't take
       objectiveValue = cutoff + 1.0e30;
+    }
+    if (saveScreenSolution) {
+      solver_->setColSolution(saveScreenSolution);
+      if (screenClpSolver)
+        screenClpSolver->setLastAlgorithm(saveScreenAlgorithm);
+      delete[] saveScreenSolution;
     }
     if (objectiveValue > cutoff || objectiveValue > 1.0e30) {
       if (objectiveValue > 1.0e30)
@@ -15488,7 +15544,47 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
   }
   delete[] solution;
   if (saveContinuousSolver) {
-    // restore
+    /* Restore the real continuousSolver_, but first carry back the one lasting
+       effect the temporary clone was supposed to have. With fixVariables > 0
+       checkSolution() deliberately leaves the integer variables *fixed* at
+       their solution values in continuousSolver_ and does not undo that (see
+       the "if (fixVariables <= 0)" bound restore there) -- callers rely on it.
+       Both end-of-search confirm gates (the "solution found in strong
+       branching"/fathoming path and the main one after the tree is done) call
+       setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1) and
+       then continuousSolver_->resolve(), whose result becomes the published
+       solver_ -- i.e. the answer the outside world reads. That resolve is only
+       the intended "re-optimise the continuous variables at this integer
+       solution" if the integer bounds are still fixed.
+       With lazy constraints the fixing landed on the clone, so deleting the
+       clone here threw it away and left continuousSolver_ at its original
+       bounds. The resolve then returned the *root LP relaxation* instead, and
+       that became the reported objective and solution: a maximisation with two
+       binaries under x + y <= 1.5 published obj 1.5 at x = 0.5, y = 1 (or, with
+       INT_PARAM_ROUND_INT_VARS on, the rounded and outright infeasible
+       x = y = 1) while the search itself had correctly proven the optimum to be
+       1 at x = 0, y = 1 -- and isProvenOptimal() was true throughout.
+       Carrying the fixing across makes the clone's presence invisible to
+       callers, which is all it was ever meant to be: it exists only so the
+       candidate is screened against a solver that still holds the cuts
+       generated during the search (see where it is taken, above).
+       Only the integer columns are copied, not every bound. The clone starts
+       from solver_, whose bounds may have been tightened during the search
+       (root reduced-cost fixing and the like), and propagating those to the
+       continuous columns would make this path tighter than the ordinary one --
+       where checkSolution() works on continuousSolver_ itself and so leaves
+       original continuous bounds plus fixed integers. This reproduces exactly
+       that state. */
+    if (fixVariables > 0
+      && continuousSolver_->getNumCols() == saveContinuousSolver->getNumCols()) {
+      const double *clonedLower = continuousSolver_->getColLower();
+      const double *clonedUpper = continuousSolver_->getColUpper();
+      for (int i = 0; i < numberIntegers_; i++) {
+        int iColumn = integerVariable_[i];
+        saveContinuousSolver->setColLower(iColumn, clonedLower[iColumn]);
+        saveContinuousSolver->setColUpper(iColumn, clonedUpper[iColumn]);
+      }
+    }
     delete continuousSolver_;
     continuousSolver_ = saveContinuousSolver;
   }
@@ -22118,7 +22214,23 @@ void CbcModel::deleteNode(CbcNode *node)
 // Returns true if ok or normal cuts (i.e. no atSolution ones)
 bool CbcModel::reallyValid(OsiCuts *existingCuts)
 {
-  if ((moreSpecialOptions2_ & 65536) == 0)
+  /* The 65536 flag is only an early-out: the loop below already tests
+     atSolution() per generator, so with no lazy constraints it does nothing
+     either way. Testing the flag is wrong, though, because branchAndBound()
+     is what sets it, while a MIPStart is applied -- and screened -- before
+     branchAndBound() runs. In that window this function returned true
+     unconditionally, so a MIPStart violating a lazy constraint was accepted as
+     an incumbent without ever being shown to the generator that forbids it;
+     the cutoff it then installed excluded the genuine optimum and the search
+     reported the model infeasible. Ask the generators directly instead. */
+  bool anyAtSolution = false;
+  for (int i = 0; i < numberCutGenerators_; i++) {
+    if (generator_[i]->atSolution()) {
+      anyAtSolution = true;
+      break;
+    }
+  }
+  if (!anyAtSolution)
     return true;
   /*
     Now step through the cut generators and see if any of them are flagged to

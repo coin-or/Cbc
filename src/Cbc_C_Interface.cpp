@@ -2646,6 +2646,27 @@ Cbc_solve(Cbc_Model *model)
 {
   Cbc_cleanOptResults(model);
 
+  /* Push any buffered rows/columns onto the solver before anything reads it.
+   * Cbc_addCol()/Cbc_addRow() only append to model->cXxx/rXxx staging arrays;
+   * nothing reaches solver_ until Cbc_flush(). Until commit 609c9c48 this
+   * function opened with an unconditional Cbc_solveLinearProgram(), which
+   * flushes as its first act, so the flush was incidental rather than
+   * explicit -- and removing that call left Cbc_solve() reading an empty
+   * solver_. The consequences were both silent and severe: the dispatch test
+   * just below asks solver_->getNumIntegers(), which is 0 for a
+   * freshly-built model however many integers were declared, so every
+   * pure-C-interface MIP was routed to the LP branch and Cbc_solve()
+   * returned the *relaxation* bound while reporting isProvenOptimal(); and
+   * the CbcModel built further down was copied from a solver_ still missing
+   * every row and column buffered since the last flush, so a constraint
+   * added after an earlier solve was simply dropped from the model it was
+   * meant to constrain. Either way the answer is wrong, with no diagnostic.
+   *
+   * Note this cannot be left to Cbc_solveLinearProgram() as before: with the
+   * flush deferred, the test that decides whether to *call* it is itself
+   * reading the stale solver. */
+  Cbc_flush(model);
+
   /* Caller explicitly asked to solve only the LP relaxation
    * (Cbc_setSolveRelax), OR the model has no integer/SOS entities at all
    * (it's really just an LP): dispatch to Cbc_solveLinearProgram() and
@@ -3781,6 +3802,16 @@ Cbc_clone(Cbc_Model *model)
   result->cutCBhowOften = model->cutCBhowOften;
   result->cutCBAtSol = model->cutCBAtSol;
 
+  /* Lazy constraints. These are part of the model's definition, not a cache of
+   * a previous solve, so a clone that omitted them would silently solve a
+   * *relaxation* of what was cloned -- and report it as proven optimal. On a
+   * TSP with subtour elimination as lazy constraints that is the difference
+   * between the tour optimum and the assignment bound. CglStored's copy
+   * constructor deep-copies its OsiCuts, so the clone owns its own cuts and
+   * can accumulate more independently. */
+  result->lazyConstrs =
+    model->lazyConstrs ? new CglStored(*model->lazyConstrs) : NULL;
+
   result->obj_value = model->obj_value;
 
   result->lastOptimization = model->lastOptimization;
@@ -4347,6 +4378,18 @@ Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double
 void CBC_LINKAGE
 Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double colValues[])
 {
+  /* This entry point stores the start by *name*, translating the caller's
+   * indices through the solver -- so the columns have to be on the solver
+   * first. Cbc_addCol() only stages them, and OsiSolverInterface::getColName()
+   * answers an out-of-range index with a synthesized placeholder ("C0000001")
+   * rather than failing, so without this flush a start referring to any column
+   * added since the last flush was recorded under a name no column has. It was
+   * then quietly dropped when applied: no diagnostic, and the only externally
+   * visible effect was the absence of the effect asked for. Building a model
+   * and setting a start on it before any solve -- the obvious sequence, and the
+   * one Cbc_setMIPStart() by name handles fine -- hit this every time. */
+  Cbc_flush(model);
+
   OsiSolverInterface *solver = model->solver_;
 
   if (model->nColsMS) {

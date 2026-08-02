@@ -44,7 +44,7 @@ test: cbc_validate_sol$(EXEEXT)
 # command line for any instance. See `mip-c-solve --help` for usage.
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
-	lazy-constraint-test
+	lazy-constraint-test mipstart-test
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -134,3 +134,45 @@ lp_relaxation_test_LDADD = ../src/libCbc.la
 lazy_constraint_test_SOURCES = lazy-constraint-test.cpp
 
 lazy_constraint_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#                  MIP-start tests (C interface)                       #
+########################################################################
+#
+# mipstart-test: targeted tests for MIP starts through Cbc_setMIPStart() and
+# Cbc_setMIPStartI(), which is the path python-mip uses. A MIP start is stated
+# in the *original* problem while Cbc, by default, searches the *preprocessed*
+# one, and callers typically supply only the nonzero integer values -- so
+# CbcMipStart::computeCompleteSolution() has to fix what it recognizes, re-solve
+# the LP to derive the rest, and fall back to a mini branch and bound when
+# integers come back fractional. Each of those steps can fail quietly.
+# The C interface is deliberately the vehicle rather than the -mipstart file:
+# CbcMipStart::read() densifies before returning, building a vector over every
+# column and overwriting the entries the file named, so a file listing three
+# columns and a file listing all of them arrive identically and the input shapes
+# a caller might send cannot be told apart on that path at all. Only the
+# setMIPStart() path keeps them sparse.
+# No fixture data is needed: the model is a small fixed-charge problem whose
+# optimum is enumerated in-process over all open sets, with the continuous flows
+# derived by an independent greedy fill, so a wrong answer is a wrong answer and
+# not a stale expectation. Its continuous columns are undetermined by the
+# integers until the LP runs, which is what makes an integers-only start a real
+# test rather than a restatement of the answer.
+# Covers the three input shapes -- nonzero integers only, the full solution, all
+# nonzeros -- by name and by index, with preprocessing on and off, asserting for
+# each that the start is accepted, the published point is integral and satisfies
+# every row, the objective recomputed from the published columns matches the
+# reported one, and columns the start never mentioned came back derived rather
+# than left at zero. Also covers INT_PARAM_MIPSTART_FIX (the runtime mode that
+# replaced the compile-time JUST_FIX_INTEGER macro, whose fix-continuous-too
+# recovery path was unreachable as shipped), negative integer values -- where a
+# positive-only filter on the solution auto-carried between solves would drop
+# them silently -- an infeasible start being rejected rather than trusted, since
+# accepting one installs a cutoff that can exclude the genuine optimum, starts
+# naming columns the model does not have, and a suboptimal start being improved
+# upon. Run as part of the regression suite by run-mip-sanity-tests
+# (--no-mipstart-tests skips it). See `mipstart-test --help`.
+
+mipstart_test_SOURCES = mipstart-test.cpp
+
+mipstart_test_LDADD = ../src/libCbc.la

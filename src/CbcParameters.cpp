@@ -620,6 +620,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::PREPROCESS]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::BOUNDPROPLEVEL]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
   parameters_[CbcParam::CLQSTRENGTHENING]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::MIPSTARTFIX]->setTopic("I/O");
   parameters_[CbcParam::NODEBOUNDPROP]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
   parameters_[CbcParam::USECGRAPH]->setTopic("Conflict Graph");
   parameters_[CbcParam::STRATEGY]->setTopic("Strategy");
@@ -791,6 +792,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::USECGRAPH]->setDefault("on");
      parameters_[CbcParam::BOUNDPROPLEVEL]->setDefault("milpbt");
      parameters_[CbcParam::LPMETHOD]->setDefault("auto");
+     parameters_[CbcParam::MIPSTARTFIX]->setDefault("integerZero");
      parameters_[CbcParam::NODEBOUNDPROP]->setDefault("off");
      parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setDefault(100);
      parameters_[CbcParam::NODEBOUNDPROPMAXDEPTH]->setDefault(50);
@@ -1882,6 +1884,27 @@ void CbcParameters::addCbcSolverKwdParams() {
     "milpbt", CbcParameters::BndPropMILPbt);
   parameters_[CbcParam::BOUNDPROPLEVEL]->appendKwd(
     "fixpoint", CbcParameters::BndPropFixpoint);
+
+  parameters_[CbcParam::MIPSTARTFIX]->setup(
+    "mipStartF!ix",
+    "Which columns a mip start fixes before its LP is re-solved",
+    "A mip start normally names the integer variables and leaves the "
+    "continuous ones to be recovered by solving the LP with those fixed.\n"
+    "  integerZero: fix integers only, and take every integer the start does "
+    "not mention to be zero -- which is what a start listing just the nonzero "
+    "integers means.\n"
+    "  integer:     fix integers only, leaving unmentioned ones free between "
+    "their own bounds.\n"
+    "  all:         fix supplied continuous values too. This pins down more of "
+    "the solution, but a rounding error in a supplied value can make the LP "
+    "infeasible; when that happens the continuous columns are released and the "
+    "LP is retried with just the integers fixed.");
+  parameters_[CbcParam::MIPSTARTFIX]->appendKwd(
+    "integerZero", CbcParameters::MipStartFixIntZero);
+  parameters_[CbcParam::MIPSTARTFIX]->appendKwd(
+    "integer", CbcParameters::MipStartFixInt);
+  parameters_[CbcParam::MIPSTARTFIX]->appendKwd(
+    "all", CbcParameters::MipStartFixAll);
 
   parameters_[CbcParam::LPMETHOD]->setup(
     "lpM!ethod",

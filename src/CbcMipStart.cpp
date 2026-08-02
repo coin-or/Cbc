@@ -14,6 +14,7 @@
 #include <CbcModel.hpp>
 #include "CbcMipStart.hpp"
 #include "CbcSOS.hpp"
+#include "CbcBoundPropagation.hpp"
 #include "CoinTime.hpp"
 
 #define MAX_MIPSTART_WARNINGS_TYPES 10
@@ -129,36 +130,49 @@ int CbcMipStart::read(OsiSolverInterface *solver, const char *fileName,
   else if (strstr(fileName, ".csv") == fileName + lengthFilename - 4)
     separator = ',';
   if (separator == ' ') {
-    // ordinary
+    /* Two layouts are in circulation and both are accepted, decided per line:
+
+         index name value [reduced-cost]   as written by cbc's own -solution
+         name value                        as used by MIPLIB 2017 .sol files
+
+       Deciding per line rather than per file also skips the free-text header
+       cbc writes ("Optimal - objective value 3.00000000") without needing to
+       recognise it. The one ambiguous shape is a two-field line whose first
+       field is numeric: "12 3" could be index 12 with no value, or a column
+       literally named "12" holding 3. It is read as the latter, since the
+       four-field layout always supplies a value, and a column whose name is a
+       number is unusual but legal. */
     while (fgets(line, STR_SIZE, f)) {
       ++nLine;
       char col[4][STR_SIZE] = { "", "", "", "" };
-#ifndef MIPLIB2017_FORMAT
       int nread = sscanf(line, "%s %s %s %s", col[0], col[1], col[2], col[3]);
-      if (!nread)
+      if (nread <= 0)
         continue;
-      /* line with variable value */
-      if (strlen(col[0]) && isdigit(col[0][0]) && (nread >= 3)) {
+      const char *name;
+      const char *valueStr;
+      if (nread >= 3 && strlen(col[0]) && isdigit(col[0][0])) {
+        /* index name value ... */
         if (!isNumericStr(col[0])) {
           messHandler->message(CBC_MIPSTART_INVALID_COLUMN, messages) << fileName << nLine << "first" << CoinMessageEol;
           continue;
         }
-#else
-      int nread = sscanf(line, "%s %s", col[1], col[2]);
-      if (nread <= 0)
+        name = col[1];
+        valueStr = col[2];
+      } else if (nread == 2) {
+        /* name value */
+        name = col[0];
+        valueStr = col[1];
+      } else {
+        /* header or comment - not a variable line */
         continue;
-      if (true) {
-#endif
-        if (!isNumericStr(col[2])) {
-          messHandler->message(CBC_MIPSTART_INVALID_COLUMN, messages) << fileName << nLine << "third" << CoinMessageEol;
-          continue;
-        }
-
-        char *name = col[1];
-        double value = atof(col[2]);
-
-        colValues.push_back(std::pair< std::string, double >(std::string(name), value));
       }
+      if (!isNumericStr(valueStr)) {
+        messHandler->message(CBC_MIPSTART_INVALID_COLUMN, messages) << fileName << nLine
+          << (valueStr == col[2] ? "third" : "second") << CoinMessageEol;
+        continue;
+      }
+
+      colValues.push_back(std::pair< std::string, double >(std::string(name), atof(valueStr)));
     }
   } else {
     // csv or psv
@@ -254,8 +268,9 @@ int CbcMipStart::read(OsiSolverInterface *solver, const char *fileName,
     }
     colValues = fullValues;
   } else {
-    sprintf(printLine, "File %s does not contains a solution.", fileName);
-    messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+    sprintf(printLine, "File %s yielded no variable values - expected lines of"
+      " \"index name value\" or \"name value\"; MIPStart ignored.", fileName);
+    messHandler->message(CBC_MIPSTART_WARNING, messages) << printLine << CoinMessageEol;
     fclose(f);
     return 1;
   }
@@ -267,10 +282,14 @@ int CbcMipStart::read(OsiSolverInterface *solver, const char *fileName,
 int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *solver,
   const std::vector< std::string > &colNames,
   const std::vector< std::pair< std::string, double > > &colValues,
-  double *sol, double &obj, int extraActions, CoinMessageHandler *messHandler, CoinMessages *pmessages)
+  double *sol, double &obj, int extraActions, CoinMessageHandler *messHandler, CoinMessages *pmessages,
+  int fixMode)
 {
   if (!solver->getNumCols())
     return 0;
+
+  const bool fixContinuousToo = (fixMode == FixIntegersAndContinuous);
+  const bool assumeUnmentionedZero = (fixMode == FixIntegersAssumeZero);
 
   CoinMessages &messages = *pmessages;
 
@@ -290,27 +309,32 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
   int notFound = 0;
   char colNotFound[256] = "";
   int nContinuousFixed = 0;
+  /* The true objective, snapshotted before the recovery LP runs: the cost
+     reported for the start has to be its cost in the user's problem, and
+     smallBranchAndBound() below is free to reshape the objective of the solver
+     it is handed. */
   double *realObj = new double[lp->getNumCols()];
   memcpy(realObj, lp->getObjCoefficients(), sizeof(double) * lp->getNumCols());
 
-  // assuming that variables not fixed are more likely to have zero as value,
-  // inserting as default objective function 1
-  if (0) { // to get more accurate answers
-    std::vector< double > obj(lp->getNumCols(), lp->getObjSense());
-    lp->setObjective(&obj[0]);
-  }
+  /* There used to be a disabled alternative here that replaced the objective
+     with all-ones before re-solving, on the theory that unfixed variables would
+     then sink to zero of their own accord and spare us the mini branch and bound
+     below. Measured over the 464-instance mip-sanity corpus in all three input
+     shapes, it is worse on 36 instances and better on none: it does eliminate
+     the only mini-B&B firing (mod011, 16 fractional variables, 0.93 s) but pays
+     for it with a solution costing 1.13e+07 instead of -5.46e+07, because the
+     LP it solves is no longer the user's problem and lands on whichever feasible
+     point is nearest, not a good one. seymour still needed the mini-B&B either
+     way. Cheapening the one search we do run, at the price of the answer, is not
+     a trade worth keeping, so the alternative is gone rather than dormant. */
 
-#ifndef JUST_FIX_INTEGER
-#define JUST_FIX_INTEGER 2
-#endif
-
-#if JUST_FIX_INTEGER > 1
-  // all not mentioned are at zero
-  for (int i = 0; (i < lp->getNumCols()); ++i) {
-    if (lp->isInteger(i))
-      lp->setColBounds(i, 0.0, 0.0);
+  if (assumeUnmentionedZero) {
+    // all not mentioned are at zero
+    for (int i = 0; (i < lp->getNumCols()); ++i) {
+      if (lp->isInteger(i))
+        lp->setColBounds(i, 0.0, 0.0);
+    }
   }
-#endif
   if (extraActions) {
     const double *objective = lp->getObjCoefficients();
     const double *lower = lp->getColLower();
@@ -360,10 +384,8 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
     } else {
       const int idx = mIt->second;
       double v = colValues[i].second;
-#if JUST_FIX_INTEGER
-      if (!lp->isInteger(idx))
+      if (!fixContinuousToo && !lp->isInteger(idx))
         continue;
-#endif
       if (fabs(v) < 1e-8)
         v = 0.0;
       if (lp->isInteger(idx)) // just to avoid small
@@ -403,14 +425,61 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
     messHandler->message(CBC_GENERAL, messages)
       << printLine << CoinMessageEol;
   }
-#if JUST_FIX_INTEGER
+  /* Most columns are fixed by now whichever mode is in force, so presolve has a
+     lot to remove and the LP left to solve is much smaller. */
   lp->setHintParam(OsiDoPresolveInInitial, true, OsiHintDo);
-#endif
 
   // lp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
   lp->initialSolve();
 
   if ((lp->isProvenPrimalInfeasible()) || (lp->isProvenDualInfeasible())) {
+    /* Say *where* the fixed problem broke, before the recovery below starts
+       unfixing things and the evidence is gone. The LP only reports that no
+       feasible point exists; bound propagation reasons row by row, so when it
+       reaches the same verdict it can name the row (and sometimes the column)
+       that closed, which is the one thing a user needs in order to correct a
+       start that is genuinely wrong.
+
+       On a clone, and for reporting only. Measured over the mip-sanity corpus
+       (464 instances x fix modes "integerZero" and "all"), propagation agreed
+       with the LP on all 928 cases: it never contradicted a feasible fixing,
+       and in both infeasible ones it proved infeasibility itself and named the
+       row. Its *filling* was not worth having on the same evidence -- across
+       the 243 cases with columns still free it fixed extra columns in 29, and
+       the LP derives those values correctly anyway -- so the tightenings are
+       deliberately dropped rather than applied: a start that is merely
+       imprecise must keep its chance at the recovery path below.
+
+       Both corpus infeasibilities were exactly that, imprecision: residuals of
+       2e-09 (dsbmip) and 1.25e-06 (jssp_la06) against a row, no bound
+       violation, and both solve to optimality at a primal tolerance of 1e-5.
+       So this branch is reached by rounding noise in a valid solution at least
+       as often as by a real error, and the message says "detected at", not
+       "caused by". */
+    if (messHandler->logLevel() > 0) {
+      OsiSolverInterface *bpLp = lp->clone();
+      CbcBoundPropagation bp;
+      const double bpStart = CoinCpuTime();
+      if (!bp.run(bpLp, NULL, 0, CbcBoundPropagation::Fixpoint,
+            0, false, 10.0, bpStart)) {
+        const int iRow = bp.infeasibleRow();
+        const int iCol = bp.infeasibleCol();
+        if (iRow >= 0 && iRow < bpLp->getNumRows())
+          sprintf(printLine, "Bound propagation confirms the fixed problem is"
+            " infeasible, detected at row %d (%s).",
+            iRow, bpLp->getRowName(iRow).c_str());
+        else if (iCol >= 0 && iCol < bpLp->getNumCols())
+          sprintf(printLine, "Bound propagation confirms the fixed problem is"
+            " infeasible, detected at column %d (%s).",
+            iCol, colNames[iCol].c_str());
+        else
+          sprintf(printLine, "Bound propagation confirms the fixed problem is"
+            " infeasible (no single row or column identified).");
+        messHandler->message(CBC_GENERAL, messages)
+          << printLine << CoinMessageEol;
+      }
+      delete bpLp;
+    }
     if (nContinuousFixed) {
       messHandler->message(CBC_GENERAL, messages)
         << "Trying just fixing integer variables (and fixingish SOS)." << CoinMessageEol;
@@ -521,9 +590,18 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
       }
     }
     double start = CoinCpuTime();
-#if 1
     CbcSerendipity heuristic(*model);
-    heuristic.setFractionSmall(2.0);
+    /* Anything in (1.0,1000000.0) is read by smallBranchAndBound() as a packed
+       "type.fraction" code rather than a plain size ratio: it takes the
+       fractional part as the threshold and the tens digit as a node schedule.
+       2.0 has fractional part 0.0, so "ratio > fraction" holds for every model
+       and the node limit was rewritten to -1 -- no search at all -- discarding
+       the 1000 asked for below. On seymour that lost a genuine optimum (423
+       reported as unusable, search ended at 430) although a plain
+       branch-and-bound on the same LP finds it without branching. 1.0 keeps the
+       intended meaning of "any size is small enough" while leaving the node
+       limit alone. */
+    heuristic.setFractionSmall(1.0);
     heuristic.setFeasibilityPumpOptions(1008013);
     int returnCode = heuristic.smallBranchAndBound(lp,
       1000, sol,
@@ -540,25 +618,7 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
       obj = -obj;
       for (int i = 0; (i < lp->getNumCols()); ++i)
         obj += realObj[i] * sol[i];
-    }
-#else
-    CbcModel babModel(*lp);
-    lp->writeLp("lessFix");
-    babModel.setLogLevel(2);
-    babModel.setMaximumNodes(1000);
-    babModel.setMaximumSeconds(60);
-    babModel.branchAndBound();
-    if (babModel.bestSolution()) {
-      sprintf(printLine, "Mini branch and bound defined values for remaining variables in %.2f seconds.",
-        CoinCpuTime() - start);
-      messHandler->message(CBC_GENERAL, messages)
-        << printLine << CoinMessageEol;
-      copy(babModel.bestSolution(), babModel.bestSolution() + babModel.getNumCols(), sol);
-      foundIntegerSol = true;
-      obj = compObj = babModel.getObjValue();
-    }
-#endif
-    else {
+    } else {
       messHandler->message(CBC_GENERAL, messages)
         << "Warning: mipstart values could not be used to build a solution." << CoinMessageEol;
       status = 1;
@@ -579,238 +639,10 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
     sprintf(printLine, "MIPStart provided solution with cost %g", compObj);
     messHandler->message(CBC_GENERAL, messages)
       << printLine << CoinMessageEol;
-#if 0
-      {
-	int numberColumns=lp->getNumCols();
-	double largestInfeasibility = 0.0;
-	double primalTolerance ;
-	double offset;
-	lp->getDblParam(OsiObjOffset, offset);
-	lp->getDblParam(OsiPrimalTolerance, primalTolerance) ;
-	const double *objective = lp->getObjCoefficients() ;
-	const double * rowLower = lp->getRowLower() ;
-	const double * rowUpper = lp->getRowUpper() ;
-	const double * columnLower = lp->getColLower() ;
-	const double * columnUpper = lp->getColUpper() ;
-	int numberRows = lp->getNumRows() ;
-	double *rowActivity = new double[numberRows] ;
-	memset(rowActivity, 0, numberRows*sizeof(double)) ;
-	double *rowSum = new double[numberRows] ;
-	memset(rowSum, 0, numberRows*sizeof(double)) ;
-	const double * element = lp->getMatrixByCol()->getElements();
-	const int * row = lp->getMatrixByCol()->getIndices();
-	const CoinBigIndex * columnStart = lp->getMatrixByCol()->getVectorStarts();
-	const int * columnLength = lp->getMatrixByCol()->getVectorLengths();
-	const CoinPackedMatrix * rowCopy = lp->getMatrixByRow();
-	const int * column = rowCopy->getIndices();
-	const int * rowLength = rowCopy->getVectorLengths();
-	const CoinBigIndex * rowStart = rowCopy->getVectorStarts();
-	const double * elementByRow = rowCopy->getElements();
-	double objValue=-offset;
-	for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-	  double value = sol[iColumn];
-	  if (lp->isInteger(iColumn))
-	    assert (fabs(value-floor(value+0.5))<1.0e-6);
-	  objValue += value*objective[iColumn];
-	  if (value>columnUpper[iColumn]) {
-	    if (value-columnUpper[iColumn]>1.0e-8)
-	      printf("column %d has value %.12g above %.12g\n",iColumn,value,columnUpper[iColumn]);
-	    value=columnUpper[iColumn];
-	  } else if (value<columnLower[iColumn]) {
-	    if (value-columnLower[iColumn]<-1.0e-8)
-	      printf("column %d has value %.12g below %.12g\n",iColumn,value,columnLower[iColumn]);
-	    value=columnLower[iColumn];
-	  }
-	  if (value) {
-	    CoinBigIndex start = columnStart[iColumn];
-	    CoinBigIndex end = start + columnLength[iColumn];
-	    for (CoinBigIndex j = start; j < end; j++) {
-	      int iRow = row[j];
-	      if (fabs(value)<1.0e-6&&fabs(value*element[j])>1.0e-5)
-		printf("Column %d row %d value %.8g element %g %s\n",
-		       iColumn,iRow,value,element[j],lp->isInteger(iColumn) ? "integer" : "");
-	      rowActivity[iRow] += value * element[j];
-	      rowSum[iRow] += fabs(value * element[j]);
-	    }
-	  }
-	}
-	for (int i = 0 ; i < numberRows ; i++) {
-#if 0 // def CLP_INVESTIGATE
-	  double inf;
-	  inf = rowLower[i] - rowActivity[i];
-	  if (inf > primalTolerance)
-	    printf("Row %d inf %g sum %g %g <= %g <= %g\n",
-		   i, inf, rowSum[i], rowLower[i], rowActivity[i], rowUpper[i]);
-	  inf = rowActivity[i] - rowUpper[i];
-	  if (inf > primalTolerance)
-	    printf("Row %d inf %g sum %g %g <= %g <= %g\n",
-		   i, inf, rowSum[i], rowLower[i], rowActivity[i], rowUpper[i]);
-#endif
-	  double infeasibility = std::max(rowActivity[i]-rowUpper[i],
-					 rowLower[i]-rowActivity[i]);
-	  // but allow for errors
-	  double factor = std::max(1.0,rowSum[i]*1.0e-3);
-	  if (infeasibility>largestInfeasibility*factor) {
-	    largestInfeasibility = infeasibility/factor;
-	    printf("Cinf of %g on row %d sum %g scaled %g\n",
-		   infeasibility,i,rowSum[i],largestInfeasibility);
-	    if (infeasibility>1.0e10) {
-	      for (CoinBigIndex j=rowStart[i];
-		   j<rowStart[i]+rowLength[i];j++) {
-		printf("col %d element %g\n",
-		       column[j],elementByRow[j]);
-	      }
-	    }
-	  }
-	}
-	delete [] rowActivity ;
-	delete [] rowSum;
-	if (largestInfeasibility > 10.0*primalTolerance)
-	  printf("Clargest infeasibility is %g - obj %g\n", largestInfeasibility,objValue);
-	else
-	  printf("Cfeasible (%g) - obj %g\n", largestInfeasibility,objValue);
-      }
-#endif
     for (int i = 0; (i < lp->getNumCols()); ++i) {
-#if 0
-         if (sol[i]<1e-8)
-            sol[i] = 0.0;
-         else
-            if (lp->isInteger(i))
-               sol[i] = floor( sol[i]+0.5 );
-#else
-      if (lp->isInteger(i)) {
-        // if (fabs(sol[i] - floor( sol[i]+0.5 ))>1.0e-8)
-        // printf("bad sol for %d - %.12g\n",i,sol[i]);
+      if (lp->isInteger(i))
         sol[i] = floor(sol[i] + 0.5);
-      }
-#endif
     }
-#if 0
-      {
-	int numberColumns=lp->getNumCols();
-	double largestInfeasibility = 0.0;
-	double primalTolerance ;
-	double offset;
-	lp->getDblParam(OsiObjOffset, offset);
-	lp->getDblParam(OsiPrimalTolerance, primalTolerance) ;
-	const double *objective = lp->getObjCoefficients() ;
-	const double * rowLower = lp->getRowLower() ;
-	const double * rowUpper = lp->getRowUpper() ;
-	const double * columnLower = lp->getColLower() ;
-	const double * columnUpper = lp->getColUpper() ;
-	int numberRows = lp->getNumRows() ;
-	double *rowActivity = new double[numberRows] ;
-	memset(rowActivity, 0, numberRows*sizeof(double)) ;
-	double *rowSum = new double[numberRows] ;
-	memset(rowSum, 0, numberRows*sizeof(double)) ;
-	const double * element = lp->getMatrixByCol()->getElements();
-	const int * row = lp->getMatrixByCol()->getIndices();
-	const CoinBigIndex * columnStart = lp->getMatrixByCol()->getVectorStarts();
-	const int * columnLength = lp->getMatrixByCol()->getVectorLengths();
-	const CoinPackedMatrix * rowCopy = lp->getMatrixByRow();
-	const int * column = rowCopy->getIndices();
-	const int * rowLength = rowCopy->getVectorLengths();
-	const CoinBigIndex * rowStart = rowCopy->getVectorStarts();
-	const double * elementByRow = rowCopy->getElements();
-	double objValue=-offset;
-	for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-	  double value = sol[iColumn];
-	  if (lp->isInteger(iColumn))
-	    assert (fabs(value-floor(value+0.5))<1.0e-6);
-	  objValue += value*objective[iColumn];
-	  if (value>columnUpper[iColumn]) {
-	    if (value-columnUpper[iColumn]>1.0e-8)
-	      printf("column %d has value %.12g above %.12g\n",iColumn,value,columnUpper[iColumn]);
-	    value=columnUpper[iColumn];
-	  } else if (value<columnLower[iColumn]) {
-	    if (value-columnLower[iColumn]<-1.0e-8)
-	      printf("column %d has value %.12g below %.12g\n",iColumn,value,columnLower[iColumn]);
-	    value=columnLower[iColumn];
-	  }
-	  if (value) {
-	    CoinBigIndex start = columnStart[iColumn];
-	    CoinBigIndex end = start + columnLength[iColumn];
-	    for (CoinBigIndex j = start; j < end; j++) {
-	      int iRow = row[j];
-	      rowActivity[iRow] += value * element[j];
-	      rowSum[iRow] += fabs(value * element[j]);
-	    }
-	  }
-	}
-	for (int i = 0 ; i < numberRows ; i++) {
-#if 0 // def CLP_INVESTIGATE
-	  double inf;
-	  inf = rowLower[i] - rowActivity[i];
-	  if (inf > primalTolerance)
-	    printf("Row %d inf %g sum %g %g <= %g <= %g\n",
-		   i, inf, rowSum[i], rowLower[i], rowActivity[i], rowUpper[i]);
-	  inf = rowActivity[i] - rowUpper[i];
-	  if (inf > primalTolerance)
-	    printf("Row %d inf %g sum %g %g <= %g <= %g\n",
-		   i, inf, rowSum[i], rowLower[i], rowActivity[i], rowUpper[i]);
-#endif
-	  double infeasibility = std::max(rowActivity[i]-rowUpper[i],
-					 rowLower[i]-rowActivity[i]);
-	  // but allow for errors
-	  double factor = std::max(1.0,rowSum[i]*1.0e-3);
-	  if (infeasibility>largestInfeasibility*factor) {
-	    largestInfeasibility = infeasibility/factor;
-	    printf("Dinf of %g on row %d sum %g scaled %g\n",
-		   infeasibility,i,rowSum[i],largestInfeasibility);
-	    if (infeasibility>1.0e10) {
-	      for (CoinBigIndex j=rowStart[i];
-		   j<rowStart[i]+rowLength[i];j++) {
-		printf("col %d element %g\n",
-		       column[j],elementByRow[j]);
-	      }
-	    }
-	  }
-	}
-	delete [] rowActivity ;
-	delete [] rowSum;
-	if (largestInfeasibility > 10.0*primalTolerance)
-	  printf("Dlargest infeasibility is %g - obj %g\n", largestInfeasibility,objValue);
-	else
-	  printf("Dfeasible (%g) - obj %g\n", largestInfeasibility,objValue);
-      }
-#endif
-#if JUST_FIX_INTEGER
-    const double *oldLower = solver->getColLower();
-    const double *oldUpper = solver->getColUpper();
-    const double *dj = lp->getReducedCost();
-    int nNaturalLB = 0;
-    int nMaybeLB = 0;
-    int nForcedLB = 0;
-    int nNaturalUB = 0;
-    int nMaybeUB = 0;
-    int nForcedUB = 0;
-    int nOther = 0;
-    for (int i = 0; i < lp->getNumCols(); ++i) {
-      if (lp->isInteger(i)) {
-        if (sol[i] == oldLower[i]) {
-          if (dj[i] > 1.0e-5)
-            nNaturalLB++;
-          else if (dj[i] < -1.0e-5)
-            nForcedLB++;
-          else
-            nMaybeLB++;
-        } else if (sol[i] == oldUpper[i]) {
-          if (dj[i] < -1.0e-5)
-            nNaturalUB++;
-          else if (dj[i] > 1.0e-5)
-            nForcedUB++;
-          else
-            nMaybeUB++;
-        } else {
-          nOther++;
-        }
-      }
-    }
-    // printf("%d other, LB %d natural, %d neutral, %d forced, UB %d natural, %d neutral, %d forced\n",
-    // nOther, nNaturalLB, nMaybeLB, nForcedLB,
-    // nNaturalUB, nMaybeUB, nForcedUB = 0);
-#endif
   }
 
 TERMINATE:

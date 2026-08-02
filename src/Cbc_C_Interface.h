@@ -133,8 +133,9 @@ enum IntParam {
   INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19, /*! Maximum number of nodes processed without improving best solution, after a feasible solution is found */
   INT_PARAM_LP_FAST_PREPROCESS      = 20, /*! Deprecated, no longer has any effect: Cbc_resolve()/Cbc_solveLinearProgram() only solve the LP relaxation as-is and no longer perform bound-tightening preprocessing. Kept only so existing code that sets this parameter keeps compiling/linking. Has no effect on MIP solves (Cbc_solve) either, which control preprocessing via the fastPreProcessLevel parameter. */
   INT_PARAM_MAX_ITER                = 21, /*! Maximum number of simplex iterations for LP solves (Cbc_resolve / Cbc_solveLinearProgram). Default INT_MAX (no limit). */
+  INT_PARAM_MIPSTART_FIX            = 22, /*! Which columns a MIP start fixes before its LP is re-solved to fill in the values it did not supply. 0 (default): integers only, and every integer the start does not name is taken to be zero -- which is what a start listing just the nonzero integers means. 1: integers only, leaving unnamed ones free between their own bounds -- use this when the start is complete over the integers, since it avoids forcing values the LP would otherwise derive. 2: also fix supplied continuous values; this pins down more of the solution, but a rounding error in a supplied value can make the LP infeasible, and the continuous columns are then released and the LP retried with just the integers fixed. */
 };
-#define N_INT_PARAMS 22
+#define N_INT_PARAMS 23
   
 /** typedef for cbc callback to monitor the progress of the search
  * in terms of improved upper and lower bounds */

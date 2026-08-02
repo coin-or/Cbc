@@ -55,6 +55,7 @@
 #   --capi-jobs=N        Parallel jobs for the C API smoke tests (default: same as --jobs)
 #   --no-lp-tests        Skip the LP-relaxation solve/reoptimize tests (see below)
 #   --no-lazy-tests      Skip the lazy-constraint / TSP tests (see below)
+#   --no-mipstart-tests  Skip the MIP-start tests (see below)
 #   -h, --help           Show this help
 #
 # In addition to the main `cbc`-executable suite above, this script also runs
@@ -111,6 +112,28 @@
 # publish a relaxation bound with isProvenOptimal() true rather than erroring
 # out. One fast in-process binary; pass --no-lazy-tests to skip it.
 #
+# Last of all, it runs the MIP-start tests (test/mipstart-test.cpp), which cover
+# Cbc_setMIPStart()/Cbc_setMIPStartI() — the path python-mip uses to hand Cbc an
+# initial solution. The difficulty a MIP start has to survive is that it is
+# stated in the *original* problem while Cbc, by default, searches the
+# *preprocessed* one, and callers typically supply only the nonzero integer
+# values: CbcMipStart then has to fix what it recognizes, re-solve the LP to
+# derive the rest, and fall back to a bounded branch and bound when integers come
+# back fractional. All three shapes a caller might send (nonzero integers only,
+# the full solution, all nonzeros) are tested by name and by index, with
+# preprocessing on and off, along with the fix modes, the fix-continuous-too
+# recovery and the bound-propagation report that localises the infeasibility
+# which triggered it, the mini branch and bound, negative integer values, and
+# starts that are infeasible or name columns the model does not have. The
+# `-mipstart` file path deliberately is not the vehicle: read() densifies over
+# every column before returning, so a sparse file and a full one arrive
+# identically and the shapes cannot be told apart there at all. Checks assert on
+# Cbc's own MIPStart log lines as well as on the objective, because every fixture
+# is small enough that Cbc reaches the same optimum with the start ignored — an
+# objective-only test would pass on a build where MIPStart did nothing, which is
+# how a dead recovery branch and a silently zeroed node limit both survived in
+# shipped code. One fast in-process binary; pass --no-mipstart-tests to skip it.
+#
 # Positional arguments (optional): one or more glob patterns to select a
 # subset of instances by name (e.g. `./run-mip-sanity-tests 'jssp_*' 'cvrp_*'`).
 set -uo pipefail
@@ -129,6 +152,7 @@ NO_CAPI_TESTS=0
 CAPI_JOBS=""
 NO_LP_TESTS=0
 NO_LAZY_TESTS=0
+NO_MIPSTART_TESTS=0
 CUT_STATS=0
 CUT_STATS_TSV=""
 PATTERNS=()
@@ -149,6 +173,7 @@ for arg in "$@"; do
     --capi-jobs=*) CAPI_JOBS="${arg#*=}" ;;
     --no-lp-tests) NO_LP_TESTS=1 ;;
     --no-lazy-tests) NO_LAZY_TESTS=1 ;;
+    --no-mipstart-tests) NO_MIPSTART_TESTS=1 ;;
     -h|--help)
       # Print the header comment block: everything from line 2 up to (but not
       # including) the first line that is not a comment. Derived rather than
@@ -881,9 +906,69 @@ else
   fi
 fi
 
+# ── 12. MIP-start tests (mipstart-test) ────────────────────────────────────
+# Covers Cbc_setMIPStart()/Cbc_setMIPStartI() -- the python-mip path -- in the
+# three shapes a caller might supply (nonzero integers only, the full solution,
+# all nonzeros), each with preprocessing on and off, plus the fix modes, the
+# fix-continuous-too recovery, the mini branch and bound, negative integer
+# values, and starts that are infeasible or name unknown columns. Assertions are
+# on Cbc's own MIPStart log lines as well as the objective: the fixtures are
+# small enough that Cbc reaches the same optimum with the start ignored, so an
+# objective check alone would pass on a build where MIPStart did nothing (see the
+# header comment in mipstart-test.cpp). Like the LP and lazy tests, one fast
+# in-process binary with nothing to parallelize. Needs no --data-dir: every
+# fixture and its reference optimum are built in-process.
+mipstart_tests_failed=0
+if [[ $NO_MIPSTART_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping MIP-start tests (--no-mipstart-tests).${RESET}"
+else
+  MIPSTART_TEST="$SCRIPT_DIR/mipstart-test"
+  if [[ ! -x "$MIPSTART_TEST" ]]; then
+    echo "${CYAN}Building mipstart-test...${RESET}"
+    make -C "$SCRIPT_DIR" mipstart-test || {
+      echo "${RED}Error: failed to build mipstart-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  echo
+  echo "${BOLD}=== MIP-start tests ===${RESET}"
+
+  MIPSTART_RESULTS_DIR="$RESULTS_DIR/mipstart"
+  mkdir -p "$MIPSTART_RESULTS_DIR"
+  mipstart_log="$MIPSTART_RESULTS_DIR/mipstart-test.log"
+
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$MIPSTART_TEST" >"$mipstart_log" 2>&1; then
+    mipstart_checks_ok=$(grep -c '^  ok:' "$mipstart_log" 2>/dev/null || true)
+    echo "  ${GREEN}✔ all ${mipstart_checks_ok:-0} check(s) passed${RESET}  ${DIM}($mipstart_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "MIP-start tests passed" "${mipstart_checks_ok:-0} / ${mipstart_checks_ok:-0}")${RESET}"
+  else
+    mipstart_tests_failed=1
+    mipstart_checks_ok=$(grep -c '^  ok:' "$mipstart_log" 2>/dev/null || true)
+    mipstart_checks_bad=$(grep -c '^  FAIL:' "$mipstart_log" 2>/dev/null || true)
+    mipstart_total=$(( ${mipstart_checks_ok:-0} + ${mipstart_checks_bad:-0} ))
+    echo "  ${RED}✗ ${mipstart_checks_bad:-0} check(s) failed${RESET}  ${DIM}(see $mipstart_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "MIP-start tests passed" "${mipstart_checks_ok:-0} / $mipstart_total")${RESET}"
+  fi
+  echo
+
+  if [[ $mipstart_tests_failed -eq 1 ]]; then
+    echo "${BOLD}${RED}=== MIP-start test failures ===${RESET}"
+    # Only the failing checks (plus the final RESULT line): the full log carries
+    # Cbc's own output for every solve, and MIPStart solves are logged verbosely
+    # on purpose so the log doubles as the record of which path each start took.
+    grep -E '^  FAIL:|^RESULT:' "$mipstart_log" 2>/dev/null
+    echo
+    echo "${DIM}Full log: $mipstart_log${RESET}"
+    echo
+  fi
+fi
+
 if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 \
       || ${#capi_fail_list[@]} -gt 0 || $lp_tests_failed -ne 0 \
-      || $lazy_tests_failed -ne 0 ]]; then
+      || $lazy_tests_failed -ne 0 || $mipstart_tests_failed -ne 0 ]]; then
   exit 1
 fi
 exit 0

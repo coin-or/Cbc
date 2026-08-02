@@ -2923,6 +2923,13 @@ if (fp) {
         addParam("maxSecondsBest", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
       if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX)
         addParamI("maxNodesBest", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
+      if (model->int_param[INT_PARAM_MIPSTART_FIX]) {
+        static const char *const mipStartFixKwd[] = { "integerZero", "integer", "all" };
+        int m = model->int_param[INT_PARAM_MIPSTART_FIX];
+        if (m < 0 || m > 2)
+          m = 0;
+        inputQueue.push_back(std::string("-mipStartFix=") + mipStartFixKwd[m]);
+      }
     }
 
     // LP progress was already printed by Cbc_solveLinearProgram(); suppress it
@@ -5487,6 +5494,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_CLIQUE_MERGING]          =       -1; // not set
   model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] =  INT_MAX;
   model->int_param[INT_PARAM_MAX_ITER]                =  INT_MAX;
+  model->int_param[INT_PARAM_MIPSTART_FIX]            =        0;
 
   model->dbl_param[DBL_PARAM_PRIMAL_TOL]             =          1e-6;
   model->dbl_param[DBL_PARAM_DUAL_TOL]               =          1e-6;

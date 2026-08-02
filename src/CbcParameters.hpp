@@ -303,6 +303,28 @@ public:
     BndPropEndMarker
   };
 
+  /*! \brief Which columns a MIP start fixes before its LP is re-solved
+
+    A MIP start normally names the integer variables and leaves the continuous
+    ones to be recovered by solving the LP with those fixed.
+
+    - MipStartFixIntZero:  fix integers only, and take every integer the start
+                           does not mention to be zero. (default)
+    - MipStartFixInt:      fix integers only, leaving unmentioned ones free
+                           between their own bounds.
+    - MipStartFixAll:      fix supplied continuous values too. Pins down more of
+                           the solution, but a rounding error in a supplied
+                           value can make the LP infeasible; when that happens
+                           the continuous columns are released and the LP is
+                           retried with just the integers fixed.
+  */
+  enum MipStartFixMode {
+    MipStartFixIntZero = 0,
+    MipStartFixInt,
+    MipStartFixAll,
+    MipStartFixEndMarker
+  };
+
   /*! \brief Which LP algorithm to use for initialSolve in -solve and
       -initialSolve paths
 
@@ -341,6 +363,13 @@ public:
   inline int getBoundPropMaxRounds() const
   {
     return parameters_[CbcParam::BOUNDPROPMAXROUNDS]->intVal();
+  }
+
+  /*! \brief Get which columns a MIP start fixes */
+  inline MipStartFixMode getMipStartFixMode() const
+  {
+    return static_cast< MipStartFixMode >(
+      parameters_[CbcParam::MIPSTARTFIX]->modeVal());
   }
 
   /*

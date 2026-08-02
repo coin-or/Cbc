@@ -175,6 +175,16 @@ void CbcCrashHandler(int sig);
 
 #define CGRAPH_INFEASIBLE_IMPLICATION_WARNING_LIMIT 5
 
+/* -mipStartFix keywords are passed straight through to computeCompleteSolution()
+   as its fixMode, so the two enumerations have to agree value for value. */
+static_assert(static_cast< int >(CbcParameters::MipStartFixIntZero)
+    == static_cast< int >(CbcMipStart::FixIntegersAssumeZero)
+  && static_cast< int >(CbcParameters::MipStartFixInt)
+    == static_cast< int >(CbcMipStart::FixIntegers)
+  && static_cast< int >(CbcParameters::MipStartFixAll)
+    == static_cast< int >(CbcMipStart::FixIntegersAndContinuous),
+  "CbcParameters::MipStartFixMode and CbcMipStart::FixMode have diverged");
+
 void printGeneralMessage(CbcModel &model, std::string message, int type)
 {
   if (message.length()) {
@@ -8275,7 +8285,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
       int status = CbcMipStart::computeCompleteSolution(
         babModel_, babModel_->solver(), colNames, mipStart, &x[0],
         obj, extraActions, babModel_->messageHandler(),
-        babModel_->messagesPointer());
+        babModel_->messagesPointer(), parameters.getMipStartFixMode());
       if (!status) {
         // need to check more babModel_->setBestSolution( &x[0],
         // static_cast<int>(x.size()), obj, false );
@@ -12205,7 +12215,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             int status = CbcMipStart::computeCompleteSolution(
               &tempModel, tempModel.solver(), colNames, mipStartBefore,
               &x[0], obj, 0, tempModel.messageHandler(),
-              tempModel.messagesPointer());
+              tempModel.messagesPointer(), parameters.getMipStartFixMode());
             // set cutoff ( a trifle high)
             if (!status) {
               double newCutoff = std::min(babModel_->getCutoff(), obj + 1.0e-4);

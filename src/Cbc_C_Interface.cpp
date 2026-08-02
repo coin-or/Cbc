@@ -2616,17 +2616,35 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
     model->colValuesMS = NULL;
   }
 
+  /* Every nonzero, not every positive one: a start is a sparse statement of a
+     point, so dropping the negative entries does not shrink it, it changes which
+     point it describes. On a model with negative-valued integers the carried
+     start used to arrive with those columns missing, and since the reader takes
+     unmentioned columns to be zero, CbcMipStart would go on to complete a
+     different -- and generally worse, or unbuildable -- solution than the one
+     just found. */
   std::vector< std::string > cnames;
   std::vector< double > cvalues;
   model->charSpaceMS = 0;
   for ( int j=0 ; (j<cbcModel.getNumCols()) ; ++j ) {
-    if ( cbcModel.bestSolution()[j] >= 1e-8 ) {
+    if ( fabs(cbcModel.bestSolution()[j]) >= 1e-8 ) {
       cnames.push_back( model->solver_->getColName(j) );
       cvalues.push_back( cbcModel.bestSolution()[j] );
       model->charSpaceMS += model->solver_->getColName(j).length() + 1;
     }
   }
   model->charSpaceMS *= sizeof(char);
+
+  /* An all-zero solution leaves nothing to carry. Allocating for it would mean
+     writing colNamesMS[0] into a zero-byte block, and the nColsMS==0 that
+     follows would then stop the next solve from ever freeing either block. */
+  if ( cnames.empty() ) {
+    model->nColsMS = 0;
+    model->colNamesMS = NULL;
+    model->colValuesMS = NULL;
+    model->charSpaceMS = 0;
+    return;
+  }
 
   model->colNamesMS = (char**)xmalloc(sizeof(char*)*cnames.size());
   model->colNamesMS[0] = (char*)xmalloc(sizeof(char)*model->charSpaceMS);

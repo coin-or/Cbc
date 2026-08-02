@@ -98,7 +98,8 @@ build_triplet = @build@
 host_triplet = @host@
 noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	mip-debug-cuts$(EXEEXT) lp-relaxation-test$(EXEEXT) \
-	lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT)
+	lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
+	coefstr-test$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -119,6 +120,9 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_coefstr_test_OBJECTS = coefstr-test.$(OBJEXT)
+coefstr_test_OBJECTS = $(am_coefstr_test_OBJECTS)
+coefstr_test_DEPENDENCIES = ../src/libCbc.la
 am_lazy_constraint_test_OBJECTS = lazy-constraint-test.$(OBJEXT)
 lazy_constraint_test_OBJECTS = $(am_lazy_constraint_test_OBJECTS)
 lazy_constraint_test_DEPENDENCIES = ../src/libCbc.la
@@ -150,6 +154,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/Osi
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/cbc_validate_sol.Po \
+	./$(DEPDIR)/coefstr-test.Po \
 	./$(DEPDIR)/lazy-constraint-test.Po \
 	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po \
 	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mipstart-test.Po
@@ -172,7 +177,7 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(cbc_validate_sol_SOURCES) \
+SOURCES = $(cbc_validate_sol_SOURCES) $(coefstr_test_SOURCES) \
 	$(lazy_constraint_test_SOURCES) $(lp_relaxation_test_SOURCES) \
 	$(mip_c_solve_SOURCES) $(mip_debug_cuts_SOURCES) \
 	$(mipstart_test_SOURCES)
@@ -476,6 +481,8 @@ lazy_constraint_test_LDADD = ../src/libCbc.la
 
 mipstart_test_SOURCES = mipstart-test.cpp
 mipstart_test_LDADD = ../src/libCbc.la
+coefstr_test_SOURCES = coefstr-test.cpp
+coefstr_test_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:
@@ -518,6 +525,10 @@ cbc_validate_sol$(EXEEXT): $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_DEPEND
 	@rm -f cbc_validate_sol$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_LDADD) $(LIBS)
 
+coefstr-test$(EXEEXT): $(coefstr_test_OBJECTS) $(coefstr_test_DEPENDENCIES) $(EXTRA_coefstr_test_DEPENDENCIES) 
+	@rm -f coefstr-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(coefstr_test_OBJECTS) $(coefstr_test_LDADD) $(LIBS)
+
 lazy-constraint-test$(EXEEXT): $(lazy_constraint_test_OBJECTS) $(lazy_constraint_test_DEPENDENCIES) $(EXTRA_lazy_constraint_test_DEPENDENCIES) 
 	@rm -f lazy-constraint-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(lazy_constraint_test_OBJECTS) $(lazy_constraint_test_LDADD) $(LIBS)
@@ -545,6 +556,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc_validate_sol.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coefstr-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lazy-constraint-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lp-relaxation-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-c-solve.Po@am__quote@ # am--include-marker
@@ -679,6 +691,7 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
+	-rm -f ./$(DEPDIR)/coefstr-test.Po
 	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
@@ -730,6 +743,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
+	-rm -f ./$(DEPDIR)/coefstr-test.Po
 	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po

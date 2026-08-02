@@ -644,8 +644,23 @@ public:
     int *clqExtendedOut = nullptr, int *clqDominatedOut = nullptr,
     CoinMessageHandler *handler = nullptr);
 
-  /** Groups bound propagation (strengthenBounds()) and clique merging
-      "before" (strengthenCliques()) into a single, explicitly callable
+  /** Tighten oversized integer coefficients of \p solver in place
+      ("big-M strengthening", per -coefStrengthening): an integer coefficient
+      larger than its row's slack is shrunk to that slack with a compensating
+      right-hand-side change. The LP relaxation gets tighter while the
+      integer-feasible set is unchanged, and no variable is removed, so the
+      model callbacks see is left intact.
+
+      Does nothing when -coefStrengthening is off.
+
+      \param solver  Solver to tighten. Pass nullptr (the default) to
+                      operate on this CbcSolver's own model_.solver().
+  */
+  void strengthenCoefficients(OsiSolverInterface *solver = nullptr);
+
+  /** Groups bound propagation (strengthenBounds()), clique merging
+      "before" (strengthenCliques()) and coefficient tightening
+      (strengthenCoefficients()) into a single, explicitly callable
       pre-root-LP strengthening action, run in place on \p solver ahead of
       the root LP relaxation solve. Deliberately does NOT resolve/re-solve
       the LP afterwards -- clique merging always runs in "before" mode here

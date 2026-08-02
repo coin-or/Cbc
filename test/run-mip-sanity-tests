@@ -56,6 +56,7 @@
 #   --no-lp-tests        Skip the LP-relaxation solve/reoptimize tests (see below)
 #   --no-lazy-tests      Skip the lazy-constraint / TSP tests (see below)
 #   --no-mipstart-tests  Skip the MIP-start tests (see below)
+#   --no-coefstr-tests   Skip the coefficient-tightening tests (see below)
 #   -h, --help           Show this help
 #
 # In addition to the main `cbc`-executable suite above, this script also runs
@@ -112,7 +113,7 @@
 # publish a relaxation bound with isProvenOptimal() true rather than erroring
 # out. One fast in-process binary; pass --no-lazy-tests to skip it.
 #
-# Last of all, it runs the MIP-start tests (test/mipstart-test.cpp), which cover
+# It then runs the MIP-start tests (test/mipstart-test.cpp), which cover
 # Cbc_setMIPStart()/Cbc_setMIPStartI() — the path python-mip uses to hand Cbc an
 # initial solution. The difficulty a MIP start has to survive is that it is
 # stated in the *original* problem while Cbc, by default, searches the
@@ -134,6 +135,31 @@
 # how a dead recovery branch and a silently zeroed node limit both survived in
 # shipped code. One fast in-process binary; pass --no-mipstart-tests to skip it.
 #
+# Last of all, it runs the coefficient-tightening tests
+# (test/coefstr-test.cpp), covering CbcCoefficientStrengthening — the "big-M
+# strengthening" step that runs before the root LP relaxation is solved (step 3
+# of CbcSolver::preRootLPStrenghtening(), per -coefStrengthening). The pass
+# shrinks an integer coefficient exceeding its row's slack down to that slack
+# and moves the right-hand side to compensate, which must tighten the LP
+# relaxation while leaving the integer-feasible set exactly as it was. Both
+# halves are asserted: the resulting coefficient, right-hand side and LP bound
+# against values worked out by hand, and the feasible set by *enumerating* every
+# integer point of the box before and after — re-solving and reaching the same
+# optimum would say nothing about the points a too-strong tightening silently
+# stopped admitting, which is the failure mode that matters here. Alongside the
+# textbook big-M row the cases cover a general integer column (what Cgl's own
+# binary-only tightener skips), negative coefficients, >= rows, the eight rows
+# and columns the rule must decline — range and equality rows, infinite max
+# activity, singletons, continuous, fixed and sub-unit-range columns,
+# non-positive slack — fractional slacks used as-is against near-integral ones
+# snapped up rather than down, idempotence under a second pass, and agreement
+# between the row and column matrix views, since modifyCoefficient() leaves the
+# cached row copy stale and the LP would then be solved against a matrix nobody
+# intended. Every fixture is small enough that Cbc reaches the right answer with
+# the pass disabled, so each assertion was checked by mutation: all ten
+# plausible wrong implementations tried are caught, including the stale cache.
+# One fast in-process binary; pass --no-coefstr-tests to skip it.
+#
 # Positional arguments (optional): one or more glob patterns to select a
 # subset of instances by name (e.g. `./run-mip-sanity-tests 'jssp_*' 'cvrp_*'`).
 set -uo pipefail
@@ -153,6 +179,7 @@ CAPI_JOBS=""
 NO_LP_TESTS=0
 NO_LAZY_TESTS=0
 NO_MIPSTART_TESTS=0
+NO_COEFSTR_TESTS=0
 CUT_STATS=0
 CUT_STATS_TSV=""
 PATTERNS=()
@@ -174,6 +201,7 @@ for arg in "$@"; do
     --no-lp-tests) NO_LP_TESTS=1 ;;
     --no-lazy-tests) NO_LAZY_TESTS=1 ;;
     --no-mipstart-tests) NO_MIPSTART_TESTS=1 ;;
+    --no-coefstr-tests) NO_COEFSTR_TESTS=1 ;;
     -h|--help)
       # Print the header comment block: everything from line 2 up to (but not
       # including) the first line that is not a comment. Derived rather than
@@ -966,9 +994,69 @@ else
   fi
 fi
 
+# ── 13. Coefficient-tightening tests (coefstr-test) ────────────────────────
+# Covers CbcCoefficientStrengthening -- "big-M strengthening", step 3 of the
+# pre-root-LP strengthening phase. Every fixture's expected coefficient, rhs and
+# LP bound is worked out by hand, and feasible-set preservation is asserted by
+# *enumerating* every integer point of the box before and after rather than by
+# re-solving: a solver that reaches the same optimum says nothing about the
+# points a too-strong tightening silently stopped admitting, which is the one
+# failure mode here that would be a correctness bug rather than a missed
+# opportunity (see the header comment in coefstr-test.cpp). Like the LP, lazy and
+# MIP-start tests, one fast in-process binary with nothing to parallelize. Needs
+# no --data-dir: every fixture is built in-process.
+coefstr_tests_failed=0
+if [[ $NO_COEFSTR_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping coefficient-tightening tests (--no-coefstr-tests).${RESET}"
+else
+  COEFSTR_TEST="$SCRIPT_DIR/coefstr-test"
+  if [[ ! -x "$COEFSTR_TEST" ]]; then
+    echo "${CYAN}Building coefstr-test...${RESET}"
+    make -C "$SCRIPT_DIR" coefstr-test || {
+      echo "${RED}Error: failed to build coefstr-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  echo
+  echo "${BOLD}=== Coefficient-tightening tests ===${RESET}"
+
+  COEFSTR_RESULTS_DIR="$RESULTS_DIR/coefstr"
+  mkdir -p "$COEFSTR_RESULTS_DIR"
+  coefstr_log="$COEFSTR_RESULTS_DIR/coefstr-test.log"
+
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$COEFSTR_TEST" >"$coefstr_log" 2>&1; then
+    coefstr_checks_ok=$(grep -c '^  ok:' "$coefstr_log" 2>/dev/null || true)
+    echo "  ${GREEN}✔ all ${coefstr_checks_ok:-0} check(s) passed${RESET}  ${DIM}($coefstr_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Coefficient-tightening tests passed" "${coefstr_checks_ok:-0} / ${coefstr_checks_ok:-0}")${RESET}"
+  else
+    coefstr_tests_failed=1
+    coefstr_checks_ok=$(grep -c '^  ok:' "$coefstr_log" 2>/dev/null || true)
+    coefstr_checks_bad=$(grep -c '^  FAIL:' "$coefstr_log" 2>/dev/null || true)
+    coefstr_total=$(( ${coefstr_checks_ok:-0} + ${coefstr_checks_bad:-0} ))
+    echo "  ${RED}✗ ${coefstr_checks_bad:-0} check(s) failed${RESET}  ${DIM}(see $coefstr_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Coefficient-tightening tests passed" "${coefstr_checks_ok:-0} / $coefstr_total")${RESET}"
+  fi
+  echo
+
+  if [[ $coefstr_tests_failed -eq 1 ]]; then
+    echo "${BOLD}${RED}=== Coefficient-tightening test failures ===${RESET}"
+    # Only the failing checks (plus the final RESULT line): the full log records
+    # every check with its actual and expected value, which is what makes a
+    # failure diagnosable, but is far too long to print in full.
+    grep -E '^  FAIL:|^RESULT:' "$coefstr_log" 2>/dev/null
+    echo
+    echo "${DIM}Full log: $coefstr_log${RESET}"
+    echo
+  fi
+fi
+
 if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 \
       || ${#capi_fail_list[@]} -gt 0 || $lp_tests_failed -ne 0 \
-      || $lazy_tests_failed -ne 0 || $mipstart_tests_failed -ne 0 ]]; then
+      || $lazy_tests_failed -ne 0 || $mipstart_tests_failed -ne 0 \
+      || $coefstr_tests_failed -ne 0 ]]; then
   exit 1
 fi
 exit 0

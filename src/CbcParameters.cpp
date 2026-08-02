@@ -703,6 +703,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::SOS]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::SINGLETONBOUNDS]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
   parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
+  parameters_[CbcParam::COEFSTRENGTHENING]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::PREPROCNAMES]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::DOHEURISTIC]->setTopic("Heuristics");
   parameters_[CbcParam::USESOLUTION]->setTopic("Heuristics");
@@ -859,6 +860,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setDefault(-1);
      parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
+     parameters_[CbcParam::COEFSTRENGTHENING]->setDefault("on");
      parameters_[CbcParam::CPX]->setDefault("off");
      parameters_[CbcParam::DOHEURISTIC]->setDefault("off");
      parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
@@ -2705,6 +2707,19 @@ void CbcParameters::addCbcSolverBoolParams() {
       "this off skips the whole phase in one shot -- the individual "
       "sub-steps can still be controlled independently via "
       "-boundPropLevel/-singletonBounds and -clqStrengthening.");
+
+  parameters_[CbcParam::COEFSTRENGTHENING]->setup(
+      "coefStr!engthening",
+      "Whether to tighten oversized integer coefficients before the root LP",
+      "When on (the default), the last step of the pre-root-LP strengthening "
+      "phase shrinks integer coefficients that are larger than their row's "
+      "slack, adjusting the right-hand side to compensate. This is the "
+      "classic \"big-M\" strengthening: the LP relaxation gets tighter while "
+      "the integer-feasible set is unchanged. It needs no LP information and "
+      "removes no variable, so it runs before the first relaxation is solved "
+      "and leaves the model callbacks see intact. Requires "
+      "-preRootLPStrenghtening to be on (or one of the LP-only commands, "
+      "which run the phase unconditionally).");
 
   parameters_[CbcParam::USESOLUTION]->setup(
       "force!Solution", "Whether to use given solution as crash for BAB",

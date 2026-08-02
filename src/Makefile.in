@@ -202,7 +202,9 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcSolverHeuristics.lo libCbc_la-CbcParameters.lo \
 	libCbc_la-CbcStatistics.lo libCbc_la-CbcSolverStatistics.lo \
 	libCbc_la-CbcInstanceFeatures.lo \
-	libCbc_la-CbcBoundPropagation.lo libCbc_la-CbcStrategy.lo \
+	libCbc_la-CbcBoundPropagation.lo \
+	libCbc_la-CbcCoefficientStrengthening.lo \
+	libCbc_la-CbcStrategy.lo \
 	libCbc_la-CbcSubProblem.lo libCbc_la-CbcSymmetry.lo \
 	libCbc_la-CbcThread.lo libCbc_la-CbcTree.lo \
 	libCbc_la-CbcTreeLocal.lo libCbc_la-Cbc_C_Interface.lo \
@@ -243,6 +245,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo \
 	./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo \
 	./$(DEPDIR)/libCbc_la-CbcClique.Plo \
+	./$(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCompareEstimate.Plo \
@@ -642,6 +645,7 @@ libCbc_la_SOURCES = \
 	CbcSolverStatistics.cpp CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.cpp CbcInstanceFeatures.hpp \
 	CbcBoundPropagation.cpp CbcBoundPropagation.hpp \
+	CbcCoefficientStrengthening.cpp CbcCoefficientStrengthening.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
 	CbcSymmetry.cpp CbcSymmetry.hpp \
@@ -766,6 +770,7 @@ includecoin_HEADERS = \
 	CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.hpp \
 	CbcBoundPropagation.hpp \
+	CbcCoefficientStrengthening.hpp \
 	ClpAmplObjective.hpp
 
 all: config.h config_cbc.h
@@ -929,6 +934,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcClique.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCompareEstimate.Plo@am__quote@ # am--include-marker
@@ -1597,6 +1603,13 @@ libCbc_la-CbcBoundPropagation.lo: CbcBoundPropagation.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcBoundPropagation.lo `test -f 'CbcBoundPropagation.cpp' || echo '$(srcdir)/'`CbcBoundPropagation.cpp
 
+libCbc_la-CbcCoefficientStrengthening.lo: CbcCoefficientStrengthening.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcCoefficientStrengthening.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Tpo -c -o libCbc_la-CbcCoefficientStrengthening.lo `test -f 'CbcCoefficientStrengthening.cpp' || echo '$(srcdir)/'`CbcCoefficientStrengthening.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Tpo $(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcCoefficientStrengthening.cpp' object='libCbc_la-CbcCoefficientStrengthening.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcCoefficientStrengthening.lo `test -f 'CbcCoefficientStrengthening.cpp' || echo '$(srcdir)/'`CbcCoefficientStrengthening.cpp
+
 libCbc_la-CbcStrategy.lo: CbcStrategy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcStrategy.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcStrategy.Tpo -c -o libCbc_la-CbcStrategy.lo `test -f 'CbcStrategy.cpp' || echo '$(srcdir)/'`CbcStrategy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcStrategy.Tpo $(DEPDIR)/libCbc_la-CbcStrategy.Plo
@@ -1811,6 +1824,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcClique.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareEstimate.Plo
@@ -1947,6 +1961,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcClique.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareEstimate.Plo

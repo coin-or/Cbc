@@ -178,6 +178,7 @@ public:
 
       // On/Off Parameters
       FIRSTBOOLPARAM,
+      COEFSTRENGTHENING,
       CPX,
       DOHEURISTIC,
       ERRORSALLOWED,

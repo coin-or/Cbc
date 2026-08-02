@@ -102,6 +102,7 @@ libCbc_la_SOURCES = \
 	CbcSolverStatistics.cpp CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.cpp CbcInstanceFeatures.hpp \
 	CbcBoundPropagation.cpp CbcBoundPropagation.hpp \
+	CbcCoefficientStrengthening.cpp CbcCoefficientStrengthening.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
 	CbcSymmetry.cpp CbcSymmetry.hpp \
@@ -239,6 +240,7 @@ includecoin_HEADERS = \
 	CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.hpp \
 	CbcBoundPropagation.hpp \
+	CbcCoefficientStrengthening.hpp \
 	ClpAmplObjective.hpp
 
 #######################################################################

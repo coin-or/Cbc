@@ -44,7 +44,7 @@ test: cbc_validate_sol$(EXEEXT)
 # command line for any instance. See `mip-c-solve --help` for usage.
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
-	lazy-constraint-test mipstart-test
+	lazy-constraint-test mipstart-test coefstr-test
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -176,3 +176,33 @@ lazy_constraint_test_LDADD = ../src/libCbc.la
 mipstart_test_SOURCES = mipstart-test.cpp
 
 mipstart_test_LDADD = ../src/libCbc.la
+
+# coefstr-test: targeted tests for CbcCoefficientStrengthening, the coefficient
+# tightening ("big-M strengthening") step of the pre-root-LP strengthening phase
+# (step 3 of CbcSolver::preRootLPStrenghtening(), per -coefStrengthening).
+#
+# The pass shrinks an integer coefficient exceeding its row's slack down to that
+# slack and adjusts the right-hand side to compensate, which tightens the LP
+# relaxation while leaving the integer-feasible set alone. Both halves of that
+# are asserted: the new coefficient, right-hand side and LP bound against values
+# worked out by hand, and the feasible set by *enumerating* every integer point
+# of the box before and after -- a re-solve reaching the same optimum would say
+# nothing about the points the tightened system silently stopped admitting.
+# Covers the textbook big-M row, a general integer column (the case Cgl's own
+# binary-only `difference <= 1.0` gate skips, i.e. what this pass adds beyond the
+# existing implementation), negative coefficients (right-hand side off the lower
+# bound, not the upper), >= rows (the scale = -1 path), the eight rows and
+# columns the rule must decline -- range and equality rows, infinite max
+# activity, singletons, continuous, fixed and sub-unit-range columns,
+# non-positive slack -- fractional slacks used as-is and near-integral ones
+# snapped up rather than down, idempotence under a second pass, agreement between
+# the row and column matrix views (a modifyCoefficient()-based implementation
+# leaves the cached row copy stale), and the parameter end to end. Every fixture
+# is small enough that Cbc reaches the right answer with the pass disabled, so
+# each assertion was checked by mutation: all ten plausible wrong
+# implementations tried are caught. Run as part of the regression suite by
+# run-mip-sanity-tests (--no-coefstr-tests skips it). See `coefstr-test --help`.
+
+coefstr_test_SOURCES = coefstr-test.cpp
+
+coefstr_test_LDADD = ../src/libCbc.la

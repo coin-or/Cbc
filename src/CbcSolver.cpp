@@ -29,6 +29,7 @@
 #include "CbcSolverStatistics.hpp"
 #include "CbcInstanceFeatures.hpp"
 #include "CbcBoundPropagation.hpp"
+#include "CbcCoefficientStrengthening.hpp"
 #include "CbcPostprocessRepair.hpp"
 
 #if defined(NEW_DEBUG_AND_FILL) || defined(CLP_MALLOC_STATISTICS)
@@ -1303,6 +1304,36 @@ bool CbcSolver::strengthenCliques(OsiSolverInterface *solverIn,
     mode, strengthenMode, model_, mipStart_, clqExtendedOut, clqDominatedOut);
 }
 
+// Runs coefficient tightening ("big-M strengthening", per -coefStrengthening)
+// on `solver` in place: integer coefficients larger than their row's slack are
+// shrunk with a compensating right-hand-side change, which tightens the LP
+// relaxation without altering the integer-feasible set. Thin wrapper around
+// CbcCoefficientStrengthening so the parameter read, statistics and log line
+// live next to the phase's other two steps.
+void CbcSolver::strengthenCoefficients(OsiSolverInterface *solverIn)
+{
+  if (!parameters_[CbcParam::COEFSTRENGTHENING]->modeVal())
+    return;
+
+  OsiSolverInterface *solver = solverIn ? solverIn : model_.solver();
+  const int logLevel = model_.messageHandler()->logLevel();
+
+  CbcCoefficientStrengthening cs;
+  cs.run(solver, model_.messageHandler(), logLevel);
+
+  statistics_.coefstr_changed = cs.nCoefficients();
+  statistics_.coefstr_rows = cs.nRows();
+  statistics_.coefstr_time = cs.timeUsed();
+
+  if (logLevel >= 1) {
+    if (cs.nCoefficients())
+      printf("  Coefficient strengthening: %d coefficients on %d rows (%.2fs)\n",
+        cs.nCoefficients(), cs.nRows(), cs.timeUsed());
+    else
+      printf("  Coefficient strengthening: no changes (%.2fs)\n", cs.timeUsed());
+  }
+}
+
 // Groups bound propagation + clique merging "before" into a single,
 // explicitly callable pre-root-LP strengthening action. This used to be
 // steps 1-2 of applyLpMethod(), run unconditionally on every call
@@ -1349,6 +1380,16 @@ bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn)
         printf("  Clique strengthening: no changes (%.2fs)\n", clqTime);
     }
   }
+
+  // ─── 3. Coefficient tightening ("big-M strengthening") ───────────────────
+  // Shrinks integer coefficients that exceed their row's slack, adjusting the
+  // right-hand side to compensate. Runs last so that it sees the tightest
+  // bounds from step 1 -- the slack it caps coefficients at is derived from
+  // them, so a tighter bound means a tighter cap. Preserves the
+  // integer-feasible set exactly, which is why the conflict graph built in
+  // step 2 stays valid and is deliberately not rebuilt.
+  strengthenCoefficients(solver);
+
   return true;
 }
 

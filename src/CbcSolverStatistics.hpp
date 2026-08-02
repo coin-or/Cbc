@@ -92,6 +92,15 @@ public:
   /** Clique strengthening time (before LP) */
   double clqstr_time = 0.0;
 
+  /** Coefficient tightening: coefficients reduced (before LP) */
+  int coefstr_changed = 0;
+
+  /** Coefficient tightening: rows with at least one reduced coefficient */
+  int coefstr_rows = 0;
+
+  /** Coefficient tightening time (before LP) */
+  double coefstr_time = 0.0;
+
   /** Number of cut generators */
   int number_generators = 0;
 

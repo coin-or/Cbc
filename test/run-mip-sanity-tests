@@ -156,8 +156,9 @@
 # between the row and column matrix views, since modifyCoefficient() leaves the
 # cached row copy stale and the LP would then be solved against a matrix nobody
 # intended. Every fixture is small enough that Cbc reaches the right answer with
-# the pass disabled, so each assertion was checked by mutation: all ten
-# plausible wrong implementations tried are caught, including the stale cache.
+# the pass disabled, so each assertion was checked by mutation: all thirteen
+# plausible wrong implementations tried are caught, including the stale cache
+# and the three ways the deferred matrix copy could fail to be applied.
 # One fast in-process binary; pass --no-coefstr-tests to skip it.
 #
 # Positional arguments (optional): one or more glob patterns to select a

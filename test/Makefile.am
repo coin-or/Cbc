@@ -199,8 +199,10 @@ mipstart_test_LDADD = ../src/libCbc.la
 # the row and column matrix views (a modifyCoefficient()-based implementation
 # leaves the cached row copy stale), and the parameter end to end. Every fixture
 # is small enough that Cbc reaches the right answer with the pass disabled, so
-# each assertion was checked by mutation: all ten plausible wrong
-# implementations tried are caught. Run as part of the regression suite by
+# each assertion was checked by mutation: all thirteen plausible wrong
+# implementations tried are caught, including the three ways the deferred
+# matrix copy (taken only once a change is known, to keep the no-change path
+# off it) could fail to be applied. Run as part of the regression suite by
 # run-mip-sanity-tests (--no-coefstr-tests skips it). See `coefstr-test --help`.
 
 coefstr_test_SOURCES = coefstr-test.cpp

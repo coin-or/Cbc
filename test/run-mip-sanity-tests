@@ -167,6 +167,13 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# On MinGW/MSYS/Cygwin, autoconf's AC_EXEEXT gives every noinst_PROGRAMS
+# target (and cbc itself) a ".exe" suffix, so both the `make -C ... <target>`
+# invocations below and the resulting binary paths need to account for it.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) EXEEXT=".exe" ;;
+  *) EXEEXT="" ;;
+esac
 JOBS="${CBC_TESTS_JOBS:-$(nproc)}"
 PREFIX="${PREFIX:-$HOME/prog/cbc}"
 DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
@@ -288,14 +295,14 @@ fi
 export ASLR_WRAP
 
 # ── 3. Locate/build the validator ───────────────────────────────────────────
-VALIDATOR="$SCRIPT_DIR/cbc_validate_sol"
+VALIDATOR="$SCRIPT_DIR/cbc_validate_sol$EXEEXT"
 if [[ ! -x "$VALIDATOR" ]]; then
   echo "${CYAN}Building cbc_validate_sol...${RESET}"
   if [[ ! -f "$SCRIPT_DIR/Makefile" ]]; then
     echo "${RED}Error: test/Makefile missing — configure Cbc first ('./configure' at the repo root).${RESET}" >&2
     exit 1
   fi
-  make -C "$SCRIPT_DIR" cbc_validate_sol || {
+  make -C "$SCRIPT_DIR" "cbc_validate_sol$EXEEXT" || {
     echo "${RED}Error: failed to build cbc_validate_sol.${RESET}" >&2
     exit 1
   }
@@ -756,10 +763,10 @@ capi_fail_list=()
 if [[ $NO_CAPI_TESTS -eq 1 ]]; then
   echo "${DIM}Skipping C API smoke tests (--no-capi-tests).${RESET}"
 else
-  MIP_C_SOLVE="$SCRIPT_DIR/mip-c-solve"
+  MIP_C_SOLVE="$SCRIPT_DIR/mip-c-solve$EXEEXT"
   if [[ ! -x "$MIP_C_SOLVE" ]]; then
     echo "${CYAN}Building mip-c-solve...${RESET}"
-    make -C "$SCRIPT_DIR" mip-c-solve || {
+    make -C "$SCRIPT_DIR" "mip-c-solve$EXEEXT" || {
       echo "${RED}Error: failed to build mip-c-solve.${RESET}" >&2
       exit 1
     }
@@ -834,10 +841,10 @@ lp_tests_failed=0
 if [[ $NO_LP_TESTS -eq 1 ]]; then
   echo "${DIM}Skipping LP-relaxation tests (--no-lp-tests).${RESET}"
 else
-  LP_RELAXATION_TEST="$SCRIPT_DIR/lp-relaxation-test"
+  LP_RELAXATION_TEST="$SCRIPT_DIR/lp-relaxation-test$EXEEXT"
   if [[ ! -x "$LP_RELAXATION_TEST" ]]; then
     echo "${CYAN}Building lp-relaxation-test...${RESET}"
-    make -C "$SCRIPT_DIR" lp-relaxation-test || {
+    make -C "$SCRIPT_DIR" "lp-relaxation-test$EXEEXT" || {
       echo "${RED}Error: failed to build lp-relaxation-test.${RESET}" >&2
       exit 1
     }
@@ -892,10 +899,10 @@ lazy_tests_failed=0
 if [[ $NO_LAZY_TESTS -eq 1 ]]; then
   echo "${DIM}Skipping lazy-constraint tests (--no-lazy-tests).${RESET}"
 else
-  LAZY_CONSTRAINT_TEST="$SCRIPT_DIR/lazy-constraint-test"
+  LAZY_CONSTRAINT_TEST="$SCRIPT_DIR/lazy-constraint-test$EXEEXT"
   if [[ ! -x "$LAZY_CONSTRAINT_TEST" ]]; then
     echo "${CYAN}Building lazy-constraint-test...${RESET}"
-    make -C "$SCRIPT_DIR" lazy-constraint-test || {
+    make -C "$SCRIPT_DIR" "lazy-constraint-test$EXEEXT" || {
       echo "${RED}Error: failed to build lazy-constraint-test.${RESET}" >&2
       exit 1
     }
@@ -951,10 +958,10 @@ mipstart_tests_failed=0
 if [[ $NO_MIPSTART_TESTS -eq 1 ]]; then
   echo "${DIM}Skipping MIP-start tests (--no-mipstart-tests).${RESET}"
 else
-  MIPSTART_TEST="$SCRIPT_DIR/mipstart-test"
+  MIPSTART_TEST="$SCRIPT_DIR/mipstart-test$EXEEXT"
   if [[ ! -x "$MIPSTART_TEST" ]]; then
     echo "${CYAN}Building mipstart-test...${RESET}"
-    make -C "$SCRIPT_DIR" mipstart-test || {
+    make -C "$SCRIPT_DIR" "mipstart-test$EXEEXT" || {
       echo "${RED}Error: failed to build mipstart-test.${RESET}" >&2
       exit 1
     }
@@ -1010,10 +1017,10 @@ coefstr_tests_failed=0
 if [[ $NO_COEFSTR_TESTS -eq 1 ]]; then
   echo "${DIM}Skipping coefficient-tightening tests (--no-coefstr-tests).${RESET}"
 else
-  COEFSTR_TEST="$SCRIPT_DIR/coefstr-test"
+  COEFSTR_TEST="$SCRIPT_DIR/coefstr-test$EXEEXT"
   if [[ ! -x "$COEFSTR_TEST" ]]; then
     echo "${CYAN}Building coefstr-test...${RESET}"
-    make -C "$SCRIPT_DIR" coefstr-test || {
+    make -C "$SCRIPT_DIR" "coefstr-test$EXEEXT" || {
       echo "${RED}Error: failed to build coefstr-test.${RESET}" >&2
       exit 1
     }

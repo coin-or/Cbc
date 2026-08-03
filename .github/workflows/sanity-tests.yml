@@ -175,15 +175,19 @@ jobs:
 
       - name: Install Homebrew build deps
         run: |
-          # `flock` and a modern `bash` aren't present by default on macOS:
-          # run-mip-sanity-tests needs GNU/util-linux-style flock for its
-          # progress-counter locking, and macOS's ancient system /bin/bash
-          # (3.2, last GPLv2 release) has a longstanding `set -u` bug where
-          # `${empty_array[@]}` throws "unbound variable" instead of
-          # expanding to nothing — fixed only in bash 4.4+. Both are
-          # sidestepped by installing Homebrew's `flock` and `bash` and
-          # invoking the script with the latter explicitly (see below).
-          brew install gcc openblas suite-sparse pkg-config parallel flock bash
+          # `flock`, `timeout`, and a modern `bash` aren't present by default
+          # on macOS: run-mip-sanity-tests needs GNU/util-linux-style flock
+          # for its progress-counter locking and GNU coreutils' `timeout` to
+          # hard-kill overrunning solves (BSD/macOS has no `timeout` at all —
+          # every instance failed with "cbc exited (rc=127)" without it), and
+          # macOS's ancient system /bin/bash (3.2, last GPLv2 release) has a
+          # longstanding `set -u` bug where `${empty_array[@]}` throws
+          # "unbound variable" instead of expanding to nothing (fixed only in
+          # bash 4.4+). All three are sidestepped by installing Homebrew's
+          # `flock`/`coreutils`/`bash`, prepending coreutils' unprefixed
+          # `gnubin` dir to PATH, and invoking the script with Homebrew's
+          # bash explicitly (see below).
+          brew install gcc openblas suite-sparse pkg-config parallel flock bash coreutils
 
       - name: Build + package + test
         working-directory: work
@@ -195,6 +199,7 @@ jobs:
           GXX_BIN="$(ls "$GCC_PREFIX"/bin/g++-* | head -1)"
           FC_BIN="$(ls "$GCC_PREFIX"/bin/gfortran* | head -1)"
           export CC="$GCC_BIN" CXX="$GXX_BIN" FC="$FC_BIN"
+          export PATH="$(brew --prefix coreutils)/libexec/gnubin:$PATH"
           ./config --opt --arch=generic --install --prefix="$PWD/install" --jobs="$(sysctl -n hw.ncpu)" \
             --lapack --amd --zlib --no-bz2 --no-nauty
           ./package --prefix="$PWD/install" --name=cbc-macos-arm64-next --out=dist
@@ -243,15 +248,19 @@ jobs:
           if [[ ! -x /usr/local/bin/brew ]]; then
             arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null
           fi
-          # `flock` and a modern `bash` aren't present by default on macOS:
-          # run-mip-sanity-tests needs GNU/util-linux-style flock for its
-          # progress-counter locking, and macOS's ancient system /bin/bash
-          # (3.2, last GPLv2 release) has a longstanding `set -u` bug where
-          # `${empty_array[@]}` throws "unbound variable" instead of
-          # expanding to nothing — fixed only in bash 4.4+. Both are
-          # sidestepped by installing Homebrew's `flock` and `bash` and
-          # invoking the script with the latter explicitly (see below).
-          arch -x86_64 /usr/local/bin/brew install gcc openblas suite-sparse pkg-config parallel flock bash
+          # `flock`, `timeout`, and a modern `bash` aren't present by default
+          # on macOS: run-mip-sanity-tests needs GNU/util-linux-style flock
+          # for its progress-counter locking and GNU coreutils' `timeout` to
+          # hard-kill overrunning solves (BSD/macOS has no `timeout` at all —
+          # every instance failed with "cbc exited (rc=127)" without it), and
+          # macOS's ancient system /bin/bash (3.2, last GPLv2 release) has a
+          # longstanding `set -u` bug where `${empty_array[@]}` throws
+          # "unbound variable" instead of expanding to nothing (fixed only in
+          # bash 4.4+). All three are sidestepped by installing Homebrew's
+          # `flock`/`coreutils`/`bash`, prepending coreutils' unprefixed
+          # `gnubin` dir to PATH, and invoking the script with Homebrew's
+          # bash explicitly (see below).
+          arch -x86_64 /usr/local/bin/brew install gcc openblas suite-sparse pkg-config parallel flock bash coreutils
 
       - name: Build + package + test (under Rosetta)
         working-directory: work
@@ -259,6 +268,7 @@ jobs:
           arch -x86_64 /bin/bash <<'ROSETTA'
           set -euo pipefail
           eval "$(/usr/local/bin/brew shellenv)"
+          export PATH="$(brew --prefix coreutils)/libexec/gnubin:$PATH"
           GCC_PREFIX="$(brew --prefix gcc)"
           GCC_BIN="$(ls "$GCC_PREFIX"/bin/gcc-* | head -1)"
           GXX_BIN="$(ls "$GCC_PREFIX"/bin/g++-* | head -1)"

@@ -55,8 +55,12 @@
 #include <map>
 #include <sstream>
 #include <string>
-#include <unistd.h>
 #include <vector>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
 /* ── Tolerances (same defaults as cbc_validate_sol) ────────────────────── */
 
@@ -145,12 +149,21 @@ static bool looksLikeLpFile(const std::string &path)
 static std::string exeDir()
 {
   char buf[4096];
+#ifdef _WIN32
+  DWORD n = GetModuleFileNameA(nullptr, buf, sizeof(buf) - 1);
+  if (n == 0 || n >= sizeof(buf) - 1)
+    return ".";
+  buf[n] = '\0';
+  std::string path(buf);
+  size_t slash = path.find_last_of("/\\");
+#else
   ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
   if (n <= 0)
     return ".";
   buf[n] = '\0';
   std::string path(buf);
   size_t slash = path.find_last_of('/');
+#endif
   return (slash == std::string::npos) ? "." : path.substr(0, slash);
 }
 

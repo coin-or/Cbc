@@ -1275,6 +1275,16 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           // Propagate parent's time limit to sub-MIP (start time is shared).
           if (model_->getMaximumSeconds() < 1.0e8)
             model.setMaximumSeconds(model_->getMaximumSeconds());
+          // Propagate parent's node-level bound propagation settings: the
+          // sub-MIP's CbcModel is built from scratch (plain constructor
+          // defaults, i.e. off) and does not otherwise inherit them, so
+          // RINS/local-search/DINS/etc. sub-solves would silently run
+          // without in-tree bound propagation even when it's enabled (and
+          // tuned) on the parent model.
+          model.setNodeBoundProp(model_->nodeBoundProp());
+          model.setNodeBoundPropMaxDepth(model_->nodeBoundPropMaxDepth());
+          model.setNodeBoundPropMinDepth(model_->nodeBoundPropMinDepth());
+          model.setNodeBoundPropDepthInterval(model_->nodeBoundPropDepthInterval());
           model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
           if ((saveModelOptions & 2048) == 0)
             model.setMoreSpecialOptions(model_->moreSpecialOptions());

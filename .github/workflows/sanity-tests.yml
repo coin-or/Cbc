@@ -8,8 +8,19 @@ name: mip-sanity-data regression suite
 # regressions are caught immediately after a build.
 #
 # Build engine: reuses the `config` (configure+build+install) script from
-# h-g-s/cbc-workspace, same convention as next-release.yml. The actual test
-# orchestration (`test/run-mip-sanity-tests`) is self-contained in this repo.
+# h-g-s/cbc-workspace, same convention as next-release.yml, and builds inside
+# the *exact same* quay.io/pypa/manylinux_2_34 container + gcc-toolset-14
+# compiler + config flags as next-release.yml's official Linux x86_64 release
+# build. This is deliberate: there is no point validating a binary that was
+# built by a different compiler/environment than the one we actually ship
+# (previously this workflow built on stock ubuntu-latest with whatever GCC
+# apt happened to default to, e.g. GCC 13 on ubuntu-24.04, one major version
+# behind the GCC 14 toolset used for release builds). `next-release.yml` only
+# builds on push (you can't release code that hasn't merged), so this
+# workflow still does its own build for pull_request runs, but with a
+# matching toolchain/flags so results are representative of what will ship.
+# The actual test orchestration (`test/run-mip-sanity-tests`) is
+# self-contained in this repo.
 
 on:
   push:
@@ -47,21 +58,28 @@ jobs:
           git clone --depth 1 --branch "$WORKSPACE_REF" https://github.com/h-g-s/cbc-workspace work/cbc-workspace
           cp work/cbc-workspace/config work/
 
-      - name: Install build + test dependencies
+      - name: Build + test inside manylinux_2_34 (same container/compiler/flags as next-release.yml)
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq gfortran liblapack-dev libsuitesparse-dev \
-            zlib1g-dev libbz2-dev libnauty-dev parallel
+          for i in 1 2 3; do
+            docker pull quay.io/pypa/manylinux_2_34_x86_64 && break
+            echo "Attempt $i failed, retrying in 30s..."; sleep 30
+          done
+          docker run --rm -v "$PWD/work:/work" -w /work quay.io/pypa/manylinux_2_34_x86_64 bash -c '
+            set -euo pipefail
+            source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
+            dnf install -y --setopt=install_weak_deps=False \
+              openblas-devel suitesparse-devel zlib-devel gcc-gfortran \
+              pkgconfig epel-release >/dev/null
+            dnf install -y --setopt=install_weak_deps=False parallel >/dev/null
+            ./config --opt --arch=generic --install --prefix=/work/install --jobs="$(nproc)" \
+              --lapack --amd --zlib --no-bz2 --no-nauty
+            cd Cbc/test
+            ./run-mip-sanity-tests --jobs="$(nproc)" --no-color --prefix=/work/install
+          '
 
-      - name: Configure + build + install
-        working-directory: work
-        run: ./config --opt --install --prefix="$PWD/install" --jobs="$(nproc)"
-
-      - name: Run mip-sanity-data regression suite
-        working-directory: work/Cbc/test
-        run: |
-          ./run-mip-sanity-tests --jobs="$(nproc)" --no-color \
-            --prefix="$GITHUB_WORKSPACE/work/install"
+      - name: Fix ownership of container-written files
+        if: always()
+        run: sudo chown -R "$USER:$USER" work
 
       - name: Upload logs/solutions on failure
         if: failure()

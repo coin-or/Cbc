@@ -794,11 +794,11 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::BOUNDPROPLEVEL]->setDefault("milpbt");
      parameters_[CbcParam::LPMETHOD]->setDefault("auto");
      parameters_[CbcParam::MIPSTARTFIX]->setDefault("integerZero");
-     parameters_[CbcParam::NODEBOUNDPROP]->setDefault("off");
+     parameters_[CbcParam::NODEBOUNDPROP]->setDefault("on");
      parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setDefault(100);
      parameters_[CbcParam::NODEBOUNDPROPMAXDEPTH]->setDefault(50);
      parameters_[CbcParam::NODEBOUNDPROPMINDEPTH]->setDefault(5);
-     parameters_[CbcParam::NODEBOUNDPROPDEPTHINTERVAL]->setDefault(5);
+     parameters_[CbcParam::NODEBOUNDPROPDEPTHINTERVAL]->setDefault(6);
      parameters_[CbcParam::ARTIFICIALCOST]->setDefault(getArtVarThreshold());
      parameters_[CbcParam::DEXTRA3]->setDefault(0.0);
      parameters_[CbcParam::DEXTRA4]->setDefault(0.0);

@@ -90,7 +90,7 @@ jobs:
             mkdir -p /work/packaged && tar -xzf /work/dist/cbc-linux-x86_64-next.tar.gz -C /work/packaged
             cd Cbc/test
             ./run-mip-sanity-tests --jobs="$(nproc)" --no-color --prefix=/work/install \
-              --cbc=/work/packaged/bin/cbc
+              --cbc=/work/packaged/cbc-linux-x86_64-next/bin/cbc
           '
 
       - name: Fix ownership of container-written files
@@ -141,7 +141,7 @@ jobs:
             mkdir -p /work/packaged && tar -xzf /work/dist/cbc-linux-aarch64-next.tar.gz -C /work/packaged
             cd Cbc/test
             ./run-mip-sanity-tests --jobs="$(nproc)" --no-color --prefix=/work/install \
-              --cbc=/work/packaged/bin/cbc
+              --cbc=/work/packaged/cbc-linux-aarch64-next/bin/cbc
           '
 
       - name: Fix ownership of container-written files
@@ -193,7 +193,7 @@ jobs:
           mkdir -p packaged && tar -xzf dist/cbc-macos-arm64-next.tar.gz -C packaged
           cd Cbc/test
           ./run-mip-sanity-tests --jobs="$(sysctl -n hw.ncpu)" --no-color \
-            --prefix="$PWD/../../install" --cbc="$PWD/../../packaged/bin/cbc"
+            --prefix="$PWD/../../install" --cbc="$PWD/../../packaged/cbc-macos-arm64-next/bin/cbc"
 
       - name: Upload logs/solutions on failure
         if: failure()
@@ -254,7 +254,7 @@ jobs:
           mkdir -p packaged && tar -xzf dist/cbc-macos-x86_64-next.tar.gz -C packaged
           cd Cbc/test
           ./run-mip-sanity-tests --jobs="$(sysctl -n hw.ncpu)" --no-color \
-            --prefix="$PWD/../../install" --cbc="$PWD/../../packaged/bin/cbc"
+            --prefix="$PWD/../../install" --cbc="$PWD/../../packaged/cbc-macos-x86_64-next/bin/cbc"
           ROSETTA
 
       - name: Upload logs/solutions on failure
@@ -317,7 +317,7 @@ jobs:
           mkdir -p packaged && unzip -q dist/cbc-windows-x86_64-next.zip -d packaged
           cd Cbc/test
           ./run-mip-sanity-tests --jobs="$(nproc)" --no-color \
-            --prefix="$PWD/../../install" --cbc="$PWD/../../packaged/bin/cbc.exe"
+            --prefix="$PWD/../../install" --cbc="$PWD/../../packaged/cbc-windows-x86_64-next/bin/cbc.exe"
 
       - name: Upload logs/solutions on failure
         if: failure()

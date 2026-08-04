@@ -187,7 +187,14 @@ jobs:
           # `flock`/`coreutils`/`bash`, prepending coreutils' unprefixed
           # `gnubin` dir to PATH, and invoking the script with Homebrew's
           # bash explicitly (see below).
-          brew install gcc openblas suite-sparse pkg-config parallel flock bash coreutils
+          #
+          # No `openblas` here: `config` now prefers macOS's built-in
+          # Accelerate framework for LAPACK, which needs no extra install and
+          # avoids a real crash — Homebrew's OpenBLAS links LLVM's
+          # libomp.dylib, which clashes with GCC-built cbc's own libgomp
+          # (both register as "the" OpenMP runtime), aborting at startup with
+          # "OMP: Error #15: ... libomp.dylib ... already initialized".
+          brew install gcc suite-sparse pkg-config parallel flock bash coreutils
 
       - name: Build + package + test
         working-directory: work
@@ -260,7 +267,14 @@ jobs:
           # `flock`/`coreutils`/`bash`, prepending coreutils' unprefixed
           # `gnubin` dir to PATH, and invoking the script with Homebrew's
           # bash explicitly (see below).
-          arch -x86_64 /usr/local/bin/brew install gcc openblas suite-sparse pkg-config parallel flock bash coreutils
+          #
+          # No `openblas` here: `config` now prefers macOS's built-in
+          # Accelerate framework for LAPACK, which needs no extra install and
+          # avoids a real crash — Homebrew's OpenBLAS links LLVM's
+          # libomp.dylib, which clashes with GCC-built cbc's own libgomp
+          # (both register as "the" OpenMP runtime), aborting at startup with
+          # "OMP: Error #15: ... libomp.dylib ... already initialized".
+          arch -x86_64 /usr/local/bin/brew install gcc suite-sparse pkg-config parallel flock bash coreutils
 
       - name: Build + package + test (under Rosetta)
         working-directory: work

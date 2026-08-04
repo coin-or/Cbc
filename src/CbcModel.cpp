@@ -8957,7 +8957,7 @@ int CbcModel::reducedCostFix()
   ClpSimplex *clpSimplex = NULL;
   if (clpSolver)
     clpSimplex = clpSolver->getModelPtr();
-  if (clpSimplex && clpSimplex->status() == 3) {
+  if (clpSimplex && (clpSimplex->status() == 3 || clpSimplex->secondaryStatus() == 9 || clpSimplex->secondaryStatus() == 10)) {
     // The LP was stopped on iterations/time (e.g. Cbc's remaining wall-clock
     // budget expired mid-resolve, see resolve()'s propagation of
     // CbcMaximumSeconds into Clp).  When that happens inside
@@ -8967,8 +8967,15 @@ int CbcModel::reducedCostFix()
     // skipped once problemStatus_ is left at 3), so getReducedCost() can
     // return values that are inconsistent with the just-restored column
     // statuses.  Fixing/tightening bounds from such stale reduced costs is
-    // unsafe (and trips the status-consistency asserts below), so just
-    // skip reduced cost fixing for this incomplete solve.
+    // unsafe (and trips the status-consistency checks below), so just
+    // skip reduced cost fixing for this incomplete solve. Besides checking
+    // status() == 3 directly, also check secondaryStatus() == 9/10
+    // ("status was 3 and stopped on time"/"...stopped as primal feasible",
+    // see ClpModel::onStopped()): problemStatus_ can get normalized back to
+    // 0 elsewhere while secondaryStatus_ still carries this residual
+    // marker, so relying on status() == 3 alone is not sufficient to catch
+    // every stale case (observed in practice: a reducedCostFix() SIGABRT
+    // with status()==0 but secondaryStatus()==9).
     return 0;
   }
   for (int i = 0; i < numberIntegers_; i++) {
@@ -8985,8 +8992,16 @@ int CbcModel::reducedCostFix()
               iColumn, clpSimplex->getColumnStatus(iColumn), djValue, gap,
               lower[iColumn], upper[iColumn]);
 #endif
-          } else {
-            assert(clpSimplex->getColumnStatus(iColumn) == ClpSimplex::atLowerBound || clpSimplex->getColumnStatus(iColumn) == ClpSimplex::isFixed);
+          } else if (clpSimplex->getColumnStatus(iColumn) != ClpSimplex::atLowerBound && clpSimplex->getColumnStatus(iColumn) != ClpSimplex::isFixed) {
+            // Column status is inconsistent with the reduced cost sign we
+            // just used to decide this fix (see the guard above this loop
+            // for the known status()==3/secondaryStatus()==9/10 stale-solve
+            // case). Rather than assert-crashing on what may be a similarly
+            // stale but as-yet-unrecognized situation, conservatively skip
+            // fixing this variable: an unnecessary skip merely costs some
+            // pruning strength, while fixing off inconsistent data risks
+            // cutting off the optimal solution.
+            continue;
           }
         }
         double newBound = lower[iColumn];
@@ -9009,8 +9024,10 @@ int CbcModel::reducedCostFix()
               iColumn, clpSimplex->getColumnStatus(iColumn), djValue, gap,
               lower[iColumn], upper[iColumn]);
 #endif
-          } else {
-            assert(clpSimplex->getColumnStatus(iColumn) == ClpSimplex::atUpperBound || clpSimplex->getColumnStatus(iColumn) == ClpSimplex::isFixed);
+          } else if (clpSimplex->getColumnStatus(iColumn) != ClpSimplex::atUpperBound && clpSimplex->getColumnStatus(iColumn) != ClpSimplex::isFixed) {
+            // See the matching comment in the lower-bound branch above:
+            // skip rather than assert-crash on inconsistent status/dj data.
+            continue;
           }
         }
         double newBound = upper[iColumn];

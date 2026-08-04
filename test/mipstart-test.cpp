@@ -111,7 +111,12 @@ public:
     , savedOut_(-1)
     , savedErr_(-1)
   {
-    char tmpl[] = "/tmp/mipstart-test-log-XXXXXX";
+    /* No directory prefix: unlike "/dev/null" (special-cased by MinGW's CRT),
+     * a literal "/tmp/..." path isn't valid on native Windows builds, so
+     * mkstemp() would silently fail there and every log-content assertion
+     * below would pass against an empty string. A relative template creates
+     * the file in the current working directory on every platform. */
+    char tmpl[] = "mipstart-test-log-XXXXXX";
     fd_ = mkstemp(tmpl);
     if (fd_ < 0)
       return;

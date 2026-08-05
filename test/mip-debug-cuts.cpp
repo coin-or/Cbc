@@ -30,12 +30,22 @@
  * The second, generic form takes any MPS/MPS.gz/LP file plus an explicit
  * reference .sol file and time/node limits (0 = unlimited nodes).
  *
- * The .sol file uses the standard whitespace-delimited Cbc solution format:
- *   <index> <colName> <value> [<extra column, ignored>]
- * one line per NONZERO variable; every column not listed defaults to 0.
- * Only integer variables need exact values — continuous variables are
- * recomputed by activateRowCutDebugger() itself (LP relaxation with
- * integers fixed), unless --raw-continuous is given.
+ * The .sol file is read by CbcMipStart::read(), which accepts both Cbc's
+ * own "<index> <colName> <value> [<extra column, ignored>]" format and the
+ * plain MIPLIB 2017 "<colName> <value>" format, one line per variable (or
+ * per nonzero variable -- columns not listed default to 0). The reference
+ * solution is loaded via the same "-debugCuts" parameter CbcSolver's CLI
+ * uses (CbcParam::DEBUGCUTS -> Cbc_setParameter(model, "debugCuts",
+ * solFile)) rather than a direct Cbc_activateRowCutDebugger() call, so
+ * that when CglPreProcess renumbers/substitutes columns the reference
+ * solution is remapped via CglPreProcess::originalColumns() and its
+ * continuous values are re-solved for consistently before the debugger is
+ * actually activated on the *processed* model (see CbcSolver.cpp's
+ * DEBUGCUTS case and the babPostPreprocessCleanup()-adjacent remap block).
+ * A raw, unmapped activation would otherwise report false violations from
+ * essentially every generator once preprocessing changes the column
+ * space. --raw-continuous is a no-op with this mechanism (kept only for
+ * back-compat) since the remap step's continuous re-solve is unconditional.
  *
  * Exit codes:
  *   0  solve completed, no violation of the reference solution detected
@@ -168,8 +178,16 @@ static void printUsage(const char *progName)
     "  --node-limit=N         Override node limit (default: from limits.tsv; 0 = unlimited)\n"
     "  --time-limit=SEC       Override time limit in seconds (default: from limits.tsv, or 120)\n"
     "  --log-level=N          Cbc_setLogLevel (default: 1, so debugger diagnostics are visible)\n"
-    "  --raw-continuous       Do not recompute continuous values via LP relaxation --\n"
-    "                         use the .sol file's continuous values as-is.\n"
+    "  --raw-continuous       No-op with this tool's -debugCuts-based activation (kept\n"
+    "                         for back-compat); continuous values are always recomputed\n"
+    "                         by CbcSolver's own remap step when preprocessing changes\n"
+    "                         the column count.\n"
+    "  --no-preprocess        Disable CglPreProcess (-preprocess off). Reference solution\n"
+    "                         remapping across preprocessing is handled correctly (via\n"
+    "                         -debugCuts), so this is now purely a bisection tool: use it\n"
+    "                         to tell apart a CglPreProcess-internal bug (violation only\n"
+    "                         with preprocessing on) from a cut/bound-fixing bug in the\n"
+    "                         main search (violation persists with preprocessing off).\n"
     "  -h, --help             Show this help\n"
     "\n"
     "Exit code: 0 = OK,  1 = violation detected / obj mismatch,  2 = usage/file error\n",
@@ -184,6 +202,7 @@ int main(int argc, char *argv[])
   double timeLimitOverride = -1.0;
   int logLevel = 1;
   bool rawContinuous = false;
+  bool noPreprocess = false;
 
   std::vector<std::string> positional;
   for (int i = 1; i < argc; ++i) {
@@ -206,6 +225,8 @@ int main(int argc, char *argv[])
       logLevel = atoi(valueOf("--log-level=").c_str());
     } else if (arg == "--raw-continuous") {
       rawContinuous = true;
+    } else if (arg == "--no-preprocess") {
+      noPreprocess = true;
     } else if (!arg.empty() && arg[0] == '-') {
       fprintf(stderr, "Unknown option: %s\n", arg.c_str());
       printUsage(argv[0]);
@@ -291,16 +312,12 @@ int main(int argc, char *argv[])
   }
 
   int nCols = Cbc_getNumCols(model);
-  std::vector<double> refSolution(nCols, 0.0);
   int matched = 0;
   for (int j = 0; j < nCols; ++j) {
     char nameBuf[512];
     Cbc_getColName(model, j, nameBuf, sizeof(nameBuf));
-    auto it = refValues.find(nameBuf);
-    if (it != refValues.end()) {
-      refSolution[j] = it->second;
+    if (refValues.find(nameBuf) != refValues.end())
       ++matched;
-    }
   }
   printf("[mip-debug-cuts] matched %d of %d reference values to model columns "
          "(%d columns default to 0)\n",
@@ -311,16 +328,54 @@ int main(int argc, char *argv[])
       (int)refValues.size() - matched);
   }
 
-  Cbc_activateRowCutDebugger(model, refSolution.data(), rawContinuous ? 0 : 1);
-  printf("[mip-debug-cuts] Row cut debugger activated with %d-column reference "
-         "solution. Every cut/bound-fixing that excludes it will be flagged "
-         "below.\n\n",
+  // Route the reference solution through the same "-debugCuts" parameter
+  // CbcSolver's CLI uses (CbcParam::DEBUGCUTS), rather than calling
+  // Cbc_activateRowCutDebugger() directly here. CglPreProcess renumbers,
+  // substitutes and drops columns, so a debugger activated on the
+  // as-loaded solver (indexed in the ORIGINAL column space) is checked
+  // against the WRONG columns once preprocessing has run -- every
+  // generator that then runs on the renumbered model appears to violate
+  // it, drowning out genuine violations in false positives. "-debugCuts"
+  // avoids this: it name-matches the reference solution against the
+  // original solver once (see CbcSolver.cpp's DEBUGCUTS case), then, after
+  // preprocessing, remaps it via CglPreProcess::originalColumns() and
+  // re-solves the LP with integers fixed to get consistent continuous
+  // values before activating the debugger on the *processed* model (see
+  // the "if (debugValues)" block feeding babModel_->solver()->
+  // activateRowCutDebugger() in CbcSolver.cpp) -- CbcMipStart's file
+  // reader (used by both -mipStart and -debugCuts) already accepts this
+  // tool's "<idx> <name> <value>" / MIPLIB "<name> <value>" formats
+  // directly, so the same solFile can be handed to it unchanged.
+  Cbc_setParameter(model, "debugCuts", solFile.c_str());
+  printf("[mip-debug-cuts] Row cut debugger will be activated (via -debugCuts, "
+         "remapped across CglPreProcess if it renumbers columns) with the "
+         "%d-column reference solution. Every cut/bound-fixing that excludes "
+         "it will be flagged below.\n\n",
     nCols);
+  if (rawContinuous) {
+    printf("[mip-debug-cuts] NOTE: --raw-continuous has no effect with the "
+           "-debugCuts-based activation used here -- continuous values are "
+           "always recomputed by CbcSolver's own remap step when "
+           "preprocessing changes the column count (a no-op for instances "
+           "with 0 continuous variables, as here).\n");
+  }
+
 
   Cbc_setDblParam(model, DBL_PARAM_TIME_LIMIT, timeLimit);
   Cbc_setParameter(model, "threads", std::to_string(threads).c_str());
   if (nodeLimit >= 0)
     Cbc_setParameter(model, "maxNodes", std::to_string(nodeLimit).c_str());
+  if (noPreprocess) {
+    // Reference-solution remapping across preprocessing is now handled
+    // correctly (via -debugCuts, see above), so this flag is purely a
+    // bisection aid: if a violation only appears with preprocessing on,
+    // it points at CglPreProcess itself; if it persists with preprocessing
+    // off, the bug is in the main-search cut/bound-fixing machinery.
+    Cbc_setParameter(model, "preprocess", "off");
+    printf("[mip-debug-cuts] --no-preprocess: preprocessing disabled -- any\n"
+           "violation that only occurred with preprocessing on points at\n"
+           "CglPreProcess; one that persists here is a main-search bug.\n");
+  }
 
   bool violationDetected = false;
   try {

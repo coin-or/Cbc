@@ -528,6 +528,24 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
         if ((model_->getThreadMode() & 2) == 0) {
           for (j = 0; j < numberColumns; j++) {
             if (solver->isInteger(j)) {
+              // Only trust CglProbing's tightLower()/tightUpper() for BINARY
+              // variables. These arrays come from CglProbing's internal
+              // tighten() Big-M row-propagation, which is already known (see
+              // CglProbing.cpp's skipGenIntColCuts, added after the nu25-pr12
+              // WRONG_OBJ investigation) to sometimes cascade an incorrect
+              // bound onto GENERAL-INTEGER variables. skipGenIntColCuts only
+              // stops CglProbing from emitting an explicit OsiColCut for
+              // those columns -- it does NOT protect this separate direct
+              // application of tightLower()/tightUpper() straight onto the
+              // solver, which bypasses the cuts framework (and therefore
+              // every cut-validity check) entirely. Applying an unsound
+              // general-integer bound this way was root-caused to be exactly
+              // how column C5865 on nu25-pr12 got wrongly fixed away from
+              // its true-optimal value, producing a wrong (too high on a
+              // minimization) reported objective.
+              bool isBinary = (upper[j] - lower[j] <= 1.0 + 1.0e-8) && lower[j] >= -1.0e-8 && upper[j] <= 1.0 + 1.0e-8;
+              if (!isBinary)
+                continue;
               if (tightUpper[j] < upper[j]) {
                 double nearest = floor(tightUpper[j] + 0.5);
                 //assert (fabs(tightUpper[j]-nearest)<1.0e-5); may be infeasible

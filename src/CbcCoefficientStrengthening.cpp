@@ -7,10 +7,20 @@
 #include "CoinMessageHandler.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinTime.hpp"
+#include "OsiRowCutDebugger.hpp"
 #include "OsiSolverInterface.hpp"
 
 #include <cmath>
 #include <vector>
+
+// Reference solution loaded by -debugCuts; set before applyLpMethod() so that
+// pre-root-LP strengthening can check itself before the OsiRowCutDebugger is
+// active. Same globals CbcBoundPropagation.cpp falls back on -- see the
+// comment there for why the debugger itself is not yet attached this early
+// when driven from the "-debugCuts" CLI switch (it is already active by this
+// point when driven through Cbc_activateRowCutDebugger()/mip-debug-cuts).
+extern double *debugSolution;
+extern int debugNumberColumns;
 
 namespace {
 
@@ -276,6 +286,61 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
       solver->setRowLower(change.row, change.lower);
     if (change.upper < COEFSTR_INFINITY)
       solver->setRowUpper(change.row, change.upper);
+  }
+
+  // Debugger validation: every changed row must still contain the reference
+  // solution once evaluated with its NEW coefficients against its NEW
+  // bounds. This is a purely algebraic invariant of the rule above (see the
+  // class comment) -- unlike a cut, nothing here depends on which subtree of
+  // the B&B tree we are in, so it is checked unconditionally whenever a
+  // debugger/-debugCuts solution is available, not just on the optimal path.
+  //
+  // Fall back to the debugSolution global (see the comment above the
+  // extern declarations) when no OsiRowCutDebugger has been attached to
+  // `solver` yet -- this pass runs ahead of the root LP solve, so a
+  // "-debugCuts" driven debugger is not attached this early, while
+  // Cbc_activateRowCutDebugger()/mip-debug-cuts attach it before Cbc_solve()
+  // is even called, so a debugger already exists there.
+  //
+  // Deliberately use getRowCutDebuggerAlways() and NOT getRowCutDebugger():
+  // the latter gates on OsiRowCutDebugger::onOptimalPath(), which only
+  // checks INTEGER columns with a loose 1e-3 tolerance and has been observed
+  // to be unreliable (can return false even though the current bounds are
+  // still fully consistent with the reference solution) -- see the matching
+  // fixes/comments in CbcModel.cpp (reducedCostFix(), fixFromGlobalCuts())
+  // and CbcBoundPropagation::run(). Using the unreliable check here would
+  // silently skip this validation whenever it spuriously returns false,
+  // which is exactly the failure mode this diagnostic exists to catch.
+  const OsiRowCutDebugger *debugger = solver->getRowCutDebuggerAlways();
+  const double *optSol = debugger
+    ? debugger->optimalSolution()
+    : (debugSolution && debugNumberColumns == solver->getNumCols()
+         ? debugSolution
+         : nullptr);
+  if (optSol) {
+    const double *checkElement = copy.getElements();
+    const int *checkColumn = copy.getIndices();
+    const CoinBigIndex *checkRowStart = copy.getVectorStarts();
+    const int *checkRowLength = copy.getVectorLengths();
+    const double tol = 1.0e-6;
+    for (size_t i = 0; i < rowBoundChanges.size(); i++) {
+      const RowBoundChange &change = rowBoundChanges[i];
+      const int iRow = change.row;
+      double activity = 0.0;
+      const CoinBigIndex start = checkRowStart[iRow];
+      const int length = checkRowLength[iRow];
+      for (CoinBigIndex j = start; j < start + length; j++)
+        activity += checkElement[j] * optSol[checkColumn[j]];
+      const bool violatesUpper = change.upper < COEFSTR_INFINITY && activity > change.upper + tol;
+      const bool violatesLower = change.lower > -COEFSTR_INFINITY && activity < change.lower - tol;
+      if (violatesUpper || violatesLower) {
+        printf("coefStrengthening BAD ROW: row %d activity=%.12g at reference "
+               "solution but new bounds are [%.12g,%.12g] (violates %s)\n",
+          iRow, activity, change.lower, change.upper,
+          violatesUpper ? "upper" : "lower");
+        fflush(stdout);
+      }
+    }
   }
 
   timeUsed_ = CoinWallclockTime() - t0;

@@ -358,6 +358,22 @@ static int applyConflictGraphBoundUpdates(const CoinStaticConflictGraph *cgraph,
   const double *colsLower = solver->getColLower();
   const double *colsUpper = solver->getColUpper();
 
+  // Debugger validation: this runs in "before" mode, ahead of the root LP
+  // solve, right after CbcSolver::strengthenBounds() (see this function's
+  // caller's doc comment) -- exactly the pre-root-LP strengthening phase.
+  // As with CbcCoefficientStrengthening/CbcBoundPropagation, deliberately use
+  // getRowCutDebuggerAlways() (not getRowCutDebugger(), which relies on the
+  // unreliable OsiRowCutDebugger::onOptimalPath()) and fall back to the
+  // -debugCuts debugSolution global when no debugger is attached yet.
+  extern double *debugSolution;
+  extern int debugNumberColumns;
+  const OsiRowCutDebugger *cgDebugger = solver->getRowCutDebuggerAlways();
+  const double *cgOptSol = cgDebugger
+    ? cgDebugger->optimalSolution()
+    : (debugSolution && debugNumberColumns == solver->getNumCols()
+         ? debugSolution
+         : nullptr);
+
   for (const auto &bnd_change : cgraph->updatedBounds()) {
     size_t idx = bnd_change.first;
     double curr_lb = colsLower[idx];
@@ -372,6 +388,18 @@ static int applyConflictGraphBoundUpdates(const CoinStaticConflictGraph *cgraph,
     printf("CGraph var bnd update:  [%s](%zu) coltype %d from [%g,%g] to [%g,%g]\n",
       solver->getColName(idx).c_str(), idx, solver->getColType()[idx], curr_lb, curr_ub, lb, ub);
 #endif // CGRAPH_DEEP_DIVE
+
+    if (cgOptSol) {
+      const double sv = cgOptSol[idx];
+      const double tol = solver->isInteger(static_cast< int >(idx)) ? 0.5 : 1.0e-8;
+      if (lb > sv + tol || ub < sv - tol) {
+        printf("applyConflictGraphBoundUpdates BAD FIXING: col %zu (%s) new "
+               "bounds [%.10g,%.10g] but reference solution has %.10g "
+               "(old bounds [%.10g,%.10g])\n",
+          idx, solver->getColName(idx).c_str(), lb, ub, sv, curr_lb, curr_ub);
+        fflush(stdout);
+      }
+    }
 
     solver->setColLower(idx, lb);
     solver->setColUpper(idx, ub);
@@ -989,6 +1017,12 @@ static int initialPumpTune = -1;
 
 // debugSolution/debugNumberColumns are defined in Osi/src/Osi/OsiPresolve.cpp;
 // only extern-declare them here (see CbcBoundPropagation.cpp too).
+// DEBUG_PREPROCESS > 1 additionally activates CglPreProcess.cpp's own
+// internal reference-solution validation (writeDebugMps()'s fix-integers-
+// and-resolve check) at every intermediate presolve/preprocessing step; see
+// the matching #define in Cgl/src/CglPreProcess/CglPreProcess.cpp and
+// Osi/src/Osi/OsiPresolve.cpp.
+//#define DEBUG_PREPROCESS 2 -- disabled, see OsiPresolve.cpp comment
 extern double *debugSolution;
 extern int debugNumberColumns;
 
@@ -8019,7 +8053,17 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
       babModel_->solver()->activateRowCutDebugger(debugValues);
     } else {
       int numberOriginalColumns = process.originalModel()->getNumCols();
-#if DEBUG_PREPROCESS < 2
+      // Always use the robust originalColumns()-based remap (fix known
+      // integers, re-solve for continuous values) rather than relying on
+      // the global debugSolution having been correctly tracked through
+      // every CglPreProcess-internal substitution/renumbering step: most
+      // writeDebugMps() call sites don't pass the OsiPresolve/pinfo needed
+      // to keep debugSolution's remap in sync (see CglPreProcess.cpp), so
+      // debugSolution can be stale by the time preprocessing finishes even
+      // though DEBUG_PREPROCESS > 1 is enabled for the internal checks.
+      // This branch is independent of that and always correct here since it
+      // remaps directly from process.originalColumns() after preprocessing
+      // has fully completed.
       if (numberDebugValues <= numberOriginalColumns) {
         const int *originalColumns = process.originalColumns();
         double *newValues = new double[numberColumns];
@@ -8051,14 +8095,23 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
         delete siCopy;
         // for debug
         babModel_->solver()->activateRowCutDebugger(newValues);
+        if (getenv("MIP_DEBUG_DUMP_PREPROCESSED")) {
+          // Dump the preprocessed model plus the remapped reference solution
+          // so an independent solver (e.g. HiGHS) can verify the true
+          // optimum is still reachable in the PRE-PROCESSED variable space,
+          // decoupled from Cbc's own B&B/cut-generation code entirely.
+          babModel_->solver()->writeMpsNative("/tmp/mipdebug/preprocessed.mps", NULL, NULL, 0);
+          FILE *fp2 = fopen("/tmp/mipdebug/preprocessed_known.csv", "w");
+          if (fp2) {
+            for (int i = 0; i < numberColumns; i++)
+              fprintf(fp2, "%s,%.15g\n", babModel_->solver()->getColName(i).c_str(), newValues[i]);
+            fclose(fp2);
+          }
+        }
         delete[] newValues;
       } else {
         printf("debug file has incorrect number of columns\n");
       }
-#else
-      // for debug
-      babModel_->solver()->activateRowCutDebugger(debugSolution);
-#endif
     }
   }
   babModel_->setCutoffIncrement(
@@ -13158,6 +13211,21 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               ++matched;
             }
           }
+#if DEBUG_PREPROCESS > 1
+          // Also feed the global debugSolution/debugNumberColumns (defined in
+          // Osi/src/Osi/OsiPresolve.cpp) so CglPreProcess's own internal
+          // DEBUG_PREPROCESS instrumentation (writeDebugMps()'s
+          // fix-integers-and-resolve check, and the analogous check in
+          // OsiPresolve.cpp) can validate the reference solution through
+          // every intermediate presolve/preprocessing step, not just the
+          // final processed model reached by the babPostPreprocessCleanup()
+          // remap below. debugValues is already indexed in the ORIGINAL
+          // (pre-preprocessing) column space, matching what those checks
+          // expect at the start of preprocessing.
+          delete[] debugSolution;
+          debugSolution = CoinCopyOfArray(debugValues, nOrigCols);
+          debugNumberColumns = nOrigCols;
+#endif
           buffer.str("");
           buffer << "debugCuts: loaded " << matched << " of "
                  << static_cast< int >(dbgColValues.size())

@@ -4961,11 +4961,11 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   }
 #endif
   if (model->logLevel() > 1)
-    printf("Node %d depth %d unsatisfied %d sum %g obj %g guess %g branching on %d\n",
+    printf("Node %d depth %d unsatisfied %d sum %g obj %g guess %g branching on %d nodeInfo=%p parentInfo=%p\n",
       model->getNodeCount(), depth_, numberUnsatisfied_,
 	   sumInfeasibilities_, model->trueObjValue(objectiveValue_),
 	   model->trueObjValue(guessedObjectiveValue_),
-      kColumn);
+      kColumn, (void *)nodeInfo_, (void *)(nodeInfo_ ? nodeInfo_->parent() : nullptr));
 #ifdef DO_ALL_AT_ROOT
   if (strongType) {
     char general[200];

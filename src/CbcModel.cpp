@@ -8953,6 +8953,39 @@ int CbcModel::reducedCostFix()
   int numberFixed = 0;
   int numberTightened = 0;
 
+  // Debugger validation: as with CbcBoundPropagation's checkFixing(), only
+  // check on the optimal path -- a NULL debugger at a B&B node whose
+  // branching has already excluded the reference solution is expected and
+  // must NOT be flagged (see the matching comment in
+  // CbcBoundPropagation::run()). This is a plain diagnostic printf, not
+  // gated behind CHECK_KNOWN_SOLUTION, so it fires in both --opt and --debug
+  // builds -- reduced-cost fixing here changes column bounds directly
+  // (never goes through applyRowCuts()/invalidCut()), so nothing else in the
+  // row-cut-debugger infrastructure otherwise checks it.
+  const OsiRowCutDebugger *rcFixDebugger = solver_->getRowCutDebuggerAlways();
+  const double *rcFixOptSol = NULL;
+  if (rcFixDebugger) {
+    // getRowCutDebugger() would silently return NULL whenever
+    // onOptimalPath() is false, which has been observed to be unreliable
+    // (it only checks integer columns with a loose 1e-3 tolerance, and has
+    // been seen to return false unconditionally for the *preprocessed* root
+    // solver). Use getRowCutDebuggerAlways() instead and compute our own
+    // manual on-path check across ALL columns (1e-6 tolerance), matching
+    // the approach used for the cut-validity checks above/below.
+    const double *rcRefSol = rcFixDebugger->optimalSolution();
+    const double *rcLower = solver_->getColLower();
+    const double *rcUpper = solver_->getColUpper();
+    bool rcOnPath = true;
+    for (int k = 0; k < solver_->getNumCols(); k++) {
+      if (rcRefSol[k] < rcLower[k] - 1.0e-6 || rcRefSol[k] > rcUpper[k] + 1.0e-6) {
+        rcOnPath = false;
+        break;
+      }
+    }
+    if (rcOnPath)
+      rcFixOptSol = rcRefSol;
+  }
+
   OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver_);
   ClpSimplex *clpSimplex = NULL;
   if (clpSolver)
@@ -9013,6 +9046,17 @@ int CbcModel::reducedCostFix()
           // printf("tighter - gap %g dj %g newBound %g\n",
           //   gap,djValue,newBound);
         }
+        if (rcFixOptSol) {
+          const double sv = rcFixOptSol[iColumn];
+          const double tol = solver_->isInteger(iColumn) ? 0.5 : 1.0e-8;
+          if (newBound < sv - tol) {
+            printf("reducedCostFix BAD FIXING: col %d (%s) new upper=%g but "
+                   "reference solution has %g (lower=%g, dj=%g, gap=%g)\n",
+              iColumn, solver_->getColName(iColumn).c_str(), newBound, sv,
+              lower[iColumn], djValue, gap);
+            fflush(stdout);
+          }
+        }
         solver_->setColUpper(iColumn, newBound);
         numberFixed++;
       } else if (solution[iColumn] > upper[iColumn] - integerTolerance && -djValue > boundGap * gap) {
@@ -9038,6 +9082,17 @@ int CbcModel::reducedCostFix()
           // printf("tighter - gap %g dj %g newBound %g\n",
           //   gap,djValue,newBound);
           numberTightened++;
+        }
+        if (rcFixOptSol) {
+          const double sv = rcFixOptSol[iColumn];
+          const double tol = solver_->isInteger(iColumn) ? 0.5 : 1.0e-8;
+          if (newBound > sv + tol) {
+            printf("reducedCostFix BAD FIXING: col %d (%s) new lower=%g but "
+                   "reference solution has %g (upper=%g, dj=%g, gap=%g)\n",
+              iColumn, solver_->getColName(iColumn).c_str(), newBound, sv,
+              upper[iColumn], djValue, gap);
+            fflush(stdout);
+          }
         }
         solver_->setColLower(iColumn, newBound);
         numberFixed++;
@@ -11576,6 +11631,27 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
           probing->setMaxSeconds(rem > 0.0 ? rem : 0.0);
         }
       }
+#ifdef CHECK_KNOWN_SOLUTION
+      // Diagnostic: snapshot ALL general-integer columns' bounds immediately
+      // before this generator's generateCuts() call, so we can catch ANY
+      // generator that directly tightens solver_'s bounds on a
+      // general-integer column (bypassing the OsiColCut mechanism entirely)
+      // -- not just the one column (C5865) previously known to be affected.
+      double *debugGenIntLoBefore = NULL;
+      double *debugGenIntUpBefore = NULL;
+      int debugNumColsForTrace = 0;
+      if ((specialOptions_ & 1) != 0) {
+        debugNumColsForTrace = solver_->getNumCols();
+        debugGenIntLoBefore = new double[debugNumColsForTrace];
+        debugGenIntUpBefore = new double[debugNumColsForTrace];
+        const double *loNow = solver_->getColLower();
+        const double *upNow = solver_->getColUpper();
+        for (int jc = 0; jc < debugNumColsForTrace; jc++) {
+          debugGenIntLoBefore[jc] = loNow[jc];
+          debugGenIntUpBefore[jc] = upNow[jc];
+        }
+      }
+#endif
 #ifndef CBC_LAGRANGEAN_SOLVERS
       bool mustResolve = generator_[i]->generateCuts(theseCuts, fullScan, solver_, node);
 #else
@@ -11589,15 +11665,54 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
 #endif
       numberRowCutsAfter = theseCuts.sizeRowCuts();
 #ifdef CHECK_KNOWN_SOLUTION
-      // Diagnostic-only check (independent of `mustResolve`): the existing
-      // invalid-cut check further below only runs when the generator asked
-      // for a resolve, which some generators (e.g. plain row-cut-only passes)
-      // never do -- silently letting a bad cut slip through undetected right
-      // up until it is later reused as a global cut (see the `scan globalCuts_`
-      // block earlier in this loop, which checks unconditionally). Checking
-      // here, immediately after generation and before any resolve, pinpoints
-      // exactly which generator/pass produced the offending cut.
-      if ((specialOptions_ & 1) != 0 && numberRowCutsBefore < numberRowCutsAfter) {
+      if ((specialOptions_ & 1) != 0 && debugGenIntLoBefore) {
+        const double *loAfter = solver_->getColLower();
+        const double *upAfter = solver_->getColUpper();
+        for (int jc = 0; jc < debugNumColsForTrace; jc++) {
+          bool wasBinary = (debugGenIntUpBefore[jc] - debugGenIntLoBefore[jc] <= 1.0 + 1.0e-8)
+            && debugGenIntLoBefore[jc] >= -1.0e-8 && debugGenIntUpBefore[jc] <= 1.0 + 1.0e-8;
+          if (wasBinary || !solver_->isInteger(jc))
+            continue;
+          if (loAfter[jc] != debugGenIntLoBefore[jc] || upAfter[jc] != debugGenIntUpBefore[jc]) {
+            printf("[direct-bound-trace-all] generator %d (%s) DIRECTLY changed "
+                   "GENERAL-INTEGER col %d (%s) bounds in generateCuts(): "
+                   "lo %.10g->%.10g up %.10g->%.10g (pass %d)\n",
+              i, generator_[i]->cutGeneratorName(), jc, solver_->getColName(jc).c_str(),
+              debugGenIntLoBefore[jc], loAfter[jc], debugGenIntUpBefore[jc], upAfter[jc],
+              currentPassNumber_);
+          }
+        }
+        delete[] debugGenIntLoBefore;
+        delete[] debugGenIntUpBefore;
+      }
+      // Before flagging anything below as an "invalid cut", first verify the
+      // known/reference solution is still reachable from the CURRENT node,
+      // i.e. that it satisfies every column's current bounds. If branching
+      // has already fixed some other variable away from the known solution's
+      // value, then LOCALLY-VALID cuts derived at this node are legitimately
+      // allowed to exclude the known solution -- that's not a bug, it's
+      // expected: we're simply off the optimal-path subtree already.
+      // OsiRowCutDebugger::onOptimalPath() is supposed to detect exactly
+      // this, but has been observed to return false unconditionally for the
+      // *preprocessed* root solver (see the getRowCutDebuggerAlways() note
+      // below), so it cannot be trusted here either. Compute it manually
+      // instead, directly from the current solver's bounds.
+      bool knownSolutionStillOnPath = true;
+      if ((specialOptions_ & 1) != 0) {
+        OsiRowCutDebugger *debuggerForPathCheck = solver_->getRowCutDebuggerAlways();
+        if (debuggerForPathCheck) {
+          const double *knownSolutionForPathCheck = debuggerForPathCheck->optimalSolution();
+          const double *lo = solver_->getColLower();
+          const double *up = solver_->getColUpper();
+          for (int col = 0; col < solver_->getNumCols(); col++) {
+            if (knownSolutionForPathCheck[col] < lo[col] - 1.0e-6 || knownSolutionForPathCheck[col] > up[col] + 1.0e-6) {
+              knownSolutionStillOnPath = false;
+              break;
+            }
+          }
+        }
+      }
+      if ((specialOptions_ & 1) != 0 && numberRowCutsBefore < numberRowCutsAfter && knownSolutionStillOnPath) {
         // NOTE: getRowCutDebugger() itself calls onOptimalPath() and returns
         // NULL whenever that's false -- and onOptimalPath() has been observed
         // to return false unconditionally for the *preprocessed* root solver
@@ -11624,8 +11739,8 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
               thisCut->lb(), thisCut->ub(), n);
             for (int jj = 0; jj < n; jj++) {
               lhsAtKnown += els[jj] * knownSol[idx[jj]];
-              printf("[pre-resolve check]     col %d coef=%.10g knownVal=%.10g\n",
-                idx[jj], els[jj], knownSol[idx[jj]]);
+              printf("[pre-resolve check]     col %d (%s) coef=%.10g knownVal=%.10g\n",
+                idx[jj], solver_->getColName(idx[jj]).c_str(), els[jj], knownSol[idx[jj]]);
             }
             printf("[pre-resolve check]   LHS at known solution = %.10g (must be in [%.10g,%.10g])\n",
               lhsAtKnown, thisCut->lb(), thisCut->ub());
@@ -11637,7 +11752,7 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
       // excludes the known reference solution -- this is what actually
       // explains onOptimalPath() flipping false (a wrong *fixing*, not a
       // wrong row cut) for this instance.
-      if ((specialOptions_ & 1) != 0 && numberColumnCutsBefore < theseCuts.sizeColCuts()) {
+      if ((specialOptions_ & 1) != 0 && numberColumnCutsBefore < theseCuts.sizeColCuts() && knownSolutionStillOnPath) {
         int numberColumnCutsNow = theseCuts.sizeColCuts();
         OsiRowCutDebugger *debuggerNow2 = solver_->getRowCutDebuggerAlways();
         for (int k = numberColumnCutsBefore; debuggerNow2 && k < numberColumnCutsNow; k++) {
@@ -12135,6 +12250,52 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
 #ifdef CHECK_KNOWN_SOLUTION
   bool onOptimalPath = false;
   if ((specialOptions_ & 1) != 0) {
+    // Diagnostic: pinpoint exactly which integer column's bounds first
+    // exclude the known/reference solution (i.e. the first resolve() call
+    // where the debugger transitions from valid to invalid), so we can
+    // trace the transition back to whatever code path tightened it --
+    // cut application, direct bound-fixing, heuristics, etc. -- rather than
+    // just observing that it eventually happens.
+    static bool s_wasOnOptimalPathTrace = true;
+    OsiRowCutDebugger *debuggerTrace = solver_->getRowCutDebuggerAlways();
+    if (debuggerTrace) {
+      bool nowOnPath = debuggerTrace->onOptimalPath(*solver_);
+      if (s_wasOnOptimalPathTrace && !nowOnPath) {
+        const double *knownSolTrace = debuggerTrace->optimalSolution();
+        const double *loTrace = solver_->getColLower();
+        const double *upTrace = solver_->getColUpper();
+        printf("[onpath-trace] known solution went OFF PATH at this resolve() "
+               "call (pass=%d, node=%d)\n",
+          currentPassNumber_, numberNodes_ + numberExtraNodes_);
+        // Print the parent-chain depth and pointer addresses to confirm
+        // whether this resolve() is really a descendant of the previously
+        // "on path" node, or an unrelated node from a different subtree
+        // visited next by best-first search (node numbering is a visitation
+        // counter, NOT a parent/child index -- consecutive numbers can be
+        // completely unrelated nodes).
+        {
+          int chainLen = 0;
+          CbcNodeInfo *p = parent;
+          printf("[onpath-trace]   parent chain:");
+          while (p && chainLen < 40) {
+            printf(" %p", (void *)p);
+            p = p->parent();
+            chainLen++;
+          }
+          printf(" (len=%d)\n", chainLen);
+        }
+        for (int jc = 0; jc < solver_->getNumCols(); jc++) {
+          if (solver_->isInteger(jc)) {
+            double v = knownSolTrace[jc];
+            if (v > upTrace[jc] + 1.0e-3 || v < loTrace[jc] - 1.0e-3) {
+              printf("[onpath-trace]   col %d (%s) known=%.10g lo=%.10g up=%.10g\n",
+                jc, solver_->getColName(jc).c_str(), v, loTrace[jc], upTrace[jc]);
+            }
+          }
+        }
+      }
+      s_wasOnOptimalPathTrace = nowOnPath;
+    }
     const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
     if (debugger) {
       onOptimalPath = true;
@@ -15319,6 +15480,36 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
             */
       specialOptions_ |= 256; // mark as full cut scan should be done
       saveBestSolution(solution, objectiveValue);
+#ifdef CHECK_KNOWN_SOLUTION
+      // Diagnostic: whenever a new incumbent is accepted, log its source
+      // (how: CBC_SOLUTION/CBC_SOLUTION2/CBC_ROUNDING/...), objective, node
+      // count, and -- if a reference/known solution is available -- the
+      // columns where the accepted solution differs from it, so we can
+      // pinpoint exactly which accepted incumbent first reports the wrong
+      // objective and trace it back to whichever heuristic/search step
+      // produced it.
+      if ((specialOptions_ & 1) != 0) {
+        printf("[incumbent] how=%d obj=%.10g nodes=%d iters=%d%s%s\n",
+          (int)how, objectiveValue, numberNodes, numberIterations_,
+          (how == CBC_ROUNDING && lastHeuristic_) ? " heuristic=" : "",
+          (how == CBC_ROUNDING && lastHeuristic_) ? lastHeuristic_->heuristicName() : "");
+        OsiRowCutDebugger *debuggerIncumbent = solver_->getRowCutDebuggerAlways();
+        if (debuggerIncumbent) {
+          const double *knownSolIncumbent = debuggerIncumbent->optimalSolution();
+          int numberColumnsIncumbent = solver_->getNumCols();
+          int nDiff = 0;
+          for (int jc = 0; jc < numberColumnsIncumbent; jc++) {
+            if (fabs(solution[jc] - knownSolIncumbent[jc]) > 1.0e-6) {
+              if (nDiff < 30)
+                printf("[incumbent]   col %d (%s) accepted=%.10g known=%.10g\n",
+                  jc, solver_->getColName(jc).c_str(), solution[jc], knownSolIncumbent[jc]);
+              nDiff++;
+            }
+          }
+          printf("[incumbent]   total columns differing from known solution: %d\n", nDiff);
+        }
+      }
+#endif
       // #define SEE_HOW_MANY
 #ifdef SEE_HOW_MANY
       {
@@ -15879,6 +16070,16 @@ bool CbcModel::tightenVubs(int numberSolves, const int *which,
     const double *tightUpper = generator->tightUpper();
     const double *upper = solver->getColUpper();
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      // Same "general-integer tightLower()/tightUpper() cascade" hazard as
+      // CbcCutGenerator.cpp -- only trust these for binary columns, since
+      // CglProbing's internal tighten() has been shown to sometimes push an
+      // unsound bound onto general-integer variables (see the
+      // skipGenIntColCuts fix in CglProbing.cpp, and the analogous fix in
+      // CbcCutGenerator.cpp, both from the nu25-pr12 WRONG_OBJ
+      // investigation).
+      bool isBinaryVub = (upper[iColumn] - lower[iColumn] <= 1.0 + 1.0e-8) && lower[iColumn] >= -1.0e-8 && upper[iColumn] <= 1.0 + 1.0e-8;
+      if (!isBinaryVub)
+        continue;
       double newUpper = tightUpper[iColumn];
       double newLower = tightLower[iColumn];
       if (newUpper < upper[iColumn] - 1.0e-8 * (fabs(upper[iColumn]) + 1) || newLower > lower[iColumn] + 1.0e-8 * (fabs(lower[iColumn]) + 1)) {
@@ -15981,6 +16182,11 @@ bool CbcModel::tightenVubs(int numberSolves, const int *which,
           const double *tightUpper = generator->tightUpper();
           const double *upper = solver->getColUpper();
           for (jColumn = 0; jColumn < numberColumns; jColumn++) {
+            // See the isBinaryVub comment earlier in this function -- same
+            // hazard applies here.
+            bool isBinaryVub2 = (upper[jColumn] - lower[jColumn] <= 1.0 + 1.0e-8) && lower[jColumn] >= -1.0e-8 && upper[jColumn] <= 1.0 + 1.0e-8;
+            if (!isBinaryVub2)
+              continue;
             double newUpper = tightUpper[jColumn];
             double newLower = tightLower[jColumn];
             if (newUpper < upper[jColumn] - 1.0e-8 * (fabs(upper[jColumn]) + 1) || newLower > lower[jColumn] + 1.0e-8 * (fabs(lower[jColumn]) + 1)) {
@@ -18604,6 +18810,31 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
       if (debugger) {
         onOptimalPath = true;
         printf("On optimal path\n");
+      }
+      // Diagnostic: print every column whose bounds changed as a direct
+      // result of this branch() call (compared to lowerBefore/upperBefore,
+      // captured just above before branch() ran), tagged with whether that
+      // column matches the branch's own reported variable. This lets us
+      // tell apart "the branch itself set this bound" (expected) from
+      // "something else (implication/probing inside branch(), a coupled
+      // branching object, etc.) tightened OTHER columns too" (worth
+      // investigating if it ever excludes the known solution).
+      {
+        const double *lowerAfterBranch = solver_->getColLower();
+        const double *upperAfterBranch = solver_->getColUpper();
+        const CbcBranchingObject *cbcBranchObj =
+          dynamic_cast< const CbcBranchingObject * >(node->branchingObject());
+        int branchVar = cbcBranchObj ? cbcBranchObj->variable() : -1;
+        for (int jb = 0; jb < numberColumns; jb++) {
+          if (lowerAfterBranch[jb] != lowerBefore[jb] || upperAfterBranch[jb] != upperBefore[jb]) {
+            printf("[branch-bound-diff] node=%d branchVar=%d col %d (%s) "
+                   "[%.10g,%.10g] -> [%.10g,%.10g]\n",
+              numberNodes_ + numberExtraNodes_,
+              branchVar,
+              jb, solver_->getColName(jb).c_str(),
+              lowerBefore[jb], upperBefore[jb], lowerAfterBranch[jb], upperAfterBranch[jb]);
+          }
+        }
       }
     }
 
@@ -22549,6 +22780,25 @@ void CbcModel::fixFromGlobalCuts()
   int numberCuts = globalCuts_.sizeRowCuts();
   const double *lower = solver_->getColLower();
   const double *upper = solver_->getColUpper();
+#ifdef CHECK_KNOWN_SOLUTION
+  const OsiRowCutDebugger *fgcDebugger = NULL;
+  const double *fgcRefSol = NULL;
+  if ((specialOptions_ & 1) != 0) {
+    fgcDebugger = solver_->getRowCutDebuggerAlways();
+    if (fgcDebugger) {
+      fgcRefSol = fgcDebugger->optimalSolution();
+      bool fgcOnPath = true;
+      for (int k = 0; k < solver_->getNumCols(); k++) {
+        if (fgcRefSol[k] < lower[k] - 1.0e-6 || fgcRefSol[k] > upper[k] + 1.0e-6) {
+          fgcOnPath = false;
+          break;
+        }
+      }
+      if (!fgcOnPath)
+        fgcRefSol = NULL;
+    }
+  }
+#endif
 #ifdef CBC_COUNT_FIX
   int nFixed = 0;
 #endif
@@ -22736,6 +22986,19 @@ void CbcModel::fixFromGlobalCuts()
       break;
     }
   }
+#ifdef CHECK_KNOWN_SOLUTION
+  if (fgcRefSol) {
+    const double *fgcLower = solver_->getColLower();
+    const double *fgcUpper = solver_->getColUpper();
+    for (int k = 0; k < solver_->getNumCols(); k++) {
+      if (fgcRefSol[k] < fgcLower[k] - 1.0e-6 || fgcRefSol[k] > fgcUpper[k] + 1.0e-6) {
+        printf("[fixFromGlobalCuts] BAD FIX: col %d (%s) new bounds [%.10g,%.10g] "
+               "exclude reference value %.10g\n",
+          k, solver_->getColName(k).c_str(), fgcLower[k], fgcUpper[k], fgcRefSol[k]);
+      }
+    }
+  }
+#endif
 #ifdef CBC_COUNT_FIX
   return nFixed;
 #endif

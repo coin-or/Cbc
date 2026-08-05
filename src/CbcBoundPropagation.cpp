@@ -59,26 +59,40 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
   // back to the debugSolution global which is populated from the -debugCuts
   // sol file at the very start of applyLpMethod().
   //
-  // During B&B we use getRowCutDebugger (without "Always"): it returns NULL
-  // at subtree nodes whose branching has already excluded the reference
-  // solution — fixing variables differently from the global optimal is correct
-  // there, so we must NOT flag those.  Only on the optimal path is a
-  // contradictory fixing a bug.
-  //
-  // Fallback to debugSolution only when no OsiRowCutDebugger has been
-  // activated at all (pre-B&B bound propagation). Once the debugger is
-  // active, debugger==NULL means we are on a wrong subtree — never check.
-  const OsiRowCutDebugger *debugger = solver->getRowCutDebugger();
+  // NOTE: previously this used getRowCutDebugger() (without "Always"), which
+  // relies on OsiRowCutDebugger::onOptimalPath() -- that check only looks at
+  // INTEGER columns with a loose 1e-3 tolerance, and has been observed to be
+  // unreliable (can return false even when the current bounds are still
+  // fully consistent with the reference solution, and vice versa). Use
+  // getRowCutDebuggerAlways() instead (bypasses onOptimalPath() entirely)
+  // and compute our own manual on-path check across ALL columns with a
+  // tight 1e-6 tolerance, matching the approach used elsewhere in
+  // CbcModel.cpp (pre-resolve cut/column-cut checks, reducedCostFix(),
+  // fixFromGlobalCuts()) for exactly this reason.
+  const int nCols = solver->getNumCols();
   const OsiRowCutDebugger *debuggerAlways = solver->getRowCutDebuggerAlways();
-  const double *optSol = debugger
-    ? debugger->optimalSolution()
-    : (!debuggerAlways && debugSolution && debugNumberColumns == solver->getNumCols()
-         ? debugSolution
-         : nullptr);
+  const double *optSol = nullptr;
+  if (debuggerAlways) {
+    const double *refSol = debuggerAlways->optimalSolution();
+    const double *nowLB = solver->getColLower();
+    const double *nowUB = solver->getColUpper();
+    bool stillOnPath = true;
+    for (int k = 0; k < nCols; k++) {
+      if (refSol[k] < nowLB[k] - 1.0e-6 || refSol[k] > nowUB[k] + 1.0e-6) {
+        stillOnPath = false;
+        break;
+      }
+    }
+    if (stillOnPath)
+      optSol = refSol;
+  } else if (debugSolution && debugNumberColumns == solver->getNumCols()) {
+    // Pre-B&B bound propagation: no debugger activated yet, fall back to the
+    // raw -debugCuts reference solution global.
+    optSol = debugSolution;
+  }
 
   // Declare these early so they are in scope for the checkFixing lambda.
   // colType and curLB/curUB are set to their real values before phase 2.
-  const int nCols = solver->getNumCols();
   // Local owned copy — not a pointer into the solver's internal cache.
   // Refreshed before each propagation round from current bounds.
   std::vector< char > colTypeBuf;

@@ -97,6 +97,51 @@ jobs:
         if: always()
         run: sudo chown -R "$USER:$USER" work
 
+      - name: Auto-run mip-debug-cuts on any FAILed/ERRORed instance
+        # WRONG_OBJ/INFEASIBLE_WRONG regressions (a claimed-optimal or
+        # claimed-infeasible result that doesn't match bks.tsv) are exactly
+        # what mip-debug-cuts is built to localize -- see the nu25-pr12
+        # investigation this step was added from. Running it automatically
+        # here means a CI failure already ships the "which cut/bound-fixing/
+        # branching step first excluded the known-good solution" trace as an
+        # artifact, instead of requiring a human to reproduce it by hand
+        # (which, for a search-order-sensitive bug, is not always trivial to
+        # do identically outside CI).
+        if: failure()
+        run: |
+          RESULTS_TSV=work/Cbc/test/sanity-results/results.tsv
+          if [[ ! -f "$RESULTS_TSV" ]]; then
+            echo "No results.tsv found (failure happened before the suite ran) -- nothing to debug."
+            exit 0
+          fi
+          mkdir -p work/Cbc/test/sanity-results/mip-debug-cuts
+          # Only FAIL/ERROR rows are wrong-answer or crash regressions;
+          # OVERTIME is an expected outcome for hard instances and has
+          # nothing to localize.
+          offenders=$(awk -F'\t' 'NR>1 && ($2=="FAIL" || $2=="ERROR") {print $1}' "$RESULTS_TSV")
+          if [[ -z "$offenders" ]]; then
+            echo "No FAIL/ERROR rows in results.tsv (failure was elsewhere, e.g. LP/mipstart/C-API tests) -- nothing to debug."
+            exit 0
+          fi
+          echo "Offending instance(s): $offenders"
+          docker run --rm -v "$PWD/work:/work" -w /work quay.io/pypa/manylinux_2_34_x86_64 bash -c '
+            set -uo pipefail
+            source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
+            export PKG_CONFIG_PATH=/work/install/lib/pkgconfig:$PKG_CONFIG_PATH
+            cd Cbc/test
+            make mip-debug-cuts >/work/sanity-results/mip-debug-cuts/build.log 2>&1
+            for name in '"$offenders"'; do
+              echo "=== mip-debug-cuts: $name ===" 
+              timeout 300 ./mip-debug-cuts "$name" --log-level=2 \
+                > "/work/sanity-results/mip-debug-cuts/${name}.log" 2>&1
+              echo "exit=$? for $name"
+            done
+          '
+
+      - name: Fix ownership of container-written files (post mip-debug-cuts)
+        if: failure()
+        run: sudo chown -R "$USER:$USER" work
+
       - name: Upload logs/solutions on failure
         if: failure()
         uses: actions/upload-artifact@v4

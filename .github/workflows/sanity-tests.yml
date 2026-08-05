@@ -129,11 +129,11 @@ jobs:
             source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
             export PKG_CONFIG_PATH=/work/install/lib/pkgconfig:$PKG_CONFIG_PATH
             cd Cbc/test
-            make mip-debug-cuts >/work/sanity-results/mip-debug-cuts/build.log 2>&1
+            make mip-debug-cuts >/work/Cbc/test/sanity-results/mip-debug-cuts/build.log 2>&1
             for name in '"$offenders"'; do
               echo "=== mip-debug-cuts: $name ===" 
               timeout 300 ./mip-debug-cuts "$name" --log-level=2 \
-                > "/work/sanity-results/mip-debug-cuts/${name}.log" 2>&1
+                > "/work/Cbc/test/sanity-results/mip-debug-cuts/${name}.log" 2>&1
               echo "exit=$? for $name"
             done
           '

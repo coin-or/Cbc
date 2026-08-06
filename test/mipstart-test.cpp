@@ -60,6 +60,7 @@
 
 #include "Cbc_C_Interface.h"
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -175,11 +176,16 @@ bool logHas(const std::string &log, const char *needle)
 /* A fixed linear congruential generator, so that the one fixture built from
  * random data is the same instance on every machine and every run. Deliberately
  * not rand(): its sequence is implementation-defined, which would make a failure
- * here unreproducible elsewhere. */
-double lcg(unsigned long &seed, int lo, int hi)
+ * here unreproducible elsewhere. The seed is a fixed-width uint64_t rather than
+ * "unsigned long" on purpose: "unsigned long" is 64-bit on Linux/macOS (LP64)
+ * but only 32-bit on Windows (LLP64), so the multiply-and-wrap below would
+ * silently wrap at a different modulus there, generating a *different*
+ * market-split instance on Windows than everywhere else and defeating the
+ * whole point of a fixed, reproducible fixture. */
+double lcg(uint64_t &seed, int lo, int hi)
 {
-  seed = seed * 1103515245UL + 12345UL;
-  return (double)(lo + (int)((seed >> 16) % (unsigned long)(hi - lo + 1)));
+  seed = seed * 1103515245ULL + 12345ULL;
+  return (double)(lo + (int)((seed >> 16) % (uint64_t)(hi - lo + 1)));
 }
 
 /* ── the fixture model ─────────────────────────────────────────────────── */
@@ -781,7 +787,7 @@ void testMiniBranchAndBound()
      leave the rows unsatisfiable rather than fractional. */
   Cbc_setIntParam(model, INT_PARAM_MIPSTART_FIX, 1);
 
-  unsigned long seed = 12345UL;
+  uint64_t seed = 12345ULL;
   char nm[32];
   for (int j = 0; j < nBin; ++j) {
     snprintf(nm, sizeof(nm), "s%d", j);

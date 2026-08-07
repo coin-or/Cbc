@@ -19059,6 +19059,17 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
             simplex->setMoreSpecialOptions(saveMoreOptions);
             simplex->setPerturbation(perturbation);
             incrementExtra(info->numberNodesExplored_, info->numberIterations_);
+            // ClpSimplexOther::crunch() (called from fathom(), with
+            // tightenBounds true) can permanently tighten simplex's own
+            // columnLower_/columnUpper_ based on reduced-cost bound
+            // tightening computed for THIS node's local bounds. Those
+            // tightened bounds are only valid within this node's subtree;
+            // if left in place they silently and incorrectly restrict every
+            // other branch/node explored afterwards, corrupting the search
+            // (observed to cause proven-optimal objectives worse than the
+            // true optimum). Always restore the original bounds here.
+            solver_->setColLower(saveLower);
+            solver_->setColUpper(saveUpper);
             if (feasible && false) { // can mess up cuts
               double objValue = simplex->objectiveValue();
               feasible = solveWithCuts(cuts, 1, node);

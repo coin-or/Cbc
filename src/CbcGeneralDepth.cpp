@@ -30,6 +30,13 @@
 #include "ClpNode.hpp"
 #include "ClpFactorization.hpp"
 #include "CbcBranchDynamic.hpp"
+#include "OsiRowCutDebugger.hpp"
+
+//#define CHECK_PATH
+#ifdef CHECK_PATH
+extern const double *debuggerSolution_Z;
+extern int numberColumns_Z;
+#endif
 /* I (JJHF) am looking at the fathomMany option in Cbc.  This does a few 
    branches using Clp and tries to be much more efficient as it knows
    about Clp.  It will also lend itself well to deterministc parallel
@@ -269,7 +276,44 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
         clpSolver->setBasis();
 	// DETERMINISTIC_TUNING think harder
 	//info->presolveType_=1;
+        int numberColumns = simplex->numberColumns();
+        double *saveColumnLower = CoinCopyOfArray(simplex->columnLower(), numberColumns);
+        double *saveColumnUpper = CoinCopyOfArray(simplex->columnUpper(), numberColumns);
+#ifdef CHECK_PATH
+        // Feed fathomMany()'s built-in "on optimal path" tracer the known
+        // reference solution (already remapped into the current, possibly
+        // preprocessed, column space by CbcModel's -debugCuts handling),
+        // if the row cut debugger is active. Use getRowCutDebuggerAlways()
+        // (not getRowCutDebugger()) since the latter returns NULL once the
+        // current node's bounds have already excluded the known solution -
+        // exactly the case we need to trace here.
+        {
+          const OsiRowCutDebugger *debugger = solver->getRowCutDebuggerAlways();
+          static int printedOnce = 0;
+          if (!printedOnce) {
+            printedOnce = 1;
+            fprintf(stderr, "CHECK_PATH: debugger=%p numberColumns=%d\n", (void*)debugger, numberColumns);
+          }
+          if (debugger && solver->getNumCols() == numberColumns) {
+            debuggerSolution_Z = debugger->optimalSolution();
+            numberColumns_Z = numberColumns;
+          }
+        }
+#endif
         whichSolution_ = simplex->fathomMany(info);
+        // ClpSimplexOther::crunch() (called from fathomMany(), with
+        // tightenBounds true) can permanently tighten simplex's own
+        // columnLower_/columnUpper_ based on reduced-cost bound
+        // tightening computed relative to THIS mini-BAB call's root bounds.
+        // Those tightened bounds are only valid within this subtree; if left
+        // in place they silently and incorrectly restrict every other
+        // branch/node explored afterwards, corrupting the search (observed
+        // to cause proven-optimal objectives worse than the true optimum).
+        // Always restore the original bounds here.
+        CoinMemcpyN(saveColumnLower, numberColumns, simplex->columnLower());
+        CoinMemcpyN(saveColumnUpper, numberColumns, simplex->columnUpper());
+        delete[] saveColumnLower;
+        delete[] saveColumnUpper;
         //printf("FAT %d nodes, %d iterations\n",
         //info->numberNodesExplored_,info->numberIterations_);
         //printf("CbcBranch %d rows, %d columns\n",clpSolver->getNumRows(),
@@ -378,10 +422,7 @@ void CbcGeneralDepth::redoSequenceEtc(CbcModel * /*model*/,
 {
 }
 
-//#define CHECK_PATH
 #ifdef CHECK_PATH
-extern const double *debuggerSolution_Z;
-extern int numberColumns_Z;
 extern int gotGoodNode_Z;
 #endif
 CbcBranchingObject *

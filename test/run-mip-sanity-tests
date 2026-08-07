@@ -57,6 +57,20 @@
 #   --no-lazy-tests      Skip the lazy-constraint / TSP tests (see below)
 #   --no-mipstart-tests  Skip the MIP-start tests (see below)
 #   --no-coefstr-tests   Skip the coefficient-tightening tests (see below)
+#   --threads-pin        Invoke cbc WITH an explicit "-threads 1" (opt-in;
+#                        the suite's default is to NOT pass -threads at all,
+#                        matching how most users actually invoke cbc).
+#                        CbcModel's fastNodeDepth_ "mini-BAB" fast-node
+#                        heuristic is only ever active when numberThreads_==0
+#                        (i.e. no -threads flag at all, or "-threads 0");
+#                        passing -threads 1 (or any positive value) switches
+#                        it off (see CbcSolver.cpp's babModel_->setNumberThreads()
+#                        call and CbcModel.cpp's "numberThreads_ > 0" guard
+#                        around fastNodeDepth_). Pass --threads-pin when you
+#                        specifically need the old pinned-single-thread
+#                        behaviour (e.g. for maximally deterministic node
+#                        counts across reruns), at the cost of no longer
+#                        exercising the fastNodeDepth_ path.
 #   -h, --help           Show this help
 #
 # In addition to the main `cbc`-executable suite above, this script also runs
@@ -188,6 +202,7 @@ NO_LP_TESTS=0
 NO_LAZY_TESTS=0
 NO_MIPSTART_TESTS=0
 NO_COEFSTR_TESTS=0
+THREADS_PIN=0
 CUT_STATS=0
 CUT_STATS_TSV=""
 PATTERNS=()
@@ -210,6 +225,7 @@ for arg in "$@"; do
     --no-lazy-tests) NO_LAZY_TESTS=1 ;;
     --no-mipstart-tests) NO_MIPSTART_TESTS=1 ;;
     --no-coefstr-tests) NO_COEFSTR_TESTS=1 ;;
+    --threads-pin) THREADS_PIN=1 ;;
     -h|--help)
       # Print the header comment block: everything from line 2 up to (but not
       # including) the first line that is not a comment. Derived rather than
@@ -239,6 +255,11 @@ fi
 export BOLD RESET DIM RED GREEN YELLOW CYAN MAGENTA BLUE
 
 echo "${BOLD}=== Cbc mip-sanity-data regression suite (jobs=$JOBS) ===${RESET}"
+if [[ $THREADS_PIN -eq 1 ]]; then
+  echo "${DIM}Running cbc with -threads 1 pinned (--threads-pin).${RESET}"
+else
+  echo "${DIM}Running cbc without an explicit -threads flag (default; pass --threads-pin to pin to 1 thread).${RESET}"
+fi
 
 # ── 1. Ensure mip-sanity-data is available (clone once, reuse afterwards) ───
 if [[ ! -f "$REPO_ROOT/.gitmodules" ]] || ! grep -q "mip-sanity-data" "$REPO_ROOT/.gitmodules"; then
@@ -401,6 +422,7 @@ run_one() {
   local data_dir="$2" results_dir="$3" cbc_bin="$4" validator="$5" total="$6"
   local progress_count_file="$7" progress_lock="$8"
   local cut_stats="${9:-0}" cut_stats_dir="${10:-}"
+  local threads_pin="${11:-0}"
 
   local mps="$data_dir/mips/$name.mps.gz"
   local sol="$results_dir/$name.sol"
@@ -426,6 +448,17 @@ run_one() {
   local node_args=()
   if [[ "$node_limit" != "0" ]]; then
     node_args=(-maxNodes "$node_limit")
+  fi
+
+  # Default: no explicit -threads flag (numberThreads_==0), matching how most
+  # users actually invoke cbc — this also keeps CbcModel's fastNodeDepth_
+  # mini-BAB fast-node heuristic active, since it is only ever engaged when
+  # numberThreads_==0 (see CbcModel.cpp's "numberThreads_ > 0" guard around
+  # fastNodeDepth_). --threads-pin opts back into the old "-threads 1"
+  # pinned-single-thread invocation for maximally deterministic node counts.
+  local threads_args=()
+  if [[ "$threads_pin" == "1" ]]; then
+    threads_args=(-threads 1)
   fi
 
   local stats_pre_args=() stats_post_args=()
@@ -479,7 +512,7 @@ run_one() {
   if [[ "$cut_stats" == "1" ]]; then
     rm -f "$cut_stats_dir/$name.stats.csv"
   fi
-  timeout -k 10 "${hard_kill}s" ${ASLR_WRAP:+$ASLR_WRAP} "$cbc_bin" "$mps" -threads 1 -sec "$time_limit" \
+  timeout -k 10 "${hard_kill}s" ${ASLR_WRAP:+$ASLR_WRAP} "$cbc_bin" "$mps" "${threads_args[@]}" -sec "$time_limit" \
     "${node_args[@]}" "${stats_pre_args[@]}" -solve -solu "$sol" "${stats_post_args[@]}" >"$cbc_log" 2>&1
   local cbc_rc=$?
   end_ts=$(date +%s.%N)
@@ -556,7 +589,7 @@ trap 'rm -f "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK"' EXIT
 echo "${DIM}Running... (results stream in as instances finish; order is by completion, not by name)${RESET}"
 printf '%s\n' "${instances[@]}" | parallel --will-cite -j "$JOBS" --line-buffer \
   run_one {} "$DATA_DIR" "$RESULTS_DIR" "$CBC_BIN" "$VALIDATOR" "${#instances[@]}" \
-  "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK" "$CUT_STATS" "$CUT_STATS_DIR"
+  "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK" "$CUT_STATS" "$CUT_STATS_DIR" "$THREADS_PIN"
 echo
 
 # ── 7. Aggregate results from the .status files already printed above ──────

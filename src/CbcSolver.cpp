@@ -9697,12 +9697,20 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               tempModel.messagesPointer());
             // set cutoff ( a trifle high)
             if (!status) {
-              double newCutoff = std::min(babModel_->getCutoff(), obj + 1.0e-4);
+              /* computeCompleteSolution returns the objective in the model's
+                 own sense, while setBestSolution and setCutoff are always
+                 minimization.  Ask the solver for the sense - CbcModel's own
+                 getObjSense() is still 1.0 here, as the model is only flipped
+                 inside branchAndBound.  Without this a maximization model got
+                 a cutoff which excludes every solution, so the mip start was
+                 returned and reported as proven optimal. */
+              double objMin = obj * babModel_->solver()->getObjSense();
+              double newCutoff = std::min(babModel_->getCutoff(), objMin + 1.0e-4);
               babModel_->setBestSolution(&x[0], static_cast< int >(x.size()),
-                obj, false);
+                objMin, false);
               babModel_->setCutoff(newCutoff);
               babModel_->setSolutionCount(1);
-              model_.setBestSolution(&x[0], static_cast< int >(x.size()), obj,
+              model_.setBestSolution(&x[0], static_cast< int >(x.size()), objMin,
                 false);
               model_.setCutoff(newCutoff);
               model_.setSolutionCount(1);
@@ -10531,8 +10539,13 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                   delete[] sosObjects;
                 }
                 /* But this is outside branchAndBound so needs to know
-                   about direction */
-                if (babModel_->getObjSense() == -1.0) {
+                   about direction.  Ask the solver - CbcModel::getObjSense()
+                   returns the (still unset) internal direction of 1.0 here,
+                   so this correction never fired and a maximization model was
+                   left with a cutoff that excludes every solution.  With
+                   preprocessing off that fathoms the root and the mip start
+                   itself is reported as proven optimal. */
+                if (babModel_->solver()->getObjSense() == -1.0) {
                   babModel_->setCutoff(-obj);
                   babModel_->setMinimizationObjValue(-obj);
                 }

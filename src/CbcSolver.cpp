@@ -3757,7 +3757,13 @@ int CbcSolver::preprocess(
       if (jColumn < numberColumnsB)
         bestSolution[i] = oldBestSolution[jColumn];
     }
-    double obj = model_.getObjValue();
+    /* getObjValue returns the objective in the model's own sense, while
+       getCutoff and setCutoff are always minimization.  Mixing the two
+       gave a maximization model a negative cutoff here, which no longer
+       matches the dual objective limit already stored in the solver -
+       branchAndBound asserts on that mismatch.  Same class of bug as the
+       two mip start sites below. */
+    double obj = model_.getMinimizationObjValue();
     double newCutoff = std::min(model_.getCutoff(), obj + 1.0e-4);
     babModel_->setBestSolution(bestSolution, numberColumns, 1.0e10, false);
     babModel_->setCutoff(newCutoff);

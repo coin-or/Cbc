@@ -67,6 +67,7 @@ extern int gomory_try;
 #include "ClpSimplexPrimal.hpp"
 #include "OsiClpSolverInterface.hpp"
 
+#include "CbcClqFixtureDump.hpp"
 #include "CbcEventHandler.hpp"
 
 #include "CbcBranchActual.hpp"
@@ -9812,6 +9813,15 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   do {
     currentPassNumber_++;
     numberTries--;
+#ifdef CBC_DUMP_CLQSEP_FIXTURE
+    // Capture the clique-separation fixture. This is the one point where the
+    // preprocessed matrix, its optimal LP solution and basis, and the conflict
+    // graph CglBKClique is about to query are all simultaneously consistent:
+    // the root LP has just been solved, and no cut has yet been applied. One
+    // pass later the matrix has grown rows and the LP has moved.
+    if (currentPassNumber_ == 1 && !node && !parentModel_)
+      cbcDumpClqFixture(solver_, "sep");
+#endif
 #if 0 // def CBC_LAGRANGEAN_SOLVERS
     if ((numberTries%20)==-1 && !parentModel_ && (moreSpecialOptions2_&(268435456|536870912)) !=0 && !node) {
 	int typeGo = 2;

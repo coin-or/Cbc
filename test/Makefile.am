@@ -44,7 +44,7 @@ test: cbc_validate_sol$(EXEEXT)
 # command line for any instance. See `mip-c-solve --help` for usage.
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
-	lazy-constraint-test mipstart-test coefstr-test
+	lazy-constraint-test mipstart-test coefstr-test bkclique-bench clqext-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -208,3 +208,50 @@ mipstart_test_LDADD = ../src/libCbc.la
 coefstr_test_SOURCES = coefstr-test.cpp
 
 coefstr_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#          Clique separation / extension offline benchmarks            #
+########################################################################
+#
+# bkclique-bench and clqext-bench: replay a single Bron-Kerbosch call captured
+# from inside Cbc, so the BK algorithm can be worked on without paying for a
+# full MIP solve per measurement. Both consume the fixtures written by
+# CbcClqFixtureDump.hpp -- a Cbc built with -DCBC_DUMP_CLQSEP_FIXTURE emits, at
+# each of the two BK call sites, the preprocessed problem, its optimal LP basis
+# and solution, and the conflict graph serialized by
+# CoinStaticConflictGraph::save().
+#
+# The graph is reloaded rather than rebuilt because rebuilding does not
+# reproduce it: Cbc's graph is built before CglCliqueStrengthening deletes and
+# adds rows, and OsiSolverInterface::checkCGraph() only rebuilds when the
+# *column* count changes, so the graph a separator sees is routinely stale with
+# respect to the matrix. That staleness is the behaviour under study, hence
+# OsiSolverInterface::setCGraph() and the serialization. --rebuild-cgraph keeps
+# the rebuild path available for direct comparison, and `bkclique-bench
+# --self-test` asserts the round trip is byte-exact and field-for-field
+# identical, degrees included (they are deliberately approximate, so recomputing
+# them would give different values).
+#
+# bkclique-bench drives CglBKClique over N rounds with an LP re-solve between
+# them, and reports the sum of cut violations as well as the cut count: a
+# separator finding fewer but more violated cliques is doing better work, which
+# a count alone cannot show. It builds a fresh generator each round, because
+# CglBKClique::separateCliques() ends with `maxCallsBK_ = bk->numCalls()` -- a
+# monotonic ratchet that otherwise shrinks the budget of every later round and
+# makes the rounds incomparable.
+#
+# clqext-bench drives CglCliqueStrengthening instead, reporting rows extended
+# and dominated, the change in matrix size, and the LP bound before and after.
+# It refuses to run when the warm start misses optimality: getReducedCost()
+# returns NULL unless the model is proven optimal, and extension methods 4 and 5
+# then silently downgrade to 2.
+#
+# Neither is part of the regression suite; both are measurement tools.
+
+bkclique_bench_SOURCES = bkclique-bench.cpp
+
+bkclique_bench_LDADD = ../src/libCbc.la
+
+clqext_bench_SOURCES = clqext-bench.cpp
+
+clqext_bench_LDADD = ../src/libCbc.la

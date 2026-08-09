@@ -88,6 +88,7 @@ void CbcCrashHandler(int sig);
 #include "OsiChooseVariable.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "OsiFeatures.hpp"
+#include "CbcClqFixtureDump.hpp"
 #include "CbcLpParamScorer.hpp"
 #ifndef CLP_OLD_STYLE
 #include "ClpRacingSolver.hpp"
@@ -524,6 +525,23 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
     if (remaining > 0.0)
       clqStr.setMaximumSeconds(remaining);
   }
+#ifdef CBC_DUMP_CLQSEP_FIXTURE
+  // Capture the clique-extension fixture, before strengthenCliques() runs: it
+  // deletes dominated rows and adds extended ones, so afterwards the matrix no
+  // longer matches the graph the extension actually worked from.
+  //
+  // Called for each of "before" (original problem) and "after" (preprocessed),
+  // and more than once per mode across a run, so the tag carries the mode plus a
+  // counter to keep the captures apart. strengthenMode goes into the fixture
+  // because the two modes ask for different extension methods -- 2 before, 4
+  // after -- and 4 needs reduced costs, which only exist in the "after" state.
+  {
+    static int clqStrDumpSeq = 0;
+    char clqTag[64];
+    sprintf(clqTag, "clqstr-%s-%d", mode.c_str(), clqStrDumpSeq++);
+    cbcDumpClqFixture(solver, clqTag, (int)strengthenMode);
+  }
+#endif
   clqStr.strengthenCliques(strengthenMode);
 
   if (clqExtendedOut)

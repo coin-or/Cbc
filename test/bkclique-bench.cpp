@@ -173,6 +173,69 @@ static bool dropPadRow(OsiSolverInterface &si, const std::string &stem, bool qui
   return true;
 }
 
+/**
+ * Restore integrality from the `.ctype` sidecar.
+ *
+ * MPS cannot express "fixed and integer": CoinMpsIO::writeMps conveys
+ * integrality only through the bound type (BV/UI/LI/MI+UI) and a column with
+ * lb == ub takes the " FX " branch, which has no integer form -- so every integer
+ * column CBC had fixed by bound tightening reads back continuous. That silently
+ * changes the experiment rather than merely annotating it, because integrality is
+ * a gate on both BK consumers: CglCliqueStrengthening::detectCliqueRows rejects
+ * any row containing a non-binary column, so lost markers shrink the clique-row
+ * set. Measured on physiciansched3-3: 39994 markers lost, clique rows 188486 ->
+ * 83611, replayed extensions 4731 -> 2972 against what CBC did.
+ *
+ * Returns the number of columns re-marked, or -1 when no usable sidecar was
+ * found. A sidecar whose column count disagrees with the loaded model is refused
+ * rather than partly applied: a wrong-model sidecar would mark arbitrary columns
+ * integer, which is worse than the loss it is meant to repair.
+ */
+static int restoreColTypes(OsiSolverInterface &si, const std::string &stem, bool quiet)
+{
+  const std::string path = stem + ".ctype";
+  FILE *fp = fopen(path.c_str(), "r");
+  if (!fp) {
+    if (!quiet)
+      fprintf(stderr, "WARNING: %s: no .ctype sidecar; integer columns that were "
+                      "fixed at capture will read back continuous\n",
+        baseName(stem).c_str());
+    return -1;
+  }
+
+  int sidecarCols = -1;
+  if (fscanf(fp, "cols %d\n", &sidecarCols) != 1 || sidecarCols != si.getNumCols()) {
+    fprintf(stderr, "ERROR: %s: .ctype is for %d columns, model has %d; ignoring it\n",
+      baseName(stem).c_str(), sidecarCols, si.getNumCols());
+    fclose(fp);
+    return -1;
+  }
+
+  int idx = 0, type = 0, restored = 0, alreadyInteger = 0;
+  while (fscanf(fp, "%d %d\n", &idx, &type) == 2) {
+    if (idx < 0 || idx >= si.getNumCols()) {
+      fprintf(stderr, "ERROR: %s: .ctype names column %d, out of range\n",
+        baseName(stem).c_str(), idx);
+      fclose(fp);
+      return -1;
+    }
+    if (si.isContinuous(idx)) {
+      si.setInteger(idx);
+      ++restored;
+    } else {
+      ++alreadyInteger;
+    }
+  }
+  fclose(fp);
+
+  // Bounds already carried the marker for these; only the fixed ones needed help.
+  (void)alreadyInteger;
+  // getColType() caches, and derives Binary vs GeneralInteger from the bounds, so
+  // it has to be recomputed after this or consumers would see the pre-restore view.
+  si.getColType(true);
+  return restored;
+}
+
 static CoinBronKerbosch::PivotingStrategy parsePivoting(const char *s, bool &ok)
 {
   ok = true;
@@ -227,17 +290,36 @@ static const char *pivotingName(CoinBronKerbosch::PivotingStrategy p)
 struct Fixture {
   OsiClpSolverInterface si;
   double warmStartTime = 0.0;
+  /// Pivots the warm start needed. Zero is the expected value and the check that
+  /// the captured basis actually took; see loadFixture below.
+  int warmStartIters = 0;
   double cgraphTime = 0.0;
   bool paddedRowDropped = false;
+  int restoredColTypes = -1;
   bool ok = false;
 };
 
 /**
  * Load the fixture and warm-start to the captured optimum.
  *
- * setPerturbation(50) and the dual-on-initial hint reproduce what the fixture
- * generator did, so the warm start lands on the same basis rather than pivoting
- * away from it.
+ * Two things are needed to actually *land* on the captured vertex, and getting
+ * either wrong looks like success while silently changing the experiment -- BK
+ * separates cliques violated by the current fractional point, so a different
+ * optimal vertex means a different set of violated cliques.
+ *
+ * First, `readBasis` writes into ClpSimplex's own `status_` array, but OsiClp
+ * caches a separate `CoinWarmStartBasis basis_` and both entry points overwrite
+ * the model from it -- `resolve()` at OsiClpSolverInterface.cpp:1199, and
+ * `initialSolve()` by presolving from scratch. `setWarmStart(NULL)` refreshes
+ * `basis_` from the model (`basis_ = getBasis(modelPtr_)`, applying the slack
+ * flip), which is what makes the file's basis survive into the solve.
+ *
+ * Second, `resolve()` rather than `initialSolve()`: presolve discards the basis.
+ * With both in place an already-optimal fixture costs 0 iterations, which is the
+ * cheap self-check that the warm start worked -- and `.sol` is compared against
+ * for the same reason. `setPerturbation(50)` matches the generator; perturbation
+ * left on moves the vertex even from a correct basis (decomp2: 846 columns moved
+ * versus 803).
  */
 static bool loadFixture(Fixture &f, const std::string &stem, bool rebuildCgraph,
   bool quiet)
@@ -262,23 +344,49 @@ static bool loadFixture(Fixture &f, const std::string &stem, bool rebuildCgraph,
   // one artificial fewer than the padded matrix and would not line up.
   f.paddedRowDropped = dropPadRow(f.si, stem, quiet);
 
+  // Before the graph and the separator: CglBKClique refreshes column types, and
+  // integrality decides which columns are candidates at all.
+  f.restoredColTypes = restoreColTypes(f.si, stem, quiet);
+
+  bool haveBasis = false;
   if (fileExists(bas)) {
-    if (lp->readBasis(bas.c_str()) < 0)
+    if (lp->readBasis(bas.c_str()) < 0) {
       fprintf(stderr, "WARNING: failed to read basis %s; solving cold\n", bas.c_str());
+    } else {
+      haveBasis = true;
+      // Push the model's freshly-read status into OsiClp's cached basis_, or the
+      // solve below installs the stale cache over it.
+      f.si.setWarmStart(NULL);
+    }
   } else if (!quiet) {
     fprintf(stderr, "WARNING: no basis %s; solving cold\n", bas.c_str());
   }
 
   lp->setPerturbation(50);
-  f.si.setHintParam(OsiDoDualInInitial, true, OsiHintDo);
 
   const double t0 = wallClock();
-  f.si.initialSolve();
+  if (haveBasis) {
+    f.si.setHintParam(OsiDoPresolveInResolve, false, OsiHintDo);
+    f.si.setHintParam(OsiDoDualInResolve, true, OsiHintDo);
+    f.si.resolve();
+  } else {
+    f.si.setHintParam(OsiDoDualInInitial, true, OsiHintDo);
+    f.si.initialSolve();
+  }
   f.warmStartTime = wallClock() - t0;
+  f.warmStartIters = f.si.getIterationCount();
 
   if (!f.si.isProvenOptimal()) {
     fprintf(stderr, "ERROR: LP not optimal after warm start (%s)\n", stem.c_str());
     return false;
+  }
+  // A correct warm start from an optimal basis costs no pivots. Anything else means
+  // the fixture landed on a different vertex, so say so rather than quietly
+  // measuring a different LP.
+  if (haveBasis && f.warmStartIters > 0 && !quiet) {
+    fprintf(stderr, "WARNING: %s: warm start took %d iterations; the captured basis "
+                    "did not survive, so this is a different vertex\n",
+      baseName(stem).c_str(), f.warmStartIters);
   }
 
   const double t1 = wallClock();
@@ -488,9 +596,9 @@ static bool boundMoved(double objStart, double objImprove)
 
 static const char *CSV_HEADER
   = "name,pivoting,maxCalls,rounds,rowsAdded,totalCuts,totalViol,maxViol,"
-    "avgCutLen,sepTime,bkCalls,warmStartTime,cgraphTime,resolveTime,"
+    "avgCutLen,sepTime,bkCalls,warmStartTime,warmStartIters,cgraphTime,resolveTime,"
     "resolveIters,objStart,objEnd,objImprove,objImproveRel,boundMoved,"
-    "cgNodes,cgDirectConf,cgCliques,cgDensity,cutsPerRound,violPerRound,"
+    "cgNodes,cgDirectConf,cgCliques,cgDensity,restoredInt,cutsPerRound,violPerRound,"
     "objImprovePerRound";
 
 int main(int argc, char *argv[])
@@ -693,16 +801,17 @@ int main(int argc, char *argv[])
   if (csvHeader)
     printf("%s\n", CSV_HEADER);
 
-  printf("%s,%s,%lu,%d,%d,%d,%.10g,%.10g,%.3f,%.6f,%lu,%.6f,%.6f,%.6f,%d,"
-         "%.15g,%.15g,%.6g,%.6g,%d,%lu,%lu,%lu,%.10f,%s,%s,%s\n",
+  printf("%s,%s,%lu,%d,%d,%d,%.10g,%.10g,%.3f,%.6f,%lu,%.6f,%d,%.6f,%.6f,%d,"
+         "%.15g,%.15g,%.6g,%.6g,%d,%lu,%lu,%lu,%.10f,%d,%s,%s,%s\n",
     baseName(stem).c_str(), pivotingName(pivoting), (unsigned long)maxCalls,
     round, f.si.getNumRows() - nRows0, totalCuts, totalViol, maxViol,
     totalCuts ? (double)totalCutLen / totalCuts : 0.0,
-    totalSepTime, (unsigned long)totalBkCalls, f.warmStartTime, f.cgraphTime,
+    totalSepTime, (unsigned long)totalBkCalls, f.warmStartTime, f.warmStartIters,
+    f.cgraphTime,
     totalResolveTime, totalResolveIters, objStart, objEnd, objImprove,
     objImproveRel, (int)boundMoved(objStart, objImprove),
     (unsigned long)cg->size(), (unsigned long)cg->nTotalDirectConflicts(),
-    (unsigned long)cg->nCliques(), cg->density(),
+    (unsigned long)cg->nCliques(), cg->density(), f.restoredColTypes,
     cutsPerRound.c_str(), violPerRound.c_str(), objImprovePerRound.c_str());
 
   return 0;

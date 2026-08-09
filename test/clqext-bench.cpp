@@ -45,6 +45,27 @@
  * as captured -- reduced-cost-free. `lpOptimal` in the output is 0 whenever
  * objBefore came from that clone rather than from the fixture itself.
  *
+ * **Under method 4 the counts must reproduce exactly, and a mismatch means the
+ * basis was lost.** An earlier version of this comment claimed the opposite --
+ * that these LPs are degenerate, so re-solving legitimately lands on a different
+ * optimal vertex with different reduced costs, and that the 5 fixtures of 660
+ * which disagreed with Cbc's log were therefore expected noise. The mechanism was
+ * real but the conclusion was wrong: the basis was not being restored *at all*
+ * (an MPS/`.bas` name mismatch, then OsiClp's cached `basis_` overwriting the
+ * model -- see the warm-start block below), so every replay started from an
+ * all-slack basis and the "seven ways" evidence was seven cold solves. With both
+ * halves fixed all five match to the row: momentum1 73/118, mzzv11 34/67,
+ * neos-3216931-puriri 26/43, neos8 146/188, trdHardCA4500-8 41/109.
+ *
+ * What survives is the *sensitivity*, which is why warmStartIters is reported and
+ * warned about: reduced costs really do drive CoinCliqueExtender's candidate
+ * ordering, and replaying momentum1 with --no-lp (no reduced costs, so method 4
+ * degrades to 2) gives 72/135 instead of 73/118. So treat a nonzero
+ * warmStartIters as a defect to chase, not as tolerance to budget for. One
+ * caveat: 0 is the expectation, not a guarantee -- momentum1 needs 11 pivots and
+ * still reproduces Cbc exactly, repeatably. Nonzero means "verify before
+ * trusting", not "wrong".
+ *
  * Usage:
  *   clqext-bench <stem> [options]           (stem = dir/name.tag)
  */
@@ -93,28 +114,33 @@ static std::string baseName(const std::string &path)
 }
 
 /**
- * Read one integer key out of the fixture's `.meta` file.
+ * Read one numeric key out of the fixture's `.meta` file.
  * Returns `dflt` when the file or the key is absent, so a fixture written before
- * `.meta` existed still runs.
+ * `.meta` existed -- or before it carried that key -- still runs.
  */
-static long metaInt(const std::string &path, const char *key, long dflt)
+static double metaNum(const std::string &path, const char *key, double dflt)
 {
   FILE *fp = fopen(path.c_str(), "r");
   if (!fp)
     return dflt;
 
   char line[512];
-  long value = dflt;
+  double value = dflt;
   while (fgets(line, sizeof(line), fp)) {
     char k[256];
     double v = 0.0;
     if (sscanf(line, "%255s %lf", k, &v) == 2 && strcmp(k, key) == 0) {
-      value = (long)v;
+      value = v;
       break;
     }
   }
   fclose(fp);
   return value;
+}
+
+static long metaInt(const std::string &path, const char *key, long dflt)
+{
+  return (long)metaNum(path, key, (double)dflt);
 }
 
 /**
@@ -152,6 +178,69 @@ static bool dropPadRow(OsiSolverInterface &si, const std::string &stem, bool qui
   return true;
 }
 
+/**
+ * Restore integrality from the `.ctype` sidecar.
+ *
+ * MPS cannot express "fixed and integer": CoinMpsIO::writeMps conveys
+ * integrality only through the bound type (BV/UI/LI/MI+UI) and a column with
+ * lb == ub takes the " FX " branch, which has no integer form -- so every integer
+ * column CBC had fixed by bound tightening reads back continuous. That silently
+ * changes the experiment rather than merely annotating it, because integrality is
+ * a gate on both BK consumers: CglCliqueStrengthening::detectCliqueRows rejects
+ * any row containing a non-binary column, so lost markers shrink the clique-row
+ * set. Measured on physiciansched3-3: 39994 markers lost, clique rows 188486 ->
+ * 83611, replayed extensions 4731 -> 2972 against what CBC did.
+ *
+ * Returns the number of columns re-marked, or -1 when no usable sidecar was
+ * found. A sidecar whose column count disagrees with the loaded model is refused
+ * rather than partly applied: a wrong-model sidecar would mark arbitrary columns
+ * integer, which is worse than the loss it is meant to repair.
+ */
+static int restoreColTypes(OsiSolverInterface &si, const std::string &stem, bool quiet)
+{
+  const std::string path = stem + ".ctype";
+  FILE *fp = fopen(path.c_str(), "r");
+  if (!fp) {
+    if (!quiet)
+      fprintf(stderr, "WARNING: %s: no .ctype sidecar; integer columns that were "
+                      "fixed at capture will read back continuous\n",
+        baseName(stem).c_str());
+    return -1;
+  }
+
+  int sidecarCols = -1;
+  if (fscanf(fp, "cols %d\n", &sidecarCols) != 1 || sidecarCols != si.getNumCols()) {
+    fprintf(stderr, "ERROR: %s: .ctype is for %d columns, model has %d; ignoring it\n",
+      baseName(stem).c_str(), sidecarCols, si.getNumCols());
+    fclose(fp);
+    return -1;
+  }
+
+  int idx = 0, type = 0, restored = 0, alreadyInteger = 0;
+  while (fscanf(fp, "%d %d\n", &idx, &type) == 2) {
+    if (idx < 0 || idx >= si.getNumCols()) {
+      fprintf(stderr, "ERROR: %s: .ctype names column %d, out of range\n",
+        baseName(stem).c_str(), idx);
+      fclose(fp);
+      return -1;
+    }
+    if (si.isContinuous(idx)) {
+      si.setInteger(idx);
+      ++restored;
+    } else {
+      ++alreadyInteger;
+    }
+  }
+  fclose(fp);
+
+  // Bounds already carried the marker for these; only the fixed ones needed help.
+  (void)alreadyInteger;
+  // getColType() caches, and derives Binary vs GeneralInteger from the bounds, so
+  // it has to be recomputed after this or consumers would see the pre-restore view.
+  si.getColType(true);
+  return restored;
+}
+
 static void usage(const char *prog)
 {
   fprintf(stderr,
@@ -166,10 +255,20 @@ static void usage(const char *prog)
     "                      4 for clqstr-after), from .meta; 4 if unrecorded\n"
     "  --rebuild-cgraph    rebuild the graph from the matrix instead of loading\n"
     "                      the captured one (not faithful; for comparison only)\n"
-    "  --max-seconds=F     strengthening wall-clock limit (0 = none, default)\n"
+    "  --max-seconds=F     strengthening wall-clock limit; 0 = none. Default is the\n"
+    "                      limit the captured site imposed, from .meta (Cbc gives\n"
+    "                      strengthening its remaining budget), or 0 if unrecorded\n"
     "  --force-lp          solve the LP even if the fixture was captured without\n"
     "                      one, so methods 4/5 get the reduced costs they want\n"
     "                      (diverges from what Cbc did; reports effMethod)\n"
+    "  --no-lp             never solve the warm-start LP, even when the fixture\n"
+    "                      has one. Methods 4/5 then downgrade to 2, so this\n"
+    "                      measures a different algorithm -- but it is the way to\n"
+    "                      time strengthening on a fixture whose LP does not\n"
+    "                      converge (z26, cdc7-4-3-2, scpn2)\n"
+    "  --lp-seconds=F      cap the warm-start LP; 0 = none (default 300). Those\n"
+    "                      same fixtures do not reach optimality at any cap, cold\n"
+    "                      or warm, so the cap turns a hang into a clear error\n"
     "  --no-resolve        skip the after-LP; report objAfter as objBefore\n"
     "  --header            print the CSV header line and exit\n"
     "  --csv-header        print the CSV header before the data line\n"
@@ -201,8 +300,8 @@ static bool boundMoved(double objBefore, double objImprove)
 static const char *CSV_HEADER
   = "name,extMethod,effMethod,lpOptimal,extended,dominated,strTime,rowsBefore,"
     "rowsAfter,nzBefore,nzAfter,objBefore,objAfter,objImprove,objImproveRel,"
-    "boundMoved,resolveTime,resolveIters,warmStartTime,cgraphTime,cgNodes,"
-    "cgDirectConf,cgCliques,cgDensity";
+    "boundMoved,resolveTime,resolveIters,warmStartTime,warmStartIters,cgraphTime,cgNodes,"
+    "cgDirectConf,cgCliques,cgDensity,restoredInt,maxSeconds";
 
 int main(int argc, char *argv[])
 {
@@ -220,11 +319,15 @@ int main(int argc, char *argv[])
   }
 
   bool rebuildCgraph = false, csvHeader = false, quiet = false, resolveAfter = true;
-  bool forceLp = false;
+  bool forceLp = false, noLp = false;
   // -1 until either --ext-method or the fixture's .meta supplies one, so an
   // explicit request can be told apart from the default.
   long extMethodArg = -1;
-  double maxSeconds = 0.0;
+  // Negative until either --max-seconds or the fixture's .meta supplies one; 0 is
+  // a meaningful value here (no limit) and so cannot double as "unset".
+  double maxSecondsArg = -1.0;
+  // Cap on the warm-start LP. Not unlimited by default: see the solve site.
+  double lpSeconds = 300.0;
   const char *stemArg = NULL;
 
   for (int i = 1; i < argc; ++i) {
@@ -239,10 +342,14 @@ int main(int argc, char *argv[])
       resolveAfter = false;
     } else if (strcmp(a, "--force-lp") == 0) {
       forceLp = true;
+    } else if (strcmp(a, "--no-lp") == 0) {
+      noLp = true;
     } else if (strncmp(a, "--ext-method=", 13) == 0) {
       extMethodArg = atol(a + 13);
     } else if (strncmp(a, "--max-seconds=", 14) == 0) {
-      maxSeconds = atof(a + 14);
+      maxSecondsArg = atof(a + 14);
+    } else if (strncmp(a, "--lp-seconds=", 13) == 0) {
+      lpSeconds = atof(a + 13);
     } else if (a[0] == '-') {
       fprintf(stderr, "ERROR: unknown option %s\n", a);
       usage(argv[0]);
@@ -285,6 +392,10 @@ int main(int argc, char *argv[])
   // captured model.
   dropPadRow(si, stem, quiet);
 
+  // Before anything reads a column type -- which detectCliqueRows does, through
+  // the CglCliqueStrengthening constructor.
+  const int restoredCols = restoreColTypes(si, stem, quiet);
+
   const std::string meta = stem + ".meta";
   const int lpOptimalInFixture = (int)metaInt(meta, "lpOptimal", -1);
   const long metaExtMethod = metaInt(meta, "extMethodRequested", -1);
@@ -292,38 +403,94 @@ int main(int argc, char *argv[])
   // default for fixtures written before .meta recorded the method.
   const size_t extMethod = (size_t)(extMethodArg >= 0 ? extMethodArg
                                                       : (metaExtMethod >= 0 ? metaExtMethod : 4));
-  const bool wantLp
-    = forceLp || lpOptimalInFixture == 1 || (lpOptimalInFixture < 0 && fileExists(bas));
+  // Cbc gives strengthening whatever is left of the model's time budget, so an
+  // unbounded replay is not the same experiment: measured, cdc7-4-3-2, scpm1,
+  // scpn2 and z26 were all cut short inside Cbc and logged 0 extended / 0
+  // dominated, while an unbounded replay of the same fixture ran past 900s and
+  // found extensions. Honour the captured limit by default, so the replay matches
+  // the capture; --max-seconds overrides it, including back to 0 for no limit.
+  const double maxSeconds
+    = maxSecondsArg >= 0.0 ? maxSecondsArg : metaNum(meta, "maxSeconds", 0.0);
+  const bool wantLp = !noLp
+    && (forceLp || lpOptimalInFixture == 1 || (lpOptimalInFixture < 0 && fileExists(bas)));
 
   double warmStartTime = 0.0;
+  int warmStartIters = 0;
   if (wantLp) {
+    // Two steps, and skipping either leaves the stored basis inert while still
+    // looking like success. `readBasis` writes ClpSimplex's own `status_`, but
+    // OsiClp caches a separate `CoinWarmStartBasis basis_` and installs it over
+    // the model in `resolve()` (OsiClpSolverInterface.cpp:1199), while
+    // `initialSolve()` presolves from scratch and discards the basis outright.
+    // `setWarmStart(NULL)` refreshes the cache from the model (`basis_ =
+    // getBasis(modelPtr_)`, applying the slack flip), and `resolve()` then pivots
+    // from it. With both in place an already-optimal fixture costs 0 iterations,
+    // which is the cheap check that the basis survived -- anything else is a
+    // different vertex, hence different reduced costs and a different candidate
+    // ordering inside CoinCliqueExtender.
+    bool haveBasis = false;
     if (fileExists(bas)) {
-      if (lp->readBasis(bas.c_str()) < 0)
+      if (lp->readBasis(bas.c_str()) < 0) {
         fprintf(stderr, "WARNING: failed to read basis %s; solving cold\n", bas.c_str());
+      } else {
+        haveBasis = true;
+        si.setWarmStart(NULL);
+      }
     } else if (!quiet) {
       fprintf(stderr, "WARNING: no basis %s; solving cold\n", bas.c_str());
     }
 
     lp->setPerturbation(50);
-    si.setHintParam(OsiDoDualInInitial, true, OsiHintDo);
+    // Bounded, because on a few fixtures this LP does not converge in any
+    // practical time and an unbounded solve makes the whole tool look hung on
+    // them. Measured on z26 (38223x17752): the warm start runs 62948 iterations
+    // in 102s without reaching optimality, and a *cold* solve of the same model
+    // does no better (152s, also not optimal) -- so it is the LP that is
+    // expensive, not the stored basis that is bad. cdc7-4-3-2 behaves the same
+    // way (65s warm, 75s cold, neither optimal). Strengthening on both takes
+    // 0.00s and reproduces Cbc's 0 extended / 0 dominated exactly, so the LP is
+    // the only slow part and capping it costs nothing but the reduced costs.
+    if (lpSeconds > 0.0)
+      lp->setMaximumSeconds(lpSeconds);
 
     const double t0 = wallClock();
-    si.initialSolve();
+    if (haveBasis) {
+      si.setHintParam(OsiDoPresolveInResolve, false, OsiHintDo);
+      si.setHintParam(OsiDoDualInResolve, true, OsiHintDo);
+      si.resolve();
+    } else {
+      si.setHintParam(OsiDoDualInInitial, true, OsiHintDo);
+      si.initialSolve();
+    }
     warmStartTime = wallClock() - t0;
+    warmStartIters = si.getIterationCount();
+
+    if (haveBasis && si.isProvenOptimal() && warmStartIters > 0 && !quiet) {
+      fprintf(stderr, "WARNING: %s: warm start took %d iterations; the captured "
+                      "basis did not survive, so this is a different vertex\n",
+        baseName(stem).c_str(), warmStartIters);
+    }
 
     if (!si.isProvenOptimal()) {
       // An error rather than a warning: the fixture says an optimal LP was
       // available, so failing to reach it means methods 4/5 would silently
       // become 2 and the run would measure something other than what was asked.
-      fprintf(stderr, "ERROR: LP not optimal after warm start (%s); reduced costs "
-                      "unavailable, ext-method %lu would downgrade to 2\n",
-        stem.c_str(), (unsigned long)extMethod);
+      fprintf(stderr, "ERROR: LP not optimal after warm start (%s) in %.1fs; "
+                      "reduced costs unavailable, ext-method %lu would downgrade "
+                      "to 2. Raise --lp-seconds, or use --no-lp to measure "
+                      "strengthening without them.\n",
+        stem.c_str(), warmStartTime, (unsigned long)extMethod);
       return 1;
     }
   } else if (!quiet) {
-    fprintf(stderr, "NOTE: %s captured without an optimal LP; not solving one "
-                    "(pass --force-lp to override)\n",
-      baseName(stem).c_str());
+    if (noLp)
+      fprintf(stderr, "NOTE: %s: --no-lp, so ext-method %lu runs without reduced "
+                      "costs (4 and 5 downgrade to 2)\n",
+        baseName(stem).c_str(), (unsigned long)extMethod);
+    else
+      fprintf(stderr, "NOTE: %s captured without an optimal LP; not solving one "
+                      "(pass --force-lp to override)\n",
+        baseName(stem).c_str());
   }
 
   // What CglCliqueStrengthening will actually use, after its own downgrade.
@@ -426,15 +593,15 @@ int main(int argc, char *argv[])
     printf("%s\n", CSV_HEADER);
 
   printf("%s,%lu,%lu,%d,%d,%d,%.6f,%d,%d,%d,%d,%.15g,%.15g,%.6g,%.6g,%d,%.6f,%d,"
-         "%.6f,%.6f,%lu,%lu,%lu,%.10f\n",
+         "%.6f,%d,%.6f,%lu,%lu,%lu,%.10f,%d,%.6f\n",
     baseName(stem).c_str(), (unsigned long)extMethod, (unsigned long)effMethod,
     (int)wantLp, extended, dominated,
     strTime, rowsBefore, si.getNumRows(), nzBefore, si.getNumElements(),
     objBefore, objAfter, objImprove, objImproveRel,
     (int)boundMoved(objBefore, objImprove), resolveTime, resolveIters,
-    warmStartTime, cgraphTime,
+    warmStartTime, warmStartIters, cgraphTime,
     (unsigned long)cgNodes, (unsigned long)cgDirectConf,
-    (unsigned long)cgCliques, cgDensity);
+    (unsigned long)cgCliques, cgDensity, restoredCols, maxSeconds);
 
   return 0;
 }

@@ -520,10 +520,16 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
   }
 
   CglCliqueStrengthening clqStr(solver, handler);
+#ifdef CBC_DUMP_CLQSEP_FIXTURE
+  double clqStrSeconds = 0.0;
+#endif
   {
     double remaining = model.getMaximumSeconds() - model.getCurrentSeconds();
     if (remaining > 0.0)
       clqStr.setMaximumSeconds(remaining);
+#ifdef CBC_DUMP_CLQSEP_FIXTURE
+    clqStrSeconds = remaining > 0.0 ? remaining : 0.0;
+#endif
   }
 #ifdef CBC_DUMP_CLQSEP_FIXTURE
   // Capture the clique-extension fixture, before strengthenCliques() runs: it
@@ -535,11 +541,21 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
   // counter to keep the captures apart. strengthenMode goes into the fixture
   // because the two modes ask for different extension methods -- 2 before, 4
   // after -- and 4 needs reduced costs, which only exist in the "after" state.
+  //
+  // The time limit above is recorded too, because a replay cannot infer it: it is
+  // whatever was left of the model's budget at this moment, so a fixture captured
+  // late in a run would give strengthening far less time than a default-limit
+  // replay. On the current set that potential never materialises -- replaying all
+  // 660 clqstr fixtures with the captured limit and again unbounded gave
+  // identical extended/dominated counts on every one (`same=660 limit-matters=0`),
+  // because strengthening finishes in microseconds even where the LP is slow.
+  // Recorded anyway: it costs one number, it is unrecoverable once lost, and the
+  // instance that does hit the limit is the one worth being able to explain.
   {
     static int clqStrDumpSeq = 0;
     char clqTag[64];
     sprintf(clqTag, "clqstr-%s-%d", mode.c_str(), clqStrDumpSeq++);
-    cbcDumpClqFixture(solver, clqTag, (int)strengthenMode);
+    cbcDumpClqFixture(solver, clqTag, (int)strengthenMode, clqStrSeconds);
   }
 #endif
   clqStr.strengthenCliques(strengthenMode);

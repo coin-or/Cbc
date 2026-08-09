@@ -4392,6 +4392,12 @@ int CbcSolver::preprocess(
     }
   }
   babModel_->assignSolver(solver2);
+  /* assignSolver does not carry the cutoff over, so the new solver still
+     has the dual objective limit of the model preprocessing started from.
+     branchAndBound asserts that the two agree for a maximization model -
+     re-apply the cutoff we just set from the incumbent. */
+  if (model_.bestSolution())
+    babModel_->setCutoff(babModel_->getCutoff());
   babModel_->setOriginalColumns(process.originalColumns(),
     truncateColumns);
   babModel_->initialSolve();

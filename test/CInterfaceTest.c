@@ -1240,6 +1240,83 @@ void testDualReductionsType( enum LPReductions red ){
     free(getname);
 }
 
+/* A MIP start must never become the answer.
+
+   The cutoff derived from a MIP start is always in minimization sense, while
+   the objective handed around at that point is in the model's own sense.
+   Mixing the two put the cutoff of a maximization model on the far side of
+   the incumbent: every improving node was fathomed at the root and Cbc
+   returned the (suboptimal) MIP start, reporting it as proven optimal.  In a
+   build with assertions enabled the resulting mismatch between the cutoff and
+   the dual objective limit trips an assertion in CbcModel::branchAndBound
+   instead.  The objective of the maximization model has to be negative for
+   the wrong cutoff to exclude anything, hence the set covering model here.
+
+   sense       -1 maximize, +1 minimize (same model, negated objective)
+   fromFile    pass the start through a *.before.mst file (used before
+               preprocessing) instead of Cbc_setMIPStart (used after it)
+   preprocess  value for the "preprocess" parameter, NULL for the default */
+void testMIPStart(double sense, char fromFile, const char *preprocess) {
+
+    /* min cost cover: 2x0 + 8x1 + 4x2 + 2x3 + 5x4 >= 10, all binary.
+       Cheapest cover is x1 = x2 = 1 at cost 5 */
+    CoinBigIndex start[] = {0, 1, 2, 3, 4, 5};
+    int rowindex[] = {0, 0, 0, 0, 0};
+    double value[] = {2, 8, 4, 2, 5};
+    double collb[] = {0, 0, 0, 0, 0};
+    double colub[] = {1, 1, 1, 1, 1};
+    double cost[] = {5, 3, 2, 7, 4};
+    double rowlb[] = {10};
+    double rowub[] = {INFINITY};
+    /* feasible but clearly suboptimal: x1 = x3 = 1, cost 10 */
+    double msValues[] = {0, 1, 0, 1, 0};
+    const char *msNames[] = {"x0", "x1", "x2", "x3", "x4"};
+    const char *fileName = "cbctest.before.mst";
+    double obj[5];
+    double expected = 5.0 * sense;
+    Cbc_Model *model = Cbc_newModel();
+    FILE *f;
+    int i;
+
+    /* maximizing the negated cost keeps the objective negative */
+    for (i = 0; i < 5; i++)
+        obj[i] = sense * cost[i];
+
+    Cbc_loadProblem(model, 5, 1, start, rowindex, value, collb, colub, obj, rowlb, rowub);
+    Cbc_setObjSense(model, sense);
+    for (i = 0; i < 5; i++) {
+        Cbc_setColName(model, i, (char *) msNames[i]);
+        Cbc_setInteger(model, i);
+    }
+
+    if (fromFile) {
+        f = fopen(fileName, "w");
+        assert(f != NULL);
+        fprintf(f, "Stopped on iterations - objective value %g\n", 10.0 * sense);
+        for (i = 0; i < 5; i++)
+            fprintf(f, "%d %s %g\n", i, msNames[i], msValues[i]);
+        fclose(f);
+        Cbc_setParameter(model, "mipstart", fileName);
+    } else {
+        Cbc_setMIPStart(model, 5, msNames, msValues);
+    }
+    if (preprocess)
+        Cbc_setParameter(model, "preprocess", preprocess);
+    Cbc_setParameter(model, "log", "0");
+
+    Cbc_solve(model);
+
+    if (fromFile)
+        remove(fileName);
+
+    assert(Cbc_isProvenOptimal(model));
+    /* the MIP start (cost 10) must have been improved on */
+    assert(fabs(Cbc_getObjValue(model) - expected) < 1e-6);
+    assert(fabs(Cbc_getBestPossibleObjValue(model) - expected) < 1e-6);
+
+    Cbc_deleteModel(model);
+}
+
 int main() {
     printf("\nStarting C Interface test.\n\n");
     char buildInfo[1024];
@@ -1273,6 +1350,13 @@ int main() {
      * lazy constraints */
     testTSPUlysses22( 1 );
     testTSPUlysses22( 0 );
+
+    printf("MIP start test\n");
+    testMIPStart(-1.0, 0, NULL);  /* maximize, start applied after preprocessing */
+    testMIPStart(-1.0, 0, "off"); /* maximize, no preprocessing */
+    testMIPStart(-1.0, 1, NULL);  /* maximize, start applied before preprocessing */
+    testMIPStart(1.0, 0, NULL);   /* same model minimized, must still work */
+    testMIPStart(1.0, 1, NULL);
 
     printf("Dual reduction type test\n");
     testDualReductionsType(LPR_Default);

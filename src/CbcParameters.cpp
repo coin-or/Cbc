@@ -108,6 +108,37 @@ void CbcParameters::init(int strategy){
   bab_.haveAnswer_ = false;
   bab_.answerSolver_ = 0;
 
+  // Bare on/off-mode scalars. These mirror the CbcParam keyword defaults set
+  // further below (setDefaults()/setDefault() calls), but must also be given
+  // a real value here: leaving them uninitialized means every later copy
+  // (CbcParameters::operator=(), used on every CbcMain1() invocation) reads
+  // uninitialized memory, which is undefined behaviour and reliably aborts
+  // under UndefinedBehaviorSanitizer (invalid load for enum type OnOffMode).
+  CPXMode_ = CbcParameters::ParamOff;
+  doHeuristicMode_ = CbcParameters::ParamOff;
+  importErrorsMode_ = CbcParameters::ParamOff;
+  messagePrefixMode_ = CbcParameters::ParamOff;
+  preProcNamesMode_ = CbcParameters::ParamOn;
+  SOSMode_ = CbcParameters::ParamOff;
+  useSolutionMode_ = CbcParameters::ParamOff;
+
+  // Same story for these bare enum-mode scalars: each mirrors a CbcParam
+  // keyword default set below (setup()/setDefault()), but was never actually
+  // assigned here, leaving them uninitialized (UB on every later copy).
+  commandDisplayMode_ = CbcParameters::displayAll;    // "more" (default)
+  clqStrMode_ = CbcParameters::ClqStrBoth;            // "both"
+  branchPriority_ = CbcParameters::BPOff;             // "off"
+  checkTimeMode_ = CbcParameters::CHECKmore;          // "often"
+  cutoffMode_ = CbcParameters::COOff;                 // "off"
+  intPrintMode_ = CbcParameters::PMNormal;            // "normal"
+  nodeStrategy_ = CbcParameters::NSHybrid;            // "hybrid"
+  orbitalStrategy_ = CbcParameters::OBOff;            // "off"
+  sosStrategy_ = CbcParameters::SOSOff;               // "off"
+  strategyMode_ = CbcParameters::StrategyDefault;     // "default"
+  clockType_ = CbcParameters::ClockElapsed;           // "elapsed"
+  cgraphMode_ = CbcParameters::CGraphOn;              // "on"
+  lpMethod_ = CbcParameters::LPAuto;                  // "auto"
+
   preProcess_ = CbcParameters::IPPSOS;
   cutDepth_ = -1;
 

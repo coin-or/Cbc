@@ -44,7 +44,8 @@ test: cbc_validate_sol$(EXEEXT)
 # command line for any instance. See `mip-c-solve --help` for usage.
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
-	lazy-constraint-test mipstart-test coefstr-test bkclique-bench clqext-bench
+	lazy-constraint-test mipstart-test coefstr-test bkclique-bench clqext-bench \
+	zerohalf-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -255,3 +256,26 @@ bkclique_bench_LDADD = ../src/libCbc.la
 clqext_bench_SOURCES = clqext-bench.cpp
 
 clqext_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#        0-1/2 separation replay benchmark (measurement tool)          #
+########################################################################
+#
+# zerohalf-bench replays one CglZeroHalf separation call captured from Cbc by
+# CbcZeroHalfFixtureDump.hpp, so an experiment on the 0-1/2 algorithm costs
+# milliseconds instead of a preprocess plus a root LP.
+#
+# It loads no auxiliary structure, and that is faithful rather than a shortcut:
+# CglZeroHalf::refreshSolver() rebuilds every array it uses from the solver on
+# each call, so reconstructing from the model is exactly what Cbc does. Contrast
+# bkclique-bench, which must load a serialized conflict graph because Cbc caches
+# a stale one.
+#
+# --max-pairs=0 is the control flag: it disables the O(cnt^3) pair-weakening
+# stage, so the difference against the default prices that stage exactly.
+#
+# Not part of the regression suite; it is a measurement tool.
+
+zerohalf_bench_SOURCES = zerohalf-bench.cpp
+
+zerohalf_bench_LDADD = ../src/libCbc.la

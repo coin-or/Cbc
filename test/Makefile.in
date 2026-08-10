@@ -100,7 +100,7 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	mip-debug-cuts$(EXEEXT) lp-relaxation-test$(EXEEXT) \
 	lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
 	coefstr-test$(EXEEXT) bkclique-bench$(EXEEXT) \
-	clqext-bench$(EXEEXT)
+	clqext-bench$(EXEEXT) zerohalf-bench$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -127,6 +127,9 @@ bkclique_bench_DEPENDENCIES = ../src/libCbc.la
 am_clqext_bench_OBJECTS = clqext-bench.$(OBJEXT)
 clqext_bench_OBJECTS = $(am_clqext_bench_OBJECTS)
 clqext_bench_DEPENDENCIES = ../src/libCbc.la
+am_zerohalf_bench_OBJECTS = zerohalf-bench.$(OBJEXT)
+zerohalf_bench_OBJECTS = $(am_zerohalf_bench_OBJECTS)
+zerohalf_bench_DEPENDENCIES = ../src/libCbc.la
 am_coefstr_test_OBJECTS = coefstr-test.$(OBJEXT)
 coefstr_test_OBJECTS = $(am_coefstr_test_OBJECTS)
 coefstr_test_DEPENDENCIES = ../src/libCbc.la
@@ -162,6 +165,7 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/cbc_validate_sol.Po \
 	./$(DEPDIR)/bkclique-bench.Po ./$(DEPDIR)/clqext-bench.Po \
+	./$(DEPDIR)/zerohalf-bench.Po \
 	./$(DEPDIR)/coefstr-test.Po \
 	./$(DEPDIR)/lazy-constraint-test.Po \
 	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po \
@@ -189,7 +193,7 @@ SOURCES = $(cbc_validate_sol_SOURCES) $(coefstr_test_SOURCES) \
 	$(lazy_constraint_test_SOURCES) $(lp_relaxation_test_SOURCES) \
 	$(mip_c_solve_SOURCES) $(mip_debug_cuts_SOURCES) \
 	$(mipstart_test_SOURCES) $(bkclique_bench_SOURCES) \
-	$(clqext_bench_SOURCES)
+	$(clqext_bench_SOURCES) $(zerohalf_bench_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -535,6 +539,8 @@ bkclique_bench_SOURCES = bkclique-bench.cpp
 bkclique_bench_LDADD = ../src/libCbc.la
 clqext_bench_SOURCES = clqext-bench.cpp
 clqext_bench_LDADD = ../src/libCbc.la
+zerohalf_bench_SOURCES = zerohalf-bench.cpp
+zerohalf_bench_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:
@@ -585,6 +591,10 @@ clqext-bench$(EXEEXT): $(clqext_bench_OBJECTS) $(clqext_bench_DEPENDENCIES) $(EX
 	@rm -f clqext-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clqext_bench_OBJECTS) $(clqext_bench_LDADD) $(LIBS)
 
+zerohalf-bench$(EXEEXT): $(zerohalf_bench_OBJECTS) $(zerohalf_bench_DEPENDENCIES) $(EXTRA_zerohalf_bench_DEPENDENCIES) 
+	@rm -f zerohalf-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(zerohalf_bench_OBJECTS) $(zerohalf_bench_LDADD) $(LIBS)
+
 coefstr-test$(EXEEXT): $(coefstr_test_OBJECTS) $(coefstr_test_DEPENDENCIES) $(EXTRA_coefstr_test_DEPENDENCIES) 
 	@rm -f coefstr-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(coefstr_test_OBJECTS) $(coefstr_test_LDADD) $(LIBS)
@@ -618,6 +628,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc_validate_sol.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bkclique-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clqext-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zerohalf-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coefstr-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lazy-constraint-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lp-relaxation-test.Po@am__quote@ # am--include-marker
@@ -755,6 +766,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
 	-rm -f ./$(DEPDIR)/bkclique-bench.Po
 	-rm -f ./$(DEPDIR)/clqext-bench.Po
+	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
 	-rm -f ./$(DEPDIR)/coefstr-test.Po
 	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
@@ -809,6 +821,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
 	-rm -f ./$(DEPDIR)/bkclique-bench.Po
 	-rm -f ./$(DEPDIR)/clqext-bench.Po
+	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
 	-rm -f ./$(DEPDIR)/coefstr-test.Po
 	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po

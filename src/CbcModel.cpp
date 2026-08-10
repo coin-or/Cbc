@@ -68,6 +68,7 @@ extern int gomory_try;
 #include "OsiClpSolverInterface.hpp"
 
 #include "CbcClqFixtureDump.hpp"
+#include "CbcZeroHalfFixtureDump.hpp"
 #include "CbcEventHandler.hpp"
 
 #include "CbcBranchActual.hpp"
@@ -9821,6 +9822,14 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     // pass later the matrix has grown rows and the LP has moved.
     if (currentPassNumber_ == 1 && !node && !parentModel_)
       cbcDumpClqFixture(solver_, "sep");
+#endif
+#ifdef CBC_DUMP_ZEROHALF_FIXTURE
+    // Capture the 0-1/2 separation fixture at the same point, and for the same
+    // reason: CglZeroHalf::generateCuts reads the matrix, the column bounds and
+    // the LP solution, and all three are consistent here only. One pass later
+    // the cuts just added have changed the matrix and moved the LP.
+    if (currentPassNumber_ == 1 && !node && !parentModel_)
+      cbcDumpZeroHalfFixture(solver_, "zh");
 #endif
 #if 0 // def CBC_LAGRANGEAN_SOLVERS
     if ((numberTries%20)==-1 && !parentModel_ && (moreSpecialOptions2_&(268435456|536870912)) !=0 && !node) {

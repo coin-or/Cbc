@@ -704,6 +704,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::SINGLETONBOUNDS]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
   parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
   parameters_[CbcParam::COEFSTRENGTHENING]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::ROWREDUCTIONS]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::PREPROCNAMES]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::DOHEURISTIC]->setTopic("Heuristics");
   parameters_[CbcParam::USESOLUTION]->setTopic("Heuristics");
@@ -867,6 +868,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::MESSAGES]->setDefault("off");
      parameters_[CbcParam::PREPROCNAMES]->setDefault("on");
      parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setDefault("on");
+     parameters_[CbcParam::ROWREDUCTIONS]->setDefault("on");
      parameters_[CbcParam::SINGLETONBOUNDS]->setDefault("on");
      parameters_[CbcParam::SOS]->setDefault("off");
      parameters_[CbcParam::USESOLUTION]->setDefault("off");
@@ -2720,6 +2722,26 @@ void CbcParameters::addCbcSolverBoolParams() {
       "and leaves the model callbacks see intact. Requires "
       "-preRootLPStrenghtening to be on (or one of the LP-only commands, "
       "which run the phase unconditionally).");
+
+  parameters_[CbcParam::ROWREDUCTIONS]->setup(
+      "rowRed!uctions",
+      "Whether to remove redundant rows before the root LP",
+      "When on (the default), the pre-root-LP strengthening phase removes "
+      "rows that cannot constrain the problem: rows all of whose columns are "
+      "fixed, and rows that are duplicates or scalar multiples of another row "
+      "(the survivor inherits the intersection of the two rows' bounds). "
+      "Candidates are found with a scale-invariant row hash, so the cost is "
+      "one pass over the nonzeros plus one sort of the rows, and every "
+      "candidate pair is verified coefficient by coefficient before anything "
+      "is deleted. The smaller model is then seen by the root LP, the "
+      "conflict graph and every cut round. "
+      "Unlike the phase's other steps this one applies to MIPs only: it "
+      "deletes rows, a deleted row has no dual value, and there is no "
+      "postsolve at this point to recover one. Cbc reports no duals for a "
+      "MIP, so this is free on the branch-and-bound path, but it is skipped "
+      "for the LP-only commands (-solveContinuous, -dualSimplex, "
+      "-primalSimplex, -barrier) whatever this parameter says. Requires "
+      "-preRootLPStrenghtening to be on.");
 
   parameters_[CbcParam::USESOLUTION]->setup(
       "force!Solution", "Whether to use given solution as crash for BAB",

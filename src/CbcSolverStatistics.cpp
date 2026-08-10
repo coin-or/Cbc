@@ -155,7 +155,8 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
                << "nodes,iterations,rows,columns,processed_rows,"
                << "processed_columns,cgraph_time,cgraph_density,"
                << "clqstr_extended,clqstr_dominated,clqstr_time,"
-               << "coefstr_changed,coefstr_rows,coefstr_time";
+               << "coefstr_changed,coefstr_rows,coefstr_time,"
+               << "rowred_fixed,rowred_duplicate,rowred_parallel,rowred_time";
   for (const std::string &gn : finalGenerators)
     headerStream << ',' << gn << "_cuts," << gn << "_time";
   headerStream << ",runtime_options";
@@ -181,14 +182,19 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
              << ',' << formatDouble(cgraph_time, 2, std::ios_base::fixed)
              << ',' << formatDouble(cgraph_density, 6)
              << ',' << clqstr_extended << ',' << clqstr_dominated
-             // Six decimals, not the two the other timings use: both of these
+             // Six decimals, not the two the other timings use: these
              // pre-root-LP steps are sub-millisecond by design (coefficient
              // tightening averages 0.026 ms over the mip-sanity corpus, 2.0 ms
              // at worst), so a %.2f column would read 0.00 on every instance
              // and the timing would be reported without being recorded.
              << ',' << formatDouble(clqstr_time, 6, std::ios_base::fixed)
              << ',' << coefstr_changed << ',' << coefstr_rows
-             << ',' << formatDouble(coefstr_time, 6, std::ios_base::fixed);
+             << ',' << formatDouble(coefstr_time, 6, std::ios_base::fixed)
+             << ',' << rowred_fixed << ',' << rowred_duplicate
+             << ',' << rowred_parallel
+             // Six decimals for the same reason as the two timings above: this
+             // step is sub-millisecond by design.
+             << ',' << formatDouble(rowred_time, 6, std::ios_base::fixed);
 
   // Output generator cuts/time aligned to the canonical set; 0/0.0 for any
   // generator not active in this particular run.

@@ -30,6 +30,7 @@
 #include "CbcInstanceFeatures.hpp"
 #include "CbcBoundPropagation.hpp"
 #include "CbcCoefficientStrengthening.hpp"
+#include "CbcRowReductions.hpp"
 #include "CbcPostprocessRepair.hpp"
 
 #if defined(NEW_DEBUG_AND_FILL) || defined(CLP_MALLOC_STATISTICS)
@@ -1402,6 +1403,48 @@ void CbcSolver::strengthenCoefficients(OsiSolverInterface *solverIn)
   }
 }
 
+// Runs the fast row reductions (per -rowReductions) on `solver` in place:
+// removes rows all of whose columns are fixed, and collapses duplicate and
+// parallel (scaled) rows into one, merging their bounds. Thin wrapper around
+// CbcRowReductions so the parameter read, statistics and log line live next to
+// the phase's other steps.
+//
+// Returns false only if the reductions proved the model infeasible; "nothing
+// found" is a successful outcome and returns true.
+//
+// MIP-only: see preRootLPStrenghtening()'s allowRowRemoval parameter, which is
+// what actually decides whether this is called.
+bool CbcSolver::reduceRows(OsiSolverInterface *solverIn)
+{
+  if (!parameters_[CbcParam::ROWREDUCTIONS]->modeVal())
+    return true;
+
+  OsiSolverInterface *solver = solverIn ? solverIn : model_.solver();
+  const int logLevel = model_.messageHandler()->logLevel();
+
+  CbcRowReductions rr;
+  rr.run(solver, model_.messageHandler(), logLevel);
+
+  statistics_.rowred_fixed = rr.nFixedRows();
+  statistics_.rowred_duplicate = rr.nDuplicateRows();
+  statistics_.rowred_parallel = rr.nParallelRows();
+  statistics_.rowred_time = rr.timeUsed();
+
+  if (logLevel >= 1) {
+    if (rr.isInfeasible())
+      printf("  Row reductions: infeasible (%.2fs)\n", rr.timeUsed());
+    else if (rr.nRowsRemoved() || rr.nBoundsTightened())
+      printf("  Row reductions: %d rows removed (%d all-fixed, %d duplicate, "
+             "%d parallel), %d row bounds tightened (%.2fs)\n",
+        rr.nRowsRemoved(), rr.nFixedRows(), rr.nDuplicateRows(),
+        rr.nParallelRows(), rr.nBoundsTightened(), rr.timeUsed());
+    else
+      printf("  Row reductions: no changes (%.2fs)\n", rr.timeUsed());
+  }
+
+  return !rr.isInfeasible();
+}
+
 // Groups bound propagation + clique merging "before" into a single,
 // explicitly callable pre-root-LP strengthening action. This used to be
 // steps 1-2 of applyLpMethod(), run unconditionally on every call
@@ -1414,7 +1457,8 @@ void CbcSolver::strengthenCoefficients(OsiSolverInterface *solverIn)
 // Deliberately does NOT resolve/re-solve the LP: clique merging always runs
 // in "before" mode here (no resolve) -- the actual LP optimization is left
 // entirely to applyLpMethod()/solveInitialLp() downstream.
-bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn)
+bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn,
+  bool allowRowRemoval)
 {
   OsiSolverInterface *solver = solverIn ? solverIn : model_.solver();
 
@@ -1457,6 +1501,24 @@ bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn)
   // integer-feasible set exactly, which is why the conflict graph built in
   // step 2 stays valid and is deliberately not rebuilt.
   strengthenCoefficients(solver);
+
+  // ─── 4. Row reductions (MIP only) ────────────────────────────────────────
+  // Removes all-fixed rows and collapses duplicate/parallel rows. Runs last so
+  // that it sees the fixings from step 1 (which is what creates most all-fixed
+  // rows) and the rewritten coefficients from step 3 (which can make two rows
+  // that merely resembled each other exactly parallel).
+  //
+  // Gated on allowRowRemoval because this step *deletes* rows, and a deleted
+  // row has no dual value -- there is no postsolve at this point in the
+  // pipeline to recover one. Cbc reports no duals for a MIP, so the BAB
+  // pipeline passes true; the LP-only commands (-solveContinuous,
+  // -dualSimplex, -primalSimplex, -barrier) do report duals and keep the
+  // default false. The default is the safe value on purpose: forgetting to
+  // pass the flag loses a reduction, never a dual value.
+  if (allowRowRemoval) {
+    if (!reduceRows(solver))
+      return false;
+  }
 
   return true;
 }
@@ -1869,6 +1931,10 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   // Unlike the BAB pipeline's babPreRootLPStrenghtening(), this is not
   // gated by -preRootLPStrenghtening -- these are LP-only actions, so the
   // phase always runs for them, same as before this refactor.
+  //
+  // allowRowRemoval is left at its default false: these commands report dual
+  // values, and the row-removal step has no postsolve to recover a dual for a
+  // row it deleted.
   if (!preRootLPStrenghtening(model_.solver())) {
     // Infeasibility proved by bound propagation — mark model.
     model_.setProblemStatus(0);
@@ -7089,7 +7155,10 @@ int CbcSolver::babPreRootLPStrenghtening(int logLevel, int cbcLogLevel)
     }
   }
 
-  if (!preRootLPStrenghtening(model_.solver())) {
+  // allowRowRemoval=true: this is the branch-and-bound path, and Cbc reports no
+  // dual values for a MIP, so the row-removal step is safe here. It is *not*
+  // safe on the LP-only path -- see preRootLPStrenghtening()'s step 4.
+  if (!preRootLPStrenghtening(model_.solver(), true)) {
     // Mirrors the infeasibility handling previously done in solveInitialLp()
     // when applyLpMethod() returned -1 from this same bound-propagation
     // step: mark the model infeasible so the solution writer reports

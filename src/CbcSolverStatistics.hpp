@@ -101,6 +101,18 @@ public:
   /** Coefficient tightening time (before LP) */
   double coefstr_time = 0.0;
 
+  /** Row reductions: rows removed because all their columns were fixed */
+  int rowred_fixed = 0;
+
+  /** Row reductions: rows removed as exact duplicates of another row */
+  int rowred_duplicate = 0;
+
+  /** Row reductions: rows removed as scalar multiples of another row */
+  int rowred_parallel = 0;
+
+  /** Row reduction time (before LP) */
+  double rowred_time = 0.0;
+
   /** Number of cut generators */
   int number_generators = 0;
 

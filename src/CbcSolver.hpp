@@ -658,9 +658,30 @@ public:
   */
   void strengthenCoefficients(OsiSolverInterface *solver = nullptr);
 
+  /** Remove redundant rows of \p solver in place (per -rowReductions): rows
+      all of whose columns are fixed, and rows that are duplicates or scalar
+      multiples of another row (whose bounds are merged into the survivor).
+
+      Does nothing when -rowReductions is off.
+
+      **MIP only.** This step deletes rows, and there is no postsolve at this
+      point in the pipeline to recover a dual value for a deleted row. Cbc
+      reports no duals for a MIP, so it is free on the branch-and-bound path,
+      but it must not run for the LP-only commands. That decision is made by
+      preRootLPStrenghtening()'s \c allowRowRemoval parameter, which is what
+      gates the only call to this method.
+
+      \param solver  Solver to reduce. Pass nullptr (the default) to
+                      operate on this CbcSolver's own model_.solver().
+      \return true if the problem remains feasible (this includes the common
+              "nothing found" case), false if infeasibility was proved.
+  */
+  bool reduceRows(OsiSolverInterface *solver = nullptr);
+
   /** Groups bound propagation (strengthenBounds()), clique merging
-      "before" (strengthenCliques()) and coefficient tightening
-      (strengthenCoefficients()) into a single, explicitly callable
+      "before" (strengthenCliques()), coefficient tightening
+      (strengthenCoefficients()) and -- on the MIP path only -- row reductions
+      (reduceRows()) into a single, explicitly callable
       pre-root-LP strengthening action, run in place on \p solver ahead of
       the root LP relaxation solve. Deliberately does NOT resolve/re-solve
       the LP afterwards -- clique merging always runs in "before" mode here
@@ -677,11 +698,19 @@ public:
 
       \param solver  Solver to strengthen. Pass nullptr (the default) to
                       operate on this CbcSolver's own model_.solver().
+      \param allowRowRemoval  Whether the row-reduction step (reduceRows())
+                      may run, which *deletes* rows. Only safe when the caller
+                      will not report dual values, i.e. on the MIP path --
+                      babPreRootLPStrenghtening() passes true, while the
+                      LP-only commands keep the default. The default is the
+                      safe value on purpose: forgetting to pass it loses a
+                      reduction, never a dual value.
       \return true if the problem remains feasible after strengthening
               (bounds/rows updated in place on \p solver), false if
               infeasibility was proved.
   */
-  bool preRootLPStrenghtening(OsiSolverInterface *solver = nullptr);
+  bool preRootLPStrenghtening(OsiSolverInterface *solver = nullptr,
+    bool allowRowRemoval = false);
   //@}
 
   ///@name User extensions

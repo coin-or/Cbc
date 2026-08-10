@@ -99,8 +99,9 @@ host_triplet = @host@
 noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	mip-debug-cuts$(EXEEXT) lp-relaxation-test$(EXEEXT) \
 	lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
-	coefstr-test$(EXEEXT) bkclique-bench$(EXEEXT) \
-	clqext-bench$(EXEEXT) zerohalf-bench$(EXEEXT)
+	coefstr-test$(EXEEXT) rowred-test$(EXEEXT) \
+	bkclique-bench$(EXEEXT) clqext-bench$(EXEEXT) \
+	zerohalf-bench$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -148,6 +149,9 @@ mip_debug_cuts_DEPENDENCIES = ../src/libCbc.la
 am_mipstart_test_OBJECTS = mipstart-test.$(OBJEXT)
 mipstart_test_OBJECTS = $(am_mipstart_test_OBJECTS)
 mipstart_test_DEPENDENCIES = ../src/libCbc.la
+am_rowred_test_OBJECTS = rowred-test.$(OBJEXT)
+rowred_test_OBJECTS = $(am_rowred_test_OBJECTS)
+rowred_test_DEPENDENCIES = ../src/libCbc.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -169,7 +173,8 @@ am__depfiles_remade = ./$(DEPDIR)/cbc_validate_sol.Po \
 	./$(DEPDIR)/coefstr-test.Po \
 	./$(DEPDIR)/lazy-constraint-test.Po \
 	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po \
-	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mipstart-test.Po
+	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mipstart-test.Po \
+	./$(DEPDIR)/rowred-test.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -192,8 +197,9 @@ am__v_CXXLD_1 =
 SOURCES = $(cbc_validate_sol_SOURCES) $(coefstr_test_SOURCES) \
 	$(lazy_constraint_test_SOURCES) $(lp_relaxation_test_SOURCES) \
 	$(mip_c_solve_SOURCES) $(mip_debug_cuts_SOURCES) \
-	$(mipstart_test_SOURCES) $(bkclique_bench_SOURCES) \
-	$(clqext_bench_SOURCES) $(zerohalf_bench_SOURCES)
+	$(mipstart_test_SOURCES) $(rowred_test_SOURCES) \
+	$(bkclique_bench_SOURCES) $(clqext_bench_SOURCES) \
+	$(zerohalf_bench_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -496,6 +502,8 @@ mipstart_test_SOURCES = mipstart-test.cpp
 mipstart_test_LDADD = ../src/libCbc.la
 coefstr_test_SOURCES = coefstr-test.cpp
 coefstr_test_LDADD = ../src/libCbc.la
+rowred_test_SOURCES = rowred-test.cpp
+rowred_test_LDADD = ../src/libCbc.la
 
 ########################################################################
 #          Clique separation / extension offline benchmarks            #
@@ -619,6 +627,10 @@ mipstart-test$(EXEEXT): $(mipstart_test_OBJECTS) $(mipstart_test_DEPENDENCIES) $
 	@rm -f mipstart-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(mipstart_test_OBJECTS) $(mipstart_test_LDADD) $(LIBS)
 
+rowred-test$(EXEEXT): $(rowred_test_OBJECTS) $(rowred_test_DEPENDENCIES) $(EXTRA_rowred_test_DEPENDENCIES) 
+	@rm -f rowred-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(rowred_test_OBJECTS) $(rowred_test_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -635,6 +647,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-c-solve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-debug-cuts.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mipstart-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rowred-test.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -773,6 +786,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
 	-rm -f ./$(DEPDIR)/mip-debug-cuts.Po
 	-rm -f ./$(DEPDIR)/mipstart-test.Po
+	-rm -f ./$(DEPDIR)/rowred-test.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -828,6 +842,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
 	-rm -f ./$(DEPDIR)/mip-debug-cuts.Po
 	-rm -f ./$(DEPDIR)/mipstart-test.Po
+	-rm -f ./$(DEPDIR)/rowred-test.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

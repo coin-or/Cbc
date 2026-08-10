@@ -44,8 +44,8 @@ test: cbc_validate_sol$(EXEEXT)
 # command line for any instance. See `mip-c-solve --help` for usage.
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
-	lazy-constraint-test mipstart-test coefstr-test bkclique-bench clqext-bench \
-	zerohalf-bench
+	lazy-constraint-test mipstart-test coefstr-test rowred-test bkclique-bench \
+	clqext-bench zerohalf-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -209,6 +209,67 @@ mipstart_test_LDADD = ../src/libCbc.la
 coefstr_test_SOURCES = coefstr-test.cpp
 
 coefstr_test_LDADD = ../src/libCbc.la
+
+# rowred-test: targeted tests for CbcRowReductions, the row-reduction step of the
+# same pre-root-LP strengthening phase (step 4 of
+# CbcSolver::preRootLPStrenghtening(), per -rowReductions).
+#
+# The pass deletes rows that cannot constrain the problem: rows all of whose
+# columns are fixed, and rows that are duplicates or scalar multiples of another
+# row -- the survivor inheriting the intersection of the two rows' bounds. Both
+# halves are asserted, as in coefstr-test: the surviving rows and their merged
+# bounds against values worked out by hand, and no integer-feasible point lost
+# *or gained* by enumerating the whole box before and after. "Gained" matters as
+# much as "lost" here, since dropping a row is only sound if the survivor still
+# says everything the dropped row said, and a re-solve reaching the same optimum
+# would show neither.
+#
+# The negative-scale cases carry most of the weight. Scaling a row by lambda < 0
+# swaps its two bounds, and when one side is infinite the infinity has to swap
+# with them rather than be scaled -- Cbc's +/-1e20 sentinel convention makes that
+# an explicit test, unlike HiGHS's kHighsInf where the sign flip falls out of the
+# arithmetic. lambda = -1 also exercises the hash's pivot tie-break: a row and
+# its negation have equal-magnitude candidate pivots, so unless both resolve the
+# tie the same way (largest magnitude, ties broken by smallest column index) they
+# normalise to different vectors, never share a hash bucket and are never
+# compared -- which makes every "1 row removed" assertion on a lambda = -1
+# fixture a tie-break assertion too.
+#
+# Also covered: exact duplicates and duplicates whose indices arrive in a
+# different order (the per-nonzero hashes are combined order-independently
+# because CoinPackedMatrix makes no promise about index order within a vector), a
+# scale factor of 1e6, a whole parallel class collapsing to one row,
+# contradictory merged bounds (infeasible, and nothing deleted) versus bounds
+# crossing by less than the feasibility tolerance (noise, snapped to an
+# equation), duplicate and negated equations, independence from input row order,
+# idempotence under a second pass, the counters adding up, and the eight cases
+# the reduction must decline -- singletons, same support but not proportional,
+# proportional only to 1e-7, disjoint and subset supports, partly-fixed rows, a
+# model with nothing to find, and a model with no rows at all. The two end-to-end
+# fixtures are picked so that the specific plausible bug moves the reported
+# optimum: keeping the looser of two duplicate bounds reads 8 instead of 2, and
+# forgetting the negative-lambda swap reads 6 instead of 8.
+#
+# Checked by mutation, as coefstr-test was: 18 of 26 plausible wrong
+# implementations are caught, and the 8 that are not were each confirmed to be
+# *equivalent* to the original rather than an assertion gap -- for every one, a
+# sharpened variant that does break the underlying invariant is caught. Four are
+# equivalent because OsiClp normalises each row to ascending column order, so the
+# pivot tie-break, the smallest-vs-largest pivot choice, and the order-independent
+# hash combination cannot be distinguished through this interface at all (they are
+# there because CoinPackedMatrix promises no index order and the pass takes an
+# OsiSolverInterface); two are re-checks the hash seed already implies (equal
+# length, equal support); one is an early-out whose weighting is separately
+# asserted; and one only stages a deletion that is never applied. The exercise
+# was worth it for a different reason: it found a real bug, an all-fixed row
+# violated by up to 1e-6 being deleted -- turning an infeasible model into a
+# feasible-looking one -- because the removal test and the infeasibility test
+# both used the feasibility tolerance and left no sliver between them.
+# See `rowred-test --help`.
+
+rowred_test_SOURCES = rowred-test.cpp
+
+rowred_test_LDADD = ../src/libCbc.la
 
 ########################################################################
 #          Clique separation / extension offline benchmarks            #

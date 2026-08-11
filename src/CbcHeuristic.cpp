@@ -1688,8 +1688,15 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             100 * (numberNodes + 10));
 #endif
           if (numberNodes < 0) {
+            // model_'s iteration/node counters can be concurrently updated by
+            // a worker thread (under lockThread()) inside doOneNode(), so
+            // update them here under the same lock to avoid a data race
+            // (this heuristic runs on the main thread while other threads
+            // may still be active in a multi-threaded branchAndBound()).
+            model_->lockThread();
             model_->incrementIterationCount(model.getIterationCount());
             model_->incrementNodeCount(model.getNodeCount());
+            model_->unlockThread();
             // update best solution (in case ctrl-c)
             // !!! not a good idea - think a bit harder
             //model_->setMinimizationObjValue(model.getMinimizationObjValue());

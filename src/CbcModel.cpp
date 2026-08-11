@@ -5202,15 +5202,22 @@ void CbcModel::branchAndBound(int doStatistics)
               Decide if we want to do a restart.
             */
       if (saveSolver && (specialOptions_ & (512 + 32768)) != 0) {
+        // getCutoff() can be concurrently updated by a worker thread's
+        // setCutoff() call inside doOneNode(), so read it under the lock
+        // (found racing by ThreadSanitizer); lockThread()/unlockThread()
+        // are no-ops when not running in parallel mode.
+        lockThread();
+        double currentCutoff = getCutoff();
+        unlockThread();
         bool tryNewSearch = solverCharacteristics_->reducedCostsAccurate()
-          && (getCutoff() < 1.0e20 && getCutoff() < checkCutoffForRestart);
+          && (currentCutoff < 1.0e20 && currentCutoff < checkCutoffForRestart);
         int numberColumns = getNumCols();
         if (tryNewSearch) {
           // adding increment back allows current best - tiny bit weaker
-          checkCutoffForRestart = getCutoff() + getCutoffIncrement();
+          checkCutoffForRestart = currentCutoff + getCutoffIncrement();
 #if CBC_USEFUL_PRINTING > 1
           printf("after %d nodes, cutoff %g - looking\n", numberNodes_,
-            getCutoff());
+            currentCutoff);
 #endif
           saveSolver->resolve();
           double direction = saveSolver->getObjSenseInCbc();

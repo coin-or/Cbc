@@ -69,6 +69,7 @@ extern int gomory_try;
 
 #include "CbcClqFixtureDump.hpp"
 #include "CbcZeroHalfFixtureDump.hpp"
+#include "CbcProbingFixtureDump.hpp"
 #include "CbcEventHandler.hpp"
 
 #include "CbcBranchActual.hpp"
@@ -9837,6 +9838,35 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     // the cuts just added have changed the matrix and moved the LP.
     if (currentPassNumber_ == 1 && !node && !parentModel_)
       cbcDumpZeroHalfFixture(solver_, "zh");
+#endif
+#ifdef CBC_DUMP_PROBING_FIXTURE
+    // Capture the CglProbing fixture at the same point, for the same reason:
+    // probe() reads the matrix, the column bounds and the LP solution (whose
+    // fractionality decides the order of lookedAt_), and all three are mutually
+    // consistent only here.
+    //
+    // Pass 1 specifically, and not merely for consistency: CbcCutGenerator sets
+    // info->pass = currentPassNumber_ - 1, so this is the pass where pass == 0,
+    // and probe() then sets justFix = -1 and overrides maxProbe with
+    // numberThisTime_ -- every candidate column is probed. Later passes keep
+    // only every 4th. So this is both the consistent point and the expensive
+    // call, which is the one worth optimizing.
+    //
+    // The info fields are passed explicitly rather than re-derived, because they
+    // are what makes a replay reproduce CBC's call: options is assigned outright
+    // by CbcCutGenerator (not or-ed), so all of 64/2048/16384 are clear here,
+    // and strengthenRow is NULL on this path.
+    if (currentPassNumber_ == 1 && !node && !parentModel_) {
+      int probeOptions = 0;
+      for (int iGen = 0; iGen < numberCutGenerators_; ++iGen) {
+        if (dynamic_cast< CglProbing * >(generator_[iGen]->generator())) {
+          probeOptions = generator_[iGen]->globalCutsAtRoot() ? 8 : 0;
+          break;
+        }
+      }
+      cbcDumpProbingFixture(solver_, "probe", currentPassNumber_ - 1,
+        probeOptions, 0, numberRowsAtContinuous_, 0, getMaximumSeconds());
+    }
 #endif
 #if 0 // def CBC_LAGRANGEAN_SOLVERS
     if ((numberTries%20)==-1 && !parentModel_ && (moreSpecialOptions2_&(268435456|536870912)) !=0 && !node) {

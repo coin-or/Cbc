@@ -45,7 +45,7 @@ test: cbc_validate_sol$(EXEEXT)
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
 	lazy-constraint-test mipstart-test coefstr-test rowred-test bkclique-bench \
-	clqext-bench zerohalf-bench
+	clqext-bench zerohalf-bench probing-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -340,3 +340,42 @@ clqext_bench_LDADD = ../src/libCbc.la
 zerohalf_bench_SOURCES = zerohalf-bench.cpp
 
 zerohalf_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#          probing replay benchmark (measurement tool)                 #
+########################################################################
+#
+# probing-bench replays one CglProbing call captured from Cbc by
+# CbcProbingFixtureDump.hpp. Same motive as the two benches above -- reaching the
+# root cut pass costs a preprocess plus an LP -- but three things differ enough to
+# be worth stating, because each one is a way to accidentally measure a call Cbc
+# never makes.
+#
+# It reports row cuts and column cuts SEPARATELY. Probing is the only generator
+# here that returns both, and the column cuts (bound tightenings) often carry the
+# bound movement without adding a row at all. A row-cut count alone would score
+# air05 -- 0.75s, 0 row cuts, 62 column cuts -- as pure waste.
+#
+# It calls generateCutsAndModify with a CglTreeProbingInfo, not generateCuts with
+# a plain CglTreeInfo, because CbcCutGenerator.cpp:357-376 special-cases Probing
+# that way. CglTreeProbingInfo::initializeFixing returns nonzero, which switches on
+# the implication-saving path inside probe(); the plain call skips it and is
+# therefore cheaper than Cbc's. --plain-info prices that difference rather than
+# inheriting it silently.
+#
+# Its default --pass=0 is the expensive call, not merely the first: probe() sets
+# justFix = -1 when pass == 0 at the root, which overrides the maxProbe==123
+# candidate subsetting so every candidate column is probed.
+#
+# Control flag: --max-probe=0 disables probing outright (the gate is real, at
+# CglProbing.cpp:2350), leaving tighten() and the column cuts it implies, so
+# time(123) - time(0) prices probing and time(0) is the floor. Note --max-look is
+# NOT a control flag despite appearances -- probe() overwrites maxStack with a
+# hardcoded 80 -- and a positive --max-probe only permutes the candidate order
+# rather than capping it. Both are documented at length in the source.
+#
+# Not part of the regression suite; it is a measurement tool.
+
+probing_bench_SOURCES = probing-bench.cpp
+
+probing_bench_LDADD = ../src/libCbc.la

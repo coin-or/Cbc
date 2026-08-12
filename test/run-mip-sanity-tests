@@ -411,7 +411,16 @@ parse_cbc_log() {
 
   local is_optimal=0 has_solution=1
   [[ "$status_text" == Optimal* ]] && is_optimal=1
-  [[ "$status_text" == "Integer infeasible" ]] && has_solution=0
+  # has_solution must reflect whether Cbc actually printed a real incumbent
+  # ("Objective value:"), not just whether status_text happens to say
+  # "Integer infeasible" -- a "Stopped on <reason>" run with NO integer
+  # solution prints "No feasible solution found" instead of an objective
+  # line (see CbcSolver.cpp), so obj stays empty in that case too. Checking
+  # obj emptiness catches both cases; the old text-only check silently
+  # treated "Stopped ... no integer solution" runs as if a solution had
+  # been found, which fed a bogus 100-point (instead of 200-point) gap
+  # into the suite-wide average-gap aggregate.
+  [[ -z "$obj" ]] && has_solution=0
 
   echo "${status_text}|${obj}|${bound}|${gap_pct}|${nodes:-0}|${is_optimal}|${has_solution}"
 }

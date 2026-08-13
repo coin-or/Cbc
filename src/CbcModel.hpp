@@ -284,6 +284,17 @@ private:
         -1 - infeasible
     */
   int parallelCuts(CbcBaseModel *master, OsiCuts &cuts, CbcNode *node, OsiCuts &slackCuts, int lastNumberCuts);
+  /** Adjust the calling frequency of the cut generators after a round of cut
+        generation, and decide whether cuts will be generated in the tree.
+
+        Called from solveWithCuts when a full scan was requested. The scalars are
+        the values solveWithCuts captured before its cut loop ran; \p cuts may be
+        emptied here if the cuts are judged not cost-effective.
+    */
+  void tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
+    double direction, double startObjective, int numberRowsAtStart,
+    int numberColumns, CoinBigIndex numberElementsAtStart, bool feasible,
+    bool onOptimalPath);
   /** Input one node output N nodes to put on tree and optional solution update
         This should be able to operate in parallel so is given a solver and is const(ish)
         However we will need to keep an array of solver_ and bases and more

@@ -10409,43 +10409,6 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     sumChangeObjective2_ += solver_->getObjValue() * solver_->getObjSenseInCbc() - objectiveValue;
   // if ((numberNodes_%100)==0)
   // printf("XXb sum obj changed by %g\n",sumChangeObjective2_);
-  /*
-    End of cut generation loop.
-
-    Now, consider if we want to disable or adjust the frequency of use for any
-    of the cut generators. If the client specified a positive number for
-    howOften, it will never change. If the original value was negative, it'll
-    be converted to 1000000+|howOften|, and this value will be adjusted each
-    time fullScan is true. Actual cut generation is performed every
-    howOften%1000000 nodes; the 1000000 offset is just a convenient way to
-    specify that the frequency is adjustable.
-
-    During cut generation, we recorded the number of cuts produced by each
-    generator for this node. For all cuts, whichGenerator records the
-  generator that produced a cut.
-
-    TODO: All this should probably be hidden in a method of the
-  CbcCutGenerator class. lh:
-  TODO: Can the loop that scans over whichGenerator to accumulate per
-  generator counts be replaced by values in countRowCuts and
-  countColumnCuts?
-
-  << I think the answer is yes, but not the other way 'round. Row and
-     column cuts are block interleaved in whichGenerator. >>
-
-  The root is automatically a full scan interval. At the root, decide if
-  we're going to do cuts in the tree, and whether we should keep the cuts we
-  have.
-
-  Codes for willBeCutsInTree:
-  -1: no cuts in tree and currently active cuts seem ineffective; delete
-  them
-   0: no cuts in tree but currently active cuts seem effective; make them
-  into architecturals (faster than treating them as cuts)
-   1: cuts will be generated in the tree; currently active cuts remain as
-  cuts
-  -lh
-  */
 #ifdef NODE_LOG
   int fatherNum = (node == nullptr) ? -1 : node->nodeNumber();
   double value = (node == nullptr) ? -1 : node->branchingObject()->value();
@@ -10457,6 +10420,86 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   std::cout << "Node " << numberNodes_ << ", father " << fatherNum
             << ", #iterations " << solver_->getIterationCount()
             << ", sol value : " << solver_->getObjValue() << std::endl;
+#endif
+  // End of cut generation loop.
+  tuneCutGeneratorFrequency(cuts, fullScan, direction, startObjective,
+    numberRowsAtStart, numberColumns, numberElementsAtStart, feasible,
+    onOptimalPath);
+
+#ifdef CHECK_CUT_COUNTS
+  if (feasible) {
+    CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver_->getWarmStart());
+    printf("solveWithCuts: Number of rows at end (only active cuts) %d\n",
+      numberRowsAtContinuous_ + numberNewCuts_ + numberOldActiveCuts_);
+    basis->print();
+    delete basis;
+  }
+#endif
+#ifdef CHECK_KNOWN_SOLUTION
+  if (onOptimalPath && (solver_->isDualObjectiveLimitReached() || !feasible)) {
+    printf("help\n");
+  }
+#endif
+#ifdef CBC_DEBUG
+  if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
+    assert(feasible);
+#endif
+  if (clpSolver)
+    clpSolver->setSpecialOptions(saveClpOptions);
+#ifdef CBC_THREAD
+  // Get rid of all threaded stuff
+  if (master) {
+    master->stopThreads(0);
+    delete master;
+  }
+#endif
+  // make sure pointers are up to date
+  setPointers(solver_);
+
+  return feasible;
+}
+
+/*
+  Consider whether to disable or adjust the frequency of use for any of the cut
+  generators, now that a round of cut generation is over. Called from
+  solveWithCuts, only when a full scan was requested.
+
+  If the client specified a positive number for howOften, it will never change.
+  If the original value was negative, it'll be converted to 1000000+|howOften|,
+  and this value will be adjusted each time fullScan is true. Actual cut
+  generation is performed every howOften%1000000 nodes; the 1000000 offset is
+  just a convenient way to specify that the frequency is adjustable.
+
+  During cut generation, we recorded the number of cuts produced by each
+  generator for this node. For all cuts, whichGenerator records the generator
+  that produced a cut.
+
+  TODO: All this should probably be hidden in a method of the CbcCutGenerator
+  class. lh:
+  TODO: Can the loop that scans over whichGenerator to accumulate per generator
+  counts be replaced by values in countRowCuts and countColumnCuts?
+
+  << I think the answer is yes, but not the other way 'round. Row and column
+     cuts are block interleaved in whichGenerator. >>
+
+  The root is automatically a full scan interval. At the root, decide if we're
+  going to do cuts in the tree, and whether we should keep the cuts we have.
+
+  Codes for willBeCutsInTree:
+  -1: no cuts in tree and currently active cuts seem ineffective; delete them
+   0: no cuts in tree but currently active cuts seem effective; make them into
+      architecturals (faster than treating them as cuts)
+   1: cuts will be generated in the tree; currently active cuts remain as cuts
+  -lh
+*/
+void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
+  double direction, double startObjective, int numberRowsAtStart,
+  int numberColumns, CoinBigIndex numberElementsAtStart, bool feasible,
+  bool onOptimalPath)
+{
+#ifndef CHECK_KNOWN_SOLUTION
+  // onOptimalPath is read only inside CHECK_KNOWN_SOLUTION blocks below
+  (void)onOptimalPath;
 #endif
   if (fullScan && numberCutGenerators_) {
     /* If cuts just at root node then it will probably be faster to
@@ -11040,39 +11083,8 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       }
     }
   }
-
-#ifdef CHECK_CUT_COUNTS
-  if (feasible) {
-    CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver_->getWarmStart());
-    printf("solveWithCuts: Number of rows at end (only active cuts) %d\n",
-      numberRowsAtContinuous_ + numberNewCuts_ + numberOldActiveCuts_);
-    basis->print();
-    delete basis;
-  }
-#endif
-#ifdef CHECK_KNOWN_SOLUTION
-  if (onOptimalPath && (solver_->isDualObjectiveLimitReached() || !feasible)) {
-    printf("help\n");
-  }
-#endif
-#ifdef CBC_DEBUG
-  if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
-    assert(feasible);
-#endif
-  if (clpSolver)
-    clpSolver->setSpecialOptions(saveClpOptions);
-#ifdef CBC_THREAD
-  // Get rid of all threaded stuff
-  if (master) {
-    master->stopThreads(0);
-    delete master;
-  }
-#endif
-  // make sure pointers are up to date
-  setPointers(solver_);
-
-  return feasible;
 }
+
 
 // Generate one round of cuts - serial mode
 int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,

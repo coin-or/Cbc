@@ -6689,231 +6689,37 @@ CbcModel::CbcModel()
 */
 
 CbcModel::CbcModel(const OsiSolverInterface &rhs)
-  : ownership_(0x80000000)
-  , continuousSolver_(nullptr)
-  , referenceSolver_(nullptr)
-  , atSolutionSolver_(nullptr)
-  , defaultHandler_(true)
-  , emptyWarmStart_(nullptr)
-  , bestObjective_(COIN_DBL_MAX)
-  , bestPossibleObjective_(COIN_DBL_MAX)
-  , sumChangeObjective1_(0.0)
-  , sumChangeObjective2_(0.0)
-  , globalConflictCuts_(nullptr)
-  , minimumDrop_(1.0e-7)
-  , numberSolutions_(0)
-  , numberSavedSolutions_(0)
-  , maximumSavedSolutions_(0)
-  , stateOfSearch_(0)
-  , whenCuts_(-1)
-  , hotstartSolution_(nullptr)
-  , hotstartPriorities_(nullptr)
-  , numberHeuristicSolutions_(0)
-  , numberNodes_(0)
-  , lastNodeImprovingFeasSol_(-1)
-  , lastTimeImprovingFeasSol_(0)
-  , numberNodes2_(0)
-  , numberIterations_(0)
-  , numberSolves_(0)
-  , status_(-1)
-  , secondaryStatus_(-1)
-  , numberRowsAtContinuous_(0)
-  , cutoffRowNumber_(-1)
-  , maximumNumberCuts_(0)
-  , phase_(0)
-  , currentNumberCuts_(0)
-  , maximumDepth_(0)
-  , walkback_(nullptr)
-  , preProcess_(nullptr)
-  , lastNodeInfo_(nullptr)
-  , lastCut_(nullptr)
-  , lastDepth_(0)
-  , lastNumberCuts2_(0)
-  , maximumCuts_(0)
-  , lastNumberCuts_(nullptr)
-  , addedCuts_(nullptr)
-  , nextRowCut_(nullptr)
-  , currentNode_(nullptr)
-  , integerInfo_(nullptr)
-  , specialOptions_(0)
-  , moreSpecialOptions_(0)
-  , moreSpecialOptions2_(0)
-  , topOfTree_(nullptr)
-  , subTreeModel_(nullptr)
-  , heuristicModel_(nullptr)
-  , numberStoppedSubTrees_(0)
-  , presolve_(0)
-  , numberStrong_(5)
-  , numberBeforeTrust_(10)
-  , numberPenalties_(20)
-  , stopNumberIterations_(-1)
-  , penaltyScaleFactor_(3.0)
-  , numberAnalyzeIterations_(0)
-  , analyzeResults_(nullptr)
-  , numberInfeasibleNodes_(0)
-  , problemType_(0)
-  , printFrequency_(100)
-  , secsPrintFrequency_(1)
-  , lastSecPrintProgress_(0.0)
-  , numberCutGenerators_(0)
-  , generator_(nullptr)
-  , virginGenerator_(nullptr)
-  , numberHeuristics_(0)
-  , heuristic_(nullptr)
-  , lastHeuristic_(nullptr)
-  , fastNodeDepth_(-1)
-  , nodeBoundProp_(0)
-  , nodeBoundPropMaxDepth_(50)
-  , nodeBoundPropMinDepth_(5)
-  , nodeBoundPropDepthInterval_(5)
-  , eventHandler_(nullptr)
-  ,
-#ifdef CBC_HAS_NAUTY
-  symmetryInfo_(nullptr)
-  , rootSymmetryInfo_(nullptr)
-  ,
-#endif
-#ifdef CBC_PROBE_10
-  depth10Probing_(nullptr)
-  ,
-#endif
-  numberObjects_(0)
-  , object_(nullptr)
-  , ownObjects_(true)
-  , originalColumns_(nullptr)
-  , howOftenGlobalScan_(3)
-  , numberGlobalViolations_(0)
-  , numberExtraIterations_(0)
-  , numberExtraNodes_(0)
-  , numberFathoms_(0)
-  , continuousObjective_(COIN_DBL_MAX)
-  , originalContinuousObjective_(COIN_DBL_MAX)
-  , continuousInfeasibilities_(COIN_INT_MAX)
-  , maximumCutPassesAtRoot_(20)
-  , maximumCutPasses_(10)
-  , preferredWay_(0)
-  , currentPassNumber_(0)
-  , maximumWhich_(INITIAL_MAXIMUM_WHICH)
-  , maximumRows_(0)
-  , randomSeed_(-1)
-  , multipleRootTries_(0)
-  , currentDepth_(0)
-  , whichGenerator_(nullptr)
-  , maximumStatistics_(0)
-  , statistics_(nullptr)
-  , maximumDepthActual_(0)
-  , numberDJFixed_(0.0)
-  , probingInfo_(nullptr)
-  , numberFixedAtRoot_(0)
-  , numberFixedNow_(0)
-  , stoppedOnGap_(false)
-  , eventHappened_(false)
-  , numberLongStrong_(0)
-  , numberOldActiveCuts_(0)
-  , numberNewCuts_(0)
-  , searchStrategy_(-1)
-  , strongStrategy_(0)
-  , numberStrongIterations_(0)
-  , resolveAfterTakeOffCuts_(true)
-  , maximumNumberIterations_(-1)
-  , continuousPriority_(COIN_INT_MAX)
-  , numberUpdateItems_(0)
-  , maximumNumberUpdateItems_(0)
-  , updateItems_(nullptr)
-  , storedRowCuts_(nullptr)
-  , numberThreads_(0)
-  , threadMode_(0)
-  , numberGlobalCutsIn_(0)
-  , roundIntVars_(false)
-  , master_(nullptr)
-  , masterThread_(nullptr)
+  : CbcModel()
 {
-  memset(intParam_, 0, sizeof(intParam_));
-  intParam_[CbcMaxNumNode] = COIN_INT_MAX;
-  intParam_[CbcMaxNodesNotImproving] = COIN_INT_MAX;
-  intParam_[CbcMaxNumSol] = COIN_INT_MAX / 2;
-
-  memset(dblParam_, 0, sizeof(dblParam_));
-  dblParam_[CbcIntegerTolerance] = 1e-6;
-  dblParam_[CbcCutoffIncrement] = 1e-4;
-  dblParam_[CbcAllowableGap] = 1.0e-10;
-  dblParam_[CbcMaximumSeconds] = 1.0e100;
-  dblParam_[CbcMaxSecondsNotImproving] = 1.0e100;
-  dblParam_[CbcMaxMemory] = cbcDefaultMaxMemoryBytes();
-  dblParam_[CbcCurrentCutoff] = 1.0e100;
-  dblParam_[CbcOptimizationDirection] = 1.0;
-  dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
-  dblParam_[CbcCurrentMinimizationObjectiveValue] = 1.0e100;
-  strongInfo_[0] = 0;
-  strongInfo_[1] = 0;
-  strongInfo_[2] = 0;
-  strongInfo_[3] = 0;
-  strongInfo_[4] = 0;
-  strongInfo_[5] = 0;
-  strongInfo_[6] = 0;
-  solverCharacteristics_ = nullptr;
-  keepNamesPreproc = false;
-  nodeCompare_ = new CbcCompareDefault();
-  problemFeasibility_ = new CbcFeasibilityBase();
-  tree_ = new CbcTree();
-  branchingMethod_ = nullptr;
-  branchingRanker_ = nullptr;
-  cutModifier_ = nullptr;
-  strategy_ = nullptr;
-  parentModel_ = nullptr;
-  appData_ = nullptr;
+  // Everything not touched below is already set by the default constructor,
+  // which this delegates to; only the solver-derived state is added here.
   solver_ = rhs.clone();
-  ownership_ |= 0x80000000; // model now owns solver
-  handler_ = new CoinMessageHandler();
+  ownership_ = 0x80000000; // model now owns solver
   if (!solver_->defaultHandler() && solver_->messageHandler() && solver_->messageHandler()->logLevel(0) != -1000)
     passInMessageHandler(solver_->messageHandler());
   handler_->setLogLevel(2);
-  messages_ = CbcMessage();
-  // eventHandler_ = new CbcEventHandler() ;
   referenceSolver_ = solver_->clone();
-  atSolutionSolver_ = nullptr;
-  ownership_ = 0x80000000;
-  cbcColLower_ = nullptr;
-  cbcColUpper_ = nullptr;
-  cbcRowLower_ = nullptr;
-  cbcRowUpper_ = nullptr;
-  cbcColSolution_ = nullptr;
-  cbcRowPrice_ = nullptr;
-  cbcReducedCost_ = nullptr;
-  cbcRowActivity_ = nullptr;
 
   // Initialize solution and integer variable vectors
-  bestSolution_ = nullptr; // to say no solution found
-  savedSolutions_ = nullptr;
-  numberIntegers_ = 0;
   int numberColumns = solver_->getNumCols();
-  int iColumn;
   if (numberColumns) {
     // Space for current solution
     currentSolution_ = new double[numberColumns];
-    continuousSolution_ = nullptr;
     usedInSolution_ = new int[numberColumns];
     CoinZeroN(usedInSolution_, numberColumns);
-    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
       if (solver_->isInteger(iColumn))
         numberIntegers_++;
     }
-  } else {
-    // empty model
-    currentSolution_ = nullptr;
-    continuousSolution_ = nullptr;
-    usedInSolution_ = nullptr;
   }
   testSolution_ = currentSolution_;
   if (numberIntegers_) {
     integerVariable_ = new int[numberIntegers_];
     numberIntegers_ = 0;
-    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
       if (solver_->isInteger(iColumn))
         integerVariable_[numberIntegers_++] = iColumn;
     }
-  } else {
-    integerVariable_ = nullptr;
   }
 }
 

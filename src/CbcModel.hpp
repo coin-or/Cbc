@@ -67,6 +67,7 @@ class CglPreProcess;
 class OsiClpSolverInterface;
 class ClpNodeStuff;
 class CbcRootHeurOutput;
+class CbcRootHeuristicSchedule;
 
 // #define CBC_CHECK_BASIS 1
 
@@ -295,6 +296,23 @@ private:
     double direction, double startObjective, int numberRowsAtStart,
     int numberColumns, CoinBigIndex numberElementsAtStart, bool feasible,
     bool onOptimalPath);
+  /** Run the root-node heuristics after a round of cut generation.
+
+        Called from solveWithCuts; returns immediately unless we are still at the
+        root node and within the time limit. Slack cuts are removed first, then
+        either the parallel root schedule or the sequential heuristic_[] loop
+        runs, depending on useRootHeuristicSchedule_.
+    */
+  void doRootHeuristicsAfterCuts(bool feasible, CbcNode *node,
+    int numberColumns);
+  /** Add the conflict cuts found by the diving heuristics to the LP.
+
+        Called from both doRootHeuristicsAfterCuts and doHeuristicsAtRoot. Does
+        nothing if the schedule found no conflict cuts or auto-add is off. When
+        more cuts were found than conflictMaxCuts(), keeps only the most violated
+        per nonzero at the current LP solution.
+    */
+  void addDiveConflictCuts(const CbcRootHeuristicSchedule &schedule);
   /** Input one node output N nodes to put on tree and optional solution update
         This should be able to operate in parallel so is given a solver and is const(ish)
         However we will need to keep an array of solver_ and bases and more

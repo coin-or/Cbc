@@ -10298,112 +10298,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   if (feasible && solver_->isProvenOptimal())
     reducedCostFix();
   // If at root node do heuristics
-  if (!numberNodes_ && !maximumSecondsReached()) {
-    // First see if any cuts are slack
-    int numberRows = solver_->getNumRows();
-    int numberAdded = numberRows - numberRowsAtContinuous_;
-    if (numberAdded) {
-      CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver_->getWarmStart());
-      assert(basis != nullptr);
-      int *added = new int[numberAdded];
-      int nDelete = 0;
-      for (int j = numberRowsAtContinuous_; j < numberRows; j++) {
-        if (basis->getArtifStatus(j) == CoinWarmStartBasis::basic) {
-          // printf("%d slack!\n",j);
-          added[nDelete++] = j;
-        }
-      }
-      if (nDelete) {
-        solver_->deleteRows(nDelete, added);
-      }
-      delete[] added;
-      delete basis;
-    }
-    // mark so heuristics can tell
-    int savePass = currentPassNumber_;
-    currentPassNumber_ = 999999;
-    double *newSolution = new double[numberColumns];
-    double heuristicValue = getCutoff();
-    int found = -1; // no solution found
-    if (feasible) {
-      if (useRootHeuristicSchedule_ && !node) {
-        // Use parallel schedule after cuts at root
-        CbcRootHeuristicSchedule schedule(*this);
-        schedule.setMaxSolutionsPhase1(1);
-        schedule.setNumThreads(numberThreads_);
-        int nFound = schedule.run(true);
-        if (nFound > 0)
-          found = 0;
-        // Add conflict cuts discovered during diving to the LP
-        if (schedule.numConflictCuts() > 0 && schedule.conflictAutoAdd()) {
-          const OsiCuts &cuts = schedule.conflictCuts();
-          int nTotal = cuts.sizeRowCuts();
-          int maxCuts = schedule.conflictMaxCuts();
-          int nAdded = 0;
-          int totalNz = 0;
-          double objBefore = solver_->getObjValue();
-          if (nTotal <= maxCuts) {
-            for (int i = 0; i < nTotal; i++) {
-              solver_->applyRowCuts(1, &cuts.rowCut(i));
-              totalNz += cuts.rowCut(i).row().getNumElements();
-            }
-            nAdded = nTotal;
-          } else {
-            std::vector<std::pair<double, int>> scored(nTotal);
-            const double *sol = solver_->getColSolution();
-            for (int i = 0; i < nTotal; i++) {
-              const OsiRowCut &c = cuts.rowCut(i);
-              double lhs = 0.0;
-              for (int k = 0; k < c.row().getNumElements(); k++)
-                lhs += c.row().getElements()[k] * sol[c.row().getIndices()[k]];
-              scored[i] = {(lhs - c.ub()) / c.row().getNumElements(), i};
-            }
-            std::sort(scored.begin(), scored.end(), [](const std::pair<double,int> &a, const std::pair<double,int> &b) { return a.first > b.first; });
-            nAdded = std::min(nTotal, maxCuts);
-            for (int i = 0; i < nAdded; i++) {
-              solver_->applyRowCuts(1, &cuts.rowCut(scored[i].second));
-              totalNz += cuts.rowCut(scored[i].second).row().getNumElements();
-            }
-          }
-          solver_->resolve();
-          double objAfter = solver_->getObjValue();
-          if (messageHandler()->logLevel() >= 1)
-            printf("  Dive conflict cuts: %d added (avg %.1f nz), bound %.6g → %.6g\n",
-              nAdded, (double)totalNz / nAdded, objBefore, objAfter);
-        }
-      } else {
-      int whereFrom = node ? 3 : 2;
-      for (int i = 0; i < numberHeuristics_; i++) {
-        // skip if can't run here
-        if (!heuristic_[i]->shouldHeurRun(whereFrom))
-          continue;
-        // see if heuristic will do anything
-        double saveValue = heuristicValue;
-        int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);
-        if (ifSol > 0) {
-          // better solution found
-          heuristic_[i]->incrementNumberSolutionsFound();
-          found = i;
-          incrementUsed(newSolution);
-          lastHeuristic_ = heuristic_[found];
-#ifdef HEURISTIC_INFORM
-          printf("HEUR %s where %d B\n", lastHeuristic_->heuristicName(),
-            whereFrom);
-#endif
-          setBestSolution(CBC_ROUNDING, heuristicValue, newSolution);
-          whereFrom |= 8; // say solution found
-        } else {
-          heuristicValue = saveValue;
-        }
-      }
-      } // end else (sequential path)
-    }
-    currentPassNumber_ = savePass;
-    if (found >= 0) {
-      phase_ = 4;
-    }
-    delete[] newSolution;
-  }
+  doRootHeuristicsAfterCuts(feasible, node, numberColumns);
   // Up change due to cuts
   if (feasible)
     sumChangeObjective2_ += solver_->getObjValue() * solver_->getObjSenseInCbc() - objectiveValue;
@@ -10457,6 +10352,93 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   setPointers(solver_);
 
   return feasible;
+}
+
+/*
+  Run the root-node heuristics once a round of cut generation is complete.
+
+  Called from solveWithCuts. Does nothing unless we are still at the root and
+  within the time limit, so the guard lives here rather than at the call site.
+
+  Any cuts that came back slack are dropped first, then either the two-phase
+  parallel schedule or the plain sequential loop over heuristic_[] runs.
+  currentPassNumber_ is set to a sentinel across the call so that heuristics
+  can tell they are being run from here.
+*/
+void CbcModel::doRootHeuristicsAfterCuts(bool feasible, CbcNode *node,
+  int numberColumns)
+{
+  if (!numberNodes_ && !maximumSecondsReached()) {
+    // First see if any cuts are slack
+    int numberRows = solver_->getNumRows();
+    int numberAdded = numberRows - numberRowsAtContinuous_;
+    if (numberAdded) {
+      CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver_->getWarmStart());
+      assert(basis != nullptr);
+      int *added = new int[numberAdded];
+      int nDelete = 0;
+      for (int j = numberRowsAtContinuous_; j < numberRows; j++) {
+        if (basis->getArtifStatus(j) == CoinWarmStartBasis::basic) {
+          // printf("%d slack!\n",j);
+          added[nDelete++] = j;
+        }
+      }
+      if (nDelete) {
+        solver_->deleteRows(nDelete, added);
+      }
+      delete[] added;
+      delete basis;
+    }
+    // mark so heuristics can tell
+    int savePass = currentPassNumber_;
+    currentPassNumber_ = 999999;
+    double *newSolution = new double[numberColumns];
+    double heuristicValue = getCutoff();
+    int found = -1; // no solution found
+    if (feasible) {
+      if (useRootHeuristicSchedule_ && !node) {
+        // Use parallel schedule after cuts at root
+        CbcRootHeuristicSchedule schedule(*this);
+        schedule.setMaxSolutionsPhase1(1);
+        schedule.setNumThreads(numberThreads_);
+        int nFound = schedule.run(true);
+        if (nFound > 0)
+          found = 0;
+        // Add conflict cuts discovered during diving to the LP
+        addDiveConflictCuts(schedule);
+      } else {
+      int whereFrom = node ? 3 : 2;
+      for (int i = 0; i < numberHeuristics_; i++) {
+        // skip if can't run here
+        if (!heuristic_[i]->shouldHeurRun(whereFrom))
+          continue;
+        // see if heuristic will do anything
+        double saveValue = heuristicValue;
+        int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);
+        if (ifSol > 0) {
+          // better solution found
+          heuristic_[i]->incrementNumberSolutionsFound();
+          found = i;
+          incrementUsed(newSolution);
+          lastHeuristic_ = heuristic_[found];
+#ifdef HEURISTIC_INFORM
+          printf("HEUR %s where %d B\n", lastHeuristic_->heuristicName(),
+            whereFrom);
+#endif
+          setBestSolution(CBC_ROUNDING, heuristicValue, newSolution);
+          whereFrom |= 8; // say solution found
+        } else {
+          heuristicValue = saveValue;
+        }
+      }
+      } // end else (sequential path)
+    }
+    currentPassNumber_ = savePass;
+    if (found >= 0) {
+      phase_ = 4;
+    }
+    delete[] newSolution;
+  }
 }
 
 /*
@@ -17117,6 +17099,55 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
 }
 
 /*
+  Add the conflict cuts discovered by the diving heuristics to the LP.
+
+  Shared by solveWithCuts (via doRootHeuristicsAfterCuts) and doHeuristicsAtRoot,
+  which each ran an identical copy of this code. If the schedule produced more
+  cuts than conflictMaxCuts(), the cuts are ranked by violation per nonzero at
+  the current LP solution and only that many of the best are kept. The LP is
+  resolved once anything has been added.
+*/
+void CbcModel::addDiveConflictCuts(const CbcRootHeuristicSchedule &schedule)
+{
+  if (schedule.numConflictCuts() <= 0 || !schedule.conflictAutoAdd())
+    return;
+  const OsiCuts &cuts = schedule.conflictCuts();
+  int nTotal = cuts.sizeRowCuts();
+  int maxCuts = schedule.conflictMaxCuts();
+  int nAdded = 0;
+  int totalNz = 0;
+  double objBefore = solver_->getObjValue();
+  if (nTotal <= maxCuts) {
+    for (int i = 0; i < nTotal; i++) {
+      solver_->applyRowCuts(1, &cuts.rowCut(i));
+      totalNz += cuts.rowCut(i).row().getNumElements();
+    }
+    nAdded = nTotal;
+  } else {
+    std::vector<std::pair<double, int>> scored(nTotal);
+    const double *sol = solver_->getColSolution();
+    for (int i = 0; i < nTotal; i++) {
+      const OsiRowCut &c = cuts.rowCut(i);
+      double lhs = 0.0;
+      for (int k = 0; k < c.row().getNumElements(); k++)
+        lhs += c.row().getElements()[k] * sol[c.row().getIndices()[k]];
+      scored[i] = {(lhs - c.ub()) / c.row().getNumElements(), i};
+    }
+    std::sort(scored.begin(), scored.end(), [](const std::pair<double,int> &a, const std::pair<double,int> &b) { return a.first > b.first; });
+    nAdded = std::min(nTotal, maxCuts);
+    for (int i = 0; i < nAdded; i++) {
+      solver_->applyRowCuts(1, &cuts.rowCut(scored[i].second));
+      totalNz += cuts.rowCut(scored[i].second).row().getNumElements();
+    }
+  }
+  solver_->resolve();
+  double objAfter = solver_->getObjValue();
+  if (messageHandler()->logLevel() >= 1)
+    printf("  Dive conflict cuts: %d added (avg %.1f nz), bound %.6g → %.6g\n",
+      nAdded, (double)totalNz / nAdded, objBefore, objAfter);
+}
+
+/*
    For advanced applications you may wish to modify the behavior of Cbc
    e.g. if the solver is a NLP solver then you may not have an exact
    optimum solution at each step.  Information could be built into
@@ -17310,42 +17341,7 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
       schedule.setNumThreads(numberThreads_);
       schedule.run();
       // Add conflict cuts discovered during diving to the LP
-      if (schedule.numConflictCuts() > 0 && schedule.conflictAutoAdd()) {
-        const OsiCuts &cuts = schedule.conflictCuts();
-        int nTotal = cuts.sizeRowCuts();
-        int maxCuts = schedule.conflictMaxCuts();
-        int nAdded = 0;
-        int totalNz = 0;
-        double objBefore = solver_->getObjValue();
-        if (nTotal <= maxCuts) {
-          for (int i = 0; i < nTotal; i++) {
-            solver_->applyRowCuts(1, &cuts.rowCut(i));
-            totalNz += cuts.rowCut(i).row().getNumElements();
-          }
-          nAdded = nTotal;
-        } else {
-          std::vector<std::pair<double, int>> scored(nTotal);
-          const double *sol = solver_->getColSolution();
-          for (int i = 0; i < nTotal; i++) {
-            const OsiRowCut &c = cuts.rowCut(i);
-            double lhs = 0.0;
-            for (int k = 0; k < c.row().getNumElements(); k++)
-              lhs += c.row().getElements()[k] * sol[c.row().getIndices()[k]];
-            scored[i] = {(lhs - c.ub()) / c.row().getNumElements(), i};
-          }
-          std::sort(scored.begin(), scored.end(), [](const std::pair<double,int> &a, const std::pair<double,int> &b) { return a.first > b.first; });
-          nAdded = std::min(nTotal, maxCuts);
-          for (int i = 0; i < nAdded; i++) {
-            solver_->applyRowCuts(1, &cuts.rowCut(scored[i].second));
-            totalNz += cuts.rowCut(scored[i].second).row().getNumElements();
-          }
-        }
-        solver_->resolve();
-        double objAfter = solver_->getObjValue();
-        if (messageHandler()->logLevel() >= 1)
-          printf("  Dive conflict cuts: %d added (avg %.1f nz), bound %.6g → %.6g\n",
-            nAdded, (double)totalNz / nAdded, objBefore, objAfter);
-      }
+      addDiveConflictCuts(schedule);
       delete[] newSolution;
       return;
     }

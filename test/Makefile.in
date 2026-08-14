@@ -100,8 +100,9 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	mip-debug-cuts$(EXEEXT) lp-relaxation-test$(EXEEXT) \
 	lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
 	coefstr-test$(EXEEXT) rowred-test$(EXEEXT) \
-	bkclique-bench$(EXEEXT) clqext-bench$(EXEEXT) \
-	zerohalf-bench$(EXEEXT) probing-bench$(EXEEXT)
+	row-activity-test$(EXEEXT) bkclique-bench$(EXEEXT) \
+	clqext-bench$(EXEEXT) zerohalf-bench$(EXEEXT) \
+	probing-bench$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -115,25 +116,19 @@ CONFIG_HEADER = $(top_builddir)/src/config.h \
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
-am_cbc_validate_sol_OBJECTS = cbc_validate_sol.$(OBJEXT)
-cbc_validate_sol_OBJECTS = $(am_cbc_validate_sol_OBJECTS)
-cbc_validate_sol_DEPENDENCIES = ../src/libCbc.la
+am_bkclique_bench_OBJECTS = bkclique-bench.$(OBJEXT)
+bkclique_bench_OBJECTS = $(am_bkclique_bench_OBJECTS)
+bkclique_bench_DEPENDENCIES = ../src/libCbc.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_bkclique_bench_OBJECTS = bkclique-bench.$(OBJEXT)
-bkclique_bench_OBJECTS = $(am_bkclique_bench_OBJECTS)
-bkclique_bench_DEPENDENCIES = ../src/libCbc.la
+am_cbc_validate_sol_OBJECTS = cbc_validate_sol.$(OBJEXT)
+cbc_validate_sol_OBJECTS = $(am_cbc_validate_sol_OBJECTS)
+cbc_validate_sol_DEPENDENCIES = ../src/libCbc.la
 am_clqext_bench_OBJECTS = clqext-bench.$(OBJEXT)
 clqext_bench_OBJECTS = $(am_clqext_bench_OBJECTS)
 clqext_bench_DEPENDENCIES = ../src/libCbc.la
-am_zerohalf_bench_OBJECTS = zerohalf-bench.$(OBJEXT)
-zerohalf_bench_OBJECTS = $(am_zerohalf_bench_OBJECTS)
-zerohalf_bench_DEPENDENCIES = ../src/libCbc.la
-am_probing_bench_OBJECTS = probing-bench.$(OBJEXT)
-probing_bench_OBJECTS = $(am_probing_bench_OBJECTS)
-probing_bench_DEPENDENCIES = ../src/libCbc.la
 am_coefstr_test_OBJECTS = coefstr-test.$(OBJEXT)
 coefstr_test_OBJECTS = $(am_coefstr_test_OBJECTS)
 coefstr_test_DEPENDENCIES = ../src/libCbc.la
@@ -152,9 +147,18 @@ mip_debug_cuts_DEPENDENCIES = ../src/libCbc.la
 am_mipstart_test_OBJECTS = mipstart-test.$(OBJEXT)
 mipstart_test_OBJECTS = $(am_mipstart_test_OBJECTS)
 mipstart_test_DEPENDENCIES = ../src/libCbc.la
+am_probing_bench_OBJECTS = probing-bench.$(OBJEXT)
+probing_bench_OBJECTS = $(am_probing_bench_OBJECTS)
+probing_bench_DEPENDENCIES = ../src/libCbc.la
+am_row_activity_test_OBJECTS = row-activity-test.$(OBJEXT)
+row_activity_test_OBJECTS = $(am_row_activity_test_OBJECTS)
+row_activity_test_DEPENDENCIES = ../src/libCbc.la
 am_rowred_test_OBJECTS = rowred-test.$(OBJEXT)
 rowred_test_OBJECTS = $(am_rowred_test_OBJECTS)
 rowred_test_DEPENDENCIES = ../src/libCbc.la
+am_zerohalf_bench_OBJECTS = zerohalf-bench.$(OBJEXT)
+zerohalf_bench_OBJECTS = $(am_zerohalf_bench_OBJECTS)
+zerohalf_bench_DEPENDENCIES = ../src/libCbc.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -170,15 +174,14 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/OsiCbc
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/cbc_validate_sol.Po \
-	./$(DEPDIR)/bkclique-bench.Po ./$(DEPDIR)/clqext-bench.Po \
-	./$(DEPDIR)/zerohalf-bench.Po \
-	./$(DEPDIR)/probing-bench.Po \
+am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
+	./$(DEPDIR)/cbc_validate_sol.Po ./$(DEPDIR)/clqext-bench.Po \
 	./$(DEPDIR)/coefstr-test.Po \
 	./$(DEPDIR)/lazy-constraint-test.Po \
 	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po \
 	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mipstart-test.Po \
-	./$(DEPDIR)/rowred-test.Po
+	./$(DEPDIR)/probing-bench.Po ./$(DEPDIR)/row-activity-test.Po \
+	./$(DEPDIR)/rowred-test.Po ./$(DEPDIR)/zerohalf-bench.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -198,12 +201,13 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(cbc_validate_sol_SOURCES) $(coefstr_test_SOURCES) \
+SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
+	$(clqext_bench_SOURCES) $(coefstr_test_SOURCES) \
 	$(lazy_constraint_test_SOURCES) $(lp_relaxation_test_SOURCES) \
 	$(mip_c_solve_SOURCES) $(mip_debug_cuts_SOURCES) \
-	$(mipstart_test_SOURCES) $(rowred_test_SOURCES) \
-	$(bkclique_bench_SOURCES) $(clqext_bench_SOURCES) \
-	$(zerohalf_bench_SOURCES) $(probing_bench_SOURCES)
+	$(mipstart_test_SOURCES) $(probing_bench_SOURCES) \
+	$(row_activity_test_SOURCES) $(rowred_test_SOURCES) \
+	$(zerohalf_bench_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -424,8 +428,16 @@ mip_debug_cuts_LDADD = ../src/libCbc.la
 # complementary slackness), and the LP settings that must survive into a
 # reoptimize -- notably INT_PARAM_PERT_VALUE, where Clp's default is
 # "perturbation off" but Cbc's tuned default is the mild 50 that fast
-# warm-started reoptimization relies on, so a path that fails to forward it
-# is a pure LP-performance regression no objective check would catch.
+# warm-started reoptimization relies on, and DBL_PARAM_PSI, where a Positive
+# Edge pivot rule requested for the root solve must still be installed on
+# every later resolve. Both are pure LP-performance regressions that no
+# objective check would catch, since the LP still reaches the same optimum.
+# Also covers the LP time limit: Clp keeps CPU and wall-clock deadlines as two
+# independent parameters and checks both, so the limit must be armed on the one
+# INT_PARAM_ELAPSED_TIME selects (it defaults to wall clock) and only that one,
+# and "no limit" must disarm rather than arm a far-future deadline -- under LP
+# racing, enforcing a wall-clock budget as CPU time would cut it short by
+# roughly the thread count.
 # Expected LP relaxation objectives were computed independently (two external
 # solvers agreed exactly) and cross-checked against Cbc's own solve. Run as
 # part of the regression suite by run-mip-sanity-tests (--no-lp-tests skips
@@ -464,6 +476,7 @@ lp_relaxation_test_LDADD = ../src/libCbc.la
 # it). See `lazy-constraint-test --help`.
 lazy_constraint_test_SOURCES = lazy-constraint-test.cpp
 lazy_constraint_test_LDADD = ../src/libCbc.la
+
 ########################################################################
 #                  MIP-start tests (C interface)                       #
 ########################################################################
@@ -501,13 +514,126 @@ lazy_constraint_test_LDADD = ../src/libCbc.la
 # naming columns the model does not have, and a suboptimal start being improved
 # upon. Run as part of the regression suite by run-mip-sanity-tests
 # (--no-mipstart-tests skips it). See `mipstart-test --help`.
-
 mipstart_test_SOURCES = mipstart-test.cpp
 mipstart_test_LDADD = ../src/libCbc.la
+
+# coefstr-test: targeted tests for CbcCoefficientStrengthening, the coefficient
+# tightening ("big-M strengthening") step of the pre-root-LP strengthening phase
+# (step 3 of CbcSolver::preRootLPStrenghtening(), per -coefStrengthening).
+#
+# The pass shrinks an integer coefficient exceeding its row's slack down to that
+# slack and adjusts the right-hand side to compensate, which tightens the LP
+# relaxation while leaving the integer-feasible set alone. Both halves of that
+# are asserted: the new coefficient, right-hand side and LP bound against values
+# worked out by hand, and the feasible set by *enumerating* every integer point
+# of the box before and after -- a re-solve reaching the same optimum would say
+# nothing about the points the tightened system silently stopped admitting.
+# Covers the textbook big-M row, a general integer column (the case Cgl's own
+# binary-only `difference <= 1.0` gate skips, i.e. what this pass adds beyond the
+# existing implementation), negative coefficients (right-hand side off the lower
+# bound, not the upper), >= rows (the scale = -1 path), the eight rows and
+# columns the rule must decline -- range and equality rows, infinite max
+# activity, singletons, continuous, fixed and sub-unit-range columns,
+# non-positive slack -- fractional slacks used as-is and near-integral ones
+# snapped up rather than down, idempotence under a second pass, agreement between
+# the row and column matrix views (a modifyCoefficient()-based implementation
+# leaves the cached row copy stale), and the parameter end to end. Every fixture
+# is small enough that Cbc reaches the right answer with the pass disabled, so
+# each assertion was checked by mutation: all thirteen plausible wrong
+# implementations tried are caught, including the three ways the deferred
+# matrix copy (taken only once a change is known, to keep the no-change path
+# off it) could fail to be applied. Run as part of the regression suite by
+# run-mip-sanity-tests (--no-coefstr-tests skips it). See `coefstr-test --help`.
 coefstr_test_SOURCES = coefstr-test.cpp
 coefstr_test_LDADD = ../src/libCbc.la
+
+# rowred-test: targeted tests for CbcRowReductions, the row-reduction step of the
+# same pre-root-LP strengthening phase (step 4 of
+# CbcSolver::preRootLPStrenghtening(), per -rowReductions).
+#
+# The pass deletes rows that cannot constrain the problem: rows all of whose
+# columns are fixed, and rows that are duplicates or scalar multiples of another
+# row -- the survivor inheriting the intersection of the two rows' bounds. Both
+# halves are asserted, as in coefstr-test: the surviving rows and their merged
+# bounds against values worked out by hand, and no integer-feasible point lost
+# *or gained* by enumerating the whole box before and after. "Gained" matters as
+# much as "lost" here, since dropping a row is only sound if the survivor still
+# says everything the dropped row said, and a re-solve reaching the same optimum
+# would show neither.
+#
+# The negative-scale cases carry most of the weight. Scaling a row by lambda < 0
+# swaps its two bounds, and when one side is infinite the infinity has to swap
+# with them rather than be scaled -- Cbc's +/-1e20 sentinel convention makes that
+# an explicit test, unlike HiGHS's kHighsInf where the sign flip falls out of the
+# arithmetic. lambda = -1 also exercises the hash's pivot tie-break: a row and
+# its negation have equal-magnitude candidate pivots, so unless both resolve the
+# tie the same way (largest magnitude, ties broken by smallest column index) they
+# normalise to different vectors, never share a hash bucket and are never
+# compared -- which makes every "1 row removed" assertion on a lambda = -1
+# fixture a tie-break assertion too.
+#
+# Also covered: exact duplicates and duplicates whose indices arrive in a
+# different order (the per-nonzero hashes are combined order-independently
+# because CoinPackedMatrix makes no promise about index order within a vector), a
+# scale factor of 1e6, a whole parallel class collapsing to one row,
+# contradictory merged bounds (infeasible, and nothing deleted) versus bounds
+# crossing by less than the feasibility tolerance (noise, snapped to an
+# equation), duplicate and negated equations, independence from input row order,
+# idempotence under a second pass, the counters adding up, and the eight cases
+# the reduction must decline -- singletons, same support but not proportional,
+# proportional only to 1e-7, disjoint and subset supports, partly-fixed rows, a
+# model with nothing to find, and a model with no rows at all. The two end-to-end
+# fixtures are picked so that the specific plausible bug moves the reported
+# optimum: keeping the looser of two duplicate bounds reads 8 instead of 2, and
+# forgetting the negative-lambda swap reads 6 instead of 8.
+#
+# Checked by mutation, as coefstr-test was: 18 of 26 plausible wrong
+# implementations are caught, and the 8 that are not were each confirmed to be
+# *equivalent* to the original rather than an assertion gap -- for every one, a
+# sharpened variant that does break the underlying invariant is caught. Four are
+# equivalent because OsiClp normalises each row to ascending column order, so the
+# pivot tie-break, the smallest-vs-largest pivot choice, and the order-independent
+# hash combination cannot be distinguished through this interface at all (they are
+# there because CoinPackedMatrix promises no index order and the pass takes an
+# OsiSolverInterface); two are re-checks the hash seed already implies (equal
+# length, equal support); one is an early-out whose weighting is separately
+# asserted; and one only stages a deletion that is never applied. The exercise
+# was worth it for a different reason: it found a real bug, an all-fixed row
+# violated by up to 1e-6 being deleted -- turning an infeasible model into a
+# feasible-looking one -- because the removal test and the infeasibility test
+# both used the feasibility tolerance and left no sliver between them.
+# See `rowred-test --help`.
 rowred_test_SOURCES = rowred-test.cpp
 rowred_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#          Row activity/slack tests after Cbc_solve() (C interface)    #
+########################################################################
+#
+# row-activity-test: regression test for Cbc_getRowActivity()/
+# Cbc_getRowSlack() after Cbc_solve(), covering both the pure-LP dispatch
+# (no integers/SOS -- Cbc_solve() forwards straight to
+# Cbc_solveLinearProgram()) and a genuine MIP solve through branch and bound.
+#
+# The MIP case is the regression test for the "rSlk/rActv null/stale pointer
+# after MIP solve" bug: Cbc_getMIPOptimizationResults() used to hand
+# Cbc_updateSlack() cbcModel.getRowActivity() -- the row activity of
+# CbcModel's own *internal working solver*, i.e. whatever LP was last
+# resolved during the search, which is not necessarily the node that
+# produced the incumbent. That silently reports activity/slack for a
+# different point than model->x (Cbc_getColSolution()'s incumbent) rather
+# than crashing or erroring, so no objective-value check would ever catch
+# it. Every row's expected activity/slack is instead recomputed independently
+# as A * Cbc_getColSolution(), from the same (index, coefficient) pairs the
+# row was built with, and checked against what Cbc_getRowActivity()/
+# Cbc_getRowSlack() actually report. Also covers the solution-pool-disabled
+# case (INT_PARAM_MAX_SAVED_SOLS = 0), where Cbc_getMIPOptimizationResults()
+# takes its early-return branch instead. One fast in-process binary with
+# nothing to parallelize; no fixture data needed. Run as part of the
+# regression suite by run-mip-sanity-tests (--no-row-activity-tests skips
+# it). See `row-activity-test --help`.
+row_activity_test_SOURCES = row-activity-test.cpp
+row_activity_test_LDADD = ../src/libCbc.la
 
 ########################################################################
 #          Clique separation / extension offline benchmarks            #
@@ -551,8 +677,62 @@ bkclique_bench_SOURCES = bkclique-bench.cpp
 bkclique_bench_LDADD = ../src/libCbc.la
 clqext_bench_SOURCES = clqext-bench.cpp
 clqext_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#        0-1/2 separation replay benchmark (measurement tool)          #
+########################################################################
+#
+# zerohalf-bench replays one CglZeroHalf separation call captured from Cbc by
+# CbcZeroHalfFixtureDump.hpp, so an experiment on the 0-1/2 algorithm costs
+# milliseconds instead of a preprocess plus a root LP.
+#
+# It loads no auxiliary structure, and that is faithful rather than a shortcut:
+# CglZeroHalf::refreshSolver() rebuilds every array it uses from the solver on
+# each call, so reconstructing from the model is exactly what Cbc does. Contrast
+# bkclique-bench, which must load a serialized conflict graph because Cbc caches
+# a stale one.
+#
+# --max-pairs=0 is the control flag: it disables the O(cnt^3) pair-weakening
+# stage, so the difference against the default prices that stage exactly.
+#
+# Not part of the regression suite; it is a measurement tool.
 zerohalf_bench_SOURCES = zerohalf-bench.cpp
 zerohalf_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#          probing replay benchmark (measurement tool)                 #
+########################################################################
+#
+# probing-bench replays one CglProbing call captured from Cbc by
+# CbcProbingFixtureDump.hpp. Same motive as the two benches above -- reaching the
+# root cut pass costs a preprocess plus an LP -- but three things differ enough to
+# be worth stating, because each one is a way to accidentally measure a call Cbc
+# never makes.
+#
+# It reports row cuts and column cuts SEPARATELY. Probing is the only generator
+# here that returns both, and the column cuts (bound tightenings) often carry the
+# bound movement without adding a row at all. A row-cut count alone would score
+# air05 -- 0.75s, 0 row cuts, 62 column cuts -- as pure waste.
+#
+# It calls generateCutsAndModify with a CglTreeProbingInfo, not generateCuts with
+# a plain CglTreeInfo, because CbcCutGenerator.cpp:357-376 special-cases Probing
+# that way. CglTreeProbingInfo::initializeFixing returns nonzero, which switches on
+# the implication-saving path inside probe(); the plain call skips it and is
+# therefore cheaper than Cbc's. --plain-info prices that difference rather than
+# inheriting it silently.
+#
+# Its default --pass=0 is the expensive call, not merely the first: probe() sets
+# justFix = -1 when pass == 0 at the root, which overrides the maxProbe==123
+# candidate subsetting so every candidate column is probed.
+#
+# Control flag: --max-probe=0 disables probing outright (the gate is real, at
+# CglProbing.cpp:2350), leaving tighten() and the column cuts it implies, so
+# time(123) - time(0) prices probing and time(0) is the floor. Note --max-look is
+# NOT a control flag despite appearances -- probe() overwrites maxStack with a
+# hardcoded 80 -- and a positive --max-probe only permutes the candidate order
+# rather than capping it. Both are documented at length in the source.
+#
+# Not part of the regression suite; it is a measurement tool.
 probing_bench_SOURCES = probing-bench.cpp
 probing_bench_LDADD = ../src/libCbc.la
 all: all-am
@@ -593,25 +773,17 @@ clean-noinstPROGRAMS:
 	$(am__rm_f) $(noinst_PROGRAMS)
 	test -z "$(EXEEXT)" || $(am__rm_f) $(noinst_PROGRAMS:$(EXEEXT)=)
 
-cbc_validate_sol$(EXEEXT): $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_DEPENDENCIES) $(EXTRA_cbc_validate_sol_DEPENDENCIES) 
-	@rm -f cbc_validate_sol$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_LDADD) $(LIBS)
-
 bkclique-bench$(EXEEXT): $(bkclique_bench_OBJECTS) $(bkclique_bench_DEPENDENCIES) $(EXTRA_bkclique_bench_DEPENDENCIES) 
 	@rm -f bkclique-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(bkclique_bench_OBJECTS) $(bkclique_bench_LDADD) $(LIBS)
 
+cbc_validate_sol$(EXEEXT): $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_DEPENDENCIES) $(EXTRA_cbc_validate_sol_DEPENDENCIES) 
+	@rm -f cbc_validate_sol$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_LDADD) $(LIBS)
+
 clqext-bench$(EXEEXT): $(clqext_bench_OBJECTS) $(clqext_bench_DEPENDENCIES) $(EXTRA_clqext_bench_DEPENDENCIES) 
 	@rm -f clqext-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clqext_bench_OBJECTS) $(clqext_bench_LDADD) $(LIBS)
-
-zerohalf-bench$(EXEEXT): $(zerohalf_bench_OBJECTS) $(zerohalf_bench_DEPENDENCIES) $(EXTRA_zerohalf_bench_DEPENDENCIES) 
-	@rm -f zerohalf-bench$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(zerohalf_bench_OBJECTS) $(zerohalf_bench_LDADD) $(LIBS)
-
-probing-bench$(EXEEXT): $(probing_bench_OBJECTS) $(probing_bench_DEPENDENCIES) $(EXTRA_probing_bench_DEPENDENCIES) 
-	@rm -f probing-bench$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(probing_bench_OBJECTS) $(probing_bench_LDADD) $(LIBS)
 
 coefstr-test$(EXEEXT): $(coefstr_test_OBJECTS) $(coefstr_test_DEPENDENCIES) $(EXTRA_coefstr_test_DEPENDENCIES) 
 	@rm -f coefstr-test$(EXEEXT)
@@ -637,9 +809,21 @@ mipstart-test$(EXEEXT): $(mipstart_test_OBJECTS) $(mipstart_test_DEPENDENCIES) $
 	@rm -f mipstart-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(mipstart_test_OBJECTS) $(mipstart_test_LDADD) $(LIBS)
 
+probing-bench$(EXEEXT): $(probing_bench_OBJECTS) $(probing_bench_DEPENDENCIES) $(EXTRA_probing_bench_DEPENDENCIES) 
+	@rm -f probing-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(probing_bench_OBJECTS) $(probing_bench_LDADD) $(LIBS)
+
+row-activity-test$(EXEEXT): $(row_activity_test_OBJECTS) $(row_activity_test_DEPENDENCIES) $(EXTRA_row_activity_test_DEPENDENCIES) 
+	@rm -f row-activity-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(row_activity_test_OBJECTS) $(row_activity_test_LDADD) $(LIBS)
+
 rowred-test$(EXEEXT): $(rowred_test_OBJECTS) $(rowred_test_DEPENDENCIES) $(EXTRA_rowred_test_DEPENDENCIES) 
 	@rm -f rowred-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(rowred_test_OBJECTS) $(rowred_test_LDADD) $(LIBS)
+
+zerohalf-bench$(EXEEXT): $(zerohalf_bench_OBJECTS) $(zerohalf_bench_DEPENDENCIES) $(EXTRA_zerohalf_bench_DEPENDENCIES) 
+	@rm -f zerohalf-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(zerohalf_bench_OBJECTS) $(zerohalf_bench_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -647,18 +831,19 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc_validate_sol.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bkclique-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc_validate_sol.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clqext-bench.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zerohalf-bench.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/probing-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coefstr-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lazy-constraint-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lp-relaxation-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-c-solve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-debug-cuts.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mipstart-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/probing-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/row-activity-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rowred-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zerohalf-bench.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -787,18 +972,19 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
 	-rm -f ./$(DEPDIR)/bkclique-bench.Po
+	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
 	-rm -f ./$(DEPDIR)/clqext-bench.Po
-	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
-	-rm -f ./$(DEPDIR)/probing-bench.Po
 	-rm -f ./$(DEPDIR)/coefstr-test.Po
 	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
 	-rm -f ./$(DEPDIR)/mip-debug-cuts.Po
 	-rm -f ./$(DEPDIR)/mipstart-test.Po
+	-rm -f ./$(DEPDIR)/probing-bench.Po
+	-rm -f ./$(DEPDIR)/row-activity-test.Po
 	-rm -f ./$(DEPDIR)/rowred-test.Po
+	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -844,18 +1030,19 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
 	-rm -f ./$(DEPDIR)/bkclique-bench.Po
+	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
 	-rm -f ./$(DEPDIR)/clqext-bench.Po
-	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
-	-rm -f ./$(DEPDIR)/probing-bench.Po
 	-rm -f ./$(DEPDIR)/coefstr-test.Po
 	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
 	-rm -f ./$(DEPDIR)/mip-debug-cuts.Po
 	-rm -f ./$(DEPDIR)/mipstart-test.Po
+	-rm -f ./$(DEPDIR)/probing-bench.Po
+	-rm -f ./$(DEPDIR)/row-activity-test.Po
 	-rm -f ./$(DEPDIR)/rowred-test.Po
+	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

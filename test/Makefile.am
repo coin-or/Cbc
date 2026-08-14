@@ -44,8 +44,8 @@ test: cbc_validate_sol$(EXEEXT)
 # command line for any instance. See `mip-c-solve --help` for usage.
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
-	lazy-constraint-test mipstart-test coefstr-test rowred-test bkclique-bench \
-	clqext-bench zerohalf-bench probing-bench
+	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test \
+	bkclique-bench clqext-bench zerohalf-bench probing-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -270,6 +270,38 @@ coefstr_test_LDADD = ../src/libCbc.la
 rowred_test_SOURCES = rowred-test.cpp
 
 rowred_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#          Row activity/slack tests after Cbc_solve() (C interface)    #
+########################################################################
+#
+# row-activity-test: regression test for Cbc_getRowActivity()/
+# Cbc_getRowSlack() after Cbc_solve(), covering both the pure-LP dispatch
+# (no integers/SOS -- Cbc_solve() forwards straight to
+# Cbc_solveLinearProgram()) and a genuine MIP solve through branch and bound.
+#
+# The MIP case is the regression test for the "rSlk/rActv null/stale pointer
+# after MIP solve" bug: Cbc_getMIPOptimizationResults() used to hand
+# Cbc_updateSlack() cbcModel.getRowActivity() -- the row activity of
+# CbcModel's own *internal working solver*, i.e. whatever LP was last
+# resolved during the search, which is not necessarily the node that
+# produced the incumbent. That silently reports activity/slack for a
+# different point than model->x (Cbc_getColSolution()'s incumbent) rather
+# than crashing or erroring, so no objective-value check would ever catch
+# it. Every row's expected activity/slack is instead recomputed independently
+# as A * Cbc_getColSolution(), from the same (index, coefficient) pairs the
+# row was built with, and checked against what Cbc_getRowActivity()/
+# Cbc_getRowSlack() actually report. Also covers the smallest possible extra
+# solution pool (INT_PARAM_MAX_SAVED_SOLS = 0) -- CbcModel::numberSavedSolutions()
+# always counts the incumbent itself on top of that pool, so the same
+# activity/slack path is still exercised there. One fast in-process binary with
+# nothing to parallelize; no fixture data needed. Run as part of the
+# regression suite by run-mip-sanity-tests (--no-row-activity-tests skips
+# it). See `row-activity-test --help`.
+
+row_activity_test_SOURCES = row-activity-test.cpp
+
+row_activity_test_LDADD = ../src/libCbc.la
 
 ########################################################################
 #          Clique separation / extension offline benchmarks            #

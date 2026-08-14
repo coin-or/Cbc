@@ -204,8 +204,7 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcInstanceFeatures.lo \
 	libCbc_la-CbcBoundPropagation.lo \
 	libCbc_la-CbcCoefficientStrengthening.lo \
-	libCbc_la-CbcRowReductions.lo \
-	libCbc_la-CbcStrategy.lo \
+	libCbc_la-CbcRowReductions.lo libCbc_la-CbcStrategy.lo \
 	libCbc_la-CbcSubProblem.lo libCbc_la-CbcSymmetry.lo \
 	libCbc_la-CbcThread.lo libCbc_la-CbcTree.lo \
 	libCbc_la-CbcTreeLocal.lo libCbc_la-Cbc_C_Interface.lo \
@@ -247,7 +246,6 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo \
 	./$(DEPDIR)/libCbc_la-CbcClique.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Plo \
-	./$(DEPDIR)/libCbc_la-CbcRowReductions.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCompareEstimate.Plo \
@@ -306,6 +304,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcPartialSolutionPool.Plo \
 	./$(DEPDIR)/libCbc_la-CbcPostprocessRepair.Plo \
 	./$(DEPDIR)/libCbc_la-CbcRootHeuristicSchedule.Plo \
+	./$(DEPDIR)/libCbc_la-CbcRowReductions.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSOS.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSimpleInteger.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSimpleIntegerDynamicPseudoCost.Plo \
@@ -939,7 +938,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcClique.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcRowReductions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCompareEstimate.Plo@am__quote@ # am--include-marker
@@ -998,6 +996,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcPartialSolutionPool.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcPostprocessRepair.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcRootHeuristicSchedule.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcRowReductions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSOS.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSimpleInteger.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSimpleIntegerDynamicPseudoCost.Plo@am__quote@ # am--include-marker
@@ -1837,7 +1836,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcClique.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-CbcRowReductions.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareEstimate.Plo
@@ -1896,6 +1894,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcPartialSolutionPool.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcPostprocessRepair.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcRootHeuristicSchedule.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcRowReductions.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSOS.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSimpleInteger.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSimpleIntegerDynamicPseudoCost.Plo
@@ -1975,7 +1974,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcClique.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCoefficientStrengthening.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-CbcRowReductions.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareEstimate.Plo
@@ -2034,6 +2032,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcPartialSolutionPool.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcPostprocessRepair.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcRootHeuristicSchedule.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcRowReductions.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSOS.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSimpleInteger.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSimpleIntegerDynamicPseudoCost.Plo

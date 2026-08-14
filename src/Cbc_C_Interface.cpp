@@ -2593,10 +2593,20 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
     } /* round integer variables */
   } /* saving solution pool */
 
-  Cbc_updateSlack(model, cbcModel.getRowActivity() );
+  /* cbcModel.getRowActivity() (== solver_->getRowActivity() of CbcModel's
+     *internal* working solver) reflects whatever LP was last resolved
+     during the search -- typically the node where B&B stopped, which is
+     not necessarily the node that produced the incumbent. Trusting it here
+     silently hands back activity/slack values for the wrong point (e.g. a
+     fractional sibling node), rather than for cbcModel.bestSolution(). The
+     original problem's row activity at the incumbent must instead be
+     recomputed directly as A * bestSolution against the untouched
+     model->solver_ matrix. */
+  model->mipRowActivity->assign(numRows, 0.0);
+  model->solver_->getMatrixByCol()->times(cbcModel.bestSolution(), VEC_PTR(model->mipRowActivity));
+  Cbc_updateSlack(model, VEC_PTR(model->mipRowActivity));
   model->rSlk = model->slack->data();
-  /* storing row activity in MIP sol */
-  memcpy(model->mipRowActivity->data(), cbcModel.getRowActivity(), sizeof(double)*numRows );
+  model->rActv = model->mipRowActivity->data();
 
   if (cbcModel.getObjSense()==-1) {
     model->obj_value = 0.0;
@@ -5478,7 +5488,11 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_STRONG_BRANCHING]        =        5;
   model->int_param[INT_PARAM_CUT_DEPTH]               =       -1;
   model->int_param[INT_PARAM_MAX_NODES]               =  INT_MAX;
-  model->int_param[INT_PARAM_NUMBER_BEFORE]           =        5;
+  /* Matches cbc's own "trust" (numberBeforeTrust) default of 10
+   * (CbcParameters::setDefaultValues), which this used to diverge from at
+   * 5 with no measured benefit -- keep the two in sync unless a real
+   * benchmark justifies a different C-API-only default again. */
+  model->int_param[INT_PARAM_NUMBER_BEFORE]           =       10;
   model->int_param[INT_PARAM_FPUMP_ITS]               =       30;
   model->int_param[INT_PARAM_MAX_SOLS]                =  INT_MAX;
   model->int_param[INT_PARAM_CUT_PASS]                =       -1;

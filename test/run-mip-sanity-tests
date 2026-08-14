@@ -57,6 +57,7 @@
 #   --no-lazy-tests      Skip the lazy-constraint / TSP tests (see below)
 #   --no-mipstart-tests  Skip the MIP-start tests (see below)
 #   --no-coefstr-tests   Skip the coefficient-tightening tests (see below)
+#   --no-row-activity-tests  Skip the row activity/slack tests (see below)
 #   --threads-pin        Invoke cbc WITH an explicit "-threads 1" (opt-in;
 #                        the suite's default is to NOT pass -threads at all,
 #                        matching how most users actually invoke cbc).
@@ -175,6 +176,22 @@
 # and the three ways the deferred matrix copy could fail to be applied.
 # One fast in-process binary; pass --no-coefstr-tests to skip it.
 #
+# Finally, it runs the row-activity tests (test/row-activity-test.cpp),
+# regression-testing Cbc_getRowActivity()/Cbc_getRowSlack() after Cbc_solve()
+# for both the pure-LP dispatch (no integers/SOS — straight to
+# Cbc_solveLinearProgram()) and a genuine MIP solve through branch and bound.
+# The MIP case guards against Cbc_getMIPOptimizationResults() reporting
+# activity/slack for whatever LP CbcModel's internal working solver last
+# resolved during the search — typically the node where B&B stopped, which is
+# not necessarily the node that produced the incumbent — instead of for the
+# actual reported solution (Cbc_getColSolution()). That failure mode is silent
+# (wrong values, not a crash or a wrong objective), so every row's expected
+# activity/slack is recomputed independently as A * Cbc_getColSolution() from
+# the row's own coefficients, rather than trusted from any other Cbc-reported
+# quantity. Also covers the smallest possible extra solution pool
+# (INT_PARAM_MAX_SAVED_SOLS = 0). One fast in-process binary; pass
+# --no-row-activity-tests to skip it.
+#
 # Positional arguments (optional): one or more glob patterns to select a
 # subset of instances by name (e.g. `./run-mip-sanity-tests 'jssp_*' 'cvrp_*'`).
 set -uo pipefail
@@ -202,6 +219,7 @@ NO_LP_TESTS=0
 NO_LAZY_TESTS=0
 NO_MIPSTART_TESTS=0
 NO_COEFSTR_TESTS=0
+NO_ROW_ACTIVITY_TESTS=0
 THREADS_PIN=0
 CUT_STATS=0
 CUT_STATS_TSV=""
@@ -225,6 +243,7 @@ for arg in "$@"; do
     --no-lazy-tests) NO_LAZY_TESTS=1 ;;
     --no-mipstart-tests) NO_MIPSTART_TESTS=1 ;;
     --no-coefstr-tests) NO_COEFSTR_TESTS=1 ;;
+    --no-row-activity-tests) NO_ROW_ACTIVITY_TESTS=1 ;;
     --threads-pin) THREADS_PIN=1 ;;
     -h|--help)
       # Print the header comment block: everything from line 2 up to (but not
@@ -1103,10 +1122,71 @@ else
   fi
 fi
 
+# ── 14. Row activity/slack tests (row-activity-test) ───────────────────────
+# Covers Cbc_getRowActivity()/Cbc_getRowSlack() after Cbc_solve(), for both the
+# pure-LP dispatch (no integers/SOS -- straight to Cbc_solveLinearProgram()) and
+# a genuine MIP solve through branch and bound. The MIP case is the regression
+# test for Cbc_getMIPOptimizationResults() reporting activity/slack for whatever
+# LP CbcModel's internal working solver last resolved during the search --
+# typically the node where B&B stopped, which is not necessarily the node that
+# produced the incumbent -- instead of for the solution actually returned by
+# Cbc_getColSolution(). That failure silently reports the wrong point rather
+# than crashing or changing the objective, so every row's expected activity/
+# slack is recomputed independently as A * Cbc_getColSolution() from the row's
+# own coefficients, and checked against what Cbc_getRowActivity()/
+# Cbc_getRowSlack() actually report. Also covers the smallest possible extra
+# solution pool (INT_PARAM_MAX_SAVED_SOLS = 0). Like the LP, lazy, MIP-start and
+# coefficient-tightening tests, one fast in-process binary with nothing to
+# parallelize. Needs no --data-dir: every fixture is built in-process.
+row_activity_tests_failed=0
+if [[ $NO_ROW_ACTIVITY_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping row activity/slack tests (--no-row-activity-tests).${RESET}"
+else
+  ROW_ACTIVITY_TEST="$SCRIPT_DIR/row-activity-test$EXEEXT"
+  if [[ ! -x "$ROW_ACTIVITY_TEST" ]]; then
+    echo "${CYAN}Building row-activity-test...${RESET}"
+    make -C "$SCRIPT_DIR" "row-activity-test$EXEEXT" || {
+      echo "${RED}Error: failed to build row-activity-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  echo
+  echo "${BOLD}=== Row activity/slack tests ===${RESET}"
+
+  ROW_ACTIVITY_RESULTS_DIR="$RESULTS_DIR/row-activity"
+  mkdir -p "$ROW_ACTIVITY_RESULTS_DIR"
+  row_activity_log="$ROW_ACTIVITY_RESULTS_DIR/row-activity-test.log"
+
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$ROW_ACTIVITY_TEST" >"$row_activity_log" 2>&1; then
+    row_activity_checks_ok=$(grep -c '^  ok:' "$row_activity_log" 2>/dev/null || true)
+    echo "  ${GREEN}✔ all ${row_activity_checks_ok:-0} check(s) passed${RESET}  ${DIM}($row_activity_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Row activity/slack tests passed" "${row_activity_checks_ok:-0} / ${row_activity_checks_ok:-0}")${RESET}"
+  else
+    row_activity_tests_failed=1
+    row_activity_checks_ok=$(grep -c '^  ok:' "$row_activity_log" 2>/dev/null || true)
+    row_activity_checks_bad=$(grep -c '^  FAIL:' "$row_activity_log" 2>/dev/null || true)
+    row_activity_total=$(( ${row_activity_checks_ok:-0} + ${row_activity_checks_bad:-0} ))
+    echo "  ${RED}✗ ${row_activity_checks_bad:-0} check(s) failed${RESET}  ${DIM}(see $row_activity_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Row activity/slack tests passed" "${row_activity_checks_ok:-0} / $row_activity_total")${RESET}"
+  fi
+  echo
+
+  if [[ $row_activity_tests_failed -eq 1 ]]; then
+    echo "${BOLD}${RED}=== Row activity/slack test failures ===${RESET}"
+    grep -E '^  FAIL:|^RESULT:' "$row_activity_log" 2>/dev/null
+    echo
+    echo "${DIM}Full log: $row_activity_log${RESET}"
+    echo
+  fi
+fi
+
 if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 \
       || ${#capi_fail_list[@]} -gt 0 || $lp_tests_failed -ne 0 \
       || $lazy_tests_failed -ne 0 || $mipstart_tests_failed -ne 0 \
-      || $coefstr_tests_failed -ne 0 ]]; then
+      || $coefstr_tests_failed -ne 0 || $row_activity_tests_failed -ne 0 ]]; then
   exit 1
 fi
 exit 0

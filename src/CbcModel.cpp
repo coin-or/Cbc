@@ -5829,10 +5829,6 @@ void CbcModel::branchAndBound(int doStatistics)
   //  If we did any sub trees - did we give up on any?
   if (numberStoppedSubTrees_)
     status_ = 1;
-  if (!parentModel_||((specialOptions_&2048)==0)&&!parentModel_->parentModel()) {
-    //numberNodes_ += numberExtraNodes_;
-    //numberIterations_ += numberExtraIterations_;
-  }
   if (!parentModel_ && eventHandler) {
     eventHandler->event(CbcEventHandler::endSearch);
     // setup info for printing
@@ -9422,7 +9418,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           useful.
         */
     int numberViolated = 0;
-    if ((currentPassNumber_ == 1 || !numberNodes_) && howOftenGlobalScan_ > 0 && (numberNodes_ % howOftenGlobalScan_) == 0 && (doCutsNow(1) || true)) {
+    if ((currentPassNumber_ == 1 || !numberNodes_) && howOftenGlobalScan_ > 0 && (numberNodes_ % howOftenGlobalScan_) == 0) {
       // global column cuts now done in node at top of tree
       int numberCuts = numberCutGenerators_ ? globalCuts_.sizeRowCuts() : 0;
       if (numberCuts) {
@@ -18114,7 +18110,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
               fathomStatus);
             messageHandler()->message(CBC_FPUMP2, messages())
               << general << CoinMessageEol;
-            if ((info->numberNodesExplored_ > 50000 || info->numberNodesExplored_ > 10000 && (moreSpecialOptions_ & 2048) == 0)
+            if ((info->numberNodesExplored_ > 50000 || (info->numberNodesExplored_ > 10000 && (moreSpecialOptions_ & 2048) == 0))
               && (moreSpecialOptions_ & 524288) == 0 && info->nNodes_ >= 0) {
               fastNodeDepth_--;
 #ifndef NO_FATHOM_PRINT

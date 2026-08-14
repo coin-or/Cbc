@@ -10441,63 +10441,54 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
           << numberRowsAdded << densityNew << CoinMessageEol;
       if (thisObjective - startObjective < 1.0e-5 && numberElementsAdded > 0.2 * numberElementsAtStart)
         willBeCutsInTree = -1;
+      /*
+            999999 and 999998 are `decide for me' sentinels; turn one into a
+         concrete tree cut frequency and set the root pass budget to match.
+         999998 comes from CbcSolver (strategy/experiment flags) and from every
+         smallBranchAndBound sub-model in CbcHeuristic; 999999 only from an
+         explicit setWhenCuts. doCutsNow() decodes what we store here: nonzero
+         low five digits mean no cuts below depth 10, and value/1000000 - 1 is
+         the `shallow' depth through which cuts stay on. So of the four codes
+         below the larger keeps cuts on deeper (shallow 4, 7, 9, 10), and where
+         the two sentinels differ 999998 always takes the deeper one:
+
+              objective gain  elements +>20%  passes<maxAtRoot   999999 / 999998
+              none            yes             -                 5000010 / 5000010
+              none            no              -                 8000008 / 10000004
+              some            -               yes               8000008 / 10000004
+              some            -               no               10000004 / 11000002
+
+         The first three rows halve the pass budget; the last raises it to at
+         least 2.
+          */
       int whenC = whenCuts_;
       if (whenC == 999999 || whenC == 999998) {
-        int size = continuousSolver_->getNumRows() + continuousSolver_->getNumCols();
-        bool smallProblem = size <= 550;
-        smallProblem = false;
+        // 999998 takes the deeper code wherever the two differ
+        bool moreCutsInTree = (whenC == 999998);
 #if CBC_USEFUL_PRINTING > 1
         int maxPass = maximumCutPasses_;
 #endif
         if (thisObjective - startObjective < 1.0e-5) {
           // No change in objective function
           if (numberElementsAdded > 0.2 * numberElementsAtStart) {
-            if (whenCuts_ == 999999) {
-              whenCuts_ = 5000010;
-              if (!smallProblem)
-                maximumCutPasses_ = std::max(maximumCutPasses_ >> 1, 1);
-            } else if (whenCuts_ == 999998) {
-              whenCuts_ = 5000010;
-              if (!smallProblem)
-                maximumCutPasses_ = std::max(maximumCutPasses_ >> 1, 1);
-            }
+            whenCuts_ = 5000010;
           } else {
-            if (whenCuts_ == 999999) {
-              whenCuts_ = 8000008;
-              if (!smallProblem)
-                maximumCutPasses_ = std::max(maximumCutPasses_ >> 1, 1);
-            } else if (whenCuts_ == 999998) {
-              whenCuts_ = 10000004;
-              if (!smallProblem)
-                maximumCutPasses_ = std::max(maximumCutPasses_ >> 1, 1);
-            }
+            whenCuts_ = moreCutsInTree ? 10000004 : 8000008;
           }
+          maximumCutPasses_ = std::max(maximumCutPasses_ >> 1, 1);
         } else {
           // Objective changed
-            if (currentPassNumber_ < std::abs(maximumCutPassesAtRoot_)) {
-            if (whenCuts_ == 999999) {
-              whenCuts_ = 8000008;
-              if (!smallProblem)
-                maximumCutPasses_ = std::max(maximumCutPasses_ >> 1, 1);
-            } else if (whenCuts_ == 999998) {
-              whenCuts_ = 10000004;
-              if (!smallProblem)
-                maximumCutPasses_ = std::max(maximumCutPasses_ >> 1, 1);
-            }
+          if (currentPassNumber_ < std::abs(maximumCutPassesAtRoot_)) {
+            whenCuts_ = moreCutsInTree ? 10000004 : 8000008;
+            maximumCutPasses_ = std::max(maximumCutPasses_ >> 1, 1);
           } else {
-            if (whenCuts_ == 999999) {
-              whenCuts_ = 10000004;
-              maximumCutPasses_ = std::max(maximumCutPasses_, 2);
-            } else if (whenCuts_ == 999998) {
-              whenCuts_ = 11000002;
-              maximumCutPasses_ = std::max(maximumCutPasses_, 2);
-            }
+            whenCuts_ = moreCutsInTree ? 11000002 : 10000004;
+            maximumCutPasses_ = std::max(maximumCutPasses_, 2);
           }
         }
         // Set bit to say don't try too hard if seems reasonable
         if (maximumCutPasses_ <= 5)
           whenCuts_ += 100000;
-        //// end
 #if CBC_USEFUL_PRINTING > 1
         printf("changing whenCuts from %d to %d and cutPasses from %d to %d "
                "objchange %g\n",
@@ -10601,7 +10592,6 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
           Open up a loop to step through the cut generators and decide what (if
        any) adjustment should be made for calling frequency.
         */
-    int iProbing = -1;
     double smallProblem = (0.2 * totalCuts) / static_cast< double >(numberActiveGenerators + 1.0e-100);
     for (i = 0; i < numberCutGenerators_; i++) {
       int howOften = generator_[i]->howOften();
@@ -10627,7 +10617,6 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
           // If large number of probing - can be biased
           smallProblem = (0.2 * (totalCuts - generator_[i]->numberCutsInTotal())) / static_cast< double >(numberActiveGenerators - 1 + 1.0e-100);
         }
-        iProbing = i;
         if (probing->rowCuts() == -3) {
           probingWasOnBut = true;
           howOften = -98;
@@ -10850,38 +10839,6 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
           generator_[i]->numberCutsActive());
       }
       /*
-              Garbage code 071219
-            */
-      // decide on pseudo cost strategy
-      int howOften = iProbing >= 0 ? generator_[iProbing]->howOften() : 0;
-      if ((howOften % 1000000) != 1)
-        howOften = 0;
-      // if (howOften) {
-      // CglProbing * probing =
-      // dynamic_cast<CglProbing*>(generator_[iProbing]->generator());
-      //}
-#if CBC_DYNAMIC_EXPERIMENT == 0
-      howOften = 0;
-      if (howOften) {
-        COIN_DETAIL_PRINT(printf("** method 1\n"));
-        // CglProbing * probing =
-        // dynamic_cast<CglProbing*>(generator_[iProbing]->generator());
-        generator_[iProbing]->setWhatDepth(1);
-        // could set no row cuts
-        // if (thisObjective-startObjective<0.001*fabs(startObjective)+1.0e-5)
-        // probing->setRowCuts(0);
-        for (int i = 0; i < numberObjects_; i++) {
-          CbcSimpleIntegerDynamicPseudoCost *obj = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object_[i]);
-          if (obj)
-            obj->setMethod(1);
-        }
-      }
-#endif
-      if (willBeCutsInTree == -2)
-        willBeCutsInTree = 0;
-      /*
-              End garbage code.
-
               Now I've reached the problem area. This is a problem only at the
          root node, so that should simplify the issue of finding a workable
          basis? Or maybe not.
@@ -10893,8 +10850,9 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
         if (!willBeCutsInTree) {
           // update size of problem
           numberRowsAtContinuous_ = solver_->getNumRows();
-        } else if ((moreSpecialOptions2_ & 16777216) == 0) {
-          // take off cuts
+        } else {
+          // willBeCutsInTree == -1: the cuts we have look ineffective, so
+          // physically remove them rather than keeping them as architecturals
           int numberRows = solver_->getNumRows();
           int numberAdded = numberRows - numberRowsAtContinuous_;
           if (numberAdded) {

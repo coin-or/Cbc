@@ -10591,7 +10591,29 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
     /*
           Open up a loop to step through the cut generators and decide what (if
        any) adjustment should be made for calling frequency.
+
+          The howOften values this loop reads and writes are encoded; the
+       decoders are CbcCutGenerator::generateCuts and setHowOften. In summary:
+
+            -100  off, permanently
+             -99  root only
+             -98  keep going while the objective keeps improving
+               1  every node, and not subject to further adjustment
+          k+1e6   every k nodes, and reconsider at the next full scan.
+                  setHowOften keeps the +1e6 marker, capping probing at
+                  SCANCUTS_PROBING; solveWithCuts then switches a probing
+                  generator sitting at exactly 1000000+SCANCUTS_PROBING back
+                  on if it produces anything on a full scan.
+
+          Anything <= -100 or 0 makes generateCuts return immediately; any other
+       negative value is treated as 1 there, so the negatives are markers for
+       this function rather than intervals.
         */
+    /* Note smallProblem is deliberately declared outside the loop and is
+       overwritten inside it for a probing generator that produced cuts, so
+       probing's own contribution is discounted from the threshold applied to
+       every generator considered after it. Probing is registered first, so in
+       practice this reduces the threshold for all the others. */
     double smallProblem = (0.2 * totalCuts) / static_cast< double >(numberActiveGenerators + 1.0e-100);
     for (i = 0; i < numberCutGenerators_; i++) {
       int howOften = generator_[i]->howOften();
@@ -10599,9 +10621,14 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
             But if doing good then leave as on
             Ok, let me try to explain this. rowCuts = 3 says do disaggregation
          (1<<0) and coefficient (1<<1) cuts. But if the value is negative,
-         there's code at the entry to generateCuts, and generateCutsAndModify,
-         that temporarily changes the value to 4 (1<<2) if we're in a search
-         tree.
+         CglProbing::generateCuts and generateCutsAndModify temporarily change
+         it to 4 (1<<2) if we're in a search tree, and to -rowCuts_ if we're
+         not, restoring the original on exit
+         (Cgl/src/CglProbing/CglProbing.cpp, both near the saveRowCuts local).
+         So -3 means "3 at the root, 4 in the tree", and that is the value Cbc's
+         setup code installs in ten places (CbcSolverCutSetup.cpp:101,
+         CbcSolver.cpp:7260, CbcStrategy.cpp:992, ...) -- the test below is the
+         common case, not an oddity. Note CglProbing's own default is 1.
 
             Which does nothing to explain this next bit. We set a boolean,
          convert howOften to the code for `generate while objective is
@@ -10715,9 +10742,13 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
                         */
           } else if ((thisCuts + generator_[i]->numberColumnCuts() < smallProblem) && !generator_[i]->whetherToUse()) {
             /*
-                          Not unadjustable every node, and not strong probing.
+                          Not strong probing. (This used to also test
+               `howOften != 1', but that can never be false here: the guard
+               above admits only howOften < 0 or howOften >= 1000000, and the
+               only assignments since then are in the sibling branch above.
+               So the choice rests on probingWasOnBut alone.)
                         */
-            if (howOften != 1 && !probingWasOnBut) {
+            if (!probingWasOnBut) {
               /*
                               No depth spec, or not adjustable every node.
                             */
@@ -10739,9 +10770,14 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
                 howOften = 1;
               }
               /*
-                              Unadjustable every node, or strong probing. Force
-                 unadjustable every node and force not strong probing? I don't
-                 understand.
+                              Strong probing, and only that -- see the note on
+                 the test above. So this is the probing generator whose rowCuts
+                 we switched from -3 to 3 at the top of the loop, and whose
+                 howOften we set to -98. Its cuts look unproductive, but probing
+                 also yields column cuts (bound tightenings), which are worth
+                 having at every node regardless. Hence: run every node,
+                 unadjustable, and clear probingWasOnBut so the block below
+                 leaves rowCuts at 3 rather than restoring -3.
                             */
             } else {
               howOften = 1;

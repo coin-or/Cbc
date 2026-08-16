@@ -70,6 +70,7 @@ extern int gomory_try;
 #include "CbcClqFixtureDump.hpp"
 #include "CbcZeroHalfFixtureDump.hpp"
 #include "CbcProbingFixtureDump.hpp"
+#include "CbcGomoryFixtureDump.hpp"
 #include "CbcEventHandler.hpp"
 
 #include "CbcBranchActual.hpp"
@@ -9398,6 +9399,37 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       }
       cbcDumpProbingFixture(solver_, "probe", currentPassNumber_ - 1,
         probeOptions, 0, numberRowsAtContinuous_, 0, getMaximumSeconds());
+    }
+#endif
+#ifdef CBC_DUMP_GOMORY_FIXTURE
+    // Capture the CglGomory fixture at the same point, but for a stronger reason
+    // than the other three: CglGomory::needsOptimalBasis() is true, and the cut is
+    // a row of the simplex tableau at the basis the solver holds *right now*. One
+    // pass later the cuts just added have changed the matrix, the LP has moved, and
+    // the basis is a different one -- so this is not merely the consistent point,
+    // it is the only point at which the algorithm's actual input exists.
+    //
+    // Pass 1 is also the expensive call, for two separate reasons. limitAtRoot_
+    // (1000, or 2000 above 5000 columns) applies rather than limit_ (50), so cuts
+    // up to twenty times longer are accepted; and info.pass == 0 sets
+    // tolerance1 = 1.0, which turns the accuracy test at CglGomory.cpp:1238 into an
+    // absolute 1e-7 instead of a relative one -- a different acceptance rule, so
+    // later passes are not simply this call with fewer candidates.
+    //
+    // options is passed as an explicit 0 rather than re-derived from the generator,
+    // and it is 0 for a reason worth recording at the call site: every bit
+    // CbcCutGenerator.cpp:309-353 can set is clear here. Gomory's howOften is
+    // translate[CGIfMove] == -98, which is not < -900, so globalCutsAtRoot() and
+    // globalCuts() (bits 8 and 16) are both false; strongCuts is false on the first
+    // pass because the cut_obj history is still -COIN_DBL_MAX (bit 32); fullScan is
+    // 2 at the root, not negative (bit 128); nothing in Cbc/src sets
+    // moreSpecialOptions() & 16384 (bit 256); there is no parentModel (bit 512);
+    // and this is not must-call-again mode (bit 1024). See CbcGomoryFixtureDump.hpp
+    // for what each of those turns off inside the generator -- notably doSorted,
+    // whose falsity means the secondaryCuts flush never runs.
+    if (currentPassNumber_ == 1 && !node && !parentModel_) {
+      cbcDumpGomoryFixture(solver_, "gomory", currentPassNumber_ - 1, 0, 0,
+        numberRowsAtContinuous_, getMaximumSeconds());
     }
 #endif
     if (numberTries < 0 && keepGoing) {

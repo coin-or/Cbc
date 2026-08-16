@@ -45,7 +45,7 @@ test: cbc_validate_sol$(EXEEXT)
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
 	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test \
-	bkclique-bench clqext-bench zerohalf-bench probing-bench
+	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -411,3 +411,54 @@ zerohalf_bench_LDADD = ../src/libCbc.la
 probing_bench_SOURCES = probing-bench.cpp
 
 probing_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#           gomory replay benchmark (measurement tool)                 #
+########################################################################
+#
+# gomory-bench replays one CglGomory call captured from Cbc by
+# CbcGomoryFixtureDump.hpp. Same motive as the benches above, and the same
+# metric hierarchy, but Gomory differs from all three in a way that changes what
+# the fixture has to carry and what a comparison is even allowed to mean.
+#
+# THE BASIS IS THE ALGORITHM'S INPUT, NOT PROVENANCE. needsOptimalBasis() returns
+# true and a Gomory cut *is* a row of the simplex tableau at the basis handed in:
+# CglGomory factorizes it (CglGomory.cpp:645-677) and BTRANs a unit vector
+# through it. Two distinct optimal bases of one degenerate vertex give entirely
+# different, equally valid cuts. So the .bas is required rather than optional --
+# the bench refuses a fixture without one instead of solving cold, which is what
+# probing-bench does -- and a nonzero warmStartIters means the run is not
+# comparable rather than merely noisy.
+#
+# It reports row cuts and column cuts SEPARATELY, for a different reason than
+# probing-bench does. A Gomory cut over one column is not a row but a bound:
+# CglGomory.cpp:1731-1793 turns a singleton into an OsiColCut, or into a
+# deliberately infeasible 1<=0 row cut when the implied bounds cross. Any
+# exactness gate on a change here must therefore compare both kinds; a row-cut
+# comparison alone would miss every bound change.
+#
+# Its default --pass=0 is the expensive call for two independent reasons, and one
+# is not a budget. CglGomory.cpp:842-875: pass 0 takes limitAtRoot_ (Cbc sets
+# 1000, or 2000 above 5000 columns) rather than limit_ (50), a 20-40x looser cap
+# on cut length; and it sets tolerance1 = 1.0, which makes the accuracy test at
+# :1252 an *absolute* 1e-7 rather than one scaled by the cut's magnitude. Later
+# passes use a different acceptance rule, so a change validated only there has
+# not been validated on Cbc's root call.
+#
+# Control flag: --away-at-root=0.5 admits almost no candidate (the gate at
+# :888-901 is away < frac < 1-away), so time(0.5) is the irreducible per-call
+# floor -- factorization, the dense rowActivity build at :728-738, the rowType
+# classification at :747-795 -- and time(0.005) - time(0.5) prices the whole
+# candidate loop including the dense tableau dot product at :1037-1115. Note
+# --limit-at-root=0 is NOT a control flag despite appearances: :852 turns 0 into
+# numberColumns and :876 adds numberRows, making 0 the loosest setting rather
+# than the tightest.
+#
+# Defaults reproduce Cbc's root configuration from CbcSolverCutSetup.cpp:132-237,
+# not CglGomory's constructor defaults, which differ on away and both limits.
+#
+# Not part of the regression suite; it is a measurement tool.
+
+gomory_bench_SOURCES = gomory-bench.cpp
+
+gomory_bench_LDADD = ../src/libCbc.la

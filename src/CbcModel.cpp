@@ -71,6 +71,7 @@ extern int gomory_try;
 #include "CbcZeroHalfFixtureDump.hpp"
 #include "CbcProbingFixtureDump.hpp"
 #include "CbcGomoryFixtureDump.hpp"
+#include "CbcTwomirFixtureDump.hpp"
 #include "CbcEventHandler.hpp"
 
 #include "CbcBranchActual.hpp"
@@ -9429,6 +9430,46 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     // whose falsity means the secondaryCuts flush never runs.
     if (currentPassNumber_ == 1 && !node && !parentModel_) {
       cbcDumpGomoryFixture(solver_, "gomory", currentPassNumber_ - 1, 0, 0,
+        numberRowsAtContinuous_, getMaximumSeconds());
+    }
+#endif
+#ifdef CBC_DUMP_TWOMIR_FIXTURE
+    // Capture the CglTwomir fixture at the same point. Like Gomory, and unlike the
+    // first three, this is not merely the consistent point but the only point at
+    // which the algorithm's input exists: needsOptimalBasis() is true
+    // (CglTwomir.cpp:2241-2246) and DGG_generateTabRowCuts builds its own
+    // CoinFactorization from the basis the solver holds right now (:1569), then
+    // BTRANs a unit vector through it once per candidate (:1044). It does not go
+    // through getBInvARow at all, but it is just as much a function of this
+    // specific basis -- a degenerate vertex has many, and each gives different
+    // tableau rows and so different cuts.
+    //
+    // Pass 1 is the call worth measuring for three reasons, all different from
+    // Gomory's:
+    //
+    //   - max_elements is getNumCols() here, not 250 and not 50000:
+    //     CglTwomir.cpp:301-302 overwrites it when (!info.pass ||
+    //     (info.options & 32)). It gates the emit loop at :335, so this pass keeps
+    //     cuts every later pass would discard.
+    //   - the tableau stage is alive only while info.level < 1 && info.pass < 6
+    //     (:314). Pass 6 onward is the formulation stage alone -- a structurally
+    //     different call, not a cheaper version of this one.
+    //   - switches[TwoMirCuts] is 1 (CbcSolverCutSetup.cpp:383), i.e.
+    //     setSwitchOffIfLessThan(1), so CbcCutGenerator disables TwoMirCuts for the
+    //     whole solve if this very call returns no row cut. This is therefore the
+    //     only call that always happens, and the population it defines is exactly
+    //     the population the kill switch judges.
+    //
+    // options is passed as an explicit 0, re-derived for Twomir rather than
+    // inherited from the Gomory block above: howOften is translate[CGIfMove] ==
+    // -98, not < -900, so bits 8 and 16 are clear; strongCuts is false on the
+    // first pass (bit 32); fullScan is 2 at the root (bit 128); nothing sets
+    // moreSpecialOptions() & 16384 (bit 256); no parentModel (bit 512); not
+    // must-call-again (bit 1024). Bit 32 matters more here than for Gomory --
+    // it is the second half of the max_elements test just described, so a later
+    // pass with strongCuts set raises the cap back up rather than lowering it.
+    if (currentPassNumber_ == 1 && !node && !parentModel_) {
+      cbcDumpTwomirFixture(solver_, "twomir", currentPassNumber_ - 1, 0, 0,
         numberRowsAtContinuous_, getMaximumSeconds());
     }
 #endif

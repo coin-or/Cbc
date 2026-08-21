@@ -45,7 +45,8 @@ test: cbc_validate_sol$(EXEEXT)
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
 	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test \
-	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench
+	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
+	twomir-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -462,3 +463,76 @@ probing_bench_LDADD = ../src/libCbc.la
 gomory_bench_SOURCES = gomory-bench.cpp
 
 gomory_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#           two-step MIR replay benchmark (measurement tool)            #
+########################################################################
+#
+# twomir-bench replays one CglTwomir call captured from Cbc by
+# CbcTwomirFixtureDump.hpp. Same motive and the same metric hierarchy as the
+# benches above -- objImprove decides, totalViol is the pre-resolve proxy, time
+# is third, cut count is the weakest figure and must never be ranked by.
+#
+# THE BASIS IS THE ALGORITHM'S INPUT, as for gomory-bench, though by a different
+# mechanism worth knowing when reading a diff: needsOptimalBasis() is true
+# (CglTwomir.cpp:2241-2246) and DGG_generateTabRowCuts builds its own stack-local
+# CoinFactorization from the warm start (:1564-1569), BTRANs one unit vector per
+# fractional basic integer (:1044), then dots that against the raw column-major
+# matrix (:1056-1067). It never calls getBInvARow. So the .bas is required rather
+# than optional, and a nonzero warmStartIters means the run is not comparable
+# rather than merely noisy.
+#
+# A FREE COLUMN DISQUALIFIES THE INSTANCE, which no other bench here has to deal
+# with. CglTwomir.cpp:95-118 returns with no cuts at all when any column has
+# lb < -1e20 && ub > 1e20. That is the single reason the Gomory or Probing fixture
+# population cannot be reused, and the bench refuses such a fixture: replaying one
+# times the free-column scan and nothing else.
+#
+# It reports row cuts and column cuts SEPARATELY, and here the reason is
+# Twomir-specific: the singleton branch at :455-460 is the only place a bound
+# change can appear (or, when the implied bounds cross, a deliberately infeasible
+# 1<=0 row cut at :443-448). An exactness gate comparing row cuts alone would miss
+# every bound-only change.
+#
+# FOUR INDEPENDENTLY GATEABLE STAGES, which is more control than the other benches
+# offer, and setCutTypes gives two NESTED floors:
+#   --no-tab --no-form  the per-call floor: DGG_getData + an empty emit loop +
+#                       DGG_freeData. No CoinFactorization is built at all -- it is
+#                       a local of DGG_generateTabRowCuts. O(elements+ncol+nrow).
+#   --no-mir --no-2mir  the base-construction floor. These do not disable base
+#                       construction: they set t_max=t_min-1 and q_max=q_min-1
+#                       (:311-312) so no cut body runs while the factorization and
+#                       every DGG_getTableauConstraint still do. This isolates
+#                       exactly the cost of building tableau rows.
+# CAVEAT, not optional when quoting a stage: floor+tab+form accounts for the total
+# only up to the shared emit loop (:332-488), whose cost scales with the number of
+# cuts, which these flags also change. Attribute it separately via rowCuts_n.
+#
+# Its default --pass=0 is the expensive call for THREE reasons, all different from
+# Gomory's. max_elements becomes getNumCols() at :300-302 -- not the 250 Cbc set,
+# not the 50000 default, so the length cap is at its loosest exactly here. The
+# tableau stage is alive only while info.level < 1 && info.pass < 6 (:314), so
+# pass 6 and later is a structurally different call rather than a cheaper one. And
+# Cbc gives TwoMirCuts switches = 1, i.e. setSwitchOffIfLessThan(1)
+# (CbcSolverCutSetup.cpp:383), so returning zero row cuts on the first root pass
+# disables the generator for the whole solve -- pass 0 is the only call that always
+# happens, and the population it defines is exactly what that kill switch judges.
+#
+# Control flags: prefer --no-tab / --no-form. --away-at-root=0.5 looks like the
+# analogue of gomory-bench's control and is weaker: it zeroes tableau candidates
+# (:1578) but leaves the formulation stage running, which needs no fractional
+# basic integer. Worse, setAwayAtRoot silently IGNORES a value outside (0,0.5]
+# rather than clamping it (:2246-2263), so the CSV echoes the getters and a
+# command line asking for 0.6 runs the previous value.
+#
+# Defaults reproduce Cbc's root configuration from CbcSolverCutSetup.cpp:359-418,
+# not CglTwomir's constructor defaults, which differ 20x on away (0.0005 both at
+# the root and in the tree). Note awayAtRoot = 0.005 depends on `#define MORE_CUTS`
+# living inside the *Gomory* block at CbcSolverCutSetup.cpp:139 and never being
+# undef'd -- a cross-generator coupling, not a Twomir decision.
+#
+# Not part of the regression suite; it is a measurement tool.
+
+twomir_bench_SOURCES = twomir-bench.cpp
+
+twomir_bench_LDADD = ../src/libCbc.la

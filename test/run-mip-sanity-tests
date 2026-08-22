@@ -72,6 +72,15 @@
 #                        behaviour (e.g. for maximally deterministic node
 #                        counts across reruns), at the cost of no longer
 #                        exercising the fastNodeDepth_ path.
+#   --exclude=GLOB       Exclude instances matching GLOB (repeatable), applied
+#                        after the instance-glob selection above. Use this for
+#                        an instance that is known-bad on one specific platform
+#                        (e.g. a crash reproducible only under an emulated/
+#                        cross-compiled target such as Rosetta) rather than
+#                        skipping it for every platform, or editing bks.tsv/
+#                        limits.tsv/removing it from mip-sanity-data, which
+#                        would blind every other platform to a real
+#                        regression there too.
 #   -h, --help           Show this help
 #
 # In addition to the main `cbc`-executable suite above, this script also runs
@@ -224,10 +233,12 @@ THREADS_PIN=0
 CUT_STATS=0
 CUT_STATS_TSV=""
 PATTERNS=()
+EXCLUDES=()
 
 for arg in "$@"; do
   case "$arg" in
     --jobs=*) JOBS="${arg#*=}" ;;
+    --exclude=*) EXCLUDES+=("${arg#*=}") ;;
     --cbc=*) CBC_BIN_OVERRIDE="${arg#*=}" ;;
     --prefix=*) PREFIX="${arg#*=}" ;;
     --data-dir=*) DATA_DIR="${arg#*=}" ;;
@@ -383,6 +394,28 @@ else
       fi
     done
   done
+fi
+
+if [[ ${#EXCLUDES[@]} -gt 0 ]]; then
+  filtered=()
+  excluded_count=0
+  for name in "${instances[@]}"; do
+    excluded=0
+    for pat in "${EXCLUDES[@]}"; do
+      # shellcheck disable=SC2053
+      if [[ "$name" == $pat ]]; then
+        excluded=1
+        break
+      fi
+    done
+    if [[ $excluded -eq 1 ]]; then
+      excluded_count=$((excluded_count + 1))
+    else
+      filtered+=("$name")
+    fi
+  done
+  instances=("${filtered[@]}")
+  echo "${YELLOW}${excluded_count} instance(s) excluded via --exclude.${RESET}"
 fi
 
 echo "${BOLD}${#instances[@]} instance(s) selected (of ${#all_instances[@]} total).${RESET}"

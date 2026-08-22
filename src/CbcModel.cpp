@@ -6578,7 +6578,8 @@ CbcModel::CbcModel()
   memset(dblParam_, 0, sizeof(dblParam_));
   dblParam_[CbcIntegerTolerance] = 1e-6;
   dblParam_[CbcCutoffIncrement] = 1e-4;
-  dblParam_[CbcAllowableGap] = 1.0e-10;
+  dblParam_[CbcAllowableGap] = 1.0e-6;
+  dblParam_[CbcAllowableFractionGap] = 1.0e-4;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcMaxSecondsNotImproving] = 1.0e100;
   dblParam_[CbcMaxMemory] = cbcDefaultMaxMemoryBytes();

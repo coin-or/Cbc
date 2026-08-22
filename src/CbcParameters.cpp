@@ -945,7 +945,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::RINS]->setDefault("on");
      parameters_[CbcParam::ROUNDING]->setDefault("on");
      parameters_[CbcParam::VND]->setDefault("off");
-     parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-12);
+     parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-6);
      parameters_[CbcParam::CUTOFF]->setDefault(1.0e50);
      parameters_[CbcParam::DIRECTION]->setDefault("min!imize");
      parameters_[CbcParam::INCREMENT]->setDefault(1.0e-4);
@@ -966,7 +966,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::NUMBERANALYZE]->setDefault(0);
      parameters_[CbcParam::REVERSE]->setType(CoinParam::paramAct);
      parameters_[CbcParam::CUTPASS]->setDefault(100);
-     parameters_[CbcParam::GAPRATIO]->setDefault(0.0);
+     parameters_[CbcParam::GAPRATIO]->setDefault(1.0e-4);
      parameters_[CbcParam::TIMELIMIT]->setDefault( 1.0e11);
      parameters_[CbcParam::STRONGBRANCHING]->setDefault(0);
      parameters_[CbcParam::NUMBERBEFORE]->setDefault(10);
@@ -3267,7 +3267,8 @@ void CbcParameters::addCbcModelParams()
       "Stop when gap between best possible and incumbent is less than this",
       0.0, 1.0e20,
       "If the gap between best solution and best possible solution is less "
-      "than this then the search will be terminated. Also see ratioGap.");
+      "than this then the search will be terminated. Default is 1.0e-6, "
+      "matching HiGHS' mip_abs_gap default. Also see ratioGap.");
 
   parameters_[CbcParam::CUTOFF]->setup(
       "cuto!ff", "All solutions must be better than this", -1.0e60, 1.0e60,
@@ -3403,7 +3404,8 @@ void CbcParameters::addCbcModelParams()
       0.0, 1.0e20,
       "If the gap between the best solution and the best possible solution is "
       "less than this fraction of the objective value at the root node then "
-      "the search will terminate.  See 'allowableGap' for a way of using "
+      "the search will terminate. Default is 1.0e-4 (0.01%), matching HiGHS' "
+      "mip_rel_gap default.  See 'allowableGap' for a way of using "
       "absolute value rather than fraction.");
 
   parameters_[CbcParam::TIMELIMIT]->setup(

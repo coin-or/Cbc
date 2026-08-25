@@ -57,6 +57,17 @@ static double OBJ_TOL = 1e-4;    /* relative objective discrepancy (sol vs recom
 static double BKS_ABS_TOL = 1e-4;   /* absolute tolerance vs best-known objective */
 static double BKS_PCT_TOL = 0.01;   /* percent tolerance vs best-known objective (0.01%) */
 
+/* Extra row-feasibility tolerance, scaled by the row's own largest |coef*x|
+ * term. Some Cbc builds (e.g. the old 2.10 release) print .sol variable
+ * values with only ~6-8 significant digits, so a row summing many
+ * large-magnitude terms (e.g. coefficients in the 1e5-1e6 range) can show
+ * an apparent activity violation of a few units purely from that print
+ * rounding, not a real infeasibility. Off (0.0) by default so the stricter
+ * fixed PRIMAL_TOL keeps catching genuine bugs against modern, full-
+ * precision Cbc builds; opt in via --row-scale-tol for old low-precision
+ * solution dumps. */
+static double ROW_SCALE_TOL = 0.0;
+
 /* ── Utilities ──────────────────────────────────────────────────────── */
 
 static bool isNumericStr(const char *s)
@@ -251,6 +262,9 @@ static void printUsage(const char *progName)
     "  -p, --primal-tol <val>     Primal feasibility tolerance (default: %.1e)\n"
     "  -i, --int-tol <val>        Integrality tolerance (default: %.1e)\n"
     "  -o, --obj-tol <val>        Relative tolerance: recomputed vs claimed obj (default: %.1e)\n"
+    "  --row-scale-tol <val>      Extra row-feasibility tolerance, relative to each row's\n"
+    "                             largest |coef*x| term (default: %.1e; use e.g. 1e-6 for\n"
+    "                             solvers that print .sol values with limited precision)\n"
     "  --expected-status <s>      Cross-check vs mip-sanity-data bks.tsv: 'optimal' or 'infeasible'\n"
     "  --expected-obj <val>       Best-known objective value (used when --expected-status optimal)\n"
     "  --bks-abs-tol <val>        Absolute tolerance vs expected-obj (default: %.1e)\n"
@@ -261,7 +275,7 @@ static void printUsage(const char *progName)
     "and (optionally) a trusted best-known-solution reference.\n"
     "\n"
     "Exit code: 0 = OK,  1 = violations/mismatches found,  2 = file/usage error\n",
-    progName, PRIMAL_TOL, INT_TOL, OBJ_TOL, BKS_ABS_TOL, BKS_PCT_TOL);
+    progName, PRIMAL_TOL, INT_TOL, OBJ_TOL, ROW_SCALE_TOL, BKS_ABS_TOL, BKS_PCT_TOL);
 }
 
 int main(int argc, char *argv[])
@@ -285,6 +299,9 @@ int main(int argc, char *argv[])
     } else if (arg == "-o" || arg == "--obj-tol") {
       if (argIdx + 1 >= argc) { fprintf(stderr, "Error: missing value for %s\n", arg.c_str()); return 2; }
       OBJ_TOL = atof(argv[++argIdx]);
+    } else if (arg == "--row-scale-tol") {
+      if (argIdx + 1 >= argc) { fprintf(stderr, "Error: missing value for %s\n", arg.c_str()); return 2; }
+      ROW_SCALE_TOL = atof(argv[++argIdx]);
     } else if (arg == "--expected-status") {
       if (argIdx + 1 >= argc) { fprintf(stderr, "Error: missing value for %s\n", arg.c_str()); return 2; }
       expectedStatus = argv[++argIdx];
@@ -463,16 +480,21 @@ int main(int argc, char *argv[])
       const double *coef = Cbc_getRowCoeffs(m, r);
 
       double activity = 0.0;
-      for (int k = 0; k < nz; ++k)
-        activity += coef[k] * x[idx[k]];
+      double maxAbsTerm = 0.0;
+      for (int k = 0; k < nz; ++k) {
+        double term = coef[k] * x[idx[k]];
+        activity += term;
+        maxAbsTerm = std::max(maxAbsTerm, fabs(term));
+      }
 
       double lb = rowLB[r];
       double ub = rowUB[r];
 
       double viol = 0.0;
       const char *dir = "";
-      double lbTol = (lb > -1e20) ? PRIMAL_TOL * (1.0 + fabs(lb)) : 0.0;
-      double ubTol = (ub < 1e20) ? PRIMAL_TOL * (1.0 + fabs(ub)) : 0.0;
+      double scaleTol = ROW_SCALE_TOL * maxAbsTerm;
+      double lbTol = (lb > -1e20) ? PRIMAL_TOL * (1.0 + fabs(lb)) + scaleTol : 0.0;
+      double ubTol = (ub < 1e20) ? PRIMAL_TOL * (1.0 + fabs(ub)) + scaleTol : 0.0;
       if (lb > -1e20 && activity < lb - lbTol) { viol = lb - activity; dir = "BELOW LB"; }
       else if (ub < 1e20 && activity > ub + ubTol) { viol = activity - ub; dir = "ABOVE UB"; }
       if (viol > 0.0) {

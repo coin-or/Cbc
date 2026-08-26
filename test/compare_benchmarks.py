@@ -25,7 +25,10 @@ subtly wrong:
      tracked as two separate numbers, not folded into a single "gap" -- a
      run that stopped with a great primal solution but a weak bound (or vice
      versa) looks very different under the two metrics, and conflating them
-     hides that.
+     hides that. Runs that failed outright (TIMEOUT_NO_SOL, OVERTIME, ERROR,
+     WRONG, UNKNOWN) are scored at gap_cap for both gaps -- NOT excluded as
+     NA -- so avg_pgap/avg_dgap can't look artificially good just because an
+     experiment's worst instances produced no comparable number at all.
 
 Supports two input layouts, auto-detected per directory from the header of
 whichever file is present:
@@ -333,9 +336,26 @@ def enrich(df, weights):
     df["concluded"] = df["category"].isin(["OPTIMAL", "INFEASIBLE_CONFIRMED"])
     df["has_solution"] = df["category"].isin(["OPTIMAL", "TIMEOUT_WITH_SOL"])
 
+    gap_cap = weights["gap_cap"]
+
+    # Categories with no trustworthy primal/dual comparison to BKS at all:
+    # no incumbent ever found/persisted (TIMEOUT_NO_SOL), the harness had to
+    # hard-kill the run (OVERTIME), it crashed before producing a parsable
+    # result (ERROR), or the validator caught an incorrect claim (WRONG) --
+    # plus UNKNOWN as a safety net for unrecognized status text. These must
+    # NOT be silently dropped (NA) from avg_pgap/avg_dgap the way a genuinely
+    # inapplicable case (INFEASIBLE_CONFIRMED) is -- a solver that fails
+    # outright on a hard instance is *at least* as bad as one that finishes
+    # with the worst allowed real gap, so it is scored at gap_cap, the same
+    # ceiling used to cap real TIMEOUT_WITH_SOL gaps below.
+    GAP_PENALTY_CATEGORIES = ("TIMEOUT_NO_SOL", "OVERTIME", "ERROR", "WRONG", "UNKNOWN")
+
     def primal_gap(row):
-        if row["category"] == "INFEASIBLE_CONFIRMED":
+        cat = row["category"]
+        if cat == "INFEASIBLE_CONFIRMED":
             return NA
+        if cat in GAP_PENALTY_CATEGORIES:
+            return gap_cap
         bks, obj = row["bks"], row["objective"]
         if pd.isna(bks) or pd.isna(obj) or not row["has_solution"]:
             return NA
@@ -344,8 +364,11 @@ def enrich(df, weights):
         return (obj - bks) / abs(bks) * 100.0
 
     def dual_gap(row):
-        if row["category"] == "INFEASIBLE_CONFIRMED":
+        cat = row["category"]
+        if cat == "INFEASIBLE_CONFIRMED":
             return NA
+        if cat in GAP_PENALTY_CATEGORIES:
+            return gap_cap
         bks, dual = row["bks"], row["dual_bound"]
         if pd.isna(bks) or pd.isna(dual):
             return NA
@@ -355,8 +378,6 @@ def enrich(df, weights):
 
     df["primal_gap_bks"] = df.apply(primal_gap, axis=1)
     df["dual_gap_bks"] = df.apply(dual_gap, axis=1)
-
-    gap_cap = weights["gap_cap"]
 
     def cost(row):
         cat = row["category"]

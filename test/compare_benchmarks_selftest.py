@@ -133,6 +133,10 @@ class TestGapsAndCost(unittest.TestCase):
         self.assertEqual(e["cost"].iloc[0], self.weights["cost_no_solution"])
         self.assertFalse(e["concluded"].iloc[0])
         self.assertFalse(bool(e["has_solution"].iloc[0]))
+        # A failed-outright run must not vanish (NA) from the gap averages --
+        # it's scored at gap_cap, same as the worst allowed real gap.
+        self.assertAlmostEqual(e["primal_gap_bks"].iloc[0], self.weights["gap_cap"])
+        self.assertAlmostEqual(e["dual_gap_bks"].iloc[0], self.weights["gap_cap"])
 
     def test_overtime_cost_worse_than_no_sol(self):
         df = self._row(status="OVERTIME", bks=100,
@@ -140,6 +144,7 @@ class TestGapsAndCost(unittest.TestCase):
         e = cb.enrich(df, self.weights)
         self.assertEqual(e["cost"].iloc[0], self.weights["cost_overtime"])
         self.assertGreater(self.weights["cost_overtime"], self.weights["cost_no_solution"])
+        self.assertAlmostEqual(e["primal_gap_bks"].iloc[0], self.weights["gap_cap"])
 
     def test_wrong_cost_dominates_by_default(self):
         df = self._row(status="WRONG_OBJ", objective=5, bks=100,
@@ -147,6 +152,20 @@ class TestGapsAndCost(unittest.TestCase):
         e = cb.enrich(df, self.weights)
         self.assertEqual(e["cost"].iloc[0], self.weights["cost_wrong"])
         self.assertGreater(self.weights["cost_wrong"], self.weights["cost_overtime"])
+        # Even though this row has a (wrong) objective, WRONG is not a
+        # trustworthy comparison -- it must still be scored at gap_cap, not
+        # derived from the bogus objective.
+        self.assertAlmostEqual(e["primal_gap_bks"].iloc[0], self.weights["gap_cap"])
+
+    def test_error_and_unknown_also_scored_at_gap_cap(self):
+        for status in ("CRASH(exit=139)", "SOME_FUTURE_STATUS"):
+            df = self._row(status=status, bks=100,
+                            solution_found=0, proven_infeasible=0, timed_out=0)
+            e = cb.enrich(df, self.weights)
+            self.assertAlmostEqual(e["primal_gap_bks"].iloc[0], self.weights["gap_cap"],
+                                    msg=f"status={status!r}")
+            self.assertAlmostEqual(e["dual_gap_bks"].iloc[0], self.weights["gap_cap"],
+                                    msg=f"status={status!r}")
 
     def test_timeout_with_sol_gap_used_and_capped(self):
         df = self._row(status="TIMEOUT(gap=250%)", objective=5, dual_bound=1, bks=100,

@@ -72,6 +72,7 @@ extern int gomory_try;
 #include "CbcProbingFixtureDump.hpp"
 #include "CbcGomoryFixtureDump.hpp"
 #include "CbcTwomirFixtureDump.hpp"
+#include "CbcMirFixtureDump.hpp"
 #include "CbcEventHandler.hpp"
 
 #include "CbcBranchActual.hpp"
@@ -9471,6 +9472,53 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     // pass with strongCuts set raises the cap back up rather than lowering it.
     if (currentPassNumber_ == 1 && !node && !parentModel_) {
       cbcDumpTwomirFixture(solver_, "twomir", currentPassNumber_ - 1, 0, 0,
+        numberRowsAtContinuous_, getMaximumSeconds());
+    }
+#endif
+#ifdef CBC_DUMP_MIR_FIXTURE
+    // Capture the CglMixedIntegerRounding2 fixture at the same point. The three
+    // reasons this is the right point are all different from Gomory's and
+    // Twomir's, and the first is a caveat rather than a justification:
+    //
+    //   - needsOptimalBasis() is FALSE for MIR2 -- it is not overridden, and the
+    //     generator never touches getBInvARow, getBInvRow or a CoinFactorization.
+    //     It reads getColSolution(), getRowActivity(), getColUpper/Lower(),
+    //     getRowSense(), getRightHandSide() and getColType(). But the LP point is
+    //     still the input, by a less obvious route: mixIntRoundPreprocess resolves
+    //     every RANGE row into a one-sided row by comparing the row activity to the
+    //     two bounds (CglMixedIntegerRounding2.cpp:508-517, ties to 'L'), and the
+    //     resolved sense_/RHS_ is what determineRowType classifies. A different
+    //     vertex therefore gives a different set of ROW_MIX / ROW_CONT / ROW_INT
+    //     rows -- a different starting-row list, not merely different cuts.
+    //   - pass 0 is the ONLY pass where the wide-cut filter at :1001-1008 is off:
+    //     it rejects cuts with n > 0.8*numCols_, but only `if (info_->pass ||
+    //     info_->inTree)`. So this call accepts cuts every later pass discards --
+    //     the counterpart of CglGomory's limitAtRoot_, and what makes pass 0 both
+    //     the widest and the most expensive call.
+    //   - setDoPreproc(1) (CbcSolverCutSetup.cpp:342) means preprocessing re-runs
+    //     on every call, so pass 0 is not a warm-up whose state later passes
+    //     inherit; each pass is self-contained. What singles this one out is that
+    //     both the MAXAGGR_ handling (:47) and the MODIFY_LP==2 deep-copy-and-
+    //     recurse branch (:84-176) key off !info.inTree / info.level >= 0.
+    //
+    // Unlike Twomir there is no kill switch to define the population: switches for
+    // MixedIntegerRounding2 is 0 | (ALL_LAGRANGEAN * lagrangeanFlag) with
+    // lagrangeanFlag 0 (CbcSolverCutSetup.cpp:347), i.e. setSwitchOffIfLessThan(0),
+    // which CbcCutGenerator can never satisfy. A "disabled" next-run in the
+    // generator table is ordinary frequency tuning after the root.
+    //
+    // options is passed as an explicit 0, re-derived for MIR2: howOften is
+    // translate[CGIfMove] == -98, not < -900, so bits 8 and 16 are clear;
+    // strongCuts is false on the first pass (bit 32); fullScan is 2 at the root
+    // (bit 128); nothing sets moreSpecialOptions() & 16384 (bit 256); no
+    // parentModel (bit 512); not must-call-again (bit 1024). Bits 4 and 8 are the
+    // ones that matter here: generateCuts:215-219 marks the cuts globally valid
+    // exactly when !info.inTree && ((options&4) || ((options&8) && !info.pass)),
+    // so with options 0 the root pass-0 cuts are NOT marked globally valid, and a
+    // replay passing a nonzero options would differ in a field the comparison
+    // checks.
+    if (currentPassNumber_ == 1 && !node && !parentModel_) {
+      cbcDumpMirFixture(solver_, "mir", currentPassNumber_ - 1, 0, 0,
         numberRowsAtContinuous_, getMaximumSeconds());
     }
 #endif

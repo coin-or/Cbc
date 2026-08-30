@@ -46,7 +46,7 @@ test: cbc_validate_sol$(EXEEXT)
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
 	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test \
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
-	twomir-bench
+	twomir-bench mir2-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -536,3 +536,103 @@ gomory_bench_LDADD = ../src/libCbc.la
 twomir_bench_SOURCES = twomir-bench.cpp
 
 twomir_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#      mixed-integer rounding replay benchmark (measurement tool)      #
+########################################################################
+#
+# mir2-bench replays one CglMixedIntegerRounding2 call captured from Cbc by
+# CbcMirFixtureDump.hpp. Same motive and the same metric hierarchy as the benches
+# above -- objImprove decides, totalViol is the pre-resolve proxy, time is third,
+# cut count is the weakest figure and must never be ranked by.
+#
+# MAXAGGR_ == 1 IS CBC'S REAL CONFIGURATION, and read this before reading the
+# generator: it makes a large part of the file dead. CbcSolverCutSetup.cpp:341
+# constructs CglMixedIntegerRounding2 mixedGen(1, true, 1), and the setMAXAGGR_
+# call at :344 is guarded by `mixedRoundStrategy != 1` while mixedRoundStrategy_
+# DEFAULTS to 1 (CbcSolver.hpp:206, re-asserted at CbcSolver.cpp:10926). So the
+# aggregation loop at CglMixedIntegerRounding2.cpp:868 runs exactly once with
+# iAggregate == 0; selectRowToAggregate (:1124) and aggregateRow (:1209) are NEVER
+# CALLED; both SAFE_ROWS blocks inside that loop are unreachable; and the O(nnz)
+# matrixByCol transpose built unconditionally at :195 has no reachable reader.
+# Reading the generator's documented row aggregation as if it ran is reading dead
+# code. --max-aggr=2 turns all of it back on, which is not Cbc's call and so is not
+# a measurement of Cbc's cost -- but it is the only configuration that exercises
+# those branches, so every exactness run must include it.
+#
+# THE BASIS IS THE ALGORITHM'S INPUT, but not through a factorization, and this is
+# the one place MIR2 differs from every other bench here in a way that could be
+# mistaken for a shortcut. needsOptimalBasis() is NOT overridden, so it returns
+# false: MIR2 never factorizes and never calls getBInvARow. The .bas is required
+# anyway, because mixIntRoundPreprocess reads si.getRowActivity() (:502) to resolve
+# every range ('R') row into a 'G' or an 'L' (:505-518). Land on a different LP
+# point and sense_/RHS_ differ, so the row types differ, so the starting-row set
+# differs -- a different problem, not noise. Hence the bench refuses a fixture with
+# no .bas rather than solving cold, and a nonzero warmStartIters means the run is
+# not comparable rather than merely noisy.
+#
+# It reports ROW CUTS ONLY, and unlike twomir-bench that is not a simplification
+# but the generator's shape: the single insertion point is
+# cs.insertIfNotDuplicateAndClean(cMirCut, 31, tolTest) at :1044 with
+# CoinAbsFltEq tolTest(1.0e-4) at :865, and there is no OsiColCut anywhere in the
+# file. --dump-cuts still dumps column cuts if any ever appear, and warns loudly:
+# that would contradict the reading rather than being a harmless extra. Note the
+# duplicate test makes the OsiCuts SEQUENCE load-bearing -- a reordering changes
+# which of two near-duplicates wins, so the dump is deliberately unsorted.
+#
+# TWO NESTED FLOORS via --level, because the root call runs the generator TWICE.
+# CGL_HAS_CLP is defined (Cgl/src/CglCommon/config.h:11) so `#define MODIFY_LP 2`
+# at :78 is live, and at !info.inTree && objSense == 1.0 && info.level >= 0 the
+# branch deep-copies the whole solver (:126), sign-flips every pure >= row, calls
+# model->setNewRowCopy(NULL) (:150, forcing an O(nnz) row-copy rebuild), then
+# RECURSES with info2.level = -1-info.level and returns (:174-176):
+#   --level=-1  the inner post-flip call: separation only, no deep copy, no flip,
+#               no recursion, ONE preprocess pass. This is the call that separates.
+#   --level=0   Cbc's call: preprocess, deep copy, flip, setNewRowCopy(NULL),
+#               preprocess again, separate. With setDoPreproc(1) the FIRST
+#               preprocess pass is entirely discarded -- nothing between :74 and
+#               :175 reads a member it wrote.
+# CAVEAT, not optional when quoting a stage: these are two different calls, not two
+# stages of one call, so level0 minus level(-1) is an ATTRIBUTION, NOT A PARTITION
+# -- among other things the deep copy changes which LP the separation then runs on.
+# Attribute the accept/emit path separately via rowCuts_n. The CSV's modifyLpFired
+# column says whether the branch fired at all: with no pure >= row it takes the
+# `else { delete [] swap; }` at :177-179 and pays none of that overhead.
+#
+# Its default --pass=0 is the expensive call for ONE reason, and it is not
+# Gomory's or Twomir's. The `#if 1` block at :1001-1008 rejects a cut with
+# n > 0.8*numCols_ -- but only `if (info_->pass || info_->inTree)` (:1002). At the
+# root first pass that filter is OFF, so pass 0 accepts wider cuts than any later
+# pass. It is the analogue of Gomory's limitAtRoot_.
+#
+# MIR2 HAS NO FIRST-PASS KILL SWITCH, the opposite of Twomir and worth knowing
+# before attributing anything to one. CbcSolverCutSetup.cpp:347 passes
+# switches = 0 | (ALL_LAGRANGEAN * lagrangeanFlag) with lagrangeanFlag == 0 by
+# default, so setSwitchOffIfLessThan(0) -- a condition that can never fire. A
+# `disabled` next-run in printGeneratorTable therefore comes from CbcCutGenerator's
+# own frequency tuning after the root, NOT from a zero-cuts veto on the first call.
+#
+# NO CLOCK AND NO RANDOMNESS: nothing in the .cpp reads CoinCpuTime,
+# CoinWallclockTime or getMaximumSeconds, and nothing draws a random number. So
+# replays are reproducible in a way the time-limited generators are not, and the
+# fixture's maxSeconds is provenance only.
+#
+# Defaults reproduce Cbc's root configuration from CbcSolverCutSetup.cpp:341-342,
+# which for MIR2 happens to equal the default constructor's
+# gutsOfConstruct(1, true, 1, -1) except for doPreproc, which Cbc raises from -1 to
+# 1. Note the four setters THROW CoinError on an out-of-range value rather than
+# silently ignoring it (hpp:171-179, :191-199, cpp:1969-1978) -- the opposite hazard
+# from twomir-bench's setAway*, so a bad flag is a hard failure here. And
+# getDoPreproc() returns `doPreproc_ != 0` (cpp:1980-1983), so -1 and 1 are
+# INDISTINGUISHABLE through the getter, which is why the CSV carries both the
+# bench's own doPreproc and the getter's doPreprocNonzero.
+#
+# There is deliberately no --formulation-rows: MIR2 never reads
+# info.formulation_rows. The only CglTreeInfo fields it touches are inTree, pass,
+# level and options.
+#
+# Not part of the regression suite; it is a measurement tool.
+
+mir2_bench_SOURCES = mir2-bench.cpp
+
+mir2_bench_LDADD = ../src/libCbc.la

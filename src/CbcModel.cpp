@@ -458,6 +458,18 @@ void CbcModel::analyzeObjective()
   double *coeffMultiplier = nullptr;
   double largestObj = 0.0;
   double smallestObj = COIN_DBL_MAX;
+  // Smallest nonzero |objective coefficient| across ANY free variable,
+  // integer or continuous -- unlike smallestObj (integer-only, used below
+  // for an unrelated priority heuristic), this is tracked specifically so
+  // analyzeObjective()'s CbcCutoffIncrement safety net (see near the end of
+  // this function) also works for the common pattern of a single
+  // *continuous* objective variable (e.g. minimizing a continuous
+  // makespan/cost variable, as in many scheduling formulations) with all
+  // other variables having zero cost -- smallestObj alone stays at
+  // COIN_DBL_MAX ("no info") in that case since it only looks at integer
+  // columns, which would otherwise make the safety net wrongly assume the
+  // objective can be arbitrarily fine-grained.
+  double smallestObjAny = COIN_DBL_MAX;
   {
     const double *rowLower = getRowLower();
     const double *rowUpper = getRowUpper();
@@ -491,6 +503,7 @@ void CbcModel::analyzeObjective()
         if (solver_->isInteger(iColumn))
           numberInteger++;
         if (objValue) {
+          smallestObjAny = std::min(smallestObjAny, fabs(objValue));
           if (!solver_->isInteger(iColumn)) {
             numberContinuousObj++;
           } else {
@@ -1201,6 +1214,7 @@ void CbcModel::analyzeObjective()
 
       2520.0 is used as it is a nice multiple of 2,3,5,7
     */
+  bool certifiedIncrementFound = false;
   if (possibleMultiple && maximumCost) {
     int increment = 0;
     double multiplier = 2520.0;
@@ -1265,6 +1279,7 @@ void CbcModel::analyzeObjective()
             << value << CoinMessageEol;
           setDblParam(CbcModel::CbcCutoffIncrement,
             std::max(value * 0.999, value - 1.0e-4));
+          certifiedIncrementFound = true;
         } else {
           // lazy constraints - can't be certain
           char temp[100];
@@ -1272,8 +1287,68 @@ void CbcModel::analyzeObjective()
           messageHandler()->message(CBC_GENERAL, messages())
             << temp << CoinMessageEol;
         }
+      } else if ((moreSpecialOptions2_ & 65536) == 0) {
+        // The GCD scan DID succeed here (increment != 0) and certifies
+        // that no two feasible integer objective values can differ by less
+        // than "value" -- but the already-installed cutoff is at least as
+        // large as that certified value. If cutoff is *larger* than what
+        // we could actually certify (e.g. it's still the unproven 1e-4
+        // constructor default, and this instance's true certified
+        // increment is smaller, as on s250r10 where fine-grained ~5e-05
+        // objective coefficients only certify a much smaller gap), using
+        // the larger, uncertified cutoff as a pruning bound is unsafe: it
+        // can fathom a subtree containing a genuinely better solution.
+        // Bring it down to the certified value in that case.
+        if (value * 1.001 < cutoff)
+          setDblParam(CbcModel::CbcCutoffIncrement, value);
+        certifiedIncrementFound = true;
       }
     }
+  }
+
+  if (!certifiedIncrementFound) {
+    /* We were unable to certify, via the GCD-of-scaled-objective-
+       coefficients analysis above, that any particular positive value is a
+       safe lower bound on the difference between two distinct feasible
+       integer objective values (e.g. because the model has continuous
+       variables with a nonzero objective, or its integer objective
+       coefficients don't scale to near-integers within tolerance -- both
+       common with "real-valued" costs such as distances/times, which can
+       have coefficients far finer than 1e-4, e.g. 5e-05). In that case the
+       *unproven* CbcCutoffIncrement default installed by the constructor
+       (1e-4) must not be allowed to stand, since applying it as a pruning
+       cutoff (bestObjective_ - increment) can fathom a subtree containing a
+       strictly better feasible solution whose true improvement is smaller
+       than this unverified assumption -- this is exactly what happened on
+       MIPLIB's s250r10 instance (true optimum ~8.5e-05 better than the
+       falsely "proven optimal" incumbent Cbc reported, entirely because of
+       this uncertified 1e-4 default).
+
+       Clamping straight to 0 whenever no GCD-certified value is available
+       is the maximally safe choice, but a full mip-sanity-data regression
+       run showed it costs real pruning power on plenty of instances where
+       the uncertified 1e-4 was, in practice, still a fine assumption (27
+       gap regressions, 11 instances losing a within-budget "proven
+       optimal" close, vs. only 11 instances improving). Use
+       smallestObjAny -- the smallest |objective coefficient| among ANY
+       free variable (integer or continuous) with a nonzero objective
+       coefficient -- as a much less blunt (though still not perfectly
+       rigorous, since simultaneous multi-variable changes could in
+       principle cancel to something smaller) fallback bound instead of an
+       unconditional 0: no single-variable perturbation can change the
+       objective by less than smallestObjAny, so capping the increment
+       there specifically targets instances like s250r10 (smallestObjAny
+       ~5e-05, well below the uncertified 1e-4 default) while leaving the
+       default's pruning power intact for the much more common case of
+       coarser-grained objectives (smallestObjAny >= 1e-4) -- including
+       the frequent single-continuous-objective-variable pattern (e.g.
+       minimizing a continuous makespan/cost variable with coefficient 1.0,
+       common in scheduling formulations), where it was never actually in
+       danger. */
+    double safeIncrement = (smallestObjAny < COIN_DBL_MAX) ? smallestObjAny : 0.0;
+    if (safeIncrement < getDblParam(CbcModel::CbcCutoffIncrement)
+      && getDblParam(CbcModel::CbcCutoffIncrement) == 1.0e-4)
+      setDblParam(CbcModel::CbcCutoffIncrement, safeIncrement);
   }
 
   if (coeffMultiplier)

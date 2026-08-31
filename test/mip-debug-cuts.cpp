@@ -188,6 +188,11 @@ static void printUsage(const char *progName)
     "                         to tell apart a CglPreProcess-internal bug (violation only\n"
     "                         with preprocessing on) from a cut/bound-fixing bug in the\n"
     "                         main search (violation persists with preprocessing off).\n"
+    "  --no-heuristics        Disable all heuristics (-heuristicsOnOff off). Heuristics run\n"
+    "                         private sub-MIPs via smallBranchAndBound() with no\n"
+    "                         parentModel_ set, so their onpath-trace/incumbent diagnostics\n"
+    "                         are indistinguishable from a real top-level violation by\n"
+    "                         parentModel_ alone. Use this to eliminate that confounder.\n"
     "  -h, --help             Show this help\n"
     "\n"
     "Exit code: 0 = OK,  1 = violation detected / obj mismatch,  2 = usage/file error\n",
@@ -203,6 +208,7 @@ int main(int argc, char *argv[])
   int logLevel = 1;
   bool rawContinuous = false;
   bool noPreprocess = false;
+  bool noHeuristics = false;
 
   std::vector<std::string> positional;
   for (int i = 1; i < argc; ++i) {
@@ -227,6 +233,8 @@ int main(int argc, char *argv[])
       rawContinuous = true;
     } else if (arg == "--no-preprocess") {
       noPreprocess = true;
+    } else if (arg == "--no-heuristics") {
+      noHeuristics = true;
     } else if (!arg.empty() && arg[0] == '-') {
       fprintf(stderr, "Unknown option: %s\n", arg.c_str());
       printUsage(argv[0]);
@@ -375,6 +383,20 @@ int main(int argc, char *argv[])
     printf("[mip-debug-cuts] --no-preprocess: preprocessing disabled -- any\n"
            "violation that only occurred with preprocessing on points at\n"
            "CglPreProcess; one that persists here is a main-search bug.\n");
+  }
+  if (noHeuristics) {
+    // Heuristics (FPump, RINS, Dive*, Local Search, ...) run their own
+    // private CbcModel/solver clones via CbcHeuristic::smallBranchAndBound(),
+    // which do NOT set parentModel_ -- so an [onpath-trace]/[incumbent]
+    // diagnostic from one of these sub-MIPs is indistinguishable from a
+    // real top-level violation by parentModel_ alone (both show up as
+    // "parentModel_=(nil)"). Disabling all heuristics removes that
+    // confounder entirely: any remaining onpath-trace hit is then
+    // guaranteed to be from the real top-level search tree.
+    Cbc_setParameter(model, "heuristicsOnOff", "off");
+    printf("[mip-debug-cuts] --no-heuristics: all heuristics disabled -- any\n"
+           "onpath-trace/incumbent diagnostic remaining is from the real\n"
+           "top-level search tree, not a heuristic's private sub-MIP.\n");
   }
 
   bool violationDetected = false;

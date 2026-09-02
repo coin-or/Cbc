@@ -1397,7 +1397,10 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
 
   if (VERBOSE > 0)
     printf("%s numRows = %i\n", prefix, numRows);
-
+  // get bounds
+  OsiSolverInterface * solver = model->model_->solver();
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
   int row, i;
   const int *colIndex;
   const double *colWeight;
@@ -1436,9 +1439,18 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
     colIndex = colIndices + rowStarts[row];
     colWeight = weights + rowStarts[row];
     if (numWeights > 0) {
+      // Make sure bounds are reasonable
+      double largeNumber = 1.0e10;
+      for (i = 0; i < numWeights; i++) {
+	int iColumn = colIndex[i];
+	if (!solver->isInteger(iColumn)) {
+	  solver->setColLower(iColumn,std::max(lower[iColumn],-largeNumber));
+	  solver->setColUpper(iColumn,std::min(upper[iColumn],largeNumber));
+	}
+      }
       // Make a CbcSOS and assign it to objects
       if (VERBOSE > 3) {
-        for (i = 0; i < numWeights; i++) {
+	for (i = 0; i < numWeights; i++) {
           printf("%s  colIndex [%i] = %i\n", prefix, i, colIndex[i]);
           printf("%s  colWeight[%i] = %f\n", prefix, i, colWeight[i]);
         }

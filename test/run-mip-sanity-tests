@@ -760,7 +760,7 @@ echo
 # there.
 if [[ $CUT_STATS -eq 1 ]]; then
   CUT_GENERATOR_NAMES=(Clique FlowCover Gomory "Gomory(2)" GomoryL1 GomoryL2 \
-    Knapsack LiftAndProject MixedIntegerRounding2 OddWheel Probing \
+    ImpliedClique Knapsack LiftAndProject MixedIntegerRounding2 OddWheel Probing \
     Reduce-and-split "Reduce-and-split(2)" TwoMirCuts TwoMirCutsL1 \
     TwoMirCutsL2 ZeroHalf)
 

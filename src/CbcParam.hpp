@@ -133,6 +133,7 @@ public:
       FLOWCUTS,
       GMICUTS,
       GOMORYCUTS,
+      IMPLIEDCLIQUECUTS,
       KNAPSACKCUTS,
       LAGOMORYCUTS,
       LANDPCUTS,

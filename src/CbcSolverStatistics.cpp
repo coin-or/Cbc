@@ -96,6 +96,7 @@ const std::vector< std::string > &canonicalGeneratorNames()
     "Gomory(2)",
     "GomoryL1",
     "GomoryL2",
+    "ImpliedClique",
     "Knapsack",
     "LiftAndProject",
     "MixedIntegerRounding2",

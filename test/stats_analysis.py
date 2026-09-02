@@ -72,6 +72,7 @@ CUT_GENERATORS = [
     ("Gomory(2)",             "Gomory (tree)"),
     ("Knapsack",              "Knapsack"),
     ("Clique",                "Clique (BK)"),
+    ("ImpliedClique",         "Implied Clique"),
     ("OddWheel",               "OddWheel"),
     ("MixedIntegerRounding2", "MIR2"),
     ("FlowCover",             "FlowCover"),

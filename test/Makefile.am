@@ -46,7 +46,8 @@ test: cbc_validate_sol$(EXEEXT)
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
 	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test \
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
-	twomir-bench mir2-bench
+	twomir-bench mir2-bench impclique-explore impclique-bench impclique-vs-clique-bench \
+	impclique-real-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -350,6 +351,71 @@ bkclique_bench_LDADD = ../src/libCbc.la
 clqext_bench_SOURCES = clqext-bench.cpp
 
 clqext_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#      "Implication clique" cut separator -- explore + replay bench    #
+########################################################################
+#
+# Exploratory idea: a row x_1+...+x_k <= M*y (all binary), modelling
+# "x_1 OR ... OR x_k -> y", is usually left with M == k by coefficient
+# strengthening -- weaker than disaggregating into x_i <= y, and weaker still
+# than grouping mutually-conflicting x_i's: x_i <= y  <=>  x_i conflicts with
+# complement(y) in the conflict graph, so a whole clique of x_i's that all
+# conflict with complement(y) gives the valid, tighter sum x_i <= y. See
+# impclique-explore.cpp's header comment for the full algebraic argument.
+#
+# impclique-explore reads a raw .mps.gz directly, solves the LP itself (no
+# CBC preprocessing), builds the conflict graph via checkCGraph(), and
+# separates -- useful for a first signal check on an arbitrary instance, but
+# it does not see what CBC's own preprocessing does to the row before cut
+# generation runs, which can (and does, on some instances) resolve the
+# fractionality away entirely before this separator would ever fire.
+#
+# impclique-bench replays the same separator against the exact preprocessed
+# root-LP state CBC itself would generate cuts from -- it consumes the
+# identical "sep"-tagged fixtures CbcClqFixtureDump.hpp already writes for
+# bkclique-bench (preprocessed matrix, optimal LP basis, and the *captured*
+# conflict graph; see that header's comment for why loading rather than
+# rebuilding the graph matters). No new fixture format was needed: this
+# separator's inputs are exactly CglBKClique's. --singleton-only disables
+# clique growth (plain disaggregation only), the control that isolates what
+# extension buys, matching bkclique-bench's --ext-method=0.
+#
+# Neither is part of the regression suite; both are measurement tools.
+
+impclique_explore_SOURCES = impclique-explore.cpp
+
+impclique_explore_LDADD = ../src/libCbc.la
+
+impclique_bench_SOURCES = impclique-bench.cpp
+
+impclique_bench_LDADD = ../src/libCbc.la
+
+# impclique-vs-clique-bench measures this separator's *marginal* value on top
+# of standard clique separation (CglBKClique), not in isolation: every cut it
+# finds is itself a clique inequality in the conflict graph, so a natural
+# question is whether CglBKClique already finds it given enough rounds. It
+# runs two independent round-by-round trajectories from the same fixture --
+# clique-only, and clique+this-separator together each round -- mirroring
+# how CBC's cut loop actually calls every active generator once per pass
+# before a single resolve. A chain-to-convergence-then-run-once design would
+# overstate the marginal contribution, since a cut found in round 1 changes
+# what the other generator finds in round 2.
+
+impclique_vs_clique_bench_SOURCES = impclique-vs-clique-bench.cpp
+
+impclique_vs_clique_bench_LDADD = ../src/libCbc.la
+
+# impclique-real-bench replays the same fixtures against the production
+# Cgl/src/CglImpliedClique class (not the ad hoc separate()/toRowCut() logic
+# duplicated in impclique-bench.cpp / impclique-vs-clique-bench.cpp above),
+# to cross-check that the real generator produces the same cuts/bound
+# movement the exploratory tools found. This is the regression check for
+# the actual cut generator that ships in Cgl.
+
+impclique_real_bench_SOURCES = impclique-real-bench.cpp
+
+impclique_real_bench_LDADD = ../src/libCbc.la
 
 ########################################################################
 #        0-1/2 separation replay benchmark (measurement tool)          #

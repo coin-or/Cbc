@@ -1422,14 +1422,14 @@ void CbcParameters::addCbcSolverActionParams() {
       "them as a single row to the file designated by csvFeatures (default "
       "'features.csv'). If no file name is supplied the previous value is used. "
       "The header row is written automatically when the file is new or empty. "
-      "A total of 207 numeric features are extracted, covering:\n"
+      "A total of 211 numeric features are extracted, covering:\n"
       "  - Problem size: number of columns (variables) and rows (constraints),\n"
       "    non-zeros, matrix density, columns-per-row ratio.\n"
       "  - Variable types: counts and percentages of binary, general integer\n"
       "    and continuous variables; unbounded variables.\n"
       "  - Constraint classes: partitioning, packing, covering, cardinality,\n"
       "    knapsack, integer knapsack, invariant knapsack, singleton, aggregation,\n"
-      "    precedence, variable-bound and bin-packing rows.\n"
+      "    precedence, variable-bound, bin-packing and hub-implication rows.\n"
       "  - Objective and matrix statistics: min/max/mean/std-dev of non-zero\n"
       "    coefficients, objective coefficients and right-hand-side values;\n"
       "    column non-zero distribution (fraction of columns with >= k non-zeros\n"
@@ -1555,7 +1555,7 @@ void CbcParameters::addCbcSolverFileParams() {
       "csvFeat!ures", "sets file name for writing out instance features",
       "Sets the file name used by writeFeatures. If name is not specified "
       "the previous value is used. Initialized to 'features.csv'. "
-      "The header row listing all 207 feature names is written automatically "
+      "The header row listing all 211 feature names is written automatically "
       "when the file is new or empty; subsequent calls append a new row.",
       CoinParam::displayPriorityLow);
 
@@ -2821,6 +2821,25 @@ void CbcParameters::addCbcSolverCutParams() {
       "(Long allows any length). " CUTS_LONGHELP
       " Reference: https://github.com/coin-or/Cgl/wiki/CglGomory");
 
+  parameters_[CbcParam::IMPLIEDCLIQUECUTS]->setup(
+      "implied!CliqueCuts", "Whether to use implied-clique cuts",
+      "Strengthens rows shaped like x1 + x2 + ... + xk <= M*y (all binary; "
+      "typically modelling 'x1 OR x2 OR ... -> y') by rooting a clique "
+      "search at the complement of every binary variable y in the conflict "
+      "graph and greedily growing it with conflicting literals (including "
+      "complemented ones, e.g. (1-xj) <= y), producing a disaggregated cut "
+      "that dominates the original row. Distinct from cliqueCuts (CglBKClique): "
+      "that runs a general Bron-Kerbosch search over the whole fractional-"
+      "vertex induced subgraph, while this generator does one cheap "
+      "hub-rooted greedy extension per binary variable using the same "
+      "conflict graph, no row parsing required. Benchmarking found most of "
+      "the same cliques are eventually rediscovered by cliqueCuts given "
+      "enough rounds, but a few instances show a large, durable bound "
+      "improvement that cliqueCuts does not reach, and several more reach "
+      "the same final bound strictly sooner when both run together -- "
+      "useful since CBC's cut loop and node budget both reward faster "
+      "bound convergence. Requires the conflict graph (see cgraph).");
+
   parameters_[CbcParam::KNAPSACKCUTS]->setup(
       "knapsack!Cuts", "Whether to use Knapsack cuts",
       CUTS_LONGHELP
@@ -2906,6 +2925,7 @@ void CbcParameters::addCbcSolverCutParams() {
      case CbcParam::FLOWCUTS:
      case CbcParam::GMICUTS:
      case CbcParam::GOMORYCUTS:
+     case CbcParam::IMPLIEDCLIQUECUTS:
      case CbcParam::KNAPSACKCUTS:
      case CbcParam::LANDPCUTS:
      case CbcParam::MIRCUTS:
@@ -2968,6 +2988,7 @@ void CbcParameters::addCbcSolverCutParams() {
         break;
      case CbcParam::CLIQUECUTS:
      case CbcParam::FLOWCUTS:
+     case CbcParam::IMPLIEDCLIQUECUTS:
      case CbcParam::MIRCUTS:
      case CbcParam::ODDWHEELCUTS:
      case CbcParam::ZEROHALFCUTS:

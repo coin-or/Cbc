@@ -21,6 +21,7 @@
 #include "CglFlowCover.hpp"
 #include "CglGMI.hpp"
 #include "CglGomory.hpp"
+#include "CglImpliedClique.hpp"
 #include "CglKnapsackCover.hpp"
 #include "CglLandP.hpp"
 #include "CglMixedIntegerRounding2.hpp"
@@ -331,6 +332,15 @@ void installCutGenerators(
     CglOddWheel oddWheelGen;
     oddWheelGen.setExtendingMethod(oddWExtMethod);
     babModel.addCutGenerator(&oddWheelGen, translate[oddWheelMode], "OddWheel");
+    accuracyFlag[numberGenerators] = 0;
+    switches[numberGenerators++] = 0;
+  }
+
+  // --- ImpliedClique ---
+  int impliedCliqueMode = parameters[CbcParam::IMPLIEDCLIQUECUTS]->modeVal();
+  if (impliedCliqueMode) {
+    CglImpliedClique impliedCliqueGen;
+    babModel.addCutGenerator(&impliedCliqueGen, translate[impliedCliqueMode], "ImpliedClique");
     accuracyFlag[numberGenerators] = 0;
     switches[numberGenerators++] = 0;
   }

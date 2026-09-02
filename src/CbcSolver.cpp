@@ -3010,6 +3010,7 @@ void CbcSolver::initialize()
 #endif
   parameters_[CbcParam::CLIQUECUTS]->setVal("ifmove");
   parameters_[CbcParam::ODDWHEELCUTS]->setVal("off");
+  parameters_[CbcParam::IMPLIEDCLIQUECUTS]->setVal("off");
   parameters_[CbcParam::CLQSTRENGTHENING]->setVal("both");
   parameters_[CbcParam::USECGRAPH]->setVal("on");
   parameters_[CbcParam::AGGREGATEMIXED]->setVal(1);
@@ -6838,6 +6839,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   // Set up likely cut generators and defaults
   parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
   parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
+  parameters[CbcParam::IMPLIEDCLIQUECUTS]->setVal("off");
   parameters[CbcParam::CLQSTRENGTHENING]->setVal("both");
   parameters[CbcParam::USECGRAPH]->setVal("on");
   parameters[CbcParam::AGGREGATEMIXED]->setVal(1);
@@ -7816,6 +7818,7 @@ int CbcSolver::babPostPreprocessCleanup(
     cliqueMode = CbcParameters::CGOff;
     oddWheelMode = CbcParameters::CGOff;
     parameters[CbcParam::ODDWHEELCUTS]->setModeVal(CbcParameters::CGOff);
+    parameters[CbcParam::IMPLIEDCLIQUECUTS]->setModeVal(CbcParameters::CGOff);
     clqstrMode = "off";
   } else if (cgraphMode == "clq") {
     // old style
@@ -7830,6 +7833,7 @@ int CbcSolver::babPostPreprocessCleanup(
     parameters[CbcParam::CLIQUECUTS]->setVal("off");
     oddWheelMode = CbcParameters::CGOff;
     parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
+    parameters[CbcParam::IMPLIEDCLIQUECUTS]->setVal("off");
     clqstrMode = "off";
   }
   if (clqstrMode == "after" || clqstrMode == "both") {
@@ -11700,6 +11704,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         case CbcParam::ODDWHEELCUTS:
           defaultSettings = false; // user knows what she is doing
           oddWheelMode = mode;
+          break;
+        case CbcParam::IMPLIEDCLIQUECUTS:
+          defaultSettings = false; // user knows what she is doing
           break;
         case CbcParam::GOMORYCUTS:
           defaultSettings = false; // user knows what she is doing

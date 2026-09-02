@@ -102,8 +102,11 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	coefstr-test$(EXEEXT) rowred-test$(EXEEXT) \
 	row-activity-test$(EXEEXT) bkclique-bench$(EXEEXT) \
 	clqext-bench$(EXEEXT) zerohalf-bench$(EXEEXT) \
-	probing-bench$(EXEEXT) gomory-bench$(EXEEXT) twomir-bench$(EXEEXT) \
-	mir2-bench$(EXEEXT)
+	probing-bench$(EXEEXT) gomory-bench$(EXEEXT) \
+	twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
+	impclique-explore$(EXEEXT) impclique-bench$(EXEEXT) \
+	impclique-vs-clique-bench$(EXEEXT) \
+	impclique-real-bench$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -136,6 +139,20 @@ coefstr_test_DEPENDENCIES = ../src/libCbc.la
 am_gomory_bench_OBJECTS = gomory-bench.$(OBJEXT)
 gomory_bench_OBJECTS = $(am_gomory_bench_OBJECTS)
 gomory_bench_DEPENDENCIES = ../src/libCbc.la
+am_impclique_bench_OBJECTS = impclique-bench.$(OBJEXT)
+impclique_bench_OBJECTS = $(am_impclique_bench_OBJECTS)
+impclique_bench_DEPENDENCIES = ../src/libCbc.la
+am_impclique_explore_OBJECTS = impclique-explore.$(OBJEXT)
+impclique_explore_OBJECTS = $(am_impclique_explore_OBJECTS)
+impclique_explore_DEPENDENCIES = ../src/libCbc.la
+am_impclique_real_bench_OBJECTS = impclique-real-bench.$(OBJEXT)
+impclique_real_bench_OBJECTS = $(am_impclique_real_bench_OBJECTS)
+impclique_real_bench_DEPENDENCIES = ../src/libCbc.la
+am_impclique_vs_clique_bench_OBJECTS =  \
+	impclique-vs-clique-bench.$(OBJEXT)
+impclique_vs_clique_bench_OBJECTS =  \
+	$(am_impclique_vs_clique_bench_OBJECTS)
+impclique_vs_clique_bench_DEPENDENCIES = ../src/libCbc.la
 am_lazy_constraint_test_OBJECTS = lazy-constraint-test.$(OBJEXT)
 lazy_constraint_test_OBJECTS = $(am_lazy_constraint_test_OBJECTS)
 lazy_constraint_test_DEPENDENCIES = ../src/libCbc.la
@@ -187,13 +204,16 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
 	./$(DEPDIR)/cbc_validate_sol.Po ./$(DEPDIR)/clqext-bench.Po \
 	./$(DEPDIR)/coefstr-test.Po ./$(DEPDIR)/gomory-bench.Po \
+	./$(DEPDIR)/impclique-bench.Po \
+	./$(DEPDIR)/impclique-explore.Po \
+	./$(DEPDIR)/impclique-real-bench.Po \
+	./$(DEPDIR)/impclique-vs-clique-bench.Po \
 	./$(DEPDIR)/lazy-constraint-test.Po \
 	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po \
 	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mipstart-test.Po \
-	./$(DEPDIR)/mir2-bench.Po \
-	./$(DEPDIR)/probing-bench.Po ./$(DEPDIR)/row-activity-test.Po \
-	./$(DEPDIR)/rowred-test.Po ./$(DEPDIR)/twomir-bench.Po \
-	./$(DEPDIR)/zerohalf-bench.Po
+	./$(DEPDIR)/mir2-bench.Po ./$(DEPDIR)/probing-bench.Po \
+	./$(DEPDIR)/row-activity-test.Po ./$(DEPDIR)/rowred-test.Po \
+	./$(DEPDIR)/twomir-bench.Po ./$(DEPDIR)/zerohalf-bench.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -215,13 +235,15 @@ am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
 	$(clqext_bench_SOURCES) $(coefstr_test_SOURCES) \
-	$(gomory_bench_SOURCES) $(lazy_constraint_test_SOURCES) \
-	$(lp_relaxation_test_SOURCES) \
+	$(gomory_bench_SOURCES) $(impclique_bench_SOURCES) \
+	$(impclique_explore_SOURCES) $(impclique_real_bench_SOURCES) \
+	$(impclique_vs_clique_bench_SOURCES) \
+	$(lazy_constraint_test_SOURCES) $(lp_relaxation_test_SOURCES) \
 	$(mip_c_solve_SOURCES) $(mip_debug_cuts_SOURCES) \
 	$(mipstart_test_SOURCES) $(mir2_bench_SOURCES) \
-	$(probing_bench_SOURCES) \
-	$(row_activity_test_SOURCES) $(rowred_test_SOURCES) \
-	$(twomir_bench_SOURCES) $(zerohalf_bench_SOURCES)
+	$(probing_bench_SOURCES) $(row_activity_test_SOURCES) \
+	$(rowred_test_SOURCES) $(twomir_bench_SOURCES) \
+	$(zerohalf_bench_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -640,9 +662,10 @@ rowred_test_LDADD = ../src/libCbc.la
 # it. Every row's expected activity/slack is instead recomputed independently
 # as A * Cbc_getColSolution(), from the same (index, coefficient) pairs the
 # row was built with, and checked against what Cbc_getRowActivity()/
-# Cbc_getRowSlack() actually report. Also covers the solution-pool-disabled
-# case (INT_PARAM_MAX_SAVED_SOLS = 0), where Cbc_getMIPOptimizationResults()
-# takes its early-return branch instead. One fast in-process binary with
+# Cbc_getRowSlack() actually report. Also covers the smallest possible extra
+# solution pool (INT_PARAM_MAX_SAVED_SOLS = 0) -- CbcModel::numberSavedSolutions()
+# always counts the incumbent itself on top of that pool, so the same
+# activity/slack path is still exercised there. One fast in-process binary with
 # nothing to parallelize; no fixture data needed. Run as part of the
 # regression suite by run-mip-sanity-tests (--no-row-activity-tests skips
 # it). See `row-activity-test --help`.
@@ -691,6 +714,63 @@ bkclique_bench_SOURCES = bkclique-bench.cpp
 bkclique_bench_LDADD = ../src/libCbc.la
 clqext_bench_SOURCES = clqext-bench.cpp
 clqext_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#      "Implication clique" cut separator -- explore + replay bench    #
+########################################################################
+#
+# Exploratory idea: a row x_1+...+x_k <= M*y (all binary), modelling
+# "x_1 OR ... OR x_k -> y", is usually left with M == k by coefficient
+# strengthening -- weaker than disaggregating into x_i <= y, and weaker still
+# than grouping mutually-conflicting x_i's: x_i <= y  <=>  x_i conflicts with
+# complement(y) in the conflict graph, so a whole clique of x_i's that all
+# conflict with complement(y) gives the valid, tighter sum x_i <= y. See
+# impclique-explore.cpp's header comment for the full algebraic argument.
+#
+# impclique-explore reads a raw .mps.gz directly, solves the LP itself (no
+# CBC preprocessing), builds the conflict graph via checkCGraph(), and
+# separates -- useful for a first signal check on an arbitrary instance, but
+# it does not see what CBC's own preprocessing does to the row before cut
+# generation runs, which can (and does, on some instances) resolve the
+# fractionality away entirely before this separator would ever fire.
+#
+# impclique-bench replays the same separator against the exact preprocessed
+# root-LP state CBC itself would generate cuts from -- it consumes the
+# identical "sep"-tagged fixtures CbcClqFixtureDump.hpp already writes for
+# bkclique-bench (preprocessed matrix, optimal LP basis, and the *captured*
+# conflict graph; see that header's comment for why loading rather than
+# rebuilding the graph matters). No new fixture format was needed: this
+# separator's inputs are exactly CglBKClique's. --singleton-only disables
+# clique growth (plain disaggregation only), the control that isolates what
+# extension buys, matching bkclique-bench's --ext-method=0.
+#
+# Neither is part of the regression suite; both are measurement tools.
+impclique_explore_SOURCES = impclique-explore.cpp
+impclique_explore_LDADD = ../src/libCbc.la
+impclique_bench_SOURCES = impclique-bench.cpp
+impclique_bench_LDADD = ../src/libCbc.la
+
+# impclique-vs-clique-bench measures this separator's *marginal* value on top
+# of standard clique separation (CglBKClique), not in isolation: every cut it
+# finds is itself a clique inequality in the conflict graph, so a natural
+# question is whether CglBKClique already finds it given enough rounds. It
+# runs two independent round-by-round trajectories from the same fixture --
+# clique-only, and clique+this-separator together each round -- mirroring
+# how CBC's cut loop actually calls every active generator once per pass
+# before a single resolve. A chain-to-convergence-then-run-once design would
+# overstate the marginal contribution, since a cut found in round 1 changes
+# what the other generator finds in round 2.
+impclique_vs_clique_bench_SOURCES = impclique-vs-clique-bench.cpp
+impclique_vs_clique_bench_LDADD = ../src/libCbc.la
+
+# impclique-real-bench replays the same fixtures against the production
+# Cgl/src/CglImpliedClique class (not the ad hoc separate()/toRowCut() logic
+# duplicated in impclique-bench.cpp / impclique-vs-clique-bench.cpp above),
+# to cross-check that the real generator produces the same cuts/bound
+# movement the exploratory tools found. This is the regression check for
+# the actual cut generator that ships in Cgl.
+impclique_real_bench_SOURCES = impclique-real-bench.cpp
+impclique_real_bench_LDADD = ../src/libCbc.la
 
 ########################################################################
 #        0-1/2 separation replay benchmark (measurement tool)          #
@@ -750,6 +830,10 @@ zerohalf_bench_LDADD = ../src/libCbc.la
 probing_bench_SOURCES = probing-bench.cpp
 probing_bench_LDADD = ../src/libCbc.la
 
+########################################################################
+#           gomory replay benchmark (measurement tool)                 #
+########################################################################
+#
 # gomory-bench replays one CglGomory call captured from Cbc by
 # CbcGomoryFixtureDump.hpp. Same motive as the benches above, and the same
 # metric hierarchy, but Gomory differs from all three in a way that changes what
@@ -863,10 +947,9 @@ gomory_bench_LDADD = ../src/libCbc.la
 # undef'd -- a cross-generator coupling, not a Twomir decision.
 #
 # Not part of the regression suite; it is a measurement tool.
-
 twomir_bench_SOURCES = twomir-bench.cpp
-
 twomir_bench_LDADD = ../src/libCbc.la
+
 ########################################################################
 #      mixed-integer rounding replay benchmark (measurement tool)      #
 ########################################################################
@@ -962,9 +1045,7 @@ twomir_bench_LDADD = ../src/libCbc.la
 # level and options.
 #
 # Not part of the regression suite; it is a measurement tool.
-
 mir2_bench_SOURCES = mir2-bench.cpp
-
 mir2_bench_LDADD = ../src/libCbc.la
 all: all-am
 
@@ -1024,6 +1105,22 @@ gomory-bench$(EXEEXT): $(gomory_bench_OBJECTS) $(gomory_bench_DEPENDENCIES) $(EX
 	@rm -f gomory-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(gomory_bench_OBJECTS) $(gomory_bench_LDADD) $(LIBS)
 
+impclique-bench$(EXEEXT): $(impclique_bench_OBJECTS) $(impclique_bench_DEPENDENCIES) $(EXTRA_impclique_bench_DEPENDENCIES) 
+	@rm -f impclique-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(impclique_bench_OBJECTS) $(impclique_bench_LDADD) $(LIBS)
+
+impclique-explore$(EXEEXT): $(impclique_explore_OBJECTS) $(impclique_explore_DEPENDENCIES) $(EXTRA_impclique_explore_DEPENDENCIES) 
+	@rm -f impclique-explore$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(impclique_explore_OBJECTS) $(impclique_explore_LDADD) $(LIBS)
+
+impclique-real-bench$(EXEEXT): $(impclique_real_bench_OBJECTS) $(impclique_real_bench_DEPENDENCIES) $(EXTRA_impclique_real_bench_DEPENDENCIES) 
+	@rm -f impclique-real-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(impclique_real_bench_OBJECTS) $(impclique_real_bench_LDADD) $(LIBS)
+
+impclique-vs-clique-bench$(EXEEXT): $(impclique_vs_clique_bench_OBJECTS) $(impclique_vs_clique_bench_DEPENDENCIES) $(EXTRA_impclique_vs_clique_bench_DEPENDENCIES) 
+	@rm -f impclique-vs-clique-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(impclique_vs_clique_bench_OBJECTS) $(impclique_vs_clique_bench_LDADD) $(LIBS)
+
 lazy-constraint-test$(EXEEXT): $(lazy_constraint_test_OBJECTS) $(lazy_constraint_test_DEPENDENCIES) $(EXTRA_lazy_constraint_test_DEPENDENCIES) 
 	@rm -f lazy-constraint-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(lazy_constraint_test_OBJECTS) $(lazy_constraint_test_LDADD) $(LIBS)
@@ -1079,6 +1176,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clqext-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coefstr-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gomory-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-explore.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-real-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-vs-clique-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lazy-constraint-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lp-relaxation-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-c-solve.Po@am__quote@ # am--include-marker
@@ -1223,6 +1324,10 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/clqext-bench.Po
 	-rm -f ./$(DEPDIR)/coefstr-test.Po
 	-rm -f ./$(DEPDIR)/gomory-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-explore.Po
+	-rm -f ./$(DEPDIR)/impclique-real-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-vs-clique-bench.Po
 	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
@@ -1284,6 +1389,10 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/clqext-bench.Po
 	-rm -f ./$(DEPDIR)/coefstr-test.Po
 	-rm -f ./$(DEPDIR)/gomory-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-explore.Po
+	-rm -f ./$(DEPDIR)/impclique-real-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-vs-clique-bench.Po
 	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po

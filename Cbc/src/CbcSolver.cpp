@@ -8327,10 +8327,10 @@ int CbcMain1(int argc, const char *argv[],
                     for (int j = 0; j < n; j++) {
                       int k = which[j];
                       // don't allow free
-                      if (upper[k] > 1.0e15)
-                        clpSolver->setColUpper(k, 1.0e15);
-                      if (lower[k] < -1.0e15)
-                        clpSolver->setColLower(k, -1.0e15);
+                      if (upper[k] > 1.0e10)
+                        clpSolver->setColUpper(k, 1.0e10);
+                      if (lower[k] < -1.0e10)
+                        clpSolver->setColLower(k, -1.0e10);
                       sosIndices[j + base] = k;
                       sosReference[j + base] = weights ? weights[j] : static_cast< double >(j);
                     }

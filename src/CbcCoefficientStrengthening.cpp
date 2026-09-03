@@ -4,13 +4,16 @@
 
 #include "CbcCoefficientStrengthening.hpp"
 
+#include "CoinConflictGraph.hpp"
 #include "CoinMessageHandler.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinTime.hpp"
 #include "OsiRowCutDebugger.hpp"
 #include "OsiSolverInterface.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <vector>
 
 // Reference solution loaded by -debugCuts; set before applyLpMethod() so that
@@ -37,6 +40,22 @@ const double COEFSTR_FEASTOL = 1.0e-6;
 /// coefficient is exact but pointless, so it is skipped (as papilo does).
 const double COEFSTR_EPSILON = 1.0e-9;
 
+/// Skip the clique-cover check (see the class comment) on rows with more
+/// unit-coefficient binary columns than this. Measured on 883 corpus
+/// instances (mip-sanity-data + a 2017+ MIPLIB/set-packing sample): every
+/// instance with a genuine (non-circular) opportunity had its worst row
+/// under 20000 such columns; the ones that blew past it (e.g. a single
+/// ~194000-column row) drove the greedy cover's wall time into double-digit
+/// seconds on their own, all for a single row of one instance.
+const size_t CLIQUECOVER_MAX_ROW_VARS = 20000;
+
+/// Once the running total wall time spent inside greedyCliqueCover() across
+/// the whole run() call reaches this, stop attempting it on any further row
+/// (the ordinary per-column shrink rule still runs on every row regardless).
+/// A blanket cap independent of CLIQUECOVER_MAX_ROW_VARS because a corpus can
+/// have many mid-sized qualifying rows instead of one huge one.
+const double CLIQUECOVER_TIME_BUDGET = 2.0;
+
 /// One pending right-hand-side change, applied only once the matrix
 /// replacement has been verified to have taken effect.
 struct RowBoundChange {
@@ -45,12 +64,91 @@ struct RowBoundChange {
   double upper;
 };
 
+/*! \brief Greedy clique COVER of \p remaining (conflict-graph node ids,
+ *         ascending, unique -- ownership taken and consumed).
+ *
+ * Repeatedly grows one maximal clique (seed = the smallest remaining node,
+ * then keep intersecting the candidate set with each newly-added member's
+ * neighbourhood, per CoinConflictGraph::conflictingNodes()), removes it from
+ * \p remaining, and repeats. Each step only shrinks the sorted candidate set
+ * via std::set_intersection, so the total work is bounded by the sum of
+ * neighbourhood sizes actually touched rather than the O(k^2) of checking
+ * every pair directly -- this is what keeps it usable up to
+ * CLIQUECOVER_MAX_ROW_VARS.
+ *
+ * \param cg        Conflict graph to query (must be non-null).
+ * \param remaining Sorted, duplicate-free conflict-graph node ids to cover.
+ * \param tempBuf   Scratch buffer, at least \c cg->size() entries; reused
+ *                  across calls by the caller to avoid reallocating per row.
+ * \param ivBuf     Scratch incidence buffer, at least \c cg->size() entries,
+ *                  all zero on entry and restored to all zero on return (per
+ *                  conflictingNodes()'s own self-cleaning contract).
+ * \param deadline  Wall-clock time (CoinWallclockTime() units) at which to
+ *                  give up and return a safe (but possibly loose) answer.
+ *
+ * \return Number of cliques used to cover \p remaining. If the deadline is
+ * hit partway through, every still-uncovered node is conservatively counted
+ * as its own singleton clique (always a valid, if not maximally tight,
+ * upper bound on how many of them can be simultaneously 1).
+ */
+size_t greedyCliqueCover(const CoinConflictGraph *cg,
+  std::vector< size_t > remaining, size_t *tempBuf, char *ivBuf,
+  double deadline)
+{
+  size_t nCliques = 0;
+  while (!remaining.empty()) {
+    if (CoinWallclockTime() >= deadline) {
+      nCliques += remaining.size();
+      break;
+    }
+
+    const size_t seed = remaining.front();
+    std::pair< size_t, const size_t * > seedNb = cg->conflictingNodes(seed, tempBuf, ivBuf);
+
+    std::vector< size_t > candidates;
+    candidates.reserve(remaining.size());
+    std::set_intersection(remaining.begin() + 1, remaining.end(),
+      seedNb.second, seedNb.second + seedNb.first,
+      std::back_inserter(candidates));
+
+    std::vector< size_t > cliqueMembers;
+    cliqueMembers.push_back(seed);
+    while (!candidates.empty()) {
+      const size_t next = candidates.front();
+      cliqueMembers.push_back(next);
+
+      std::pair< size_t, const size_t * > nextNb = cg->conflictingNodes(next, tempBuf, ivBuf);
+      std::vector< size_t > narrowed;
+      narrowed.reserve(candidates.size());
+      std::set_intersection(candidates.begin() + 1, candidates.end(),
+        nextNb.second, nextNb.second + nextNb.first,
+        std::back_inserter(narrowed));
+      candidates.swap(narrowed);
+    }
+    nCliques++;
+
+    // cliqueMembers is built in ascending order (each pick is the smallest
+    // surviving candidate of a shrinking sorted set), so a straight
+    // set_difference removes it from `remaining` without re-sorting.
+    std::vector< size_t > nextRemaining;
+    nextRemaining.reserve(remaining.size() - cliqueMembers.size());
+    std::set_difference(remaining.begin(), remaining.end(),
+      cliqueMembers.begin(), cliqueMembers.end(),
+      std::back_inserter(nextRemaining));
+    remaining.swap(nextRemaining);
+  }
+  return nCliques;
+}
+
 } // end anonymous namespace
 
 CbcCoefficientStrengthening::CbcCoefficientStrengthening()
   : nCoefficients_(0)
   , nRows_(0)
   , timeUsed_(0.0)
+  , nCliqueCoverRows_(0)
+  , cliqueCoverReduction_(0)
+  , cliqueCoverTimeUsed_(0.0)
 {
 }
 
@@ -61,6 +159,9 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
   nCoefficients_ = 0;
   nRows_ = 0;
   timeUsed_ = 0.0;
+  nCliqueCoverRows_ = 0;
+  cliqueCoverReduction_ = 0;
+  cliqueCoverTimeUsed_ = 0.0;
 
   if (!solver || solver->getNumRows() == 0 || solver->getNumCols() == 0)
     return false;
@@ -103,6 +204,18 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
   int firstRow = -1, firstColumn = -1;
   double firstValue = 0.0;
 
+  // Conflict graph for the clique-cover check (see the class comment). Only
+  // ever *read* here -- built earlier in the pre-root-LP phase by clique
+  // merging (when -clqStrengthening is before/both) -- and null otherwise, in
+  // which case every row below just falls back to the plain per-column rule.
+  const CoinConflictGraph *cgraph = solver->getCGraph();
+  std::vector< size_t > cliqueTempBuf;
+  std::vector< char > cliqueIvBuf;
+  if (cgraph) {
+    cliqueTempBuf.resize(cgraph->size());
+    cliqueIvBuf.assign(cgraph->size(), 0);
+  }
+
   for (int iRow = 0; iRow < numberRows; iRow++) {
     const CoinBigIndex start = rowStart[iRow];
     const int length = rowLength[iRow];
@@ -124,9 +237,20 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
     double rhs = hasUpper ? rowUpper[iRow] : -rowLower[iRow];
 
     // Maximum activity. An infinite contribution makes the row unbounded
-    // above, so there is no slack to work with at all.
+    // above, so there is no slack to work with at all. Also collects:
+    //  - unitBinaryCols: binary columns with coefficient exactly +1 (after
+    //    normalisation) -- candidates for the clique-cover check below;
+    //  - minActivityOthers / minOthersUnbounded: the row's *minimum* possible
+    //    activity contributed by every OTHER (non-unitBinaryCols) column,
+    //    i.e. each held at whichever bound frees up the most room for the
+    //    row to stay feasible. This is the anti-circularity guard's input
+    //    (see the comment at its use below) and is unrelated to maxActivity,
+    //    which uses the opposite (most-favorable-for-violation) bound.
     double maxActivity = 0.0;
+    double minActivityOthers = 0.0;
     bool infiniteActivity = false;
+    bool minOthersUnbounded = false;
+    std::vector< int > unitBinaryCols;
     for (CoinBigIndex j = start; j < start + length; j++) {
       const double value = element[j] * scale;
       const int iColumn = column[j];
@@ -136,12 +260,26 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
           break;
         }
         maxActivity += value * colUpper[iColumn];
+        const bool isUnitBinary = cgraph != NULL
+          && std::fabs(value - 1.0) <= COEFSTR_FEASTOL
+          && solver->isBinary(iColumn);
+        if (isUnitBinary) {
+          unitBinaryCols.push_back(iColumn);
+        } else if (colLower[iColumn] <= -COEFSTR_INFINITY) {
+          minOthersUnbounded = true;
+        } else {
+          minActivityOthers += value * colLower[iColumn];
+        }
       } else if (value < 0.0) {
         if (colLower[iColumn] <= -COEFSTR_INFINITY) {
           infiniteActivity = true;
           break;
         }
         maxActivity += value * colLower[iColumn];
+        if (colUpper[iColumn] >= COEFSTR_INFINITY)
+          minOthersUnbounded = true;
+        else
+          minActivityOthers += value * colUpper[iColumn];
       }
     }
     if (infiniteActivity)
@@ -154,6 +292,53 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
     double slack = maxActivity - rhs;
     if (slack <= COEFSTR_FEASTOL)
       continue;
+
+    // Clique-cover check (see the class comment's "Conflict-aware slack"
+    // section). unitBinaryCols is only ever populated when cgraph != NULL.
+    if (unitBinaryCols.size() >= 2
+      && unitBinaryCols.size() <= CLIQUECOVER_MAX_ROW_VARS
+      && cliqueCoverTimeUsed_ < CLIQUECOVER_TIME_BUDGET) {
+      // Anti-circularity guard: with unit coefficients, two unitBinaryCols
+      // members are related by a *direct* conflict edge sourced from this
+      // exact row (rather than some other part of the model) precisely when
+      // this row's own data already forces "not both 1" on its own, i.e. when
+      // its own cap on sum(unitBinaryCols) is <= 1 (1 + 1 > cap). That cap is
+      // rhs - minActivityOthers: the most sum(unitBinaryCols) could reach is
+      // the row's rhs minus whatever the rest of the row is forced to
+      // contribute at minimum. Skip whenever that cap is small enough that
+      // this row alone could be the (sole) source of the very conflicts the
+      // cover below would use -- using them then would "improve" the row
+      // using only itself, not a genuine external fact.
+      const double capUnitBinarySum = minOthersUnbounded
+        ? COEFSTR_INFINITY
+        : (rhs - minActivityOthers);
+      if (capUnitBinarySum >= 2.0 - COEFSTR_FEASTOL) {
+        const double coverT0 = CoinWallclockTime();
+        std::vector< size_t > nodes(unitBinaryCols.begin(), unitBinaryCols.end());
+        std::sort(nodes.begin(), nodes.end());
+        const int k = static_cast< int >(nodes.size());
+        const double deadline = coverT0 + (CLIQUECOVER_TIME_BUDGET - cliqueCoverTimeUsed_);
+        const int p = static_cast< int >(greedyCliqueCover(cgraph, nodes,
+          cliqueTempBuf.data(), cliqueIvBuf.data(), deadline));
+        cliqueCoverTimeUsed_ += CoinWallclockTime() - coverT0;
+
+        // p < k means at most p (not k) of these columns can be 1 at once,
+        // so the row's true maximum activity is maxActivity - (k - p), i.e.
+        // slack shrinks by the same amount. Guard against the (never
+        // observed on the corpus, but not provably impossible) case where
+        // that would drive slack to <= 0: unlike the naive maxActivity bound,
+        // a clique cover is derived from facts *external* to this row, so a
+        // non-positive result here would mean the row is actually redundant
+        // once those external constraints are accounted for -- a real but
+        // different finding (row redundancy) that the per-column rule below
+        // is not equipped to act on safely, so it is left for another pass.
+        if (p < k && (k - p) < slack - COEFSTR_FEASTOL) {
+          slack -= (k - p);
+          nCliqueCoverRows_++;
+          cliqueCoverReduction_ += (k - p);
+        }
+      }
+    }
 
     // Snap up to an integral slack when we are within tolerance of one, so a
     // slack that is really 3 but computed as 2.9999995 does not shave a

@@ -1393,6 +1393,8 @@ void CbcSolver::strengthenCoefficients(OsiSolverInterface *solverIn)
   statistics_.coefstr_changed = cs.nCoefficients();
   statistics_.coefstr_rows = cs.nRows();
   statistics_.coefstr_time = cs.timeUsed();
+  statistics_.coefstr_cliquecover_rows = cs.nCliqueCoverRows();
+  statistics_.coefstr_cliquecover_reduction = cs.cliqueCoverReduction();
 
   if (logLevel >= 1) {
     if (cs.nCoefficients())
@@ -1400,6 +1402,11 @@ void CbcSolver::strengthenCoefficients(OsiSolverInterface *solverIn)
         cs.nCoefficients(), cs.nRows(), cs.timeUsed());
     else
       printf("  Coefficient strengthening: no changes (%.2fs)\n", cs.timeUsed());
+    if (cs.nCliqueCoverRows())
+      printf("  Coefficient strengthening: clique cover tightened %d rows"
+             " (total slack reduction %d, %.2fs)\n",
+        cs.nCliqueCoverRows(), cs.cliqueCoverReduction(),
+        cs.cliqueCoverTimeUsed());
   }
 }
 

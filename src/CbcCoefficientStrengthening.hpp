@@ -41,6 +41,39 @@ class CoinMessageHandler;
  * tightenable again, and tightening does not enable further bound propagation
  * (measured: identical fixpoint tightening counts before and after).
  *
+ * ### Conflict-aware slack (clique cover)
+ *
+ * \f$M\f$ above assumes every unit-coefficient binary column of the row can
+ * independently reach its upper bound at the same time. When the row also
+ * has \f$k\ge 2\f$ such columns (coefficient exactly \f$+1\f$ after
+ * normalisation) that pairwise conflict with each other (per the model's
+ * conflict graph, see CoinConflictGraph -- typically populated by clique
+ * merging earlier in the same pre-root-LP phase), that assumption is
+ * pessimistic: at most one column of a mutual-conflict clique can be 1 at
+ * once, so covering those \f$k\f$ columns with \f$p \le k\f$ cliques (a
+ * greedy cover -- exact minimum clique cover is NP-hard) shows the true
+ * maximum activity is \f$M - (k - p)\f$, not \f$M\f$. Substituting this
+ * tighter bound for \f$M\f$ (equivalently, \f$s\f$ shrinks by \f$k-p\f$)
+ * feeds directly into the same per-column rule above, so it can additionally
+ * shrink *other* (non-clique) coefficients in the row -- most notably a
+ * companion big-\f$M\f$ column, e.g. \f$\sum x_i \le M y\f$ reformulations,
+ * where this often lowers \f$M\f$ well below the naive \f$k\f$.
+ *
+ * This is skipped (silently, not a correctness issue) whenever:
+ *  - no conflict graph has been built yet (OsiSolverInterface::getCGraph()
+ *    is null -- e.g. -clqStrengthening=off/after);
+ *  - the row's own data alone would already force a pairwise conflict
+ *    between two of those columns (guards against using a row to "improve"
+ *    itself off conflicts that only exist because of the row itself --
+ *    see the CLIQUECOVER_CIRCULARITY_TOL comment in the .cpp);
+ *  - the row has more than \link CLIQUECOVER_MAX_ROW_VARS \endlink such
+ *    columns, or the running total time spent on this sub-step across the
+ *    whole \c run() call has passed \link CLIQUECOVER_TIME_BUDGET \endlink
+ *    -- a naive-worst-case-quadratic greedy cover on a row with tens of
+ *    thousands of columns can take seconds; both caps keep \c run() itself
+ *    cheap on every corpus instance measured so far (see the class's git
+ *    history for the benchmark).
+ *
  * ### Usage
  * \code
  *   CbcCoefficientStrengthening cs;
@@ -78,10 +111,25 @@ public:
   /// Wall-clock seconds used by run().
   double timeUsed() const { return timeUsed_; }
 
+  /// Number of rows where a clique cover found a tighter-than-naive slack
+  /// (see the class comment's "Conflict-aware slack" section).
+  int nCliqueCoverRows() const { return nCliqueCoverRows_; }
+
+  /// Total slack reduction (sum of k - p over cliqueCoverRows) contributed
+  /// by clique covers, i.e. how much tighter the naive per-row big-M bound
+  /// became before the usual per-column shrink rule was applied.
+  int cliqueCoverReduction() const { return cliqueCoverReduction_; }
+
+  /// Wall-clock seconds spent computing clique covers (subset of timeUsed()).
+  double cliqueCoverTimeUsed() const { return cliqueCoverTimeUsed_; }
+
 private:
   int nCoefficients_;
   int nRows_;
   double timeUsed_;
+  int nCliqueCoverRows_;
+  int cliqueCoverReduction_;
+  double cliqueCoverTimeUsed_;
 };
 
 #endif // CbcCoefficientStrengthening_hpp

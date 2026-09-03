@@ -157,6 +157,7 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
                << "processed_columns,cgraph_time,cgraph_density,"
                << "clqstr_extended,clqstr_dominated,clqstr_time,"
                << "coefstr_changed,coefstr_rows,coefstr_time,"
+               << "coefstr_cliquecover_rows,coefstr_cliquecover_reduction,"
                << "rowred_fixed,rowred_duplicate,rowred_parallel,rowred_time";
   for (const std::string &gn : finalGenerators)
     headerStream << ',' << gn << "_cuts," << gn << "_time";
@@ -191,6 +192,8 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
              << ',' << formatDouble(clqstr_time, 6, std::ios_base::fixed)
              << ',' << coefstr_changed << ',' << coefstr_rows
              << ',' << formatDouble(coefstr_time, 6, std::ios_base::fixed)
+             << ',' << coefstr_cliquecover_rows
+             << ',' << coefstr_cliquecover_reduction
              << ',' << rowred_fixed << ',' << rowred_duplicate
              << ',' << rowred_parallel
              // Six decimals for the same reason as the two timings above: this

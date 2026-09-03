@@ -101,6 +101,14 @@ public:
   /** Coefficient tightening time (before LP) */
   double coefstr_time = 0.0;
 
+  /** Coefficient tightening: rows whose slack was tightened using a
+   * conflict-graph clique cover (see CbcCoefficientStrengthening) */
+  int coefstr_cliquecover_rows = 0;
+
+  /** Coefficient tightening: total slack reduction obtained across all
+   * clique-cover rows (sum of k-p over those rows) */
+  int coefstr_cliquecover_reduction = 0;
+
   /** Row reductions: rows removed because all their columns were fixed */
   int rowred_fixed = 0;
 

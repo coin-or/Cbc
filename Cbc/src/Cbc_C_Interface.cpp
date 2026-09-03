@@ -1443,10 +1443,8 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
       double largeNumber = 1.0e10;
       for (i = 0; i < numWeights; i++) {
 	int iColumn = colIndex[i];
-	if (!solver->isInteger(iColumn)) {
-	  solver->setColLower(iColumn,std::max(lower[iColumn],-largeNumber));
-	  solver->setColUpper(iColumn,std::min(upper[iColumn],largeNumber));
-	}
+	solver->setColLower(iColumn,std::max(lower[iColumn],-largeNumber));
+	solver->setColUpper(iColumn,std::min(upper[iColumn],largeNumber));
       }
       // Make a CbcSOS and assign it to objects
       if (VERBOSE > 3) {

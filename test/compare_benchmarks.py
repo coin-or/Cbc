@@ -637,13 +637,14 @@ def main():
     emit(f"{C.BOLD}=== Ranking (lower avg cost = better; weights: solved={weights['cost_solved']}, "
          f"no_sol={weights['cost_no_solution']}, overtime={weights['cost_overtime']}, "
          f"error={weights['cost_error']}, wrong={weights['cost_wrong']}) ==={C.RESET}")
-    header = (f"  {'#':>2} {'label':<20} {'avg_cost':>9} {'solved':>7} {'to_sol':>7} "
+    label_w = max(20, max((len(str(l)) for l in labels), default=0))
+    header = (f"  {'#':>2} {'label':<{label_w}} {'avg_cost':>9} {'solved':>7} {'to_sol':>7} "
               f"{'no_sol':>7} {'over':>5} {'err':>4} {'wrong':>6} {'avg_pgap':>9} {'avg_dgap':>9} {'wins':>5}")
     emit(header)
     emit("  " + "─" * (len(header) - 2))
     for _, r in rankings.iterrows():
         emit(
-            f"  {r['rank']:>2} {r['label']:<20} {fmt(r['avg_cost']):>9} {r['n_solved']:>7} "
+            f"  {r['rank']:>2} {r['label']:<{label_w}} {fmt(r['avg_cost']):>9} {r['n_solved']:>7} "
             f"{r['n_timeout_with_sol']:>7} {r['n_no_solution']:>7} {r['n_overtime']:>5} "
             f"{r['n_error']:>4} {r['n_wrong']:>6} {fmt(r['avg_primal_gap_bks'], pct=True):>9} "
             f"{fmt(r['avg_dual_gap_bks'], pct=True):>9} {r['n_wins']:>5}"
@@ -663,7 +664,8 @@ def main():
     top = merged.sort_values("_spread", ascending=False).head(args.top_n)
 
     emit(f"{C.BOLD}=== Top {min(args.top_n, len(top))} instances by cost spread across experiments ==={C.RESET}")
-    hdr2 = "  " + f"{'instance':<40}" + "".join(f"{lbl[:14]:>16}" for lbl in labels)
+    col2_w = max(16, max((len(str(l)) for l in labels), default=0) + 1)
+    hdr2 = "  " + f"{'instance':<40}" + "".join(f"{lbl:>{col2_w}}" for lbl in labels)
     emit(hdr2)
     for _, row in top.iterrows():
         line = f"  {row['instance'][:40]:<40}"
@@ -671,7 +673,7 @@ def main():
             c = row.get(f"cost_{i}")
             cat = row.get(f"category_{i}", "-")
             cell = f"{fmt(c)}({cat[:3] if isinstance(cat, str) else '-'})"
-            line += f"{cell:>16}"
+            line += f"{cell:>{col2_w}}"
         emit(line)
     emit()
 

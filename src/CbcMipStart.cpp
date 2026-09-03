@@ -603,8 +603,17 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
        limit alone. */
     heuristic.setFractionSmall(1.0);
     heuristic.setFeasibilityPumpOptions(1008013);
+    /* 1000 nodes was measured to be too tight: CbcStrategyDefaultSubTree's
+       lightweight cut set (essentially just probing, none of the root
+       model's Gomory/knapsack/MIR/zero-half cuts) can need well over 1000
+       nodes to find *any* feasible completion on an equality-constrained
+       fixture no larger than 4 rows x 20 binaries (market split), even
+       though the same LP solves in under 100 nodes with the full cut set.
+       10000 gives enough headroom to be robust to that without materially
+       changing the cost of the common case, where a completion is found in
+       a handful of nodes. */
     int returnCode = heuristic.smallBranchAndBound(lp,
-      1000, sol,
+      10000, sol,
       compObj,
       model->getCutoff(),
       "ReduceInMIPStart");

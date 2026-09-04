@@ -193,6 +193,14 @@ static void printUsage(const char *progName)
     "                         parentModel_ set, so their onpath-trace/incumbent diagnostics\n"
     "                         are indistinguishable from a real top-level violation by\n"
     "                         parentModel_ alone. Use this to eliminate that confounder.\n"
+    "  --param=NAME=VALUE     Pass an arbitrary Cbc parameter through to\n"
+    "                         Cbc_setParameter (repeatable). Use this to arm a\n"
+    "                         specific generator, e.g.\n"
+    "                           --param=cuts=off --param=cgraph=on\n"
+    "                           --param=cliqueCuts=on --param=oddWheelCuts=on\n"
+    "                         Note oddWheelCuts needs the conflict graph, so\n"
+    "                         under -cuts off it is silently NOT registered\n"
+    "                         unless cgraph is on as well.\n"
     "  -h, --help             Show this help\n"
     "\n"
     "Exit code: 0 = OK,  1 = violation detected / obj mismatch,  2 = usage/file error\n",
@@ -209,6 +217,7 @@ int main(int argc, char *argv[])
   bool rawContinuous = false;
   bool noPreprocess = false;
   bool noHeuristics = false;
+  std::vector<std::pair<std::string, std::string> > extraParams;
 
   std::vector<std::string> positional;
   for (int i = 1; i < argc; ++i) {
@@ -235,6 +244,14 @@ int main(int argc, char *argv[])
       noPreprocess = true;
     } else if (arg == "--no-heuristics") {
       noHeuristics = true;
+    } else if (arg.rfind("--param=", 0) == 0) {
+      const std::string kv = valueOf("--param=");
+      const size_t eq = kv.find('=');
+      if (eq == std::string::npos || eq == 0) {
+        fprintf(stderr, "--param needs NAME=VALUE, got: %s\n", kv.c_str());
+        return 2;
+      }
+      extraParams.push_back(std::make_pair(kv.substr(0, eq), kv.substr(eq + 1)));
     } else if (!arg.empty() && arg[0] == '-') {
       fprintf(stderr, "Unknown option: %s\n", arg.c_str());
       printUsage(argv[0]);
@@ -383,6 +400,12 @@ int main(int argc, char *argv[])
     printf("[mip-debug-cuts] --no-preprocess: preprocessing disabled -- any\n"
            "violation that only occurred with preprocessing on points at\n"
            "CglPreProcess; one that persists here is a main-search bug.\n");
+  }
+  // Applied last so an explicit --param overrides anything set above.
+  for (size_t i = 0; i < extraParams.size(); ++i) {
+    Cbc_setParameter(model, extraParams[i].first.c_str(), extraParams[i].second.c_str());
+    printf("[mip-debug-cuts] --param %s=%s\n",
+      extraParams[i].first.c_str(), extraParams[i].second.c_str());
   }
   if (noHeuristics) {
     // Heuristics (FPump, RINS, Dive*, Local Search, ...) run their own

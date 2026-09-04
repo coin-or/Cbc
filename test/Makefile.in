@@ -106,7 +106,8 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
 	impclique-explore$(EXEEXT) impclique-bench$(EXEEXT) \
 	impclique-vs-clique-bench$(EXEEXT) \
-	impclique-real-bench$(EXEEXT) mip-root-replay$(EXEEXT)
+	impclique-real-bench$(EXEEXT) mip-root-replay$(EXEEXT) \
+	oddwheel-bench$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -174,6 +175,9 @@ mipstart_test_DEPENDENCIES = ../src/libCbc.la
 am_mir2_bench_OBJECTS = mir2-bench.$(OBJEXT)
 mir2_bench_OBJECTS = $(am_mir2_bench_OBJECTS)
 mir2_bench_DEPENDENCIES = ../src/libCbc.la
+am_oddwheel_bench_OBJECTS = oddwheel-bench.$(OBJEXT)
+oddwheel_bench_OBJECTS = $(am_oddwheel_bench_OBJECTS)
+oddwheel_bench_DEPENDENCIES = ../src/libCbc.la
 am_probing_bench_OBJECTS = probing-bench.$(OBJEXT)
 probing_bench_OBJECTS = $(am_probing_bench_OBJECTS)
 probing_bench_DEPENDENCIES = ../src/libCbc.la
@@ -215,9 +219,9 @@ am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
 	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po \
 	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mip-root-replay.Po \
 	./$(DEPDIR)/mipstart-test.Po ./$(DEPDIR)/mir2-bench.Po \
-	./$(DEPDIR)/probing-bench.Po ./$(DEPDIR)/row-activity-test.Po \
-	./$(DEPDIR)/rowred-test.Po ./$(DEPDIR)/twomir-bench.Po \
-	./$(DEPDIR)/zerohalf-bench.Po
+	./$(DEPDIR)/oddwheel-bench.Po ./$(DEPDIR)/probing-bench.Po \
+	./$(DEPDIR)/row-activity-test.Po ./$(DEPDIR)/rowred-test.Po \
+	./$(DEPDIR)/twomir-bench.Po ./$(DEPDIR)/zerohalf-bench.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -245,9 +249,10 @@ SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
 	$(lazy_constraint_test_SOURCES) $(lp_relaxation_test_SOURCES) \
 	$(mip_c_solve_SOURCES) $(mip_debug_cuts_SOURCES) \
 	$(mip_root_replay_SOURCES) $(mipstart_test_SOURCES) \
-	$(mir2_bench_SOURCES) $(probing_bench_SOURCES) \
-	$(row_activity_test_SOURCES) $(rowred_test_SOURCES) \
-	$(twomir_bench_SOURCES) $(zerohalf_bench_SOURCES)
+	$(mir2_bench_SOURCES) $(oddwheel_bench_SOURCES) \
+	$(probing_bench_SOURCES) $(row_activity_test_SOURCES) \
+	$(rowred_test_SOURCES) $(twomir_bench_SOURCES) \
+	$(zerohalf_bench_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1068,6 +1073,54 @@ twomir_bench_LDADD = ../src/libCbc.la
 # Not part of the regression suite; it is a measurement tool.
 mir2_bench_SOURCES = mir2-bench.cpp
 mir2_bench_LDADD = ../src/libCbc.la
+########################################################################
+#         odd-wheel replay benchmark (measurement tool)                #
+########################################################################
+#
+# oddwheel-bench replays one CglOddWheel call. It needs NO fixture format of its
+# own: odd-wheel separation consumes exactly what clique separation consumes --
+# the conflict graph, the LP solution and the reduced costs -- so it reads the
+# fixtures CbcClqFixtureDump.hpp already writes, unchanged. Everything the
+# bkclique-bench comment says about why the graph is loaded rather than rebuilt
+# applies here verbatim and is not repeated.
+#
+# WHY IT DRIVES CglOddWheel AND NOT CoinOddWheelSeparator DIRECTLY. The separator
+# is a CoinUtils class with a public constructor, so a probe could build one from a
+# graph in a dozen lines -- and would then measure a structure the real call site
+# never builds. That mistake has already been made once on this stack: a
+# standalone probe of clique extension reported 0.95s against ~19ms actually
+# spent, because it built the full conflict graph where the real path uses a small
+# induced subgraph. So the generator is driven through generateCuts(), which owns
+# the doubled x/rc arrays, the CoinCutPool dominance filter and the duplicate-index
+# rejection, and the separator's internals are read back afterwards through
+# CglOddWheel::stats().
+#
+# THE COUNTERS ARE SELF-CHECKING, which the timers are not. Every
+# CoinShortestPath::find() call ends in exactly one of five outcomes, so
+# ohShort + ohRepeated + ohNotViol + ohDuplicate + oddHoles == spFindCalls must
+# hold; a violation means the instrumentation is wrong, not the algorithm.
+#
+# Control flag: --ext-method=0 turns off wheel-center lifting outright (the gate
+# is real -- searchOddWheels() skips the entire lifting loop when extMethod_ is 0),
+# so time(2) - time(0) prices lifting and time(0) is the floor. This is the
+# analogue of the control that showed clique separation's cost was extension
+# rather than the search, and it is the highest-value flag here.
+#
+# Its --max-seconds defaults to 0, i.e. NO LIMIT, and that is a correctness
+# requirement rather than a convenience. CbcCutGenerator.cpp hands the generator
+# whatever wall clock remains, and the separator checks that budget inside two
+# O(icaCount^2) loops -- so under a nonzero limit the arc count, the odd holes
+# found and the cuts emitted all become functions of machine load, and two runs of
+# one binary stop agreeing. With the limit off the counters are a function of the
+# fixture alone. The timeLimitHit column says whether any round aborted.
+#
+# There is deliberately no --min-viol: the threshold is the compile-time constant
+# ODDWHEEL_SEP_DEF_MIN_VIOL in CoinOddWheelSeparator.cpp with no setter anywhere,
+# and adding one purely to have a flag would change the code under measurement.
+#
+# Not part of the regression suite; it is a measurement tool.
+oddwheel_bench_SOURCES = oddwheel-bench.cpp
+oddwheel_bench_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:
@@ -1170,6 +1223,10 @@ mir2-bench$(EXEEXT): $(mir2_bench_OBJECTS) $(mir2_bench_DEPENDENCIES) $(EXTRA_mi
 	@rm -f mir2-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(mir2_bench_OBJECTS) $(mir2_bench_LDADD) $(LIBS)
 
+oddwheel-bench$(EXEEXT): $(oddwheel_bench_OBJECTS) $(oddwheel_bench_DEPENDENCIES) $(EXTRA_oddwheel_bench_DEPENDENCIES) 
+	@rm -f oddwheel-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(oddwheel_bench_OBJECTS) $(oddwheel_bench_LDADD) $(LIBS)
+
 probing-bench$(EXEEXT): $(probing_bench_OBJECTS) $(probing_bench_DEPENDENCIES) $(EXTRA_probing_bench_DEPENDENCIES) 
 	@rm -f probing-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(probing_bench_OBJECTS) $(probing_bench_LDADD) $(LIBS)
@@ -1212,6 +1269,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-root-replay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mipstart-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mir2-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oddwheel-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/probing-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/row-activity-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rowred-test.Po@am__quote@ # am--include-marker
@@ -1361,6 +1419,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/mip-root-replay.Po
 	-rm -f ./$(DEPDIR)/mipstart-test.Po
 	-rm -f ./$(DEPDIR)/mir2-bench.Po
+	-rm -f ./$(DEPDIR)/oddwheel-bench.Po
 	-rm -f ./$(DEPDIR)/probing-bench.Po
 	-rm -f ./$(DEPDIR)/row-activity-test.Po
 	-rm -f ./$(DEPDIR)/rowred-test.Po
@@ -1427,6 +1486,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/mip-root-replay.Po
 	-rm -f ./$(DEPDIR)/mipstart-test.Po
 	-rm -f ./$(DEPDIR)/mir2-bench.Po
+	-rm -f ./$(DEPDIR)/oddwheel-bench.Po
 	-rm -f ./$(DEPDIR)/probing-bench.Po
 	-rm -f ./$(DEPDIR)/row-activity-test.Po
 	-rm -f ./$(DEPDIR)/rowred-test.Po

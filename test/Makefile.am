@@ -47,7 +47,7 @@ noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test
 	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test \
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
 	twomir-bench mir2-bench impclique-explore impclique-bench impclique-vs-clique-bench \
-	impclique-real-bench mip-root-replay
+	impclique-real-bench mip-root-replay oddwheel-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -721,3 +721,54 @@ twomir_bench_LDADD = ../src/libCbc.la
 mir2_bench_SOURCES = mir2-bench.cpp
 
 mir2_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#         odd-wheel replay benchmark (measurement tool)                #
+########################################################################
+#
+# oddwheel-bench replays one CglOddWheel call. It needs NO fixture format of its
+# own: odd-wheel separation consumes exactly what clique separation consumes --
+# the conflict graph, the LP solution and the reduced costs -- so it reads the
+# fixtures CbcClqFixtureDump.hpp already writes, unchanged. Everything the
+# bkclique-bench comment says about why the graph is loaded rather than rebuilt
+# applies here verbatim and is not repeated.
+#
+# WHY IT DRIVES CglOddWheel AND NOT CoinOddWheelSeparator DIRECTLY. The separator
+# is a CoinUtils class with a public constructor, so a probe could build one from a
+# graph in a dozen lines -- and would then measure a structure the real call site
+# never builds. That mistake has already been made once on this stack: a
+# standalone probe of clique extension reported 0.95s against ~19ms actually
+# spent, because it built the full conflict graph where the real path uses a small
+# induced subgraph. So the generator is driven through generateCuts(), which owns
+# the doubled x/rc arrays, the CoinCutPool dominance filter and the duplicate-index
+# rejection, and the separator's internals are read back afterwards through
+# CglOddWheel::stats().
+#
+# THE COUNTERS ARE SELF-CHECKING, which the timers are not. Every
+# CoinShortestPath::find() call ends in exactly one of five outcomes, so
+# ohShort + ohRepeated + ohNotViol + ohDuplicate + oddHoles == spFindCalls must
+# hold; a violation means the instrumentation is wrong, not the algorithm.
+#
+# Control flag: --ext-method=0 turns off wheel-center lifting outright (the gate
+# is real -- searchOddWheels() skips the entire lifting loop when extMethod_ is 0),
+# so time(2) - time(0) prices lifting and time(0) is the floor. This is the
+# analogue of the control that showed clique separation's cost was extension
+# rather than the search, and it is the highest-value flag here.
+#
+# Its --max-seconds defaults to 0, i.e. NO LIMIT, and that is a correctness
+# requirement rather than a convenience. CbcCutGenerator.cpp hands the generator
+# whatever wall clock remains, and the separator checks that budget inside two
+# O(icaCount^2) loops -- so under a nonzero limit the arc count, the odd holes
+# found and the cuts emitted all become functions of machine load, and two runs of
+# one binary stop agreeing. With the limit off the counters are a function of the
+# fixture alone. The timeLimitHit column says whether any round aborted.
+#
+# There is deliberately no --min-viol: the threshold is the compile-time constant
+# ODDWHEEL_SEP_DEF_MIN_VIOL in CoinOddWheelSeparator.cpp with no setter anywhere,
+# and adding one purely to have a flag would change the code under measurement.
+#
+# Not part of the regression suite; it is a measurement tool.
+
+oddwheel_bench_SOURCES = oddwheel-bench.cpp
+
+oddwheel_bench_LDADD = ../src/libCbc.la

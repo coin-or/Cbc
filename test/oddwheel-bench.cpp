@@ -567,7 +567,8 @@ static const char *CSV_HEADER
     "prepMethod,prepWalkCost,prepUnsorted,prepVerifyArcs,prepMismatch,"
     "prepWalkOnly,prepPairOnly,"
     "certChecked,certBadCycle,certBadCenterAdj,certBadCenterClq,certBadAlpha,"
-    "certBadTranslate,certComplCycle,certComplCenter,certComplPair";
+    "certBadTranslate,certComplCycle,certComplCenter,certComplPair,"
+    "certCenterOnComplCycle,certComplAtLeastK";
 
 /**
  * Sums of CglOddWheel::stats() over the rounds.
@@ -589,6 +590,7 @@ struct Totals {
   size_t certChecked = 0, certBadCycle = 0, certBadCenterAdj = 0;
   size_t certBadCenterClq = 0, certBadAlpha = 0, certBadTranslate = 0;
   size_t certComplCycle = 0, certComplCenter = 0, certComplPair = 0;
+  size_t certCenterOnComplCycle = 0, certComplAtLeastK = 0;
   size_t oddHoles = 0, ohShort = 0, ohRepeated = 0, ohNotViol = 0, ohDuplicate = 0;
   size_t wheelCenters = 0, wcElements = 0;
   size_t cutsBeforePool = 0, cutsDupIdx = 0, cutsAfterPool = 0;
@@ -626,6 +628,8 @@ struct Totals {
     certComplCycle += s.certComplCycle;
     certComplCenter += s.certComplCenter;
     certComplPair += s.certComplPair;
+    certCenterOnComplCycle += s.certCenterOnComplCycle;
+    certComplAtLeastK += s.certComplAtLeastK;
 
     spFindCalls += s.sep.spFindCalls;
     oddHoles += s.sep.oddHolesFound;
@@ -891,7 +895,7 @@ int main(int argc, char *argv[])
          "%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
          "%.6f,%.6f,%s,%s,%s,"
          "%lu,%lu,%lu,%lu,%lu,%lu,%lu,"
-         "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu\n",
+         "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu\n",
     baseName(stem).c_str(), (unsigned long)extMethod, round,
     f.si.getNumRows() - nRows0, totalCuts, totalViol, maxViol,
     totalCuts ? (double)totalCutLen / totalCuts : 0.0,
@@ -920,7 +924,9 @@ int main(int argc, char *argv[])
     (unsigned long)tot.certBadCenterAdj, (unsigned long)tot.certBadCenterClq,
     (unsigned long)tot.certBadAlpha, (unsigned long)tot.certBadTranslate,
     (unsigned long)tot.certComplCycle, (unsigned long)tot.certComplCenter,
-    (unsigned long)tot.certComplPair);
+    (unsigned long)tot.certComplPair,
+    (unsigned long)tot.certCenterOnComplCycle,
+    (unsigned long)tot.certComplAtLeastK);
 
   if (stageTimes)
     printStageTimes(tot, totalSepTime);

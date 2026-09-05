@@ -568,7 +568,11 @@ static const char *CSV_HEADER
     "prepWalkOnly,prepPairOnly,"
     "certChecked,certBadCycle,certBadCenterAdj,certBadCenterClq,certBadAlpha,"
     "certBadTranslate,certComplCycle,certComplCenter,certComplPair,"
-    "certCenterOnComplCycle,certComplAtLeastK";
+    "certCenterOnComplCycle,certComplAtLeastK,"
+    // searchWheelCenter() filter attribution; appended so earlier column
+    // positions are unchanged and older sweep CSVs stay comparable.
+    "wcCalls,wcPool,wcRejInCycle,wcRejDegree,wcRejAdjacency,wcRejCost,"
+    "wcCandidates,wcCliqueDropped";
 
 /**
  * Sums of CglOddWheel::stats() over the rounds.
@@ -593,6 +597,8 @@ struct Totals {
   size_t certCenterOnComplCycle = 0, certComplAtLeastK = 0;
   size_t oddHoles = 0, ohShort = 0, ohRepeated = 0, ohNotViol = 0, ohDuplicate = 0;
   size_t wheelCenters = 0, wcElements = 0;
+  size_t wcCalls = 0, wcPool = 0, wcRejInCycle = 0, wcRejDegree = 0;
+  size_t wcRejAdjacency = 0, wcRejCost = 0, wcCandidates = 0, wcCliqueDropped = 0;
   size_t cutsBeforePool = 0, cutsDupIdx = 0, cutsAfterPool = 0;
   size_t cutsZeroCoefs = 0, cutsEmpty = 0;
   bool timeLimitHit = false;
@@ -639,6 +645,14 @@ struct Totals {
     ohDuplicate += s.sep.oddHolesDuplicate;
     wheelCenters += s.sep.wheelCenters;
     wcElements += s.sep.wheelCenterElements;
+    wcCalls += s.sep.wcCalls;
+    wcPool += s.sep.wcPool;
+    wcRejInCycle += s.sep.wcRejInCycle;
+    wcRejDegree += s.sep.wcRejDegree;
+    wcRejAdjacency += s.sep.wcRejAdjacency;
+    wcRejCost += s.sep.wcRejCost;
+    wcCandidates += s.sep.wcCandidates;
+    wcCliqueDropped += s.sep.wcCliqueDropped;
     timeLimitHit = timeLimitHit || s.sep.timeLimitReached;
 
     cutsBeforePool += s.cutsBeforePool;
@@ -698,6 +712,26 @@ static void printStageTimes(const Totals &t, double totalSepTime)
     (unsigned long)t.cutsBeforePool, (unsigned long)t.cutsDupIdx,
     (unsigned long)t.cutsZeroCoefs, (unsigned long)t.cutsEmpty,
     (unsigned long)t.cutsAfterPool);
+
+  // Every pooled wheel-centre candidate is dropped by exactly one of the four
+  // filters or survives, so this identity must hold. It is what makes the
+  // per-filter percentages a partition rather than four unrelated tallies --
+  // without it, a candidate rejected by two filters at once (or a counter
+  // placed on the wrong side of a `continue`) would silently skew the split.
+  const size_t wcAccounted = t.wcRejInCycle + t.wcRejDegree + t.wcRejAdjacency
+                           + t.wcRejCost + t.wcCandidates;
+  if (wcAccounted != t.wcPool)
+    fprintf(stderr, "  ** wheel-centre attribution does not partition the pool:"
+                    " %lu accounted vs %lu pooled (delta %ld)\n",
+      (unsigned long)wcAccounted, (unsigned long)t.wcPool,
+      (long)wcAccounted - (long)t.wcPool);
+  fprintf(stderr, "  wheel-centre pool %lu = %lu in cycle + %lu low degree"
+                  " + %lu not adjacent to all of C + %lu below cost gate"
+                  " + %lu candidates (%lu dropped by the clique test)\n\n",
+    (unsigned long)t.wcPool, (unsigned long)t.wcRejInCycle,
+    (unsigned long)t.wcRejDegree, (unsigned long)t.wcRejAdjacency,
+    (unsigned long)t.wcRejCost, (unsigned long)t.wcCandidates,
+    (unsigned long)t.wcCliqueDropped);
 }
 
 int main(int argc, char *argv[])
@@ -895,7 +929,8 @@ int main(int argc, char *argv[])
          "%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
          "%.6f,%.6f,%s,%s,%s,"
          "%lu,%lu,%lu,%lu,%lu,%lu,%lu,"
-         "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu\n",
+         "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,"
+         "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu\n",
     baseName(stem).c_str(), (unsigned long)extMethod, round,
     f.si.getNumRows() - nRows0, totalCuts, totalViol, maxViol,
     totalCuts ? (double)totalCutLen / totalCuts : 0.0,
@@ -926,7 +961,11 @@ int main(int argc, char *argv[])
     (unsigned long)tot.certComplCycle, (unsigned long)tot.certComplCenter,
     (unsigned long)tot.certComplPair,
     (unsigned long)tot.certCenterOnComplCycle,
-    (unsigned long)tot.certComplAtLeastK);
+    (unsigned long)tot.certComplAtLeastK,
+    (unsigned long)tot.wcCalls, (unsigned long)tot.wcPool,
+    (unsigned long)tot.wcRejInCycle, (unsigned long)tot.wcRejDegree,
+    (unsigned long)tot.wcRejAdjacency, (unsigned long)tot.wcRejCost,
+    (unsigned long)tot.wcCandidates, (unsigned long)tot.wcCliqueDropped);
 
   if (stageTimes)
     printStageTimes(tot, totalSepTime);

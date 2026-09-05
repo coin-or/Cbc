@@ -523,6 +523,13 @@ static void usage(const char *prog)
     "  --rebuild-cgraph    rebuild the graph from the matrix instead of loading\n"
     "                      the captured one (not faithful; for comparison only)\n"
     "  --stage-times       also print a human-readable stage breakdown to stderr\n"
+    "  --verify-prepare    build the auxiliary graph's arcs both ways and check\n"
+    "                      they agree; prepMismatch must come out 0. Diagnostic\n"
+    "                      only -- it roughly doubles graph preparation time\n"
+    "  --check-validity    certify every odd wheel against the conflict graph\n"
+    "                      before it becomes a row cut. certBad* must all be 0.\n"
+    "                      Needs no reference solution, so unlike the row-cut\n"
+    "                      debugger it works on every fixture\n"
     "  --header            print the CSV header line and exit\n"
     "  --csv-header        print the CSV header before the data line\n"
     "  --quiet             suppress warnings\n",
@@ -556,7 +563,11 @@ static const char *CSV_HEADER
     "wheelCenters,wcElements,avgWcSize,cutsBeforePool,cutsDupIdx,cutsZeroCoefs,"
     "cutsEmpty,cutsAfterPool,"
     "timeLimitHit,tSetup,tSeparator,tActive,tPrepArcs,tPrepRev,tPrepSpf,tSearch,"
-    "tWheelCenter,tCutPool,cutsPerRound,violPerRound,objImprovePerRound";
+    "tWheelCenter,tCutPool,cutsPerRound,violPerRound,objImprovePerRound,"
+    "prepMethod,prepWalkCost,prepUnsorted,prepVerifyArcs,prepMismatch,"
+    "prepWalkOnly,prepPairOnly,"
+    "certChecked,certBadCycle,certBadCenterAdj,certBadCenterClq,certBadAlpha,"
+    "certBadTranslate,certComplCycle,certComplCenter,certComplPair";
 
 /**
  * Sums of CglOddWheel::stats() over the rounds.
@@ -568,6 +579,16 @@ static const char *CSV_HEADER
  */
 struct Totals {
   size_t icaCount = 0, arcs = 0, spFindCalls = 0;
+  // prepareGraph() picks its method per call, so a run where the rounds disagree
+  // is worth seeing rather than averaging away: 3 means both methods were used.
+  size_t prepMethod = 0, prepWalkCost = 0, prepVerifyArcs = 0, prepMismatch = 0;
+  size_t prepUnsorted = 0, prepWalkOnly = 0, prepPairOnly = 0;
+  // setCheckValidity(): certChecked is coverage, the five certBad* are the
+  // verdict and must be 0, the three certCompl* measure how much of the cut
+  // set actually depends on the complemented half of the doubled graph.
+  size_t certChecked = 0, certBadCycle = 0, certBadCenterAdj = 0;
+  size_t certBadCenterClq = 0, certBadAlpha = 0, certBadTranslate = 0;
+  size_t certComplCycle = 0, certComplCenter = 0, certComplPair = 0;
   size_t oddHoles = 0, ohShort = 0, ohRepeated = 0, ohNotViol = 0, ohDuplicate = 0;
   size_t wheelCenters = 0, wcElements = 0;
   size_t cutsBeforePool = 0, cutsDupIdx = 0, cutsAfterPool = 0;
@@ -587,6 +608,24 @@ struct Totals {
       icaCount = s.sep.activeColumns;
     if (s.sep.arcs > arcs)
       arcs = s.sep.arcs;
+    prepMethod |= s.sep.prepareMethod;
+    if (s.sep.prepareWalkCost > prepWalkCost)
+      prepWalkCost = s.sep.prepareWalkCost;
+    prepVerifyArcs += s.sep.prepareVerifyArcs;
+    prepMismatch += s.sep.prepareMismatches;
+    prepUnsorted += s.sep.prepareUnsorted;
+    prepWalkOnly += s.sep.prepareWalkOnly;
+    prepPairOnly += s.sep.preparePairOnly;
+
+    certChecked += s.certChecked;
+    certBadCycle += s.certBadCycle;
+    certBadCenterAdj += s.certBadCenterAdj;
+    certBadCenterClq += s.certBadCenterClq;
+    certBadAlpha += s.certBadAlpha;
+    certBadTranslate += s.certBadTranslate;
+    certComplCycle += s.certComplCycle;
+    certComplCenter += s.certComplCenter;
+    certComplPair += s.certComplPair;
 
     spFindCalls += s.sep.spFindCalls;
     oddHoles += s.sep.oddHolesFound;
@@ -677,6 +716,8 @@ int main(int argc, char *argv[])
   bool csvHeader = false;
   bool quiet = false;
   bool stageTimes = false;
+  bool verifyPrepare = false;
+  bool checkValidity = false;
   int maxRounds = 4;
   size_t extMethod = 2;
   double maxSeconds = 0.0;
@@ -694,6 +735,10 @@ int main(int argc, char *argv[])
       quiet = true;
     } else if (strcmp(a, "--stage-times") == 0) {
       stageTimes = true;
+    } else if (strcmp(a, "--verify-prepare") == 0) {
+      verifyPrepare = true;
+    } else if (strcmp(a, "--check-validity") == 0) {
+      checkValidity = true;
     } else if (strncmp(a, "--rounds=", 9) == 0) {
       maxRounds = atoi(a + 9);
     } else if (strncmp(a, "--ext-method=", 13) == 0) {
@@ -765,6 +810,10 @@ int main(int argc, char *argv[])
     CglOddWheel oddWheel(extMethod);
     if (maxSeconds > 0.0)
       oddWheel.setMaxSeconds(maxSeconds);
+    if (verifyPrepare)
+      oddWheel.setVerifyPrepare(true);
+    if (checkValidity)
+      oddWheel.setCheckValidity(true);
 
     // The solution the cuts are generated against, kept for violation scoring:
     // getColSolution() moves under applyCuts/resolve.
@@ -840,7 +889,9 @@ int main(int argc, char *argv[])
          "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,"
          "%lu,%lu,%.3f,%lu,%lu,%lu,%lu,%lu,"
          "%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
-         "%.6f,%.6f,%s,%s,%s\n",
+         "%.6f,%.6f,%s,%s,%s,"
+         "%lu,%lu,%lu,%lu,%lu,%lu,%lu,"
+         "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu\n",
     baseName(stem).c_str(), (unsigned long)extMethod, round,
     f.si.getNumRows() - nRows0, totalCuts, totalViol, maxViol,
     totalCuts ? (double)totalCutLen / totalCuts : 0.0,
@@ -860,7 +911,16 @@ int main(int argc, char *argv[])
     (unsigned long)tot.cutsAfterPool, (int)tot.timeLimitHit,
     tot.tSetup, tot.tSeparator, tot.tActive, tot.tPrepArcs, tot.tPrepRev,
     tot.tPrepSpf, tot.tSearch, tot.tWheelCenter, tot.tCutPool,
-    cutsPerRound.c_str(), violPerRound.c_str(), objImprovePerRound.c_str());
+    cutsPerRound.c_str(), violPerRound.c_str(), objImprovePerRound.c_str(),
+    (unsigned long)tot.prepMethod, (unsigned long)tot.prepWalkCost,
+    (unsigned long)tot.prepUnsorted, (unsigned long)tot.prepVerifyArcs,
+    (unsigned long)tot.prepMismatch, (unsigned long)tot.prepWalkOnly,
+    (unsigned long)tot.prepPairOnly,
+    (unsigned long)tot.certChecked, (unsigned long)tot.certBadCycle,
+    (unsigned long)tot.certBadCenterAdj, (unsigned long)tot.certBadCenterClq,
+    (unsigned long)tot.certBadAlpha, (unsigned long)tot.certBadTranslate,
+    (unsigned long)tot.certComplCycle, (unsigned long)tot.certComplCenter,
+    (unsigned long)tot.certComplPair);
 
   if (stageTimes)
     printStageTimes(tot, totalSepTime);

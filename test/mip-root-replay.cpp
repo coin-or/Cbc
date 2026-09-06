@@ -367,9 +367,15 @@ int main(int argc, char **argv)
                     "different vertex\n",
       name.c_str(), warmStartIters);
   }
+  // The LP relaxation bound *before any cuts* -- the fixture is captured at
+  // exactly this point (preprocessed problem, optimal root basis, entering
+  // the cut-generation loop for the first time) -- so this is the correct
+  // baseline for a "gap closed by cuts" metric, as opposed to the raw
+  // post-cuts bound alone which isn't comparable across instances.
+  const double lpBound = si.getObjValue();
 
-  printf("[replay] %s: rows=%d cols=%d warmStartIters=%d loadTime=%.4fs\n",
-    name.c_str(), si.getNumRows(), si.getNumCols(), warmStartIters, loadTime);
+  printf("[replay] %s: rows=%d cols=%d warmStartIters=%d loadTime=%.4fs lpBound=%.10g\n",
+    name.c_str(), si.getNumRows(), si.getNumCols(), warmStartIters, loadTime, lpBound);
 
   CbcModel model(si);
   model.setLogLevel(0);

@@ -11225,8 +11225,12 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
       // On backoff after repeated consecutive misses at root -- skip until
       // the scheduled retry pass (see bookkeeping below).
       const int nextRetry = generator_[i]->nextRetryPass();
-      if (nextRetry > 0 && currentPassNumber_ < nextRetry)
+      if (nextRetry > 0 && currentPassNumber_ < nextRetry) {
         generate = false;
+        if (getenv("CBC_CUT_ADAPTIVE_SKIP_DEBUG"))
+          fprintf(stderr, "[adaptive-skip] pass=%d generator=%s SKIPPED (retry at %d)\n",
+            currentPassNumber_, generator_[i]->cutGeneratorName(), nextRetry);
+      }
     }
     const OsiRowCutDebugger *debugger = nullptr;
     bool onOptimalPath = false;
@@ -11490,6 +11494,10 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
     numberColumnCutsAfter = theseCuts.sizeColCuts();
     if (generate && !node && !parentModel_ && cutAdaptiveSkip) {
       bool producedCuts = (numberRowCutsAfter > numberRowCutsBefore) || (numberColumnCutsAfter > numberColumnCutsBefore);
+      if (getenv("CBC_CUT_ADAPTIVE_SKIP_DEBUG"))
+        fprintf(stderr, "[adaptive-skip] pass=%d generator=%s produced=%d misses-before=%d\n",
+          currentPassNumber_, generator_[i]->cutGeneratorName(), (int)producedCuts,
+          generator_[i]->numberConsecutiveMisses());
       if (producedCuts) {
         generator_[i]->setNumberConsecutiveMisses(0);
         generator_[i]->setNextRetryPass(0);
@@ -11502,6 +11510,11 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
           period = (period <= 0) ? ADAPTIVE_SKIP_INITIAL_PERIOD : CoinMin(period * 2, ADAPTIVE_SKIP_MAX_PERIOD);
           generator_[i]->setRetryPeriod(period);
           generator_[i]->setNextRetryPass(currentPassNumber_ + period);
+          if (getenv("CBC_CUT_ADAPTIVE_SKIP_DEBUG"))
+            fprintf(stderr, "[adaptive-skip] pass=%d generator=%s entering backoff "
+                            "(misses=%d, retry at %d)\n",
+              currentPassNumber_, generator_[i]->cutGeneratorName(), misses,
+              currentPassNumber_ + period);
         }
       }
     }

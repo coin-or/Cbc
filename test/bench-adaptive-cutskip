@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Benchmark the opt-in "adaptive root cut-generator skip" feature
+# (CbcModel::setCutGeneratorAdaptiveSkip() / CBC_CUT_ADAPTIVE_SKIP env var,
+# see CbcModel.cpp's serialCuts()) across every mip-root-replay fixture in
+# ~/instances/mip-sanity-data/rootFixtures, running the "root + first N
+# nodes" replay both with the feature off (baseline) and on, in parallel.
+#
+# Usage:
+#   ./bench-adaptive-cutskip [--fixture-dir=PATH] [--nodes=N] [--sec=N]
+#                            [--jobs=N] [--out=DIR]
+#
+# Writes two TSV files under --out (default: test/sanity-results/cutskip-bench):
+#   base.tsv  adaptive.tsv
+# each with columns: instance rows cols nodes optimal infeasible bound best gap bbTime
+# (missing/failed runs get a single "instance\tERROR" line instead).
+#
+# Safe to run under nohup/detached; every instance is an independent
+# subprocess with its own hard timeout, so a single hang cannot wedge the
+# whole batch.
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPLAY="$SCRIPT_DIR/mip-root-replay"
+FIXTURE_DIR="${CBC_ROOT_FIXTURE_DIR:-$HOME/instances/mip-sanity-data/rootFixtures}"
+
+# Internal worker mode (invoked by GNU parallel, one process per
+# instance/variant pair). GNU parallel dispatches through /bin/sh, which
+# does not see exported bash functions, so re-invoke this same script
+# rather than exporting one (same fix as gen-root-fixtures). Must be
+# checked BEFORE the generic option-parsing loop below, since worker
+# invocations pass positional args ("base"/"adaptive", node/sec limits)
+# that loop would otherwise reject as unknown options.
+if [[ "${1:-}" == --worker=* ]]; then
+  inst="${1#--worker=}"
+  variant="$2"   # "base" or "adaptive"
+  nodes="$3"
+  sec="$4"
+  if [[ "$variant" == adaptive ]]; then
+    export CBC_CUT_ADAPTIVE_SKIP=1
+  else
+    unset CBC_CUT_ADAPTIVE_SKIP
+  fi
+  out="$(timeout -k 5 "$((sec + 15))s" "$REPLAY" "$inst" --fixture-dir="$FIXTURE_DIR" \
+         --nodes="$nodes" --sec="$sec" --quiet 2>&1)"
+  rc=$?
+  line1="$(echo "$out" | grep -m1 '^\[replay\].*rows=')"
+  line2="$(echo "$out" | grep -m1 '^\[replay\].*nodes=.*bound=')"
+  if [[ $rc -ne 0 || -z "$line2" ]]; then
+    printf '%s\tERROR\trc=%s\n' "$inst" "$rc"
+    exit 0
+  fi
+  rows="$(sed -n 's/.*rows=\([0-9]*\).*/\1/p' <<<"$line1")"
+  cols="$(sed -n 's/.*cols=\([0-9]*\).*/\1/p' <<<"$line1")"
+  nnodes="$(sed -n 's/.*nodes=\([0-9]*\).*/\1/p' <<<"$line2")"
+  optimal="$(sed -n 's/.*optimal=\([0-9]*\).*/\1/p' <<<"$line2")"
+  infeasible="$(sed -n 's/.*infeasible=\([0-9]*\).*/\1/p' <<<"$line2")"
+  bound="$(sed -n 's/.*bound=\([^ ]*\).*/\1/p' <<<"$line2")"
+  best="$(sed -n 's/.*best=\([^ ]*\).*/\1/p' <<<"$line2")"
+  gap="$(sed -n 's/.*gap=\([^ ]*\).*/\1/p' <<<"$line2")"
+  bbtime="$(sed -n 's/.*bbTime=\([0-9.]*\)s.*/\1/p' <<<"$line2")"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$inst" "$rows" "$cols" "$nnodes" "$optimal" "$infeasible" "$bound" "$best" "$gap" "$bbtime"
+  exit 0
+fi
+
+NODES=16
+SEC=120
+JOBS="$(nproc)"
+OUT_DIR="$SCRIPT_DIR/sanity-results/cutskip-bench"
+
+for arg in "$@"; do
+  case "$arg" in
+    --fixture-dir=*) FIXTURE_DIR="${arg#*=}" ;;
+    --nodes=*) NODES="${arg#*=}" ;;
+    --sec=*) SEC="${arg#*=}" ;;
+    --jobs=*) JOBS="${arg#*=}" ;;
+    --out=*) OUT_DIR="${arg#*=}" ;;
+    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+if [[ ! -x "$REPLAY" ]]; then
+  echo "Building mip-root-replay..." >&2
+  make -C "$SCRIPT_DIR" -j"$JOBS" mip-root-replay || exit 1
+fi
+
+mkdir -p "$OUT_DIR"
+
+mapfile -t INSTANCES < <(ls "$FIXTURE_DIR"/*.root.meta 2>/dev/null | sed 's#.*/##; s/\.root\.meta$//' | sort)
+echo "${#INSTANCES[@]} fixtured instances found in $FIXTURE_DIR" >&2
+echo "nodes=$NODES sec=$SEC jobs=$JOBS out=$OUT_DIR" >&2
+
+HEADER='instance\trows\tcols\tnodes\toptimal\tinfeasible\tbound\tbest\tgap\tbbTime'
+
+for variant in base adaptive; do
+  echo "=== running variant: $variant ===" >&2
+  echo -e "$HEADER" > "$OUT_DIR/$variant.tsv.tmp"
+  printf '%s\n' "${INSTANCES[@]}" | \
+    parallel --will-cite -j "$JOBS" --line-buffer \
+      "$SCRIPT_DIR/$(basename "$0")" --worker={} "$variant" "$NODES" "$SEC" \
+      >> "$OUT_DIR/$variant.tsv.tmp"
+  mv "$OUT_DIR/$variant.tsv.tmp" "$OUT_DIR/$variant.tsv"
+  n_err=$(grep -c 'ERROR' "$OUT_DIR/$variant.tsv" || true)
+  echo "variant $variant done: $(( $(wc -l < "$OUT_DIR/$variant.tsv") - 1 )) rows, $n_err errors" >&2
+done
+
+echo "Done. Results in $OUT_DIR/{base,adaptive}.tsv" >&2

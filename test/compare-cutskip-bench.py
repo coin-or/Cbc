@@ -104,9 +104,12 @@ Metrics = namedtuple("Metrics", "instance dualGapClosed primalGapClosed bbTime "
 
 def compute_metrics(row, bks_map, fixture_dir, tag):
     inst = row["instance"]
-    bbTime = to_float(row.get("bbTime"))
+    # Accept both the mip-root-replay schema (bbTime/best) and the
+    # real-CLI benchmark schema (elapsed/obj, from
+    # bench-adaptive-cutskip-cli) so this script works with either.
+    bbTime = to_float(row.get("bbTime", row.get("elapsed")))
     bound = to_float(row.get("bound"))
-    best = to_float(row.get("best"))
+    best = to_float(row.get("best", row.get("obj")))
     if bbTime is None or bound is None:
         return None  # ERROR row (timeout/crash) -- excluded, reported separately
 

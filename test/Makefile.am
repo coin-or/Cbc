@@ -47,7 +47,7 @@ noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test
 	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test \
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
 	twomir-bench mir2-bench impclique-explore impclique-bench impclique-vs-clique-bench \
-	impclique-real-bench
+	impclique-real-bench mip-root-replay
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -416,6 +416,25 @@ impclique_vs_clique_bench_LDADD = ../src/libCbc.la
 impclique_real_bench_SOURCES = impclique-real-bench.cpp
 
 impclique_real_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#          Root-node processing replay (cuts + heuristics fixtures)    #
+########################################################################
+#
+# mip-root-replay loads a fixture written by CbcRootFixtureDump.hpp
+# (CBC_DUMP_ROOT_FIXTURE) -- the preprocessed problem plus its optimal root
+# LP basis -- and rebuilds a CbcModel directly around it, attaching the same
+# default cut generators / heuristics CbcStrategyDefault gives the normal
+# `cbc` command line, then runs branchAndBound() with a small node limit.
+# Since the fixture already sits at the point CBC reaches after
+# pre-processing + the root LP, this is the fast iteration loop for
+# experimenting with root cut generation / heuristics strategies -- see
+# ROOT-FIXTURES.md and `gen-root-fixtures` for how fixtures are produced.
+# Not part of the regression suite; a measurement tool.
+
+mip_root_replay_SOURCES = mip-root-replay.cpp
+
+mip_root_replay_LDADD = ../src/libCbc.la
 
 ########################################################################
 #        0-1/2 separation replay benchmark (measurement tool)          #

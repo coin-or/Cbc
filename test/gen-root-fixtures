@@ -1,0 +1,269 @@
+#!/usr/bin/env bash
+# gen-root-fixtures — generate root-processing fixtures for every instance in
+# mip-sanity-data, for fast offline experimentation on cut generation and
+# root heuristics (see CbcRootFixtureDump.hpp and ROOT-FIXTURES.md).
+#
+# A "root fixture" is the preprocessed problem + optimal root LP basis, dumped
+# at the exact point CBC is about to enter its cut-generation loop (root,
+# first pass, before any cut is applied). Loading one lets a replay driver
+# (test/mip-root-replay) re-enter that loop directly, without paying for
+# pre-processing or the root LP solve again -- so a strategy sweep over cut
+# generators / heuristics costs milliseconds per instance instead of a full
+# solve.
+#
+# This script never leaves the workspace's normal `cbc` binary/install
+# altered: fixture dumping only happens in a build compiled with
+# -DCBC_DUMP_ROOT_FIXTURE, which this script builds into a private, throwaway
+# binary (test/.cbc-rootdump-bin) and then rebuilds+reinstalls the normal
+# no-dump `cbc` immediately afterward, before running anything. The dump
+# binary is entirely separate from the one `./test`/day-to-day work uses.
+#
+# Strategy (largest instances first, two passes, resumable):
+#   Pass 1 (default): every instance not yet dumped, single-threaded,
+#     moderate per-instance wall time limit (default 600s) -- since dumping
+#     happens right after the root LP solve, this only has to cover
+#     pre-processing + the root LP + one cut-generation/heuristics round for
+#     easy/medium instances, which is normally seconds.
+#   Pass 2 (--pass2): only instances still missing a fixture after pass 1
+#     (i.e. the root LP or preprocessing itself was hard), rerun with a much
+#     larger wall time limit (default 3h) and LP racing (-lpMethod=racing
+#     -threads=N) to speed up the hard root LPs, at reduced parallelism so
+#     each job gets real threads to race with.
+# In both passes, instances are processed largest-`.mps.gz`-first (a cheap
+# proxy for "more likely to be slow"), and any instance whose `.meta` file
+# already exists in the output directory is skipped -- so an interrupted run,
+# or a --pass2 follow-up, only does the work still missing.
+#
+# Usage (from the `test/` directory):
+#   ./gen-root-fixtures                  # pass 1 over every instance
+#   ./gen-root-fixtures 'bpc_*' 'cvrp_*'  # only instances matching these globs
+#   ./gen-root-fixtures --pass2           # pass 2, generous budget + racing
+#   ./gen-root-fixtures --skip-build      # reuse an existing dump binary
+#
+# Options:
+#   --jobs=N          Parallel jobs (default: nproc for pass 1, nproc/4 for
+#                      --pass2, so each pass2 job's racing threads have real
+#                      cores)
+#   --threads=N        Threads per job for --pass2 racing (default 4)
+#   --sec=N            Per-instance wall time limit override (default 600 for
+#                      pass 1, 10800 [3h] for --pass2)
+#   --fixture-dir=PATH Where to write fixtures (default
+#                      ~/instances/mip-sanity-data/rootFixtures)
+#   --data-dir=PATH    mip-sanity-data checkout (default ./mip-sanity-data)
+#   --prefix=PATH      Install prefix used to rebuild/restore the normal cbc
+#                      after building the dump binary (default ~/prog/cbc)
+#   --pass2            Use the pass-2 defaults described above
+#   --skip-build       Reuse test/.cbc-rootdump-bin instead of rebuilding it
+#                       (it must already exist)
+#   --keep-bin         Don't delete test/.cbc-rootdump-bin when done
+#   --no-color         Disable ANSI colors
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SRC_DIR="$REPO_ROOT/src"
+
+JOBS=""
+THREADS=4
+SECS=""
+FIXTURE_DIR="${CBC_ROOT_FIXTURE_DIR:-$HOME/instances/mip-sanity-data/rootFixtures}"
+DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
+PREFIX="${PREFIX:-$HOME/prog/cbc}"
+PASS2=0
+SKIP_BUILD=0
+KEEP_BIN=0
+FORCE_COLOR=1
+PATTERNS=()
+WORKER_NAME=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --jobs=*) JOBS="${arg#*=}" ;;
+    --threads=*) THREADS="${arg#*=}" ;;
+    --sec=*) SECS="${arg#*=}" ;;
+    --fixture-dir=*) FIXTURE_DIR="${arg#*=}" ;;
+    --data-dir=*) DATA_DIR="${arg#*=}" ;;
+    --prefix=*) PREFIX="${arg#*=}" ;;
+    --pass2) PASS2=1 ;;
+    --skip-build) SKIP_BUILD=1 ;;
+    --keep-bin) KEEP_BIN=1 ;;
+    --no-color) FORCE_COLOR=0 ;;
+    --worker=*) WORKER_NAME="${arg#*=}" ;;
+    -h|--help)
+      sed -n '2,/^set -uo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $arg" >&2
+      exit 2
+      ;;
+    *) PATTERNS+=("$arg") ;;
+  esac
+done
+
+# Internal mode: this script re-invokes itself with --worker=<name> once per
+# instance via GNU parallel. Kept in-process (rather than a bash function
+# exported to parallel) because `parallel` runs each job through /bin/sh,
+# which does not see exported bash functions -- only exported plain
+# variables reliably cross that boundary, and DUMP_BIN/SECS/etc are read
+# straight from the environment below.
+if [[ -n "$WORKER_NAME" ]]; then
+  name="$WORKER_NAME"
+  mps="$MIPS_DIR_ENV/$name.mps.gz"
+  log="$FIXTURE_DIR_ENV/$name.root.dumplog"
+  extra_opts=()
+  if [[ "$PASS2_ENV" == 1 ]]; then
+    extra_opts=(-threads "$THREADS_ENV" -lpMethod=racing)
+  fi
+  # -maxNodes 1 stops branch-and-bound right after the root node is processed
+  # (cuts + heuristics already ran by then), so a dump-enabled run costs only
+  # what root processing itself costs, not a full solve. `timeout` is a hard
+  # backstop in case -sec is not honored (e.g. hung native preprocessing).
+  CBC_ROOT_FIXTURE_DIR="$FIXTURE_DIR_ENV" CBC_ROOT_FIXTURE_NAME="$name" \
+    timeout "$((SECS_ENV + 60))" "$DUMP_BIN_ENV" "$mps" \
+      -maxNodes 1 -sec "$SECS_ENV" "${extra_opts[@]}" -solve -quit \
+      > "$log" 2>&1
+  rc=$?
+  if [[ -f "$FIXTURE_DIR_ENV/$name.root.meta" ]]; then
+    echo "DUMPED  $name"
+  else
+    echo "MISSING $name (exit $rc, see $log)"
+  fi
+  exit 0
+fi
+
+if [[ $PASS2 -eq 1 ]]; then
+  JOBS="${JOBS:-$(( $(nproc) / 4 > 0 ? $(nproc) / 4 : 1 ))}"
+  SECS="${SECS:-10800}"
+else
+  JOBS="${JOBS:-$(nproc)}"
+  SECS="${SECS:-600}"
+fi
+
+if [[ $FORCE_COLOR -eq 1 && -t 1 ]]; then
+  C_BOLD=$'\033[1m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_RED=$'\033[31m'; C_RESET=$'\033[0m'
+else
+  C_BOLD=""; C_GREEN=""; C_YELLOW=""; C_RED=""; C_RESET=""
+fi
+
+if ! command -v parallel >/dev/null 2>&1; then
+  echo "GNU parallel is required (apt install parallel)." >&2
+  exit 2
+fi
+
+MIPS_DIR="$DATA_DIR/mips"
+if [[ ! -d "$MIPS_DIR" ]]; then
+  echo "No such directory: $MIPS_DIR (pass --data-dir, or git submodule update mip-sanity-data)" >&2
+  exit 2
+fi
+
+DUMP_BIN="$SCRIPT_DIR/.cbc-rootdump-bin"
+
+build_dump_binary() {
+  echo "${C_BOLD}Building fixture-dump cbc (CBC_DUMP_ROOT_FIXTURE)...${C_RESET}"
+  ( cd "$SRC_DIR" \
+    && touch CbcModel.cpp \
+    && make CPPFLAGS="-DCBC_DUMP_ROOT_FIXTURE" -j"$(nproc)" >/tmp/gen-root-fixtures-build.log 2>&1 ) \
+    || { echo "${C_RED}Build failed, see /tmp/gen-root-fixtures-build.log${C_RESET}" >&2; exit 1; }
+  cp "$SRC_DIR/cbc" "$DUMP_BIN"
+  echo "${C_BOLD}Restoring normal (no-dump) cbc and reinstalling to $PREFIX...${C_RESET}"
+  ( cd "$SRC_DIR" \
+    && touch CbcModel.cpp \
+    && make -j"$(nproc)" >/tmp/gen-root-fixtures-restore.log 2>&1 \
+    && make prefix="$PREFIX" install >>/tmp/gen-root-fixtures-restore.log 2>&1 ) \
+    || { echo "${C_RED}Restore build/install failed, see /tmp/gen-root-fixtures-restore.log${C_RESET}" >&2; exit 1; }
+}
+
+if [[ $SKIP_BUILD -eq 1 ]]; then
+  if [[ ! -x "$DUMP_BIN" ]]; then
+    echo "--skip-build given but $DUMP_BIN does not exist" >&2
+    exit 2
+  fi
+else
+  build_dump_binary
+fi
+
+mkdir -p "$FIXTURE_DIR"
+
+# Build the instance list: every .mps.gz under mips/, largest first, filtered
+# by any glob patterns given, skipping instances whose .meta already exists.
+mapfile -t ALL_INSTANCES < <(
+  for f in "$MIPS_DIR"/*.mps.gz; do
+    [[ -e "$f" ]] || continue
+    printf '%s\t%s\n' "$(stat -c%s "$f")" "$(basename "$f" .mps.gz)"
+  done | sort -rn -k1,1 | cut -f2
+)
+
+TODO=()
+SKIPPED=0
+for name in "${ALL_INSTANCES[@]}"; do
+  if [[ ${#PATTERNS[@]} -gt 0 ]]; then
+    matched=0
+    for pat in "${PATTERNS[@]}"; do
+      # shellcheck disable=SC2053
+      [[ "$name" == $pat ]] && { matched=1; break; }
+    done
+    [[ $matched -eq 1 ]] || continue
+  fi
+  if [[ -f "$FIXTURE_DIR/$name.root.meta" ]]; then
+    SKIPPED=$((SKIPPED + 1))
+    continue
+  fi
+  TODO+=("$name")
+done
+
+echo "${C_BOLD}${#TODO[@]} instance(s) to dump, ${SKIPPED} already done, jobs=$JOBS, sec=$SECS${C_RESET}"
+if [[ $PASS2 -eq 1 ]]; then
+  echo "  pass2: threads=$THREADS -lpMethod=racing"
+fi
+
+if [[ ${#TODO[@]} -eq 0 ]]; then
+  echo "${C_GREEN}Nothing to do.${C_RESET}"
+  [[ $KEEP_BIN -eq 1 ]] || rm -f "$DUMP_BIN"
+  exit 0
+fi
+
+export MIPS_DIR_ENV="$MIPS_DIR" FIXTURE_DIR_ENV="$FIXTURE_DIR" PASS2_ENV="$PASS2" \
+  THREADS_ENV="$THREADS" SECS_ENV="$SECS" DUMP_BIN_ENV="$DUMP_BIN"
+
+printf '%s\n' "${TODO[@]}" | parallel --jobs "$JOBS" --line-buffer "$0" --worker={}
+
+FINAL_MISSING=()
+for name in "${TODO[@]}"; do
+  [[ -f "$FIXTURE_DIR/$name.root.meta" ]] || FINAL_MISSING+=("$name")
+done
+
+# Not every "missing" is a failure: many instances never reach the dump call
+# site at all -- pre-processing/bound-tightening can solve or prove-infeasible
+# the whole problem outright (0 rows/cols left, "Result -" already printed, no
+# cut-generation loop ever runs), which no timeout budget or racing fixes.
+# Classify by grepping the run's own log, so only genuine timeouts/crashes
+# (no "Result -" line at all -- the run never finished) are flagged as needing
+# --pass2.
+EXPECTED_SKIP=()
+GENUINE_MISSING=()
+for name in "${FINAL_MISSING[@]}"; do
+  if grep -qE "^Result -|Problem is infeasible|infeasibility proved" \
+    "$FIXTURE_DIR/$name.root.dumplog" 2>/dev/null; then
+    EXPECTED_SKIP+=("$name")
+  else
+    GENUINE_MISSING+=("$name")
+  fi
+done
+
+echo
+echo "${C_BOLD}Done: $(( ${#TODO[@]} - ${#FINAL_MISSING[@]} ))/${#TODO[@]} dumped.${C_RESET}"
+if [[ ${#EXPECTED_SKIP[@]} -gt 0 ]]; then
+  echo "${#EXPECTED_SKIP[@]} instance(s) never reached the dump call site (pre-processing" \
+    "already solved or proved infeasible them -- expected, not fixable by --pass2):"
+  printf '  %s\n' "${EXPECTED_SKIP[@]}"
+fi
+if [[ ${#GENUINE_MISSING[@]} -gt 0 ]]; then
+  echo "${C_YELLOW}${#GENUINE_MISSING[@]} still missing (root LP/preprocessing likely exceeded the time limit):${C_RESET}"
+  printf '  %s\n' "${GENUINE_MISSING[@]}"
+  echo "Re-run with ${C_BOLD}--pass2${C_RESET} for a generous budget + LP racing on just these."
+fi
+
+[[ $KEEP_BIN -eq 1 ]] || rm -f "$DUMP_BIN"
+
+[[ ${#GENUINE_MISSING[@]} -eq 0 ]]

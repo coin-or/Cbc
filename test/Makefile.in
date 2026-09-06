@@ -106,7 +106,7 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
 	impclique-explore$(EXEEXT) impclique-bench$(EXEEXT) \
 	impclique-vs-clique-bench$(EXEEXT) \
-	impclique-real-bench$(EXEEXT)
+	impclique-real-bench$(EXEEXT) mip-root-replay$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -165,6 +165,9 @@ mip_c_solve_DEPENDENCIES = ../src/libCbc.la
 am_mip_debug_cuts_OBJECTS = mip-debug-cuts.$(OBJEXT)
 mip_debug_cuts_OBJECTS = $(am_mip_debug_cuts_OBJECTS)
 mip_debug_cuts_DEPENDENCIES = ../src/libCbc.la
+am_mip_root_replay_OBJECTS = mip-root-replay.$(OBJEXT)
+mip_root_replay_OBJECTS = $(am_mip_root_replay_OBJECTS)
+mip_root_replay_DEPENDENCIES = ../src/libCbc.la
 am_mipstart_test_OBJECTS = mipstart-test.$(OBJEXT)
 mipstart_test_OBJECTS = $(am_mipstart_test_OBJECTS)
 mipstart_test_DEPENDENCIES = ../src/libCbc.la
@@ -210,10 +213,11 @@ am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
 	./$(DEPDIR)/impclique-vs-clique-bench.Po \
 	./$(DEPDIR)/lazy-constraint-test.Po \
 	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po \
-	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mipstart-test.Po \
-	./$(DEPDIR)/mir2-bench.Po ./$(DEPDIR)/probing-bench.Po \
-	./$(DEPDIR)/row-activity-test.Po ./$(DEPDIR)/rowred-test.Po \
-	./$(DEPDIR)/twomir-bench.Po ./$(DEPDIR)/zerohalf-bench.Po
+	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mip-root-replay.Po \
+	./$(DEPDIR)/mipstart-test.Po ./$(DEPDIR)/mir2-bench.Po \
+	./$(DEPDIR)/probing-bench.Po ./$(DEPDIR)/row-activity-test.Po \
+	./$(DEPDIR)/rowred-test.Po ./$(DEPDIR)/twomir-bench.Po \
+	./$(DEPDIR)/zerohalf-bench.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -240,10 +244,10 @@ SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
 	$(impclique_vs_clique_bench_SOURCES) \
 	$(lazy_constraint_test_SOURCES) $(lp_relaxation_test_SOURCES) \
 	$(mip_c_solve_SOURCES) $(mip_debug_cuts_SOURCES) \
-	$(mipstart_test_SOURCES) $(mir2_bench_SOURCES) \
-	$(probing_bench_SOURCES) $(row_activity_test_SOURCES) \
-	$(rowred_test_SOURCES) $(twomir_bench_SOURCES) \
-	$(zerohalf_bench_SOURCES)
+	$(mip_root_replay_SOURCES) $(mipstart_test_SOURCES) \
+	$(mir2_bench_SOURCES) $(probing_bench_SOURCES) \
+	$(row_activity_test_SOURCES) $(rowred_test_SOURCES) \
+	$(twomir_bench_SOURCES) $(zerohalf_bench_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -773,6 +777,23 @@ impclique_real_bench_SOURCES = impclique-real-bench.cpp
 impclique_real_bench_LDADD = ../src/libCbc.la
 
 ########################################################################
+#          Root-node processing replay (cuts + heuristics fixtures)    #
+########################################################################
+#
+# mip-root-replay loads a fixture written by CbcRootFixtureDump.hpp
+# (CBC_DUMP_ROOT_FIXTURE) -- the preprocessed problem plus its optimal root
+# LP basis -- and rebuilds a CbcModel directly around it, attaching the same
+# default cut generators / heuristics CbcStrategyDefault gives the normal
+# `cbc` command line, then runs branchAndBound() with a small node limit.
+# Since the fixture already sits at the point CBC reaches after
+# pre-processing + the root LP, this is the fast iteration loop for
+# experimenting with root cut generation / heuristics strategies -- see
+# ROOT-FIXTURES.md and `gen-root-fixtures` for how fixtures are produced.
+# Not part of the regression suite; a measurement tool.
+mip_root_replay_SOURCES = mip-root-replay.cpp
+mip_root_replay_LDADD = ../src/libCbc.la
+
+########################################################################
 #        0-1/2 separation replay benchmark (measurement tool)          #
 ########################################################################
 #
@@ -1137,6 +1158,10 @@ mip-debug-cuts$(EXEEXT): $(mip_debug_cuts_OBJECTS) $(mip_debug_cuts_DEPENDENCIES
 	@rm -f mip-debug-cuts$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(mip_debug_cuts_OBJECTS) $(mip_debug_cuts_LDADD) $(LIBS)
 
+mip-root-replay$(EXEEXT): $(mip_root_replay_OBJECTS) $(mip_root_replay_DEPENDENCIES) $(EXTRA_mip_root_replay_DEPENDENCIES) 
+	@rm -f mip-root-replay$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(mip_root_replay_OBJECTS) $(mip_root_replay_LDADD) $(LIBS)
+
 mipstart-test$(EXEEXT): $(mipstart_test_OBJECTS) $(mipstart_test_DEPENDENCIES) $(EXTRA_mipstart_test_DEPENDENCIES) 
 	@rm -f mipstart-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(mipstart_test_OBJECTS) $(mipstart_test_LDADD) $(LIBS)
@@ -1184,6 +1209,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lp-relaxation-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-c-solve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-debug-cuts.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-root-replay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mipstart-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mir2-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/probing-bench.Po@am__quote@ # am--include-marker
@@ -1332,6 +1358,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
 	-rm -f ./$(DEPDIR)/mip-debug-cuts.Po
+	-rm -f ./$(DEPDIR)/mip-root-replay.Po
 	-rm -f ./$(DEPDIR)/mipstart-test.Po
 	-rm -f ./$(DEPDIR)/mir2-bench.Po
 	-rm -f ./$(DEPDIR)/probing-bench.Po
@@ -1397,6 +1424,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
 	-rm -f ./$(DEPDIR)/mip-debug-cuts.Po
+	-rm -f ./$(DEPDIR)/mip-root-replay.Po
 	-rm -f ./$(DEPDIR)/mipstart-test.Po
 	-rm -f ./$(DEPDIR)/mir2-bench.Po
 	-rm -f ./$(DEPDIR)/probing-bench.Po

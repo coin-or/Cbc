@@ -68,6 +68,7 @@ extern int gomory_try;
 #include "OsiClpSolverInterface.hpp"
 
 #include "CbcClqFixtureDump.hpp"
+#include "CbcRootFixtureDump.hpp"
 #include "CbcZeroHalfFixtureDump.hpp"
 #include "CbcProbingFixtureDump.hpp"
 #include "CbcGomoryFixtureDump.hpp"
@@ -9441,6 +9442,17 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     // pass later the matrix has grown rows and the LP has moved.
     if (currentPassNumber_ == 1 && !node && !parentModel_)
       cbcDumpClqFixture(solver_, "sep");
+#endif
+#ifdef CBC_DUMP_ROOT_FIXTURE
+    // Capture the whole-root-processing fixture at the same point, for the same
+    // reason: this is where the preprocessed matrix and the optimal root LP
+    // solution/basis are simultaneously consistent and no cut generator or root
+    // heuristic has run yet. Unlike the per-generator fixtures above, this one
+    // is generator-agnostic: a replay driver rebuilds a CbcModel directly around
+    // it and attaches whatever cut generators / heuristics it wants to
+    // experiment with, so a single fixture per instance covers every strategy.
+    if (currentPassNumber_ == 1 && !node && !parentModel_)
+      cbcDumpRootFixture(solver_, "root");
 #endif
 #ifdef CBC_DUMP_ZEROHALF_FIXTURE
     // Capture the 0-1/2 separation fixture at the same point, and for the same

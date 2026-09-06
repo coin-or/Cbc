@@ -11159,6 +11159,27 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
   int lastNumberCuts)
 {
   /*
+      Adaptive root cut-generator skip (see setCutGeneratorAdaptiveSkip()):
+      a generator that has been actually tried at least
+      ADAPTIVE_SKIP_MIN_TRIES times at the root and produced no cut at all
+      in the last ADAPTIVE_SKIP_MISS_THRESHOLD consecutive tries is put on
+      "backoff" -- skipped for ADAPTIVE_SKIP_INITIAL_PERIOD passes, then
+      retried once; every further miss doubles the backoff period up to
+      ADAPTIVE_SKIP_MAX_PERIOD. A single hit at any point resets the streak
+      and the backoff, so a generator that starts working again (e.g. once
+      other cuts have tightened the relaxation) is never abandoned for
+      good. Root-only, opt-in, deterministic (based only on cut counts,
+      never on wall-clock time).
+    */
+  const int ADAPTIVE_SKIP_MIN_TRIES = 3;
+  const int ADAPTIVE_SKIP_MISS_THRESHOLD = 3;
+  const int ADAPTIVE_SKIP_INITIAL_PERIOD = 5;
+  const int ADAPTIVE_SKIP_MAX_PERIOD = 20;
+  // Also honour an environment variable so the setting can be flipped for
+  // quick experiments (e.g. via mip-root-replay) without a CbcModel API
+  // call or CLI flag.
+  const bool cutAdaptiveSkip = cutGeneratorAdaptiveSkip() || (getenv("CBC_CUT_ADAPTIVE_SKIP") != nullptr);
+  /*
       Is it time to scan the cuts in order to remove redundant cuts? If so, set
       up to do it.
     */
@@ -11200,6 +11221,13 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
     }
     if (generator_[i]->whetherCallAtEnd())
       generate = false;
+    if (generate && !node && !parentModel_ && cutAdaptiveSkip) {
+      // On backoff after repeated consecutive misses at root -- skip until
+      // the scheduled retry pass (see bookkeeping below).
+      const int nextRetry = generator_[i]->nextRetryPass();
+      if (nextRetry > 0 && currentPassNumber_ < nextRetry)
+        generate = false;
+    }
     const OsiRowCutDebugger *debugger = nullptr;
     bool onOptimalPath = false;
     if (generate) {
@@ -11460,6 +11488,23 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
     }
     numberRowCutsAfter = theseCuts.sizeRowCuts();
     numberColumnCutsAfter = theseCuts.sizeColCuts();
+    if (generate && !node && !parentModel_ && cutAdaptiveSkip) {
+      bool producedCuts = (numberRowCutsAfter > numberRowCutsBefore) || (numberColumnCutsAfter > numberColumnCutsBefore);
+      if (producedCuts) {
+        generator_[i]->setNumberConsecutiveMisses(0);
+        generator_[i]->setNextRetryPass(0);
+        generator_[i]->setRetryPeriod(0);
+      } else {
+        int misses = generator_[i]->numberConsecutiveMisses() + 1;
+        generator_[i]->setNumberConsecutiveMisses(misses);
+        if (currentPassNumber_ >= ADAPTIVE_SKIP_MIN_TRIES && misses >= ADAPTIVE_SKIP_MISS_THRESHOLD) {
+          int period = generator_[i]->retryPeriod();
+          period = (period <= 0) ? ADAPTIVE_SKIP_INITIAL_PERIOD : CoinMin(period * 2, ADAPTIVE_SKIP_MAX_PERIOD);
+          generator_[i]->setRetryPeriod(period);
+          generator_[i]->setNextRetryPass(currentPassNumber_ + period);
+        }
+      }
+    }
 #ifdef CHECK_KNOWN_SOLUTION
     if ((specialOptions_ & 1) != 0) {
       if (onOptimalPath) {

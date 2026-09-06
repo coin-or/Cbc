@@ -52,6 +52,9 @@ CbcCutGenerator::CbcCutGenerator()
   , numberCutsAtRoot_(0)
   , numberActiveCutsAtRoot_(0)
   , numberShortCutsAtRoot_(0)
+  , numberConsecutiveMisses_(0)
+  , nextRetryPass_(0)
+  , retryPeriod_(0)
   , switches_(1)
   , maximumTries_(-1)
 {
@@ -75,6 +78,9 @@ CbcCutGenerator::CbcCutGenerator(CbcModel *model, CglCutGenerator *generator,
   , numberCutsAtRoot_(0)
   , numberActiveCutsAtRoot_(0)
   , numberShortCutsAtRoot_(0)
+  , numberConsecutiveMisses_(0)
+  , nextRetryPass_(0)
+  , retryPeriod_(0)
   , switches_(1)
   , maximumTries_(-1)
 {
@@ -126,6 +132,9 @@ CbcCutGenerator::CbcCutGenerator(const CbcCutGenerator &rhs)
   numberCutsAtRoot_ = rhs.numberCutsAtRoot_;
   numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
   numberShortCutsAtRoot_ = rhs.numberShortCutsAtRoot_;
+  numberConsecutiveMisses_ = rhs.numberConsecutiveMisses_;
+  nextRetryPass_ = rhs.nextRetryPass_;
+  retryPeriod_ = rhs.retryPeriod_;
 }
 
 // Assignment operator
@@ -157,6 +166,9 @@ CbcCutGenerator::operator=(const CbcCutGenerator &rhs)
     numberCutsAtRoot_ = rhs.numberCutsAtRoot_;
     numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
     numberShortCutsAtRoot_ = rhs.numberShortCutsAtRoot_;
+    numberConsecutiveMisses_ = rhs.numberConsecutiveMisses_;
+    nextRetryPass_ = rhs.nextRetryPass_;
+    retryPeriod_ = rhs.retryPeriod_;
   }
   return *this;
 }

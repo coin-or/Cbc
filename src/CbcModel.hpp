@@ -2367,6 +2367,24 @@ public:
   {
     return moreSpecialOptions2_;
   }
+  /** Whether the adaptive root cut-generator skip is enabled
+      (moreSpecialOptions2_ bit 4194304). When on, a cut generator that goes
+      several consecutive root passes without producing a single cut is put
+      on a growing backoff (skipped for a number of passes, then retried)
+      instead of being called every pass regardless of past success. Off by
+      default -- opt-in until validated against the mip-sanity-data suite.
+    */
+  inline bool cutGeneratorAdaptiveSkip() const
+  {
+    return (moreSpecialOptions2_ & 4194304) != 0;
+  }
+  inline void setCutGeneratorAdaptiveSkip(bool yesNo)
+  {
+    if (yesNo)
+      moreSpecialOptions2_ |= 4194304;
+    else
+      moreSpecialOptions2_ &= ~4194304;
+  }
   /// Set cutoff as constraint
   inline void setCutoffAsConstraint(bool yesNo)
   {

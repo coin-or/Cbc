@@ -31,10 +31,15 @@ if [[ "${1:-}" == --worker=* ]]; then
   inst="${1#--worker=}"
   variant="$2"
   sec="$3"
-  if [[ "$variant" == adaptive ]]; then
+  # Variant names: "base" (feature off), "adaptive" (feature on, default
+  # MISS_THRESHOLD=3), or "adaptive-tN" (feature on, MISS_THRESHOLD=N) for
+  # sweeping the consecutive-miss trigger without touching other params.
+  unset CBC_CUT_ADAPTIVE_SKIP CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD
+  if [[ "$variant" == adaptive-t* ]]; then
     export CBC_CUT_ADAPTIVE_SKIP=1
-  else
-    unset CBC_CUT_ADAPTIVE_SKIP
+    export CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD="${variant#adaptive-t}"
+  elif [[ "$variant" == adaptive ]]; then
+    export CBC_CUT_ADAPTIVE_SKIP=1
   fi
   mps="$DATA_DIR/mips/$inst.mps.gz"
   if [[ ! -f "$mps" ]]; then
@@ -67,6 +72,7 @@ JOBS=64
 SEC=240
 OUT_DIR="$SCRIPT_DIR/sanity-results/cutskip-bench-cli"
 INSTANCES_FILE=""
+VARIANTS="base,adaptive"
 
 for arg in "$@"; do
   case "$arg" in
@@ -74,6 +80,7 @@ for arg in "$@"; do
     --sec=*) SEC="${arg#*=}" ;;
     --out=*) OUT_DIR="${arg#*=}" ;;
     --instances=*) INSTANCES_FILE="${arg#*=}" ;;
+    --variants=*) VARIANTS="${arg#*=}" ;;
     *) echo "Unknown option: $arg" >&2; exit 2 ;;
   esac
 done
@@ -85,10 +92,11 @@ if [[ -n "$INSTANCES_FILE" ]]; then
 else
   mapfile -t INSTANCES < <(ls "$FIXTURE_DIR"/*.root.meta 2>/dev/null | sed 's#.*/##; s/\.root\.meta$//' | sort)
 fi
-echo "${#INSTANCES[@]} instances, jobs=$JOBS sec=$SEC out=$OUT_DIR" >&2
+echo "${#INSTANCES[@]} instances, jobs=$JOBS sec=$SEC out=$OUT_DIR variants=$VARIANTS" >&2
 
+IFS=',' read -r -a VARIANT_LIST <<< "$VARIANTS"
 HEADER='instance\tnodes\tobj\tbound\telapsed'
-for variant in base adaptive; do
+for variant in "${VARIANT_LIST[@]}"; do
   echo "=== running variant: $variant (real cbc CLI) ===" >&2
   echo -e "$HEADER" > "$OUT_DIR/$variant.tsv.tmp"
   printf '%s\n' "${INSTANCES[@]}" | \

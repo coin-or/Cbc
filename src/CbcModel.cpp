@@ -11171,14 +11171,41 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
       good. Root-only, opt-in, deterministic (based only on cut counts,
       never on wall-clock time).
     */
-  const int ADAPTIVE_SKIP_MIN_TRIES = 3;
-  const int ADAPTIVE_SKIP_MISS_THRESHOLD = 3;
-  const int ADAPTIVE_SKIP_INITIAL_PERIOD = 5;
-  const int ADAPTIVE_SKIP_MAX_PERIOD = 20;
+  // Each constant can be overridden via an env var (e.g. for a parameter
+  // sweep with bench-adaptive-cutskip-cli) without a rebuild; falls back
+  // to the tuned default when unset/unparseable.
+  auto envOrDefault = [](const char *name, int def) {
+    const char *v = getenv(name);
+    if (!v)
+      return def;
+    char *end = nullptr;
+    long parsed = strtol(v, &end, 10);
+    return (end != v && parsed > 0) ? static_cast<int>(parsed) : def;
+  };
+  const int ADAPTIVE_SKIP_MIN_TRIES =
+    envOrDefault("CBC_CUT_ADAPTIVE_SKIP_MIN_TRIES", 3);
+  const int ADAPTIVE_SKIP_MISS_THRESHOLD =
+    envOrDefault("CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD", 3);
+  const int ADAPTIVE_SKIP_INITIAL_PERIOD =
+    envOrDefault("CBC_CUT_ADAPTIVE_SKIP_INITIAL_PERIOD", 5);
+  const int ADAPTIVE_SKIP_MAX_PERIOD =
+    envOrDefault("CBC_CUT_ADAPTIVE_SKIP_MAX_PERIOD", 20);
+  // Never throttle on genuinely small problems: CbcSolver.cpp's own
+  // configureCutGenerators() logic already treats getNumCols() below this
+  // threshold as "cheap enough to always do up to 100 root passes"
+  // (setMaximumCutPassesAtRoot(-100)), i.e. it deliberately keeps trying
+  // every generator every pass regardless of recent productivity because
+  // the LP re-optimization cost is negligible there. Our goal is to speed
+  // up/de-risk the *hard*, expensive instances -- small ones already get
+  // the "throw lots of cuts, it's cheap" treatment and gain nothing (and
+  // risk a worse bound) from adaptive skip, so exempt them outright.
+  const int ADAPTIVE_SKIP_MIN_COLS =
+    envOrDefault("CBC_CUT_ADAPTIVE_SKIP_MIN_COLS", 500);
   // Also honour an environment variable so the setting can be flipped for
   // quick experiments (e.g. via mip-root-replay) without a CbcModel API
   // call or CLI flag.
-  const bool cutAdaptiveSkip = cutGeneratorAdaptiveSkip() || (getenv("CBC_CUT_ADAPTIVE_SKIP") != nullptr);
+  const bool cutAdaptiveSkip = (cutGeneratorAdaptiveSkip() || (getenv("CBC_CUT_ADAPTIVE_SKIP") != nullptr))
+    && solver_->getNumCols() >= ADAPTIVE_SKIP_MIN_COLS;
   /*
       Is it time to scan the cuts in order to remove redundant cuts? If so, set
       up to do it.

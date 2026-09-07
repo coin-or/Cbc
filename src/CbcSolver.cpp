@@ -3016,7 +3016,7 @@ void CbcSolver::initialize()
   parameters_[CbcParam::THREADS]->setVal(0);
 #endif
   parameters_[CbcParam::CLIQUECUTS]->setVal("ifmove");
-  parameters_[CbcParam::ODDWHEELCUTS]->setVal("off");
+  parameters_[CbcParam::ODDWHEELCUTS]->setVal("ifmove");
   parameters_[CbcParam::IMPLIEDCLIQUECUTS]->setVal("ifmove");
   parameters_[CbcParam::CLQSTRENGTHENING]->setVal("both");
   parameters_[CbcParam::USECGRAPH]->setVal("on");
@@ -6845,7 +6845,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
 #endif
   // Set up likely cut generators and defaults
   parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
-  parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
+  parameters[CbcParam::ODDWHEELCUTS]->setVal("ifmove");
   parameters[CbcParam::IMPLIEDCLIQUECUTS]->setVal("ifmove");
   parameters[CbcParam::CLQSTRENGTHENING]->setVal("both");
   parameters[CbcParam::USECGRAPH]->setVal("on");

@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Benchmark CglOddWheel's mode setting (-oddwheel <mode>) using the REAL cbc
+# CLI end-to-end (full preprocessing + root LP solve + cut generation + first
+# 16 nodes), same methodology as bench-cutpool-filter-cli / bench-adaptive-
+# cutskip-cli. Meant to evaluate whether turning odd-wheel cuts on (default
+# is "off") is now worthwhile, following the CoinOddWheelSeparator/CglOddWheel
+# bugfixes applied from cbc-changes(16).tar.gz -- before those fixes the
+# generator produced 0 cuts on every instance (a stored-scratch-buffer bug),
+# so it was never worth enabling; that bug is now fixed.
+#
+# Variants (passed straight to `-oddwheel <variant>`):
+#   off     - current CBC default (no odd-wheel cuts at all)
+#   root    - odd-wheel cuts only at the root node
+#   ifmove  - odd-wheel cuts in the tree only while they look useful
+#   on      - odd-wheel cuts at every node
+#
+# Usage:
+#   ./bench-oddwheel-cli [--jobs=N] [--sec=N] [--out=DIR] [--instances=FILE] [--variants=off,ifmove]
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CBC_BIN="$SCRIPT_DIR/../src/cbc"
+DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
+FIXTURE_DIR="${CBC_ROOT_FIXTURE_DIR:-$HOME/instances/mip-sanity-data/rootFixtures}"
+
+if [[ "${1:-}" == --worker=* ]]; then
+  inst="${1#--worker=}"
+  variant="$2"
+  sec="$3"
+  mps="$DATA_DIR/mips/$inst.mps.gz"
+  if [[ ! -f "$mps" ]]; then
+    printf '%s\tERROR\tno-mps\n' "$inst"
+    exit 0
+  fi
+  t0=$(date +%s.%N)
+  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 -sec "$sec" -oddwheel "$variant" -solve 2>&1)"
+  rc=$?
+  t1=$(date +%s.%N)
+  elapsed=$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.4f", b-a}')
+  result_line="$(grep '^Result - ' <<<"$out" | tail -1)"
+  obj="$(grep '^Objective value:' <<<"$out" | tail -1 | awk '{print $NF}')"
+  bound="$(grep '^Lower bound:' <<<"$out" | tail -1 | awk '{print $NF}')"
+  nodes="$(grep '^Enumerated nodes:' <<<"$out" | tail -1 | awk '{print $NF}')"
+  if [[ $rc -ne 0 || -z "$result_line" ]]; then
+    printf '%s\tERROR\trc=%s\n' "$inst" "$rc"
+    exit 0
+  fi
+  [[ -z "$bound" ]] && bound="$obj"
+  [[ -z "$obj" ]] && obj="none"
+  [[ -z "$nodes" ]] && nodes="0"
+  printf '%s\t%s\t%s\t%s\t%s\n' "$inst" "$nodes" "$obj" "$bound" "$elapsed"
+  exit 0
+fi
+
+JOBS=64
+SEC=240
+OUT_DIR="$SCRIPT_DIR/sanity-results/oddwheel-bench-cli"
+INSTANCES_FILE=""
+VARIANTS="off,ifmove"
+
+for arg in "$@"; do
+  case "$arg" in
+    --jobs=*) JOBS="${arg#*=}" ;;
+    --sec=*) SEC="${arg#*=}" ;;
+    --out=*) OUT_DIR="${arg#*=}" ;;
+    --instances=*) INSTANCES_FILE="${arg#*=}" ;;
+    --variants=*) VARIANTS="${arg#*=}" ;;
+    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+mkdir -p "$OUT_DIR"
+
+if [[ -n "$INSTANCES_FILE" ]]; then
+  mapfile -t INSTANCES < "$INSTANCES_FILE"
+else
+  mapfile -t INSTANCES < <(ls "$FIXTURE_DIR"/*.root.meta 2>/dev/null | sed 's#.*/##; s/\.root\.meta$//' | sort)
+fi
+echo "${#INSTANCES[@]} instances, jobs=$JOBS sec=$SEC out=$OUT_DIR variants=$VARIANTS" >&2
+
+IFS=',' read -r -a VARIANT_LIST <<< "$VARIANTS"
+HEADER='instance\tnodes\tobj\tbound\telapsed'
+for variant in "${VARIANT_LIST[@]}"; do
+  echo "=== running variant: $variant (real cbc CLI) ===" >&2
+  echo -e "$HEADER" > "$OUT_DIR/$variant.tsv.tmp"
+  printf '%s\n' "${INSTANCES[@]}" | \
+    parallel --will-cite -j "$JOBS" --line-buffer \
+      "$SCRIPT_DIR/$(basename "$0")" --worker={} "$variant" "$SEC" \
+      >> "$OUT_DIR/$variant.tsv.tmp"
+  mv "$OUT_DIR/$variant.tsv.tmp" "$OUT_DIR/$variant.tsv"
+  n_err=$(grep -c 'ERROR' "$OUT_DIR/$variant.tsv" || true)
+  echo "variant $variant done: $(( $(wc -l < "$OUT_DIR/$variant.tsv") - 1 )) rows, $n_err errors" >&2
+done
+echo "Done. Results in $OUT_DIR/{${VARIANTS}}.tsv" >&2

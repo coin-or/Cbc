@@ -63,6 +63,8 @@ libCbc_la_SOURCES = \
 	CbcHeuristicDivePseudoCost.cpp CbcHeuristicDivePseudoCost.hpp \
 	CbcHeuristicDiveVectorLength.cpp CbcHeuristicDiveLength.hpp \
 	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
+	CbcHeuristicFeasibilityJump.cpp CbcHeuristicFeasibilityJump.hpp \
+	feasibilityjump.hh \
 	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
@@ -205,6 +207,7 @@ includecoin_HEADERS = \
 	CbcHeuristicDivePseudoCost.hpp \
 	CbcHeuristicDiveVectorLength.hpp \
 	CbcHeuristicFPump.hpp \
+	CbcHeuristicFeasibilityJump.hpp \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.hpp \

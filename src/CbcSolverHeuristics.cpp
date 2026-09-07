@@ -24,6 +24,7 @@
 // #include "CbcHeuristicPivotAndComplement.hpp"
 #include "CbcHeuristicDW.hpp"
 #include "CbcHeuristicFPump.hpp"
+#include "CbcHeuristicFeasibilityJump.hpp"
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicRandRound.hpp"
@@ -1196,6 +1197,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   int useDIVING2 = parameters[CbcParam::DIVINGS]->modeVal();
   int useNaive = parameters[CbcParam::NAIVE]->modeVal();
   int useDW = parameters[CbcParam::DW]->modeVal();
+  int useFeasibilityJump = parameters[CbcParam::FEASIBILITYJUMP]->modeVal();
   int kType = (type < 10) ? type : 1;
   assert(kType == 1 || kType == 2);
 #ifdef GET_ALL_SOLUTIONS
@@ -1207,6 +1209,33 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     model->addHeuristic(&heuristic13);
   }
 #endif
+  // Feasibility Jump runs first: it's LP-free and fast, so it's the
+  // cheapest way to try to get *some* incumbent as early as possible.
+  // Like FPump, it is most valuable while there is still no solution at
+  // all -- see feasibilityJumpOnlyNoSol.
+  if (useFeasibilityJump >= kType && useFeasibilityJump <= kType + 1) {
+    anyToDo = true;
+    CbcHeuristicFeasibilityJump heuristicFJ(*model);
+    heuristicFJ.setHeuristicName("FeasibilityJump");
+    heuristicFJ.setMaxEffort(parameters[CbcParam::FEASIBILITYJUMPEFFORT]->intVal());
+    heuristicFJ.setEffortMultiplier(parameters[CbcParam::FEASIBILITYJUMPEFFORTMULT]->intVal());
+    heuristicFJ.setStallMultiplier(parameters[CbcParam::FEASIBILITYJUMPSTALL]->intVal());
+    heuristicFJ.setMaxSolutions(parameters[CbcParam::FEASIBILITYJUMPMAXSOL]->intVal());
+    heuristicFJ.setOnlyIfNoIncumbent(parameters[CbcParam::FEASIBILITYJUMPONLYNOSOL]->intVal() != 0);
+    heuristicFJ.setMaxCalls(parameters[CbcParam::FEASIBILITYJUMPMAXCALLS]->intVal());
+    int fjMinDepth = parameters[CbcParam::FEASIBILITYJUMPDEPTH]->intVal();
+    heuristicFJ.setMinDepth(fjMinDepth);
+    if (fjMinDepth > 0) {
+      // Enable tree execution: bit 4 = called during tree node processing.
+      heuristicFJ.setWhereFrom(heuristicFJ.whereFrom() | (1 << 4));
+      heuristicFJ.setWhen(3); // 3 = always (root + tree)
+    }
+    heuristicFJ.setFeasibilityTolerance(
+      parameters[CbcParam::INTEGERTOLERANCE]->dblVal());
+    heuristicFJ.setIntegerTolerance(
+      parameters[CbcParam::INTEGERTOLERANCE]->dblVal());
+    model->addHeuristic(&heuristicFJ);
+  }
   // FPump done first as it only works if no solution
   if (useFpump >= kType && useFpump <= kType + 1) {
     anyToDo = true;

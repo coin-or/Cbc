@@ -179,8 +179,9 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcHeuristicDiveLineSearch.lo \
 	libCbc_la-CbcHeuristicDivePseudoCost.lo \
 	libCbc_la-CbcHeuristicDiveVectorLength.lo \
-	libCbc_la-CbcHeuristicFPump.lo libCbc_la-CbcHeuristicGreedy.lo \
-	libCbc_la-CbcHeuristicLocal.lo \
+	libCbc_la-CbcHeuristicFPump.lo \
+	libCbc_la-CbcHeuristicFeasibilityJump.lo \
+	libCbc_la-CbcHeuristicGreedy.lo libCbc_la-CbcHeuristicLocal.lo \
 	libCbc_la-CbcHeuristicPivotAndFix.lo \
 	libCbc_la-CbcHeuristicRandRound.lo \
 	libCbc_la-CbcHeuristicRENS.lo libCbc_la-CbcHeuristicRINS.lo \
@@ -277,6 +278,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicDivePseudoCost.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicDiveVectorLength.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicFPump.Plo \
+	./$(DEPDIR)/libCbc_la-CbcHeuristicFeasibilityJump.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicGreedy.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicLocal.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicPivotAndFix.Plo \
@@ -607,6 +609,8 @@ libCbc_la_SOURCES = \
 	CbcHeuristicDivePseudoCost.cpp CbcHeuristicDivePseudoCost.hpp \
 	CbcHeuristicDiveVectorLength.cpp CbcHeuristicDiveLength.hpp \
 	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
+	CbcHeuristicFeasibilityJump.cpp CbcHeuristicFeasibilityJump.hpp \
+	feasibilityjump.hh \
 	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
@@ -736,6 +740,7 @@ includecoin_HEADERS = \
 	CbcHeuristicDivePseudoCost.hpp \
 	CbcHeuristicDiveVectorLength.hpp \
 	CbcHeuristicFPump.hpp \
+	CbcHeuristicFeasibilityJump.hpp \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.hpp \
@@ -969,6 +974,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicDivePseudoCost.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicDiveVectorLength.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicFPump.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicFeasibilityJump.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicGreedy.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicLocal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicPivotAndFix.Plo@am__quote@ # am--include-marker
@@ -1340,6 +1346,13 @@ libCbc_la-CbcHeuristicFPump.lo: CbcHeuristicFPump.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcHeuristicFPump.cpp' object='libCbc_la-CbcHeuristicFPump.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcHeuristicFPump.lo `test -f 'CbcHeuristicFPump.cpp' || echo '$(srcdir)/'`CbcHeuristicFPump.cpp
+
+libCbc_la-CbcHeuristicFeasibilityJump.lo: CbcHeuristicFeasibilityJump.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcHeuristicFeasibilityJump.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcHeuristicFeasibilityJump.Tpo -c -o libCbc_la-CbcHeuristicFeasibilityJump.lo `test -f 'CbcHeuristicFeasibilityJump.cpp' || echo '$(srcdir)/'`CbcHeuristicFeasibilityJump.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcHeuristicFeasibilityJump.Tpo $(DEPDIR)/libCbc_la-CbcHeuristicFeasibilityJump.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcHeuristicFeasibilityJump.cpp' object='libCbc_la-CbcHeuristicFeasibilityJump.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcHeuristicFeasibilityJump.lo `test -f 'CbcHeuristicFeasibilityJump.cpp' || echo '$(srcdir)/'`CbcHeuristicFeasibilityJump.cpp
 
 libCbc_la-CbcHeuristicGreedy.lo: CbcHeuristicGreedy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcHeuristicGreedy.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcHeuristicGreedy.Tpo -c -o libCbc_la-CbcHeuristicGreedy.lo `test -f 'CbcHeuristicGreedy.cpp' || echo '$(srcdir)/'`CbcHeuristicGreedy.cpp
@@ -1867,6 +1880,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicDivePseudoCost.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicDiveVectorLength.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicFPump.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicFeasibilityJump.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicGreedy.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicLocal.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicPivotAndFix.Plo
@@ -2005,6 +2019,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicDivePseudoCost.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicDiveVectorLength.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicFPump.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicFeasibilityJump.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicGreedy.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicLocal.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicPivotAndFix.Plo

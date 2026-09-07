@@ -861,6 +861,13 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::EXTRA3]->setDefault(-1);
      parameters_[CbcParam::EXTRA4]->setDefault(-1);
      parameters_[CbcParam::EXTRAVARIABLES]->setDefault(0);
+     parameters_[CbcParam::FEASIBILITYJUMPEFFORT]->setDefault(0);
+     parameters_[CbcParam::FEASIBILITYJUMPEFFORTMULT]->setDefault(1024);
+     parameters_[CbcParam::FEASIBILITYJUMPMAXSOL]->setDefault(1);
+     parameters_[CbcParam::FEASIBILITYJUMPSTALL]->setDefault(256);
+     parameters_[CbcParam::FEASIBILITYJUMPDEPTH]->setDefault(0);
+     parameters_[CbcParam::FEASIBILITYJUMPONLYNOSOL]->setDefault(1);
+     parameters_[CbcParam::FEASIBILITYJUMPMAXCALLS]->setDefault(0);
      parameters_[CbcParam::FPUMPITS]->setDefault(getFeasPumpIters());
      parameters_[CbcParam::FPUMPTUNE]->setDefault(0);
      parameters_[CbcParam::FPUMPTUNE2]->setDefault(0);
@@ -930,6 +937,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::DIVINGS]->setDefault("off");
      parameters_[CbcParam::DIVINGV]->setDefault("off");
      parameters_[CbcParam::DW]->setDefault("off");
+     parameters_[CbcParam::FEASIBILITYJUMP]->setDefault("off");
      parameters_[CbcParam::FPUMP]->setDefault("on");
      parameters_[CbcParam::GREEDY]->setDefault("on");
      parameters_[CbcParam::HEURISTICSTRATEGY]->setDefault("off");
@@ -2365,6 +2373,85 @@ void CbcParameters::addCbcSolverIntParams() {
       "variables to group together variables with same cost.",
       CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::FEASIBILITYJUMPEFFORT]->setup(
+      "feasibilityJumpEffort",
+      "Fixed iteration budget for Feasibility Jump (0 = use NNZ-scaled)",
+      0, COIN_INT_MAX,
+      "Fixed effort budget (deterministic iteration units) for a single "
+      "Feasibility Jump call. When set to 0 (default), the budget is "
+      "computed as NNZ * feasibilityJumpEffortMult, scaling with problem "
+      "size. Set to a positive value to use a fixed budget (useful for "
+      "benchmarks comparing fewer/longer calls against more/shorter ones).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FEASIBILITYJUMPEFFORTMULT]->setup(
+      "feasibilityJumpEffortMult",
+      "NNZ multiplier for Feasibility Jump effort budget",
+      0, 100000,
+      "When feasibilityJumpEffort is 0, the effort budget is computed as "
+      "NNZ * this multiplier. Default: 1024 (same as HiGHS). "
+      "Larger values give FJ more iterations per call on harder instances.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FEASIBILITYJUMPMAXSOL]->setup(
+      "feasibilityJumpMaxSol",
+      "Stop Feasibility Jump after finding this many solutions in one call",
+      0, COIN_INT_MAX,
+      "The Feasibility Jump heuristic stops as soon as it has found this "
+      "many integer-feasible solutions in a single call. "
+      "Default: 1 (stop after the first solution).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FEASIBILITYJUMPSTALL]->setup(
+      "feasibilityJumpStall",
+      "NNZ multiplier for stall-based early termination (0 = disable)",
+      0, 100000,
+      "Terminate Feasibility Jump when effort since last improvement exceeds "
+      "NNZ * this multiplier. Default: 256 (same as HiGHS). "
+      "Prevents wasting time when FJ is stuck in a local minimum. "
+      "Set to 0 to disable stall-based termination.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FEASIBILITYJUMPDEPTH]->setup(
+      "feasibilityJumpDepth",
+      "Run FJ every N levels in the tree (0 = root only)",
+      0, 1000,
+      "Controls how often FJ runs during branch-and-bound. Default: 0 "
+      "(root only). When set to N > 0, FJ also runs at tree nodes whose "
+      "depth is a multiple of N (e.g. 6 means depth 6, 12, 18...), each "
+      "time seeded from that node's own fractional LP solution -- a "
+      "genuinely different point from any earlier call, which is what "
+      "makes repeated FJ calls worthwhile. Uses 1/4 of the root effort "
+      "budget per tree node call.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FEASIBILITYJUMPONLYNOSOL]->setup(
+      "feasibilityJumpOnlyNoSol",
+      "Only run FJ while CBC has no incumbent solution yet (0/1)",
+      0, 1,
+      "When 1 (default), Feasibility Jump is skipped entirely once CBC "
+      "already has at least one incumbent (from any source: another "
+      "heuristic, a MIP start, or branch-and-bound). Repeated FJ calls are "
+      "most valuable for producing the very first incumbent; once one "
+      "exists they mostly add overhead relative to other cut/heuristic "
+      "work. Set to 0 to also let FJ try to improve on an existing "
+      "incumbent, e.g. to test whether that is worthwhile.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FEASIBILITYJUMPMAXCALLS]->setup(
+      "feasibilityJumpMaxCalls",
+      "Cap on the total number of separate FJ calls for the whole solve (0 = unlimited)",
+      0, COIN_INT_MAX,
+      "Caps how many times Feasibility Jump is invoked in total, across "
+      "the before-cuts, root-after-cuts, and tree trigger points. Each "
+      "invocation is always seeded from a genuinely new fractional "
+      "solution (a different cut round or tree node), never a repeat on "
+      "an unchanged point. Default: 0 (unlimited). Combine with "
+      "feasibilityJumpEffort/feasibilityJumpEffortMult to explore the "
+      "tradeoff between calling FJ fewer times with a bigger budget each "
+      "vs. more times with a smaller budget each.",
+      CoinParam::displayPriorityLow);
+
   parameters_[CbcParam::FPUMPITS]->setup(
       "passF!easibilityPump", "How many passes in feasibility pump", 0, 10000,
       "This fine tunes the Feasibility Pump heuristic by doing more or fewer "
@@ -3122,6 +3209,17 @@ void CbcParameters::addCbcSolverHeurParams() {
       "This heuristic is very very compute intensive. It tries to find a "
       "Dantzig Wolfe structure and use that. " HEURISTICS_LONGHELP);
 
+  parameters_[CbcParam::FEASIBILITYJUMP]->setup(
+      "feasibilityJump", "Whether to use the Feasibility Jump heuristic",
+      "Feasibility Jump is a primal heuristic that searches for integer-feasible "
+      "solutions without LP solves. It maintains a weighted score over constraints "
+      "and iteratively flips integer variables toward feasibility. "
+      "Effective especially early in the search, when no incumbent solution "
+      "exists yet -- getting *some* feasible solution as early as possible "
+      "matters on its own, since without one no primal bound (and hence no "
+      "gap, no objective-based fixing) is available at all. "
+      HEURISTICS_LONGHELP);
+
   parameters_[CbcParam::FPUMP]->setup(
       "feas!ibilityPump", "Whether to try Feasibility Pump",
       "This switches on feasibility pump heuristic at root. This is due to "
@@ -3218,6 +3316,7 @@ void CbcParameters::addCbcSolverHeurParams() {
      case CbcParam::DIVINGP:
      case CbcParam::DIVINGS:
      case CbcParam::DIVINGV:
+     case CbcParam::FEASIBILITYJUMP:
      case CbcParam::FPUMP:
      case CbcParam::GREEDY:
      case CbcParam::NAIVE:

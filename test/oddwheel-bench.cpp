@@ -69,11 +69,13 @@
  */
 
 #include "CglOddWheel.hpp"
+#include "CoinOddWheelSeparator.hpp"
 #include "ClpSimplex.hpp"
 #include "CoinStaticConflictGraph.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "OsiCuts.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -374,6 +376,614 @@ static bool loadFixture(Fixture &f, const std::string &stem, bool rebuildCgraph,
   return true;
 }
 
+#define OWF_CSV_HEADER                                                        \
+  "name,nAct,nFrac,xMean,xMax,actArcs,asymArcs,actDegLt2,core2,bipNodes,"      \
+  "triAny,triDomGlobal,triDom,certShort,certCore,skipAll,actMin,featTime"
+
+/**
+ * Cheap structural features of the *active* subgraph, to answer "could we have
+ * known in advance that this call would find nothing?".
+ *
+ * Motivation: 0-cut fixtures burn the overwhelming majority of separation time,
+ * and the counters say the rejecter is ohShort -- the shortest odd closed walk
+ * through the node is a triangle -- not a violation test and not a failed
+ * search. So the useful feature is not "how fractional is this node" but
+ * "does this node's conflict neighbourhood already close a cheap triangle".
+ *
+ * TWO OF THESE ARE SOUND SKIP CERTIFICATES, not heuristics. A node they reject
+ * provably cannot yield a cut, so gating on them cannot lose a valid cut:
+ *
+ *  - actDegLt2: fewer than 2 neighbours *among active nodes*. The separator's
+ *    own gate tests degree in the whole graph (CoinOddWheelSeparator.cpp:175),
+ *    which is weaker: a node can pass it and still lie on no cycle of the
+ *    subgraph actually searched.
+ *
+ *  - bipNodes: the node sits in a 2-colourable component of the active
+ *    subgraph. prepareGraph builds the bipartite double cover -- arcs
+ *    (i1, n+i2) at :317 and their mirrors (n+i1, i2) at :460 -- so a path
+ *    v' -> v'' is exactly an odd-length closed walk through v. Two-colour the
+ *    component treating every arc as an undirected constraint; if that
+ *    succeeds, every arc joins unlike colours, so every closed walk has even
+ *    length and no such path exists. find() then returns nothing, path()
+ *    yields oddSize 0, and the call is charged to oddHolesShort -- which is
+ *    why "short" cannot be read as "found a triangle". Sound whether or not
+ *    the adjacency is symmetric, since 2-colouring uses each arc as a
+ *    constraint in both directions.
+ *
+ *  - triDom: arcs are pushed as (i1 -> icaCount_+i2, icaActivity_[i2]) at :317
+ *    and :324, i.e. an arc carries the *destination* node's activity, so the
+ *    weight of a closed odd walk is the sum of the activities of the nodes it
+ *    enters -- 3 terms for a triangle, >= 5 for anything longer. Activities are
+ *    1001 - 1000x in [1, 1001], strictly positive, so a longer walk cannot be
+ *    cheaper per node. An odd closed walk v -> u1 -> ... -> u_{L-1} -> v with
+ *    L >= 5 therefore weighs at least
+ *
+ *        acti(v) + 2*minNbrActi(v) + 2*minActi
+ *
+ *    because positions 1 and L-1 are both neighbours of v (two entries in the
+ *    multiset even if they are the same node) and positions 2..L-2 are at least
+ *    two further entries. If the lightest triangle through v beats that bound,
+ *    the minimum-weight odd walk through v IS a triangle, find() must return
+ *    one, and the separator discards it as too short. Skipping v is then free.
+ *
+ *    triDomGlobal is the same idea with the weaker bound "sum of the five
+ *    smallest activities anywhere", kept because it shows how much the per-node
+ *    neighbour term matters -- it fires on nothing at all.
+ *
+ * The triangle probe is deliberately incomplete (top-K lightest neighbours):
+ * missing a triangle costs a skip we could have taken, never a cut. The gate is
+ * one-sided by construction, which is what makes it safe to be approximate.
+ *
+ * core2 and the fractionality columns are the *hypotheses* being tested against
+ * these, not proposals -- they are here to be compared, and may well be inert.
+ */
+static void printNodeFeatures(const CoinConflictGraph *cg, const double *xCols,
+  int numCols, const std::string &name, bool header)
+{
+  const double t0 = wallClock();
+  const size_t n = cg->size();
+
+  // The doubled graph: node j is "x_j = 1", node j+numCols is its complement.
+  std::vector< double > x(n, 0.0);
+  for (int j = 0; j < numCols; ++j) {
+    x[(size_t)j] = xCols[j];
+    if ((size_t)j + (size_t)numCols < n)
+      x[(size_t)j + (size_t)numCols] = 1.0 - xCols[j];
+  }
+
+  // Exactly fillActiveColumns' rule -- anything else would describe a
+  // different call than the one being measured.
+  std::vector< size_t > act;
+  for (size_t j = 0; j < n; ++j) {
+    if (cg->degree(j) < 2)
+      continue;
+    if (x[j] + 1e-6 <= 0.001)
+      continue;
+    act.push_back(j);
+  }
+  const size_t nAct = act.size();
+
+  if (header)
+    printf("%s\n", OWF_CSV_HEADER);
+  // searchOddWheels() returns immediately on icaCount_ <= 4, so the separator
+  // makes no shortest-path call at all and there is nothing here to describe.
+  // Without this the six fixtures with nAct in {1,2,4} report a certificate
+  // against zero calls and read as soundness failures.
+  if (nAct <= 4) {
+    printf("%s,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,%.3f\n", name.c_str(),
+      wallClock() - t0);
+    return;
+  }
+
+  std::vector< size_t > pos(n, (size_t)-1);
+  for (size_t i = 0; i < nAct; ++i)
+    pos[act[i]] = i;
+
+  std::vector< double > acti(nAct);
+  double xMax = 0.0, xSum = 0.0;
+  size_t nFrac = 0;
+  for (size_t i = 0; i < nAct; ++i) {
+    const double v = x[act[i]];
+    acti[i] = 1001.0 - 1000.0 * v;
+    xSum += v;
+    if (v > xMax)
+      xMax = v;
+    if (v >= 0.001 && v <= 0.999)
+      ++nFrac;
+  }
+
+  // Lower bound on the weight of any odd closed walk of length >= 5.
+  std::vector< double > byWeight(acti);
+  std::sort(byWeight.begin(), byWeight.end());
+  double w5min = 0.0;
+  for (size_t k = 0; k < 5 && k < byWeight.size(); ++k)
+    w5min += byWeight[k];
+
+  // Adjacency restricted to active nodes.
+  std::vector< size_t > temp(n);
+  std::vector< char > iv(n, 0);
+  std::vector< std::vector< size_t > > adj(nAct);
+  size_t arcs = 0;
+  for (size_t i = 0; i < nAct; ++i) {
+    const std::pair< size_t, const size_t * > conf
+      = cg->conflictingNodes(act[i], temp.data(), iv.data());
+    for (size_t k = 0; k < conf.first; ++k) {
+      const size_t p = pos[conf.second[k]];
+      if (p == (size_t)-1 || p == i)
+        continue;
+      adj[i].push_back(p);
+      ++arcs;
+    }
+  }
+
+  // Sort each list so membership -- "is this arc really in the graph the search
+  // walks?" -- is a binary search rather than an appeal to symmetry.
+  for (size_t i = 0; i < nAct; ++i)
+    std::sort(adj[i].begin(), adj[i].end());
+
+  // Is the active adjacency symmetric? Every gate below would be simpler if it
+  // were, and the O(n^2) branch of prepareGraph implicitly assumes it, so count
+  // the arcs whose reverse is missing rather than assuming either way.
+  size_t asymArcs = 0;
+  for (size_t i = 0; i < nAct; ++i)
+    for (size_t k = 0; k < adj[i].size(); ++k) {
+      const std::vector< size_t > &back = adj[adj[i][k]];
+      if (!std::binary_search(back.begin(), back.end(), i))
+        ++asymArcs;
+    }
+
+  // Symmetrised adjacency. Both endpoints of a closed walk's first and last step
+  // are neighbours of v in *this* relation whichever way the arcs point, so
+  // using it keeps the degree, 2-core and lb5 bounds sound on a directed graph.
+  std::vector< std::vector< size_t > > und(adj);
+  for (size_t i = 0; i < nAct; ++i)
+    for (size_t k = 0; k < adj[i].size(); ++k)
+      und[adj[i][k]].push_back(i);
+  for (size_t i = 0; i < nAct; ++i) {
+    std::sort(und[i].begin(), und[i].end());
+    und[i].erase(std::unique(und[i].begin(), und[i].end()), und[i].end());
+  }
+
+  size_t degLt2 = 0;
+  for (size_t i = 0; i < nAct; ++i)
+    if (und[i].size() < 2)
+      ++degLt2;
+
+  // 2-core by peeling the symmetrised graph. A node outside it lies on no simple
+  // cycle, hence in no odd *hole*, so findOddHolesWithNode can never turn it into
+  // a cut -- but note what it does NOT imply: the shortest path v' -> v'' may
+  // still exist, because the doubled graph lets a walk traverse one edge twice.
+  // v of degree 1 with neighbour a, a on a triangle a-b-c, gives the legal path
+  // v' -> a'' -> b' -> c'' -> a' -> v'' (five distinct doubled nodes) of odd
+  // length 5. So such a call lands in oddHolesRepeatedNode, not oddHolesShort --
+  // which is exactly what made the first version of the skipAll <= ohShort check
+  // fail on 31 fixtures. certCore is tallied separately for that reason.
+  std::vector< size_t > deg(nAct);
+  std::vector< char > dead(nAct, 0);
+  std::vector< size_t > stack;
+  for (size_t i = 0; i < nAct; ++i) {
+    deg[i] = und[i].size();
+    if (deg[i] < 2) {
+      dead[i] = 1;
+      stack.push_back(i);
+    }
+  }
+  while (!stack.empty()) {
+    const size_t v = stack.back();
+    stack.pop_back();
+    for (size_t k = 0; k < und[v].size(); ++k) {
+      const size_t u = und[v][k];
+      if (dead[u])
+        continue;
+      if (deg[u])
+        --deg[u];
+      if (deg[u] < 2) {
+        dead[u] = 1;
+        stack.push_back(u);
+      }
+    }
+  }
+  size_t core2 = 0;
+  for (size_t i = 0; i < nAct; ++i)
+    if (!dead[i])
+      ++core2;
+
+  // Two-colour each component of the symmetrised active subgraph. A node in a
+  // 2-colourable component lies on no odd closed walk, so the search cannot
+  // return anything for it.
+
+  std::vector< signed char > colour(nAct, -1);
+  std::vector< char > bip(nAct, 0);
+  std::vector< size_t > comp, queue;
+  for (size_t s = 0; s < nAct; ++s) {
+    if (colour[s] >= 0)
+      continue;
+    comp.clear();
+    queue.clear();
+    colour[s] = 0;
+    queue.push_back(s);
+    bool twoColourable = true;
+    for (size_t head = 0; head < queue.size(); ++head) {
+      const size_t v = queue[head];
+      comp.push_back(v);
+      for (size_t k = 0; k < und[v].size(); ++k) {
+        const size_t u = und[v][k];
+        if (colour[u] < 0) {
+          colour[u] = colour[v] ^ 1;
+          queue.push_back(u);
+        } else if (colour[u] == colour[v]) {
+          twoColourable = false;
+        }
+      }
+    }
+    if (twoColourable)
+      for (size_t k = 0; k < comp.size(); ++k)
+        bip[comp[k]] = 1;
+  }
+  size_t bipNodes = 0;
+  for (size_t i = 0; i < nAct; ++i)
+    if (bip[i])
+      ++bipNodes;
+
+  // Triangle dominance. The closure test walks the arc lists prepareGraph
+  // actually builds -- v -> a, a -> b, b -> v -- rather than asking
+  // cg->conflicting(a, b), which is a claim about the conflict graph and not
+  // about the directed graph the search walks. (Measured afterwards: asymArcs is
+  // 0 on all 336 fixtures, so on this fixture set the two agree -- but the arc
+  // form costs nothing and does not rest on that.)
+  //
+  // The bound is a bound on odd closed *walks*, not cycles, so it stays sound
+  // under the repeated-edge shape described above certCore.
+  const double actMin = byWeight[0];
+  const size_t K = 16;
+  size_t triAny = 0, triDom = 0, triDomGlobal = 0;
+  size_t certShort = 0, certCore = 0;
+  std::vector< std::pair< double, size_t > > cand;
+  for (size_t i = 0; i < nAct; ++i) {
+    if (bip[i]) {
+      ++certShort;
+      continue;
+    }
+    // Lower bound on any odd closed walk of length >= 5 through this node. Its
+    // first and last steps both touch symmetrised neighbours of i (two entries
+    // in the multiset even when they are the same node), and at least two
+    // further entries lie somewhere in the active set.
+    double minNbr = acti[und[i][0]];
+    for (size_t k = 1; k < und[i].size(); ++k)
+      if (acti[und[i][k]] < minNbr)
+        minNbr = acti[und[i][k]];
+    const double lb5 = acti[i] + 2.0 * minNbr + 2.0 * actMin;
+
+    cand.clear();
+    cand.reserve(adj[i].size());
+    for (size_t k = 0; k < adj[i].size(); ++k)
+      cand.push_back(std::make_pair(acti[adj[i][k]], adj[i][k]));
+    std::sort(cand.begin(), cand.end());
+    if (cand.size() > K)
+      cand.resize(K);
+
+    double best = 0.0;
+    bool found = false;
+    for (size_t a = 0; a < cand.size() && !(found && best < lb5); ++a) {
+      const size_t va = cand[a].second;
+      for (size_t k = 0; k < adj[va].size(); ++k) {
+        const size_t vb = adj[va][k];
+        if (vb == i)
+          continue;
+        if (!std::binary_search(adj[vb].begin(), adj[vb].end(), i))
+          continue; // the closing arc vb -> i is absent: not a walk back to i
+        const double w = acti[i] + cand[a].first + acti[vb];
+        if (!found || w < best) {
+          best = w;
+          found = true;
+        }
+      }
+    }
+    if (found) {
+      ++triAny;
+      if (best < lb5)
+        ++triDom;
+      if (best < w5min)
+        ++triDomGlobal;
+    }
+    if (found && best < lb5)
+      ++certShort;
+    else if (dead[i])
+      ++certCore;
+  }
+  const size_t skipAll = certShort + certCore;
+
+  printf(
+    "%s,%lu,%lu,%.6f,%.6f,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%.3f,%.3f\n",
+    name.c_str(), (unsigned long)nAct, (unsigned long)nFrac,
+    xSum / (double)nAct, xMax, (unsigned long)arcs, (unsigned long)asymArcs,
+    (unsigned long)degLt2, (unsigned long)core2, (unsigned long)bipNodes,
+    (unsigned long)triAny, (unsigned long)triDomGlobal, (unsigned long)triDom,
+    (unsigned long)certShort, (unsigned long)certCore, (unsigned long)skipAll,
+    actMin, wallClock() - t0);
+}
+
+/* One row per active node for the --node-outcomes dump. The label comes from the
+ * separator itself, not from anything reconstructed here. */
+#define OWO_CSV_HEADER                                                        \
+  "name,node,col,isComp,x,degOut,degIn,degSym,"                               \
+  "xNbrMin,xNbrMax,xNbrMean,nNbrMid,xTop4Nbr,viol5,"                          \
+  "compSize,bip,core2,triAny,triBestW,lb5,triDom,"                            \
+  "outcome"
+
+/**
+ * Dump one labelled row per active node, so a classifier can be fitted on the
+ * ~640k individual shortest-path calls instead of on 336 fixture aggregates.
+ *
+ * Why per node and not per fixture: 84.1% of all calls land in oddHolesShort and
+ * 0.5% are kept, so a fixture-level counter tells you almost nothing about which
+ * *nodes* were the waste. The label here is written by
+ * CoinOddWheelSeparator::findOddHolesWithNode() at each of its five exits (see
+ * setRecordNodeOutcomes), so it is the real outcome and not an inference from
+ * aggregate counters.
+ *
+ * The gate is forced OFF and maxSeconds to 0: with the gate on, every skipped
+ * node reports OUTCOME_NOT_CALLED and the labels go missing exactly where the
+ * gate fires, i.e. on the rows the study is about.
+ *
+ * Two honest caveats about anything fitted on this.
+ *
+ *  - Three of the features here (bip, core2, triDom) are the *certificates*
+ *    already implemented in buildFutilityGate(). They are emitted so a tree can
+ *    be measured against them rather than credited for rediscovering them; any
+ *    claimed improvement must come from the other columns.
+ *  - A tree is a heuristic, not a certificate. Skipping on a learned rule can
+ *    lose a cut, which the three certificates provably cannot. So the only
+ *    defensible use of a tree here is either (a) to find a *new* rule that can
+ *    then be proved, or (b) to bound how much residual waste is left for a
+ *    certificate to reach at all. Do not wire a fitted threshold into the gate.
+ *
+ * viol5 is the arithmetic the user's fractionality question turns on: an odd hole
+ * of size k is violated only when sum(x) > (k-1)/2, so a 5-hole through this node
+ * needs x + (its four heaviest neighbours) > 2.0 + MIN_VIOL. It is an optimistic
+ * bound -- the four heaviest neighbours need not form a hole -- so viol5 <= 0 is
+ * a genuine "no 5-hole through here can be violated" statement, while viol5 > 0
+ * says nothing. It is *not* sound as a skip on its own, because a longer hole can
+ * be violated where a 5-hole cannot.
+ */
+static void printNodeOutcomes(const CoinConflictGraph *cg, const double *xCols,
+  const double *rcCols, int numCols, size_t extMethod, const std::string &name,
+  bool header)
+{
+  const size_t n = cg->size();
+
+  std::vector< double > x(n, 0.0), rc(n, 0.0);
+  for (int j = 0; j < numCols; ++j) {
+    x[(size_t)j] = xCols[j];
+    rc[(size_t)j] = rcCols[j];
+    if ((size_t)j + (size_t)numCols < n) {
+      x[(size_t)j + (size_t)numCols] = 1.0 - xCols[j];
+      rc[(size_t)j + (size_t)numCols] = -rcCols[j];
+    }
+  }
+
+  // Run the separator first, so the labels exist before any feature work. Same
+  // rule as fillActiveColumns is replicated below to index them; the two agree
+  // because both walk j ascending over the doubled graph with the same filter.
+  CoinOddWheelSeparator sep(cg, x.data(), rc.data(), extMethod);
+  sep.setUseFutilityGate(false);
+  sep.setRecordNodeOutcomes(true);
+  sep.searchOddWheels();
+  const std::vector< unsigned char > &lab = sep.nodeOutcomes();
+
+  std::vector< size_t > act;
+  for (size_t j = 0; j < n; ++j) {
+    if (cg->degree(j) < 2)
+      continue;
+    if (x[j] + 1e-6 <= 0.001)
+      continue;
+    act.push_back(j);
+  }
+  const size_t nAct = act.size();
+
+  if (header)
+    printf("%s\n", OWO_CSV_HEADER);
+
+  // searchOddWheels() returns immediately on icaCount_ <= 4, so no call was made
+  // from any of these nodes and there is no outcome to report.
+  if (nAct <= 4)
+    return;
+  if (lab.size() != nAct) {
+    fprintf(stderr, "ERROR: %s: %lu labels for %lu active nodes -- the active "
+                    "rule here and fillActiveColumns' have diverged\n",
+      name.c_str(), (unsigned long)lab.size(), (unsigned long)nAct);
+    return;
+  }
+
+  std::vector< size_t > pos(n, (size_t)-1);
+  for (size_t i = 0; i < nAct; ++i)
+    pos[act[i]] = i;
+
+  std::vector< double > acti(nAct), xa(nAct);
+  double actMin = 1e100;
+  for (size_t i = 0; i < nAct; ++i) {
+    xa[i] = x[act[i]];
+    acti[i] = 1001.0 - 1000.0 * xa[i];
+    if (acti[i] < actMin)
+      actMin = acti[i];
+  }
+
+  std::vector< size_t > temp(n);
+  std::vector< char > iv(n, 0);
+  std::vector< std::vector< size_t > > adj(nAct);
+  for (size_t i = 0; i < nAct; ++i) {
+    const std::pair< size_t, const size_t * > conf
+      = cg->conflictingNodes(act[i], temp.data(), iv.data());
+    for (size_t k = 0; k < conf.first; ++k) {
+      const size_t p = pos[conf.second[k]];
+      if (p == (size_t)-1 || p == i)
+        continue;
+      adj[i].push_back(p);
+    }
+    std::sort(adj[i].begin(), adj[i].end());
+  }
+
+  std::vector< size_t > degIn(nAct, 0);
+  for (size_t i = 0; i < nAct; ++i)
+    for (size_t k = 0; k < adj[i].size(); ++k)
+      ++degIn[adj[i][k]];
+
+  std::vector< std::vector< size_t > > und(adj);
+  for (size_t i = 0; i < nAct; ++i)
+    for (size_t k = 0; k < adj[i].size(); ++k)
+      und[adj[i][k]].push_back(i);
+  for (size_t i = 0; i < nAct; ++i) {
+    std::sort(und[i].begin(), und[i].end());
+    und[i].erase(std::unique(und[i].begin(), und[i].end()), und[i].end());
+  }
+
+  // 2-core of the symmetrised graph.
+  std::vector< size_t > deg(nAct);
+  std::vector< char > dead(nAct, 0);
+  std::vector< size_t > stack;
+  for (size_t i = 0; i < nAct; ++i) {
+    deg[i] = und[i].size();
+    if (deg[i] < 2) {
+      dead[i] = 1;
+      stack.push_back(i);
+    }
+  }
+  while (!stack.empty()) {
+    const size_t v = stack.back();
+    stack.pop_back();
+    for (size_t k = 0; k < und[v].size(); ++k) {
+      const size_t u = und[v][k];
+      if (dead[u])
+        continue;
+      if (deg[u])
+        --deg[u];
+      if (deg[u] < 2) {
+        dead[u] = 1;
+        stack.push_back(u);
+      }
+    }
+  }
+
+  // Components and 2-colourability of the symmetrised graph. compSize is carried
+  // per node because "how big is the piece I am in" is a plausible feature that
+  // the fixture-level sweep could not express at all.
+  std::vector< signed char > colour(nAct, -1);
+  std::vector< char > bip(nAct, 0);
+  std::vector< size_t > csize(nAct, 0);
+  std::vector< size_t > comp, queue;
+  for (size_t s = 0; s < nAct; ++s) {
+    if (colour[s] >= 0)
+      continue;
+    comp.clear();
+    queue.clear();
+    colour[s] = 0;
+    queue.push_back(s);
+    bool twoColourable = true;
+    for (size_t head = 0; head < queue.size(); ++head) {
+      const size_t v = queue[head];
+      comp.push_back(v);
+      for (size_t k = 0; k < und[v].size(); ++k) {
+        const size_t u = und[v][k];
+        if (colour[u] < 0) {
+          colour[u] = colour[v] ^ 1;
+          queue.push_back(u);
+        } else if (colour[u] == colour[v]) {
+          twoColourable = false;
+        }
+      }
+    }
+    for (size_t k = 0; k < comp.size(); ++k) {
+      csize[comp[k]] = comp.size();
+      if (twoColourable)
+        bip[comp[k]] = 1;
+    }
+  }
+
+  const size_t K = 16;
+  std::vector< std::pair< double, size_t > > cand;
+  std::vector< double > nbrX;
+  for (size_t i = 0; i < nAct; ++i) {
+    double xMin = 1e100, xMax = -1e100, xSum = 0.0;
+    size_t nMid = 0;
+    nbrX.clear();
+    for (size_t k = 0; k < und[i].size(); ++k) {
+      const double v = xa[und[i][k]];
+      nbrX.push_back(v);
+      xSum += v;
+      if (v < xMin)
+        xMin = v;
+      if (v > xMax)
+        xMax = v;
+      if (v >= 0.2 && v <= 0.8)
+        ++nMid;
+    }
+    const size_t d = und[i].size();
+    if (!d) {
+      xMin = xMax = 0.0;
+    }
+
+    // Sum of the four heaviest neighbours: the optimistic ceiling on sum(x) over
+    // a 5-hole through i. See viol5 in the comment above.
+    std::sort(nbrX.begin(), nbrX.end(), std::greater< double >());
+    double top4 = 0.0;
+    for (size_t k = 0; k < 4 && k < nbrX.size(); ++k)
+      top4 += nbrX[k];
+    const double viol5 = xa[i] + top4 - 2.0;
+
+    // Same bound and the same probe as buildFutilityGate's certificate 2, with
+    // in- and out-minima kept separate for the reason recorded there.
+    double minOut = 1e100, minIn = 1e100;
+    for (size_t k = 0; k < adj[i].size(); ++k)
+      if (acti[adj[i][k]] < minOut)
+        minOut = acti[adj[i][k]];
+    for (size_t k = 0; k < und[i].size(); ++k) {
+      const size_t u = und[i][k];
+      if (std::binary_search(adj[u].begin(), adj[u].end(), i)
+        && acti[u] < minIn)
+        minIn = acti[u];
+    }
+    const double lb5 = (minOut < 1e99 && minIn < 1e99)
+      ? acti[i] + minOut + minIn + 2.0 * actMin
+      : 0.0;
+
+    cand.clear();
+    for (size_t k = 0; k < adj[i].size(); ++k)
+      cand.push_back(std::make_pair(acti[adj[i][k]], adj[i][k]));
+    std::sort(cand.begin(), cand.end());
+    if (cand.size() > K)
+      cand.resize(K);
+    double best = 0.0;
+    bool found = false;
+    for (size_t a = 0; a < cand.size() && !(found && best < lb5); ++a) {
+      const size_t va = cand[a].second;
+      for (size_t k = 0; k < adj[va].size(); ++k) {
+        const size_t vb = adj[va][k];
+        if (vb == i || vb == va)
+          continue;
+        if (!std::binary_search(adj[vb].begin(), adj[vb].end(), i))
+          continue;
+        const double w = acti[i] + cand[a].first + acti[vb];
+        if (!found || w < best) {
+          best = w;
+          found = true;
+        }
+      }
+    }
+
+    printf("%s,%lu,%lu,%d,%.6f,%lu,%lu,%lu,"
+           "%.6f,%.6f,%.6f,%lu,%.6f,%.6f,"
+           "%lu,%d,%d,%d,%.3f,%.3f,%d,"
+           "%d\n",
+      name.c_str(), (unsigned long)i, (unsigned long)act[i],
+      act[i] >= (size_t)numCols ? 1 : 0, xa[i],
+      (unsigned long)adj[i].size(), (unsigned long)degIn[i], (unsigned long)d,
+      xMin, xMax, d ? xSum / (double)d : 0.0, (unsigned long)nMid, top4, viol5,
+      (unsigned long)csize[i], (int)bip[i], dead[i] ? 0 : 1, found ? 1 : 0,
+      found ? best : 0.0, lb5, (found && best < lb5) ? 1 : 0,
+      (int)lab[i]);
+  }
+}
+
 /**
  * Round-trip the graph through save()/load() and prove the reconstruction is
  * identical, field by field. "Close" is not good enough here: the whole point of
@@ -530,6 +1140,18 @@ static void usage(const char *prog)
     "                      before it becomes a row cut. certBad* must all be 0.\n"
     "                      Needs no reference solution, so unlike the row-cut\n"
     "                      debugger it works on every fixture\n"
+    "  --no-gate           disable the separator's futility gate (default on).\n"
+    "                      Every field except spFindCalls, ohShort, ohRepeated,\n"
+    "                      the gate* counters and the times must be identical\n"
+    "                      with and without it -- that is the no-cut-lost check.\n"
+    "  --node-features     one row per fixture describing the active subgraph\n"
+    "                      (bipartite / triangle-dominant / 2-core shares).\n"
+    "                      Emits a different CSV schema and exits\n"
+    "  --node-outcomes     one row per *active node*: features plus the outcome\n"
+    "                      the separator actually reached for it (1 short,\n"
+    "                      2 repeated, 3 not violated, 4 duplicate, 5 kept).\n"
+    "                      Forces the gate off, or the rows the study is about\n"
+    "                      are the ones with no label. Different CSV schema\n"
     "  --header            print the CSV header line and exit\n"
     "  --csv-header        print the CSV header before the data line\n"
     "  --quiet             suppress warnings\n",
@@ -572,7 +1194,20 @@ static const char *CSV_HEADER
     // searchWheelCenter() filter attribution; appended so earlier column
     // positions are unchanged and older sweep CSVs stay comparable.
     "wcCalls,wcPool,wcRejInCycle,wcRejDegree,wcRejAdjacency,wcRejCost,"
-    "wcCandidates,wcCliqueDropped";
+    "wcCandidates,wcCliqueDropped,"
+    // buildFutilityGate() attribution. gateSkipped is shortest-path calls proved
+    // unable to yield a cut and therefore not made, so it moves spFindCalls,
+    // ohShort, ohRepeated and tSearch and nothing else -- which is exactly what
+    // --no-gate is for checking.
+    //
+    // gateBipartite/gateNoCycle/gateBlockOnly are one decision split three ways:
+    // the skip is made by the block certificate ("some biconnected block
+    // containing this node is non-bipartite" decides "lies on an odd cycle"
+    // exactly), and the count goes to whichever weaker certificate would also
+    // have caught the node. So gateBlockOnly is the column that prices what the
+    // block certificate adds over the bipartite-component and 2-core tests it
+    // subsumes; if it is 0 everywhere, the exact certificate bought nothing.
+    "gateSkipped,gateBipartite,gateNoCycle,gateBlockOnly,gateTriangle,tGate";
 
 /**
  * Sums of CglOddWheel::stats() over the rounds.
@@ -599,12 +1234,14 @@ struct Totals {
   size_t wheelCenters = 0, wcElements = 0;
   size_t wcCalls = 0, wcPool = 0, wcRejInCycle = 0, wcRejDegree = 0;
   size_t wcRejAdjacency = 0, wcRejCost = 0, wcCandidates = 0, wcCliqueDropped = 0;
+  size_t gateSkipped = 0, gateBipartite = 0, gateTriangle = 0, gateNoCycle = 0;
+  size_t gateBlockOnly = 0;
   size_t cutsBeforePool = 0, cutsDupIdx = 0, cutsAfterPool = 0;
   size_t cutsZeroCoefs = 0, cutsEmpty = 0;
   bool timeLimitHit = false;
   double tSetup = 0.0, tSeparator = 0.0, tActive = 0.0, tPrepArcs = 0.0;
   double tPrepRev = 0.0, tPrepSpf = 0.0, tSearch = 0.0, tWheelCenter = 0.0;
-  double tCutPool = 0.0;
+  double tCutPool = 0.0, tGate = 0.0;
 
   void add(const CglOddWheel::Stats &s)
   {
@@ -653,6 +1290,11 @@ struct Totals {
     wcRejCost += s.sep.wcRejCost;
     wcCandidates += s.sep.wcCandidates;
     wcCliqueDropped += s.sep.wcCliqueDropped;
+    gateSkipped += s.sep.gateSkipped;
+    gateBipartite += s.sep.gateBipartite;
+    gateTriangle += s.sep.gateTriangle;
+    gateNoCycle += s.sep.gateNoCycle;
+    gateBlockOnly += s.sep.gateBlockOnly;
     timeLimitHit = timeLimitHit || s.sep.timeLimitReached;
 
     cutsBeforePool += s.cutsBeforePool;
@@ -670,6 +1312,7 @@ struct Totals {
     tSearch += s.sep.tSearch;
     tWheelCenter += s.sep.tWheelCenter;
     tCutPool += s.tCutPool;
+    tGate += s.sep.tGate;
   }
 };
 
@@ -684,7 +1327,7 @@ struct Totals {
 static void printStageTimes(const Totals &t, double totalSepTime)
 {
   const double stages = t.tSetup + t.tActive + t.tPrepArcs + t.tPrepRev + t.tPrepSpf
-    + t.tSearch + t.tWheelCenter + t.tCutPool;
+    + t.tGate + t.tSearch + t.tWheelCenter + t.tCutPool;
   const double pct = totalSepTime > 0.0 ? 100.0 / totalSepTime : 0.0;
 
   fprintf(stderr, "\n  stage                       seconds     %% of sepTime\n");
@@ -696,6 +1339,7 @@ static void printStageTimes(const Totals &t, double totalSepTime)
   fprintf(stderr, "  odd-hole search          %10.4f   %8.2f\n", t.tSearch, t.tSearch * pct);
   fprintf(stderr, "  wheel-center lifting     %10.4f   %8.2f\n", t.tWheelCenter,
     t.tWheelCenter * pct);
+  fprintf(stderr, "  futility gate            %10.4f   %8.2f\n", t.tGate, t.tGate * pct);
   fprintf(stderr, "  cut pool + insertion     %10.4f   %8.2f\n", t.tCutPool, t.tCutPool * pct);
   fprintf(stderr, "  ------------------------------------------------\n");
   fprintf(stderr, "  accounted                %10.4f   %8.2f\n", stages, stages * pct);
@@ -750,12 +1394,15 @@ int main(int argc, char *argv[])
   }
 
   bool doSelfTest = false;
+  bool doNodeFeatures = false;
   bool rebuildCgraph = false;
   bool csvHeader = false;
   bool quiet = false;
   bool stageTimes = false;
   bool verifyPrepare = false;
   bool checkValidity = false;
+  bool useGate = true;
+  bool doNodeOutcomes = false;
   int maxRounds = 4;
   size_t extMethod = 2;
   double maxSeconds = 0.0;
@@ -765,6 +1412,10 @@ int main(int argc, char *argv[])
     const char *a = argv[i];
     if (strcmp(a, "--self-test") == 0) {
       doSelfTest = true;
+    } else if (strcmp(a, "--node-features") == 0) {
+      doNodeFeatures = true;
+    } else if (strcmp(a, "--node-outcomes") == 0) {
+      doNodeOutcomes = true;
     } else if (strcmp(a, "--rebuild-cgraph") == 0) {
       rebuildCgraph = true;
     } else if (strcmp(a, "--csv-header") == 0) {
@@ -777,6 +1428,8 @@ int main(int argc, char *argv[])
       verifyPrepare = true;
     } else if (strcmp(a, "--check-validity") == 0) {
       checkValidity = true;
+    } else if (strcmp(a, "--no-gate") == 0) {
+      useGate = false;
     } else if (strncmp(a, "--rounds=", 9) == 0) {
       maxRounds = atoi(a + 9);
     } else if (strncmp(a, "--ext-method=", 13) == 0) {
@@ -817,6 +1470,18 @@ int main(int argc, char *argv[])
     return 1;
   }
 
+  if (doNodeFeatures) {
+    printNodeFeatures(cg, f.si.getColSolution(), f.si.getNumCols(),
+      baseName(stem), csvHeader);
+    return 0;
+  }
+
+  if (doNodeOutcomes) {
+    printNodeOutcomes(cg, f.si.getColSolution(), f.si.getReducedCost(),
+      f.si.getNumCols(), extMethod, baseName(stem), csvHeader);
+    return 0;
+  }
+
   CglTreeInfo info;
   info.level = 0;
   info.pass = 0;
@@ -850,6 +1515,8 @@ int main(int argc, char *argv[])
       oddWheel.setMaxSeconds(maxSeconds);
     if (verifyPrepare)
       oddWheel.setVerifyPrepare(true);
+    if (!useGate)
+      oddWheel.setUseGate(false);
     if (checkValidity)
       oddWheel.setCheckValidity(true);
 
@@ -930,7 +1597,8 @@ int main(int argc, char *argv[])
          "%.6f,%.6f,%s,%s,%s,"
          "%lu,%lu,%lu,%lu,%lu,%lu,%lu,"
          "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,"
-         "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu\n",
+         "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,"
+         "%lu,%lu,%lu,%lu,%lu,%.6f\n",
     baseName(stem).c_str(), (unsigned long)extMethod, round,
     f.si.getNumRows() - nRows0, totalCuts, totalViol, maxViol,
     totalCuts ? (double)totalCutLen / totalCuts : 0.0,
@@ -965,7 +1633,10 @@ int main(int argc, char *argv[])
     (unsigned long)tot.wcCalls, (unsigned long)tot.wcPool,
     (unsigned long)tot.wcRejInCycle, (unsigned long)tot.wcRejDegree,
     (unsigned long)tot.wcRejAdjacency, (unsigned long)tot.wcRejCost,
-    (unsigned long)tot.wcCandidates, (unsigned long)tot.wcCliqueDropped);
+    (unsigned long)tot.wcCandidates, (unsigned long)tot.wcCliqueDropped,
+    (unsigned long)tot.gateSkipped, (unsigned long)tot.gateBipartite,
+    (unsigned long)tot.gateNoCycle, (unsigned long)tot.gateBlockOnly,
+    (unsigned long)tot.gateTriangle, tot.tGate);
 
   if (stageTimes)
     printStageTimes(tot, totalSepTime);

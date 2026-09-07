@@ -1213,6 +1213,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   // cheapest way to try to get *some* incumbent as early as possible.
   // Like FPump, it is most valuable while there is still no solution at
   // all -- see feasibilityJumpOnlyNoSol.
+  int fjCloneIndex = -1;
   if (useFeasibilityJump >= kType && useFeasibilityJump <= kType + 1) {
     anyToDo = true;
     CbcHeuristicFeasibilityJump heuristicFJ(*model);
@@ -1235,6 +1236,9 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     heuristicFJ.setIntegerTolerance(
       parameters[CbcParam::INTEGERTOLERANCE]->dblVal());
     model->addHeuristic(&heuristicFJ);
+    // Remember where the clone landed so FPump (below) can be wired up to
+    // fall back to it -- see feasibilityJumpAfterFPump.
+    fjCloneIndex = model->numberHeuristics() - 1;
   }
   // FPump done first as it only works if no solution
   if (useFpump >= kType && useFpump <= kType + 1) {
@@ -1413,6 +1417,20 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
 #else
     model->addHeuristic(&heuristic4);
 #endif
+    // Wire up the Feasibility Jump fallback (point (d): recover from FPump
+    // failing to find any feasible solution), if both heuristics are
+    // enabled and feasibilityJumpAfterFPump requests it. Must be done via
+    // the actual clones stored on the model -- addHeuristic() always
+    // clones its argument, so pointing at the local stack objects here
+    // would dangle once this function returns.
+    if (fjCloneIndex >= 0 && parameters[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->intVal() != 0) {
+      CbcHeuristicFeasibilityJump *fjClone =
+        dynamic_cast< CbcHeuristicFeasibilityJump * >(model->heuristic(fjCloneIndex));
+      CbcHeuristicFPump *fpumpClone =
+        dynamic_cast< CbcHeuristicFPump * >(model->heuristic(model->numberHeuristics() - 1));
+      if (fjClone && fpumpClone)
+        fpumpClone->setFeasibilityJumpFallback(fjClone);
+    }
   }
   if (useRounding >= type && useRounding >= kType && useRounding <= kType + 1) {
     CbcRounding heuristic1(*model);

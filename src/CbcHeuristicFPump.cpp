@@ -16,6 +16,7 @@
 #include "OsiClpSolverInterface.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristicFPump.hpp"
+#include "CbcHeuristicFeasibilityJump.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcBranchDynamic.hpp"
 #include "CoinHelperFunctions.hpp"
@@ -154,6 +155,7 @@ void CbcHeuristicFPump::generateCpp(FILE *fp)
 // Copy constructor
 CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump &rhs)
   : CbcHeuristic(rhs)
+  , fjFallback_(nullptr) // not copied: caller must reinstall
   , startTime_(rhs.startTime_)
   , maximumTime_(rhs.maximumTime_)
   , fakeCutoff_(rhs.fakeCutoff_)
@@ -197,6 +199,8 @@ CbcHeuristicFPump::operator=(const CbcHeuristicFPump &rhs)
     fixOnReducedCosts_ = rhs.fixOnReducedCosts_;
     roundExpensive_ = rhs.roundExpensive_;
     fpOutput_ = nullptr; // not copied: caller must reinstall
+    fjFallback_ = nullptr; // not copied: caller must reinstall
+    lastRoundedAttempt_.clear();
   }
   return *this;
 }
@@ -2593,6 +2597,34 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         exitAll = true;
     }
     delete newSolver;
+  }
+  // Feasibility Jump fallback: FPump found no solution (nor did the
+  // closest-solution B&B fallback just above). If configured (see
+  // setFeasibilityJumpFallback()) and CBC still has no incumbent at all,
+  // give FJ a shot, seeded from FPump's own last rounded (all-integers-
+  // integral, but possibly constraint-infeasible) attempt -- a different,
+  // often more promising, starting point than the raw LP relaxation FJ
+  // would otherwise use on its own.
+  // NOTE: solutionFound alone is not a reliable "FPump never found anything"
+  // signal -- it is reset to false at the top of the retry loop whenever a
+  // further (tighter-cutoff) retry is attempted after an earlier retry
+  // already succeeded (see "solutionFound = false;" a few dozen lines above,
+  // in the "else" branch that continues to another retry). finalReturnCode
+  // is the sticky signal that mirrors this function's actual return value,
+  // so require both to be false before treating this as a genuine failure.
+  if (!finalReturnCode && !solutionFound && newSolution) {
+    lastRoundedAttempt_.assign(newSolution, newSolution + numberColumns);
+    if (fjFallback_ && !model_->getSolutionCount()) {
+      double fjObjective = COIN_DBL_MAX;
+      if (fjFallback_->solveFromSeed(fjObjective, betterSolution, newSolution) > 0) {
+        solutionValue = fjObjective;
+        finalReturnCode = 1;
+        solutionFound = true;
+        numberSolutions++;
+      }
+    }
+  } else {
+    lastRoundedAttempt_.clear();
   }
   delete clonedSolver;
   delete[] roundingSolution;

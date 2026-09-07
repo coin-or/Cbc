@@ -5,9 +5,11 @@
 #ifndef CbcHeuristicFeasibilityPump_H
 #define CbcHeuristicFeasibilityPump_H
 
+#include <vector>
 #include "CbcHeuristic.hpp"
 
 class CbcFPumpOutput;
+class CbcHeuristicFeasibilityJump;
 #include "OsiClpSolverInterface.hpp"
 
 /** Feasibility Pump class
@@ -39,6 +41,31 @@ public:
   void setFPumpOutput(CbcFPumpOutput *output) { fpOutput_ = output; }
   /// Get the FP output handler.
   CbcFPumpOutput *getFPumpOutput() const { return fpOutput_; }
+
+  /** Set a Feasibility Jump heuristic to try as a fallback right after this
+   *  pump fails to find a feasible solution (i.e. solution()/solutionInternal()
+   *  is about to return 0) while CBC still has no incumbent at all. When
+   *  set, FJ is seeded from the pump's own last rounded (but possibly
+   *  constraint-infeasible) attempt -- a different, and often more
+   *  promising, starting point than the raw LP relaxation FJ would
+   *  otherwise use. Not owned by this object; pass nullptr to disable
+   *  (default). Must point at an object that outlives this heuristic's use
+   *  (in practice: another heuristic already registered on the same
+   *  CbcModel, so both are cloned/destroyed together). */
+  void setFeasibilityJumpFallback(CbcHeuristicFeasibilityJump *fj) { fjFallback_ = fj; }
+  /// Get the Feasibility Jump fallback heuristic (nullptr if none set).
+  CbcHeuristicFeasibilityJump *feasibilityJumpFallback() const { return fjFallback_; }
+
+  /// Whether the last call captured a rounded-but-failed attempt (see
+  /// lastRoundedAttempt()). Cleared whenever a call succeeds.
+  bool hasLastRoundedAttempt() const { return !lastRoundedAttempt_.empty(); }
+  /// The pump's last rounded (all-integers-integral, but possibly
+  /// constraint-infeasible) attempt from its most recent failed call, or
+  /// nullptr if the last call succeeded (or none has run yet).
+  const double *lastRoundedAttempt() const
+  {
+    return lastRoundedAttempt_.empty() ? nullptr : lastRoundedAttempt_.data();
+  }
 
   /// Resets stuff if model changes
   virtual void resetModel(CbcModel *model);
@@ -241,6 +268,10 @@ public:
 
 protected:
   // Data
+  /// Not owned. See setFeasibilityJumpFallback().
+  CbcHeuristicFeasibilityJump *fjFallback_ = nullptr;
+  /// See lastRoundedAttempt().
+  std::vector< double > lastRoundedAttempt_;
   /// Start time
   double startTime_;
   /// Maximum Cpu seconds

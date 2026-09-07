@@ -868,6 +868,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::FEASIBILITYJUMPDEPTH]->setDefault(0);
      parameters_[CbcParam::FEASIBILITYJUMPONLYNOSOL]->setDefault(1);
      parameters_[CbcParam::FEASIBILITYJUMPMAXCALLS]->setDefault(0);
+     parameters_[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->setDefault(0);
      parameters_[CbcParam::FPUMPITS]->setDefault(getFeasPumpIters());
      parameters_[CbcParam::FPUMPTUNE]->setDefault(0);
      parameters_[CbcParam::FPUMPTUNE2]->setDefault(0);
@@ -2443,13 +2444,28 @@ void CbcParameters::addCbcSolverIntParams() {
       "Cap on the total number of separate FJ calls for the whole solve (0 = unlimited)",
       0, COIN_INT_MAX,
       "Caps how many times Feasibility Jump is invoked in total, across "
-      "the before-cuts, root-after-cuts, and tree trigger points. Each "
-      "invocation is always seeded from a genuinely new fractional "
-      "solution (a different cut round or tree node), never a repeat on "
-      "an unchanged point. Default: 0 (unlimited). Combine with "
+      "the root-after-cuts and tree trigger points (plus the FPump-failure "
+      "fallback, see feasibilityJumpAfterFPump). Each invocation is always "
+      "seeded from a genuinely new fractional solution (a different cut "
+      "round or tree node), never a repeat on an unchanged point. "
+      "Default: 0 (unlimited). Combine with "
       "feasibilityJumpEffort/feasibilityJumpEffortMult to explore the "
       "tradeoff between calling FJ fewer times with a bigger budget each "
       "vs. more times with a smaller budget each.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->setup(
+      "feasibilityJumpAfterFPump",
+      "Fall back to Feasibility Jump when FPump fails to find a solution (0/1)",
+      0, 1,
+      "When 1, and both feasibilityJump and feasibilityPump are enabled, "
+      "Feasibility Jump is automatically tried right after Feasibility "
+      "Pump fails to find any feasible solution (and only while CBC still "
+      "has no incumbent at all). FJ is seeded from FPump's own last "
+      "rounded (all-integers-integral, but possibly constraint-infeasible) "
+      "attempt, rather than the raw LP relaxation -- a different, often "
+      "more promising, starting point to try to repair into a genuinely "
+      "feasible solution. Default: 0 (off).",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::FPUMPITS]->setup(

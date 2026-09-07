@@ -141,8 +141,19 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
   return solveFJ(objectiveValue, newSolution, depth);
 }
 
+int CbcHeuristicFeasibilityJump::solveFromSeed(double &objectiveValue,
+  double *newSolution, const double *seedSolution)
+{
+  // Triggered directly by another heuristic's failure (currently: Feasibility
+  // Pump, see CbcHeuristicFPump::setFeasibilityJumpFallback()), not by the
+  // normal per-round schedule, so shouldHeurRun()'s throttling does not
+  // apply here. onlyIfNoIncumbent_/maxCalls_ are still honoured (checked
+  // inside solveFJ()).
+  return solveFJ(objectiveValue, newSolution, /*depth=*/0, seedSolution);
+}
+
 int CbcHeuristicFeasibilityJump::solveFJ(double &objectiveValue,
-  double *newSolution, int depth)
+  double *newSolution, int depth, const double *seedSolution)
 {
   // Per the observation that FJ is most valuable for producing the very
   // first incumbent, skip entirely once CBC already has one (of any origin),
@@ -223,9 +234,12 @@ int CbcHeuristicFeasibilityJump::solveFJ(double &objectiveValue,
   }
 
   // ------------------------------------------------------------------
-  // Use LP relaxation solution as initial point; round integers.
+  // Use the caller-supplied seed if given (e.g. Feasibility Pump's last
+  // rounded-but-infeasible attempt, see solveFromSeed()); otherwise use the
+  // current LP relaxation solution as the initial point. Either way, round
+  // integers to the nearest integral value.
   // ------------------------------------------------------------------
-  const double *lpSol = solver->getColSolution();
+  const double *lpSol = seedSolution ? seedSolution : solver->getColSolution();
   std::vector< double > initialValues(numCols);
   for (int j = 0; j < numCols; ++j) {
     if (solver->isInteger(j))

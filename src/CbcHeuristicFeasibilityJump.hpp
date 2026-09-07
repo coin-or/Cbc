@@ -64,6 +64,18 @@ public:
   using CbcHeuristic::solution;
   virtual int solution(double &objectiveValue, double *newSolution) override;
 
+  /** Entry point used to run FJ seeded from an externally supplied point
+   *  (rather than the current LP relaxation solution), e.g. Feasibility
+   *  Pump's last rounded-but-infeasible attempt when it fails to find a
+   *  solution (point (d) of the FJ integration plan -- see
+   *  CbcHeuristicFPump::setFeasibilityJumpFallback()). Bypasses
+   *  shouldHeurRun()'s throttling (this is a one-off, event-triggered call,
+   *  not part of the normal per-round schedule) but still honours
+   *  onlyIfNoIncumbent_/maxCalls_. Returns 1 and fills
+   *  objectiveValue/newSolution on success, exactly like solution(). */
+  int solveFromSeed(double &objectiveValue, double *newSolution,
+    const double *seedSolution);
+
   /// Whether to relax continuous variables (treat them at their bounds).
   inline void setRelaxContinuous(bool val) { relaxContinuous_ = val; }
   inline bool relaxContinuous() const { return relaxContinuous_; }
@@ -141,7 +153,8 @@ public:
 
 protected:
   /// Shared implementation for solution().
-  int solveFJ(double &objectiveValue, double *newSolution, int depth);
+  int solveFJ(double &objectiveValue, double *newSolution, int depth,
+    const double *seedSolution = nullptr);
 
   bool relaxContinuous_ = false;
   int seed_ = 0;

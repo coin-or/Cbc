@@ -44,6 +44,8 @@
  */
 
 #include "CbcModel.hpp"
+#include "CbcParameters.hpp"
+#include "CbcSolverHeuristics.hpp"
 #include "CbcStrategy.hpp"
 #include "ClpSimplex.hpp"
 #include "OsiClpSolverInterface.hpp"
@@ -182,7 +184,8 @@ static std::vector< std::string > splitTab(const std::string &line)
   return fields;
 }
 
-static std::vector< std::string > lookupRow(const std::string &tsvPath, const std::string &key)
+static std::vector< std::string > lookupRow(const std::string &tsvPath, const std::string &key,
+  std::vector< std::string > *headerOut = nullptr)
 {
   std::ifstream in(tsvPath);
   if (!in.is_open())
@@ -192,6 +195,8 @@ static std::vector< std::string > lookupRow(const std::string &tsvPath, const st
   while (std::getline(in, line)) {
     if (first) {
       first = false;
+      if (headerOut)
+        *headerOut = splitTab(line);
       continue;
     }
     if (line.empty())
@@ -204,13 +209,21 @@ static std::vector< std::string > lookupRow(const std::string &tsvPath, const st
 }
 
 /// Thin wrapper so --no-cuts/--no-heur can skip either half of
-/// CbcStrategyDefault's setup without reimplementing it.
+/// CbcStrategyDefault's setup without reimplementing it. When a CbcParameters
+/// is supplied, heuristics are attached via the real doHeuristics() used by
+/// the `cbc` command line itself (rounding, Feasibility Pump, RINS, diving,
+/// Feasibility Jump, the FPump->FJ fallback, ...) rather than
+/// CbcStrategyDefault::setupHeuristics()'s much smaller fixed set (rounding
+/// only) -- this is what lets replay experiments faithfully compare against
+/// full-CLI heuristic behavior.
 class ReplayStrategy : public CbcStrategyDefault {
 public:
-  ReplayStrategy(bool doCuts, bool doHeur, int numberStrong, int numberBeforeTrust)
+  ReplayStrategy(bool doCuts, bool doHeur, int numberStrong, int numberBeforeTrust,
+    CbcParameters *params = NULL)
     : CbcStrategyDefault(1, numberStrong, numberBeforeTrust)
     , doCuts_(doCuts)
     , doHeur_(doHeur)
+    , params_(params)
   {
   }
   virtual CbcStrategy *clone() const { return new ReplayStrategy(*this); }
@@ -221,12 +234,17 @@ public:
   }
   virtual void setupHeuristics(CbcModel &model)
   {
-    if (doHeur_)
+    if (!doHeur_)
+      return;
+    if (params_)
+      doHeuristics(&model, 1, *params_, /*noPrinting_=*/1, /*initialPumpTune=*/0);
+    else
       CbcStrategyDefault::setupHeuristics(model);
   }
 
 private:
   bool doCuts_, doHeur_;
+  CbcParameters *params_;
 };
 
 static void usage(const char *prog)
@@ -243,7 +261,24 @@ static void usage(const char *prog)
     "  --no-heur            skip attaching heuristics\n"
     "  --log=N              CBC log level (default 0)\n"
     "  --data-dir=PATH      mip-sanity-data checkout, for bks.tsv gap reporting\n"
-    "  --quiet              suppress warnings\n",
+    "  --quiet              suppress warnings\n"
+    "  --minimal-heur       use CbcStrategyDefault's bare rounding-only "
+    "heuristic set\n"
+    "                       instead of the real cbc CLI default set "
+    "(doHeuristics())\n"
+    "  --fpump=on|off       toggle Feasibility Pump (default: on, the real "
+    "CLI default)\n"
+    "  --fj=off|on|before|both   toggle Feasibility Jump (default: off, the "
+    "real CLI default)\n"
+    "  --fj-after-fpump=0|1 FJ fallback seeded from FPump's failed attempt "
+    "(default 0)\n"
+    "  --fj-effort=N        fixed FJ effort budget (default 0 = NNZ-scaled)\n"
+    "  --fj-effort-mult=N   NNZ multiplier for FJ effort budget (default 1024)\n"
+    "  --fj-stall=N         NNZ multiplier for FJ stall termination (default 256)\n"
+    "  --fj-max-sol=N       stop FJ after this many solutions per call (default 1)\n"
+    "  --fj-only-no-sol=0|1 only run FJ while no incumbent exists (default 1)\n"
+    "  --fj-max-calls=N     cap on total FJ invocations (default 0 = unlimited)\n"
+    "  --fj-depth=N         run FJ every N tree levels (default 0 = root only)\n",
     prog);
 }
 
@@ -265,9 +300,17 @@ int main(int argc, char **argv)
   std::string tag = "root";
   int nodes = 16;
   double sec = 60.0;
-  bool doCuts = true, doHeur = true, quiet = false;
+  bool doCuts = true, doHeur = true, quiet = false, minimalHeur = false;
   int logLevel = 0;
   std::string dataDir;
+
+  // Feasibility Jump / Feasibility Pump overrides, applied on top of
+  // CbcParameters' own real CLI defaults (see below). NULL/unset (empty
+  // string) means "leave the default alone".
+  std::string fpumpMode; // "on"/"off"
+  std::string fjMode; // "off"/"on"/"before"/"both"
+  int fjAfterFPump = -1, fjEffort = -1, fjEffortMult = -1, fjStall = -1;
+  int fjMaxSol = -1, fjOnlyNoSol = -1, fjMaxCalls = -1, fjDepth = -1;
 
   for (int i = 1; i < argc; ++i) {
     const std::string a = argv[i];
@@ -283,6 +326,28 @@ int main(int argc, char **argv)
       doCuts = false;
     else if (a == "--no-heur")
       doHeur = false;
+    else if (a == "--minimal-heur")
+      minimalHeur = true;
+    else if (a.rfind("--fpump=", 0) == 0)
+      fpumpMode = a.substr(8);
+    else if (a.rfind("--fj=", 0) == 0)
+      fjMode = a.substr(5);
+    else if (a.rfind("--fj-after-fpump=", 0) == 0)
+      fjAfterFPump = atoi(a.c_str() + 17);
+    else if (a.rfind("--fj-effort-mult=", 0) == 0)
+      fjEffortMult = atoi(a.c_str() + 17);
+    else if (a.rfind("--fj-effort=", 0) == 0)
+      fjEffort = atoi(a.c_str() + 12);
+    else if (a.rfind("--fj-stall=", 0) == 0)
+      fjStall = atoi(a.c_str() + 11);
+    else if (a.rfind("--fj-max-sol=", 0) == 0)
+      fjMaxSol = atoi(a.c_str() + 13);
+    else if (a.rfind("--fj-only-no-sol=", 0) == 0)
+      fjOnlyNoSol = atoi(a.c_str() + 17);
+    else if (a.rfind("--fj-max-calls=", 0) == 0)
+      fjMaxCalls = atoi(a.c_str() + 15);
+    else if (a.rfind("--fj-depth=", 0) == 0)
+      fjDepth = atoi(a.c_str() + 11);
     else if (a.rfind("--log=", 0) == 0)
       logLevel = atoi(a.c_str() + 6);
     else if (a.rfind("--data-dir=", 0) == 0)
@@ -309,6 +374,13 @@ int main(int argc, char **argv)
   const std::string mps = fileExists(stem + ".mps.gz") ? stem + ".mps.gz" : stem + ".mps";
   const std::string bas = stem + ".bas";
   const std::string name = baseName(stem);
+  // The bare instance name, stripped of the ".<tag>" suffix fixtureStem()
+  // appends (e.g. "pk1.root" -> "pk1") -- this is the key bks.tsv/limits.tsv
+  // rows are actually indexed by, not the fixture stem's basename.
+  const std::string instanceName = (name.size() > tag.size() + 1
+                                      && name.compare(name.size() - tag.size() - 1, tag.size() + 1, "." + tag) == 0)
+    ? name.substr(0, name.size() - tag.size() - 1)
+    : name;
 
   if (!fileExists(mps)) {
     fprintf(stderr, "ERROR: no fixture problem file for stem %s (looked for %s)\n",
@@ -383,14 +455,47 @@ int main(int argc, char **argv)
   model.setMaximumNodes(nodes);
   model.setMaximumSeconds(sec);
 
+  // CbcParameters() self-initializes with the exact same defaults the real
+  // `cbc` command line uses (CbcParameters::init() -> addCbcParams() ->
+  // setDefaults()), independent of any CbcSolver instance -- so this is a
+  // faithful baseline (Feasibility Pump on, Feasibility Jump off, etc.),
+  // not a hand-picked subset. Overridden below only for the specific FJ/FPump
+  // knobs this replay tool exposes.
+  CbcParameters params;
+  if (!fpumpMode.empty())
+    params[CbcParam::FPUMP]->setKwdVal(fpumpMode);
+  if (!fjMode.empty())
+    params[CbcParam::FEASIBILITYJUMP]->setKwdVal(fjMode);
+  if (fjAfterFPump >= 0)
+    params[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->setVal(fjAfterFPump);
+  if (fjEffort >= 0)
+    params[CbcParam::FEASIBILITYJUMPEFFORT]->setVal(fjEffort);
+  if (fjEffortMult >= 0)
+    params[CbcParam::FEASIBILITYJUMPEFFORTMULT]->setVal(fjEffortMult);
+  if (fjStall >= 0)
+    params[CbcParam::FEASIBILITYJUMPSTALL]->setVal(fjStall);
+  if (fjMaxSol >= 0)
+    params[CbcParam::FEASIBILITYJUMPMAXSOL]->setVal(fjMaxSol);
+  if (fjOnlyNoSol >= 0)
+    params[CbcParam::FEASIBILITYJUMPONLYNOSOL]->setVal(fjOnlyNoSol);
+  if (fjMaxCalls >= 0)
+    params[CbcParam::FEASIBILITYJUMPMAXCALLS]->setVal(fjMaxCalls);
+  if (fjDepth >= 0)
+    params[CbcParam::FEASIBILITYJUMPDEPTH]->setVal(fjDepth);
+
   // Same recipe the normal `cbc` command line uses for its default cut
-  // generators / heuristics (see CbcSolver.cpp's babExecuteSearchAndPostprocess,
+  // generators (see CbcSolver.cpp's babExecuteSearchAndPostprocess,
   // "CbcStrategyDefault strategy(1, babModel_->numberStrong(),
   // babModel_->numberBeforeTrust())"). Deliberately not calling
   // setupPreProcessing(): the fixture's solver is already preprocessed, and
   // CbcStrategyDefault::setupOther() only preprocesses when that is requested,
   // so it is a no-op here beyond setting numberStrong_/numberBeforeTrust_.
-  ReplayStrategy strategy(doCuts, doHeur, model.numberStrong(), model.numberBeforeTrust());
+  // Heuristics are attached via doHeuristics() (the same function
+  // CbcSolver::configureHeuristics() calls), for full parity with the real
+  // CLI's default heuristic set, unless --minimal-heur asks for
+  // CbcStrategyDefault's much smaller bare-rounding fallback instead.
+  ReplayStrategy strategy(doCuts, doHeur, model.numberStrong(), model.numberBeforeTrust(),
+    minimalHeur ? NULL : &params);
   model.setStrategy(strategy);
 
   const double t1 = wallClock();
@@ -417,10 +522,26 @@ int main(int argc, char **argv)
     // directory (test/), so it works out of the box from an in-tree build.
     dataDir = "mip-sanity-data";
   }
-  const std::vector< std::string > bksRow = lookupRow(dataDir + "/bks.tsv", name);
-  if (!bksRow.empty() && bksRow.size() > 1) {
-    const double bks = atof(bksRow[1].c_str());
-    printf("[replay] %s: bks=%.10g\n", name.c_str(), bks);
+  // bks.tsv schema varies by collection: the simple MIPLIB-set format is
+  // "instance\tbks", while mip-sanity-data's own bks.tsv is
+  // "instance\tstatus\tobjective\tsense\tsource". Detect the right column
+  // from the header instead of hardcoding index 1, so both work.
+  std::vector< std::string > bksHeader;
+  const std::vector< std::string > bksRow = lookupRow(dataDir + "/bks.tsv", instanceName, &bksHeader);
+  if (!bksRow.empty()) {
+    int bksCol = -1;
+    for (size_t i = 0; i < bksHeader.size(); ++i) {
+      if (bksHeader[i] == "bks" || bksHeader[i] == "objective") {
+        bksCol = (int)i;
+        break;
+      }
+    }
+    if (bksCol < 0 && bksRow.size() > 1)
+      bksCol = 1; // fall back to the simple 2-column schema's assumption
+    if (bksCol >= 0 && bksCol < (int)bksRow.size()) {
+      const double bks = atof(bksRow[bksCol].c_str());
+      printf("[replay] %s: bks=%.10g\n", name.c_str(), bks);
+    }
   }
 
   return 0;

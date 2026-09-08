@@ -1,0 +1,23 @@
+# Stage 3: evaluate tree-recursive FJ calls (not just root) across the first
+# 16 nodes (--nodes=16, matching the user's "first 16 nodes" target), on top
+# of the stage-1/stage-2 winner (--fj=on --fj-after-fpump=1, default
+# effort-mult=1024/max-sol=1, both confirmed saturated in stage 2).
+#
+# Knobs swept:
+#   --fj-depth=N          run FJ again every N tree levels (0 = root-call only)
+#   --fj-only-no-sol=0|1  gate repeat FJ calls on "still no incumbent" (default 1)
+#
+# fj_root_only: baseline repeat (same as stage-1 winner, --nodes=16 here
+# instead of 1, to see whether just letting B&B run 16 nodes on top changes
+# anything by itself).
+# fj_depth<N>_gated: only call FJ again while no solution has been found yet.
+# fj_depth<N>_ungated: call FJ at every N-level checkpoint regardless (only
+# worth testing to see if forcing extra calls ever helps/hurts once we DO
+# have an incumbent -- expected neutral-to-worse per the user's own point).
+fj_root_only	--fj=on --fj-after-fpump=1 --fj-depth=0
+fj_depth2_gated	--fj=on --fj-after-fpump=1 --fj-depth=2 --fj-only-no-sol=1
+fj_depth4_gated	--fj=on --fj-after-fpump=1 --fj-depth=4 --fj-only-no-sol=1
+fj_depth8_gated	--fj=on --fj-after-fpump=1 --fj-depth=8 --fj-only-no-sol=1
+fj_depth2_ungated	--fj=on --fj-after-fpump=1 --fj-depth=2 --fj-only-no-sol=0
+fj_depth4_ungated	--fj=on --fj-after-fpump=1 --fj-depth=4 --fj-only-no-sol=0
+fj_depth8_ungated	--fj=on --fj-after-fpump=1 --fj-depth=8 --fj-only-no-sol=0

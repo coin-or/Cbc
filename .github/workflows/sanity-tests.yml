@@ -276,11 +276,36 @@ jobs:
     # extremely capacity-constrained (jobs can sit queued for hours and never
     # get scheduled). Instead, run on a plentiful Apple Silicon runner and
     # cross-build for x86_64 under Rosetta 2, same approach as
-    # next-release.yml. Since we need Homebrew's OpenBLAS/SuiteSparse/gcc for
-    # x86_64 specifically (not just Apple's universal clang + Accelerate
-    # framework), this requires its own, separate x86_64 Homebrew prefix
-    # under /usr/local (the arm64 runner's native Homebrew lives under
-    # /opt/homebrew and only has arm64 bottles).
+    # next-release.yml.
+    #
+    # This job used to build a separate x86_64 Homebrew prefix under
+    # /usr/local (the arm64 runner's native Homebrew lives under
+    # /opt/homebrew and only has arm64 bottles) to get Homebrew's
+    # SuiteSparse/gcc/coreutils for x86_64. As of ~September 2026, Homebrew
+    # has dropped bottle support for macOS Intel x86_64 altogether (`brew`
+    # itself now prints "We do not provide support for this platform"), so
+    # `gmp` — a hard runtime dependency of `gcc` (needed to build itself),
+    # `suite-sparse`, *and* `coreutils` (used by its `factor` command) — has
+    # no x86_64 bottle any more and must be built from source; that source
+    # fetch (gmplib.org / ftpmirror.gnu.org) reliably fails to resolve from
+    # these runners, wedging the job for an hour before failing. Rather than
+    # depend on a moving/unsupported target, this job now avoids all three:
+    #   - Apple's system clang/clang++ (universal, always present via Xcode
+    #     Command Line Tools) compiles the x86_64 slice directly — no GCC
+    #     needed.
+    #   - LAPACK/BLAS comes from macOS's built-in Accelerate framework
+    #     (config's top preference on Darwin regardless of compiler).
+    #   - SuiteSparse AMD ordering is unavailable without Homebrew's
+    #     suite-sparse, so it's explicitly disabled (`--no-amd`) for this
+    #     platform only; every other platform still builds it.
+    #   - GNU coreutils' `timeout` is replaced by a small self-contained bash
+    #     function (see below) instead of installing the whole package.
+    #   - pkg-config is only used to read the previous project's installed
+    #     .pc files (a pure text-processing, build-time-only tool never
+    #     linked into the Cbc binary) and ships pre-installed on the runner
+    #     image (`pkgconf`) regardless of architecture.
+    # `bash`/`flock`/`parallel` still have x86_64 bottles (none depend on
+    # gmp) and are still installed from a minimal x86_64 Homebrew prefix.
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -303,26 +328,13 @@ jobs:
           if [[ ! -x /usr/local/bin/brew ]]; then
             arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null
           fi
-          # `flock`, `timeout`, and a modern `bash` aren't present by default
-          # on macOS: run-mip-sanity-tests needs GNU/util-linux-style flock
-          # for its progress-counter locking and GNU coreutils' `timeout` to
-          # hard-kill overrunning solves (BSD/macOS has no `timeout` at all —
-          # every instance failed with "cbc exited (rc=127)" without it), and
-          # macOS's ancient system /bin/bash (3.2, last GPLv2 release) has a
+          # `flock` (GNU/util-linux-style, for the progress-counter locking)
+          # and a modern `bash` (macOS's ancient system /bin/bash 3.2 has a
           # longstanding `set -u` bug where `${empty_array[@]}` throws
-          # "unbound variable" instead of expanding to nothing (fixed only in
-          # bash 4.4+). All three are sidestepped by installing Homebrew's
-          # `flock`/`coreutils`/`bash`, prepending coreutils' unprefixed
-          # `gnubin` dir to PATH, and invoking the script with Homebrew's
-          # bash explicitly (see below).
-          #
-          # No `openblas` here: `config` now prefers macOS's built-in
-          # Accelerate framework for LAPACK, which needs no extra install and
-          # avoids a real crash — Homebrew's OpenBLAS links LLVM's
-          # libomp.dylib, which clashes with GCC-built cbc's own libgomp
-          # (both register as "the" OpenMP runtime), aborting at startup with
-          # "OMP: Error #15: ... libomp.dylib ... already initialized".
-          arch -x86_64 /usr/local/bin/brew install gcc suite-sparse pkg-config parallel flock bash coreutils
+          # "unbound variable" instead of expanding to nothing, fixed only in
+          # bash 4.4+) — neither depends on gmp, so both still have x86_64
+          # bottles.
+          arch -x86_64 /usr/local/bin/brew install flock bash parallel
 
       - name: Build + package + test (under Rosetta)
         working-directory: work
@@ -330,14 +342,34 @@ jobs:
           arch -x86_64 /bin/bash <<'ROSETTA'
           set -euo pipefail
           eval "$(/usr/local/bin/brew shellenv)"
-          export PATH="$(brew --prefix coreutils)/libexec/gnubin:$PATH"
-          GCC_PREFIX="$(brew --prefix gcc)"
-          GCC_BIN="$(ls "$GCC_PREFIX"/bin/gcc-* | head -1)"
-          GXX_BIN="$(ls "$GCC_PREFIX"/bin/g++-* | head -1)"
-          FC_BIN="$(ls "$GCC_PREFIX"/bin/gfortran* | head -1)"
-          export CC="$GCC_BIN" CXX="$GXX_BIN" FC="$FC_BIN"
+          export CC=clang CXX=clang++
+
+          # Minimal drop-in for GNU coreutils' `timeout -k <kill-after> <duration> <cmd...>`
+          # (BSD/macOS ships no `timeout` at all — every instance failed with
+          # "cbc exited (rc=127)" without one). Exported so run-mip-sanity-tests,
+          # invoked as a separate bash process below, inherits it.
+          timeout() {
+            local kill_after=0
+            if [[ "$1" == "-k" ]]; then kill_after="${2%s}"; shift 2; fi
+            local dur="${1%s}"; shift
+            "$@" &
+            local cmd_pid=$!
+            ( sleep "$dur"
+              kill -TERM "$cmd_pid" 2>/dev/null
+              if (( kill_after > 0 )); then
+                sleep "$kill_after"
+                kill -KILL "$cmd_pid" 2>/dev/null
+              fi
+            ) &
+            local watcher_pid=$!
+            wait "$cmd_pid" 2>/dev/null; local rc=$?
+            kill "$watcher_pid" 2>/dev/null; wait "$watcher_pid" 2>/dev/null
+            return "$rc"
+          }
+          export -f timeout
+
           ./config --opt --arch=generic --install --prefix="$PWD/install" --jobs="$(sysctl -n hw.ncpu)" \
-            --lapack --amd --zlib --no-bz2 --no-nauty
+            --lapack --no-amd --zlib --no-bz2 --no-nauty
           ./package --prefix="$PWD/install" --name=cbc-macos-x86_64-next --out=dist
           mkdir -p packaged && tar -xzf dist/cbc-macos-x86_64-next.tar.gz -C packaged
           cd Cbc/test

@@ -159,11 +159,33 @@ jobs:
     # extremely capacity-constrained (jobs can sit queued for hours and never
     # get scheduled). Instead, run on a plentiful Apple Silicon runner and
     # cross-build for x86_64 under Rosetta 2, same approach as
-    # ~/dev/mipster's build-macos-x86_64.sh. Since we need Homebrew's
-    # OpenBLAS/SuiteSparse/gcc for x86_64 specifically (not just Apple's
-    # universal clang + Accelerate framework), this requires its own,
-    # separate x86_64 Homebrew prefix under /usr/local (the arm64 runner's
-    # native Homebrew lives under /opt/homebrew and only has arm64 bottles).
+    # ~/dev/mipster's build-macos-x86_64.sh.
+    #
+    # This job used to build a separate x86_64 Homebrew prefix under
+    # /usr/local (the arm64 runner's native Homebrew lives under
+    # /opt/homebrew and only has arm64 bottles) to get Homebrew's
+    # OpenBLAS/SuiteSparse/gcc for x86_64. As of ~September 2026, Homebrew
+    # has dropped bottle support for macOS Intel x86_64 altogether (`brew`
+    # itself now prints "We do not provide support for this platform"), so
+    # `gmp` — a hard dependency of both `gcc` (needed to build itself) and
+    # `suite-sparse` — has no x86_64 bottle any more and must be built from
+    # source; that source fetch (gmplib.org / ftpmirror.gnu.org) reliably
+    # fails to resolve from these runners, wedging the job for an hour before
+    # failing. Rather than depend on a moving/unsupported target, this job
+    # now avoids Homebrew's gcc/OpenBLAS/SuiteSparse entirely for x86_64:
+    #   - Apple's system clang/clang++ (universal, always present via Xcode
+    #     Command Line Tools) compiles the x86_64 slice directly — no GCC
+    #     needed.
+    #   - LAPACK/BLAS comes from macOS's built-in Accelerate framework
+    #     (config's top preference on Darwin regardless of compiler), not
+    #     Homebrew OpenBLAS.
+    #   - SuiteSparse AMD ordering is unavailable without Homebrew's
+    #     suite-sparse, so it's explicitly disabled (`--no-amd`) for this
+    #     platform only; every other platform still builds it.
+    #   - pkg-config is only used to read the previous project's installed
+    #     .pc files (a pure text-processing, build-time-only tool never
+    #     linked into the Cbc binary) and ships pre-installed on the runner
+    #     image (`pkgconf`) regardless of architecture.
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -179,27 +201,17 @@ jobs:
           git clone --depth 1 --branch "$WORKSPACE_REF" https://github.com/h-g-s/cbc-workspace work/cbc-workspace
           cp work/cbc-workspace/config work/cbc-workspace/package work/
 
-      - name: Install Rosetta 2 + x86_64 Homebrew
-        run: |
-          softwareupdate --install-rosetta --agree-to-license || true
-          if [[ ! -x /usr/local/bin/brew ]]; then
-            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null
-          fi
-          arch -x86_64 /usr/local/bin/brew install gcc openblas suite-sparse pkg-config
+      - name: Install Rosetta 2
+        run: softwareupdate --install-rosetta --agree-to-license || true
 
       - name: Build + package (under Rosetta)
         working-directory: work
         run: |
           arch -x86_64 /bin/bash <<'ROSETTA'
           set -euo pipefail
-          eval "$(/usr/local/bin/brew shellenv)"
-          GCC_PREFIX="$(brew --prefix gcc)"
-          GCC_BIN="$(ls "$GCC_PREFIX"/bin/gcc-* | head -1)"
-          GXX_BIN="$(ls "$GCC_PREFIX"/bin/g++-* | head -1)"
-          FC_BIN="$(ls "$GCC_PREFIX"/bin/gfortran* | head -1)"
-          export CC="$GCC_BIN" CXX="$GXX_BIN" FC="$FC_BIN"
+          export CC=clang CXX=clang++
           ./config --opt --arch=generic --install --prefix="$PWD/install" --jobs="$(sysctl -n hw.ncpu)" \
-            --lapack --amd --zlib --no-bz2 --no-nauty
+            --lapack --no-amd --zlib --no-bz2 --no-nauty
           ./package --prefix="$PWD/install" --name=cbc-macos-x86_64-next --out=dist
           ROSETTA
 

@@ -50,7 +50,14 @@ bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
   static const int minCols = envInt("CBC_CUTPOOL_FILTER_MIN_COLS", 500);
   static const int minCandidates = envInt("CBC_CUTPOOL_FILTER_MIN_CANDIDATES", 20);
   static const bool alwaysFilter = envInt("CBC_CUTPOOL_FILTER_ALWAYS", 0) != 0;
-  static const double maxParallelism = envDouble("CBC_CUTPOOL_FILTER_MAX_PARALLELISM", 1.0);
+  // Unlike CglBKClique's own clique-cut parallelism filter (disabled by
+  // default -- a 442-instance sweep found no net win for clique cuts
+  // specifically), the 2026-09 mip-sanity-data sweep for these four
+  // generators found MAX_PARALLELISM=0.7 gave the single best combined
+  // primal-gap/efficiency result of every variant tried (see
+  // ROOT-FIXTURES.md's "Cut-pool filtering" section), so it ships as the
+  // default here rather than left disabled pending further confirmation.
+  static const double maxParallelism = envDouble("CBC_CUTPOOL_FILTER_MAX_PARALLELISM", 0.7);
 
   const bool smallModel = numCols < minCols;
   if (smallModel && !alwaysFilter)

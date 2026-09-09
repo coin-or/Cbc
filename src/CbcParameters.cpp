@@ -880,7 +880,17 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::MAXHOTITS]->setDefault(0);
      parameters_[CbcParam::MAXSAVEDSOLS]->setDefault(10);
      parameters_[CbcParam::MAXSLOWCUTS]->setDefault(10);
-     parameters_[CbcParam::MOREMOREMIPOPTIONS]->setDefault(0);
+     // Bit 4194304 = adaptive root cut-generator skip
+     // (CbcModel::setCutGeneratorAdaptiveSkip()) on by default: a 2026-09
+     // sweep across 442 mip-sanity-data instances (see
+     // test/cutskip-sweep, ROOT-FIXTURES.md) found it beat every
+     // miss-threshold variant tried on both dual/primal efficiency
+     // (gap-closed per second) with a net bbTime reduction, and no
+     // regression on the geomean gap-closed metrics. NOTE: any explicit
+     // -more2MipOptions=N/keyword from the user fully replaces this
+     // default int value (it is not OR'd in), same as every other bit in
+     // this bucket.
+     parameters_[CbcParam::MOREMOREMIPOPTIONS]->setDefault(4194304);
      parameters_[CbcParam::MULTIPLEROOTS]->setDefault(0);
      parameters_[CbcParam::ODDWEXTMETHOD]->setDefault(2);
      parameters_[CbcParam::OUTPUTFORMAT]->setDefault(2);
@@ -2574,12 +2584,14 @@ void CbcParameters::addCbcSolverIntParams() {
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->setup(
       "more2!MipOptions", "More more dubious options for mip", -1, COIN_INT_MAX,
       "", CoinParam::displayPriorityNone);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("off#No extra mip options",0);
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero1#More strong branching at root node",8192);
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero2#More strong branching at root node - more",16384);
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero3#More strong branching at root node - yet more",24578);
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("lagrangean1#lagrangean cuts at end of root cuts",234881024);
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("lagrangean2#lagrangean cuts at end of root cuts",268435456);
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("lessused#less used cuts at beginning of root cuts",536870912);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("adaptiveCutSkip#Adaptive root cut-generator skip, on by default since the 2026-09 mip-sanity-data sweep (see CbcModel::setCutGeneratorAdaptiveSkip())",4194304);
   parameters_[CbcParam::MULTIPLEROOTS]->setup(
       "multiple!RootPasses",
       "Do multiple root passes to collect cuts and solutions", 0, COIN_INT_MAX,

@@ -22,7 +22,11 @@
 #                    [--fixture-dir=PATH] [--bks=PATH]
 #
 # configs.tsv format: one config per line, tab-separated
-#   <name>\t<comma-separated ENV=VAL overrides, or - for none>
+#   <name>\t<comma-separated overrides, or - for none>
+# Each override token is either KEY=VAL (exported as an env var) or
+# CLI:<arg> (appended as an extra cbc command-line argument, needed to
+# force a bit OFF -- env vars can only turn adaptive-skip on, never
+# override an already-on default -- e.g. CLI:-moreMoreMipOptions=0).
 #
 # One of the configs MUST be named "today" -- the baseline every other
 # config is compared against (current shipped defaults). Every other
@@ -52,7 +56,8 @@ FIXTURE_DIR="${CBC_ROOT_FIXTURE_DIR:-$HOME/instances/mip-sanity-data/rootFixture
 # exporting one (same fix as gen-root-fixtures/fj-tune-sweep.sh).
 if [[ "${1:-}" == --worker=* ]]; then
   inst="${1#--worker=}"
-  envspec="$2" # comma-separated KEY=VAL list, or "-"
+  envspec="$2" # comma-separated list of KEY=VAL (export) or CLI:<arg>
+               # (extra cbc command-line argument) tokens, or "-" for none
   sec="$3"
   data_dir="$4"
   # Reset every adaptive-skip env var this sweep knows about so a stale
@@ -61,10 +66,15 @@ if [[ "${1:-}" == --worker=* ]]; then
   unset CBC_CUT_ADAPTIVE_SKIP CBC_CUT_ADAPTIVE_SKIP_MIN_TRIES \
     CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD CBC_CUT_ADAPTIVE_SKIP_INITIAL_PERIOD \
     CBC_CUT_ADAPTIVE_SKIP_MAX_PERIOD CBC_CUT_ADAPTIVE_SKIP_MIN_COLS
+  EXTRA_ARGS=()
   if [[ "$envspec" != "-" ]]; then
     IFS=',' read -r -a kvs <<< "$envspec"
     for kv in "${kvs[@]}"; do
-      export "${kv?}"
+      if [[ "$kv" == CLI:* ]]; then
+        EXTRA_ARGS+=("${kv#CLI:}")
+      else
+        export "${kv?}"
+      fi
     done
   fi
   mps="$data_dir/mips/$inst.mps.gz"
@@ -73,7 +83,7 @@ if [[ "${1:-}" == --worker=* ]]; then
     exit 0
   fi
   t0=$(date +%s.%N)
-  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 -sec "$sec" -solve 2>&1)"
+  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 "${EXTRA_ARGS[@]}" -sec "$sec" -solve 2>&1)"
   rc=$?
   t1=$(date +%s.%N)
   elapsed=$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.4f", b-a}')

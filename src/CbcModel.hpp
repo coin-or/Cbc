@@ -2372,7 +2372,12 @@ public:
       several consecutive root passes without producing a single cut is put
       on a growing backoff (skipped for a number of passes, then retried)
       instead of being called every pass regardless of past success. Off by
-      default -- opt-in until validated against the mip-sanity-data suite.
+      default in this raw CbcModel constructor/API; the `cbc` command-line
+      tool enables it by default via CbcParam::MOREMOREMIPOPTIONS's default
+      value (see CbcParameters.cpp) -- validated as a net win on the
+      mip-sanity-data suite (test/cutskip-sweep, ROOT-FIXTURES.md).
+      Library/API callers that build a CbcModel directly (not through
+      CbcSolver.cpp's CLI parameter handling) must still opt in explicitly.
     */
   inline bool cutGeneratorAdaptiveSkip() const
   {

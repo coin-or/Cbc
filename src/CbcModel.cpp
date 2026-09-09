@@ -11168,8 +11168,11 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
       ADAPTIVE_SKIP_MAX_PERIOD. A single hit at any point resets the streak
       and the backoff, so a generator that starts working again (e.g. once
       other cuts have tightened the relaxation) is never abandoned for
-      good. Root-only, opt-in, deterministic (based only on cut counts,
-      never on wall-clock time).
+      good. Root-only, deterministic (based only on cut counts, never on
+      wall-clock time). On by default for the `cbc` CLI as of 2026-09 (see
+      CbcParam::MOREMOREMIPOPTIONS's default in CbcParameters.cpp); still
+      opt-in for direct CbcModel API/library use (see
+      setCutGeneratorAdaptiveSkip()).
     */
   // Each constant can be overridden via an env var (e.g. for a parameter
   // sweep with bench-adaptive-cutskip-cli) without a rebuild; falls back

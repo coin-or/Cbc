@@ -181,11 +181,11 @@ void CbcCrashHandler(int sig);
 /* -mipStartFix keywords are passed straight through to computeCompleteSolution()
    as its fixMode, so the two enumerations have to agree value for value. */
 static_assert(static_cast< int >(CbcParameters::MipStartFixIntZero)
-    == static_cast< int >(CbcMipStart::FixIntegersAssumeZero)
-  && static_cast< int >(CbcParameters::MipStartFixInt)
-    == static_cast< int >(CbcMipStart::FixIntegers)
-  && static_cast< int >(CbcParameters::MipStartFixAll)
-    == static_cast< int >(CbcMipStart::FixIntegersAndContinuous),
+      == static_cast< int >(CbcMipStart::FixIntegersAssumeZero)
+    && static_cast< int >(CbcParameters::MipStartFixInt)
+      == static_cast< int >(CbcMipStart::FixIntegers)
+    && static_cast< int >(CbcParameters::MipStartFixAll)
+      == static_cast< int >(CbcMipStart::FixIntegersAndContinuous),
   "CbcParameters::MipStartFixMode and CbcMipStart::FixMode have diverged");
 
 void printGeneralMessage(CbcModel &model, std::string message, int type)
@@ -373,8 +373,8 @@ static int applyConflictGraphBoundUpdates(const CoinStaticConflictGraph *cgraph,
   const double *cgOptSol = cgDebugger
     ? cgDebugger->optimalSolution()
     : (debugSolution && debugNumberColumns == solver->getNumCols()
-         ? debugSolution
-         : nullptr);
+          ? debugSolution
+          : nullptr);
 
   for (const auto &bnd_change : cgraph->updatedBounds()) {
     size_t idx = bnd_change.first;
@@ -560,6 +560,47 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
   }
 #endif
   clqStr.strengthenCliques(strengthenMode);
+
+  // Debugger validation: CglCliqueStrengthening's public API does not expose
+  // which specific rows it extended/dominated/removed, so (unlike
+  // CbcBoundPropagation/CbcCoefficientStrengthening/CbcRowReductions) this
+  // cannot cheaply check only the changed rows -- instead, whenever a
+  // reference solution is available, re-check every row's activity against
+  // its current bounds. This is only ever run under a debugger/-debugCuts,
+  // so the extra O(nz) pass is not a concern for normal use.
+  extern double *debugSolution;
+  extern int debugNumberColumns;
+  const OsiRowCutDebugger *clqDebugger = solver->getRowCutDebuggerAlways();
+  const double *clqOptSol = clqDebugger
+    ? clqDebugger->optimalSolution()
+    : (debugSolution && debugNumberColumns == solver->getNumCols()
+          ? debugSolution
+          : nullptr);
+  if (clqOptSol && (clqStr.constraintsExtended() || clqStr.constraintsDominated())) {
+    const CoinPackedMatrix *mat = solver->getMatrixByRow();
+    const double *rowElement = mat->getElements();
+    const int *rowColumn = mat->getIndices();
+    const CoinBigIndex *rowStart = mat->getVectorStarts();
+    const int *rowLength = mat->getVectorLengths();
+    const double *rowLower = solver->getRowLower();
+    const double *rowUpper = solver->getRowUpper();
+    const double tol = 1.0e-6;
+    const int nRows = solver->getNumRows();
+    for (int iRow = 0; iRow < nRows; iRow++) {
+      double activity = 0.0;
+      const CoinBigIndex start = rowStart[iRow];
+      const int length = rowLength[iRow];
+      for (CoinBigIndex j = start; j < start + length; j++)
+        activity += rowElement[j] * clqOptSol[rowColumn[j]];
+      if (activity > rowUpper[iRow] + tol || activity < rowLower[iRow] - tol) {
+        printf("cliqueStrengthening BAD ROW: row %d (%s) activity=%.12g at "
+               "reference solution but bounds are [%.12g,%.12g]\n",
+          iRow, solver->getRowName(iRow).c_str(), activity,
+          rowLower[iRow], rowUpper[iRow]);
+        fflush(stdout);
+      }
+    }
+  }
 
   if (clqExtendedOut)
     *clqExtendedOut = clqStr.constraintsExtended();
@@ -1057,7 +1098,7 @@ static int initialPumpTune = -1;
 // and-resolve check) at every intermediate presolve/preprocessing step; see
 // the matching #define in Cgl/src/CglPreProcess/CglPreProcess.cpp and
 // Osi/src/Osi/OsiPresolve.cpp.
-//#define DEBUG_PREPROCESS 2 -- disabled, see OsiPresolve.cpp comment
+// #define DEBUG_PREPROCESS 2 -- disabled, see OsiPresolve.cpp comment
 extern double *debugSolution;
 extern int debugNumberColumns;
 
@@ -1976,7 +2017,7 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   lpScState->utf8 = CbcOutput::useUtf8();
   lpScState->compact = CbcOutput::useCompact();
   lpScState->logLevel = (lpSolver && !parameters_.noPrinting()
-    && cbcLogLevelSC >= 1 && lpLogLevelSC >= 1)
+                          && cbcLogLevelSC >= 1 && lpLogLevelSC >= 1)
     ? lpLogLevelSC
     : 0;
   lpScState->iterFreq = 0;
@@ -13298,7 +13339,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             continue;
           }
           // Parse the .sol file using the mipstart reader
-          std::vector<std::pair<std::string, double>> dbgColValues;
+          std::vector< std::pair< std::string, double > > dbgColValues;
           double dbgObj = COIN_DBL_MAX;
           CbcMipStart::read(model_.solver(), fileName.c_str(), dbgColValues,
             dbgObj, model_.messageHandler(), model_.messagesPointer());

@@ -260,9 +260,19 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
           break;
         }
         maxActivity += value * colUpper[iColumn];
+        // A column already fixed at 0 contributes nothing to maxActivity
+        // (colUpper[iColumn] == 0 above), yet the clique-cover reduction
+        // below subtracts (k - p) assuming every one of the k members
+        // contributes exactly 1 to the naive maxActivity. Counting a
+        // fixed-at-0 member in k would inflate that reduction with no
+        // matching maxActivity to justify it -- so such columns are excluded
+        // from the candidate set entirely (they can never be part of the
+        // "at most p of these can be 1" argument's k side, since they can
+        // never be 1 at all).
         const bool isUnitBinary = cgraph != NULL
           && std::fabs(value - 1.0) <= COEFSTR_FEASTOL
-          && solver->isBinary(iColumn);
+          && solver->isBinary(iColumn)
+          && colUpper[iColumn] >= 1.0 - COEFSTR_FEASTOL;
         if (isUnitBinary) {
           unitBinaryCols.push_back(iColumn);
         } else if (colLower[iColumn] <= -COEFSTR_INFINITY) {
@@ -292,6 +302,11 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
     double slack = maxActivity - rhs;
     if (slack <= COEFSTR_FEASTOL)
       continue;
+
+    // Slack used for unitBinaryCols themselves -- always the naive
+    // (non-clique-adjusted) value; see the comment where it is consumed
+    // below for why.
+    double slackForUnitBinaryCols = slack;
 
     // Clique-cover check (see the class comment's "Conflict-aware slack"
     // section). unitBinaryCols is only ever populated when cgraph != NULL.
@@ -332,6 +347,22 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
         // once those external constraints are accounted for -- a real but
         // different finding (row redundancy) that the per-column rule below
         // is not equipped to act on safely, so it is left for another pass.
+        //
+        // This adjusted `slack` must ONLY be used to shrink OTHER (non-
+        // unitBinaryCols) coefficients in the row below, e.g. a companion
+        // big-M column -- never the unitBinaryCols themselves. The bound
+        // "at most p of these k can be 1 simultaneously" justifies removing
+        // (k - p) from the row's rhs *once*, in aggregate; it does not
+        // justify reducing every one of the k members' own coefficients
+        // independently by the same amount, since the standard per-column
+        // shrink rule below decrements the rhs again for *each* column it
+        // touches (valid when columns are independent, but these k are
+        // mutually exclusive, not independent -- applying it to all of them
+        // compounds the rhs reduction k-fold instead of the single time the
+        // clique fact actually buys, incorrectly cutting off feasible
+        // points, e.g. an all-clique-members-zero point at a high value of
+        // some other row column). See CBC_DISABLE_CLIQUECOVER's history /
+        // the physiciansched3-3 investigation for a worked counterexample.
         if (p < k && (k - p) < slack - COEFSTR_FEASTOL) {
           slack -= (k - p);
           nCliqueCoverRows_++;
@@ -349,6 +380,12 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
     const double slackCeil = std::ceil(slack);
     if (std::fabs(slackCeil - slack) <= COEFSTR_FEASTOL)
       slack = slackCeil;
+    const double slackForUnitBinaryColsCeil = std::ceil(slackForUnitBinaryCols);
+    if (std::fabs(slackForUnitBinaryColsCeil - slackForUnitBinaryCols) <= COEFSTR_FEASTOL)
+      slackForUnitBinaryCols = slackForUnitBinaryColsCeil;
+
+    std::vector< int > unitBinaryColsSorted(unitBinaryCols.begin(), unitBinaryCols.end());
+    std::sort(unitBinaryColsSorted.begin(), unitBinaryColsSorted.end());
 
     bool changedRow = false;
     for (CoinBigIndex j = start; j < start + length; j++) {
@@ -374,10 +411,16 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
         continue;
 
       const double value = element[j] * scale;
-      if (std::fabs(value) <= slack + COEFSTR_FEASTOL)
+      // unitBinaryCols members are mutually exclusive (per the clique-cover
+      // fact used above, when it applied), not independent, so they must use
+      // the un-adjusted slack -- see the long comment above.
+      const bool isUnitBinaryCol = std::binary_search(
+        unitBinaryColsSorted.begin(), unitBinaryColsSorted.end(), iColumn);
+      const double effectiveSlack = isUnitBinaryCol ? slackForUnitBinaryCols : slack;
+      if (std::fabs(value) <= effectiveSlack + COEFSTR_FEASTOL)
         continue;
 
-      const double newValue = (value > 0.0 ? slack : -slack);
+      const double newValue = (value > 0.0 ? effectiveSlack : -effectiveSlack);
       // At the bound the column takes at maximum activity the two rows agree
       // exactly; one integer step away from it both are redundant.
       rhs -= (value - newValue) * (value > 0.0 ? upper : lower);
@@ -393,7 +436,7 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
       if (logLevel >= 3)
         printf("  Coefficient strengthening: row %d col %d: %g -> %g "
                "(slack %g, rhs now %g)\n",
-          iRow, iColumn, value, newValue, slack, rhs);
+          iRow, iColumn, value, newValue, effectiveSlack, rhs);
 
       if (firstRow < 0) {
         firstRow = iRow;
@@ -500,8 +543,8 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
   const double *optSol = debugger
     ? debugger->optimalSolution()
     : (debugSolution && debugNumberColumns == solver->getNumCols()
-         ? debugSolution
-         : nullptr);
+          ? debugSolution
+          : nullptr);
   if (optSol) {
     const double *checkElement = copy.getElements();
     const int *checkColumn = copy.getIndices();

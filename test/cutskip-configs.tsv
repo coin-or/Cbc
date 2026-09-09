@@ -1,0 +1,28 @@
+# Adaptive root cut-generator skip (CbcModel::setCutGeneratorAdaptiveSkip(),
+# see CbcModel.cpp's serialCuts()) sweep configs for cutskip-sweep.
+#
+# Format: one config per line, tab-separated
+#   <name>\t<comma-separated ENV=VAL overrides, or - for none>
+# Blank lines and lines starting with # are skipped.
+#
+# "today" must always be present -- it is the baseline every other config
+# is compared against (current shipped defaults: feature off).
+#
+# "proposed" is the winning config found by the Sep-2026 sweep (base vs.
+# adaptive vs. adaptive-tN on both the full 442-instance mip-sanity-data
+# set and the 176-instance hard subset): simply turning the feature on
+# with its own tuned defaults (MIN_TRIES=3, MISS_THRESHOLD=3,
+# INITIAL_PERIOD=5, MAX_PERIOD=20, MIN_COLS=500) beat every other
+# miss-threshold tried (2/4/5) on every metric (dual/primal gap closed,
+# bbTime, dual/primal efficiency) -- see cutskip-sweep's summary output
+# or ROOT-FIXTURES.md for the full numbers. Listed first so it's the
+# first thing tried.
+proposed	CBC_CUT_ADAPTIVE_SKIP=1
+today	-
+# Alternate miss-threshold values already tried and confirmed worse than
+# the tuned default (3) on the 176-instance hard set -- kept here for
+# convenience if the binary/instance set changes enough to warrant a
+# re-check, not because they're expected to win.
+miss_threshold_2	CBC_CUT_ADAPTIVE_SKIP=1,CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD=2
+miss_threshold_4	CBC_CUT_ADAPTIVE_SKIP=1,CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD=4
+miss_threshold_5	CBC_CUT_ADAPTIVE_SKIP=1,CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD=5

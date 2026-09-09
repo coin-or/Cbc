@@ -6502,6 +6502,7 @@ static double cbcDefaultMaxMemoryBytes()
 CbcModel::CbcModel()
 
   : solver_(nullptr)
+  , lastCutRoundResolveTime_(-1.0)
   , ownership_(0x80000000)
   , continuousSolver_(nullptr)
   , referenceSolver_(nullptr)
@@ -6875,7 +6876,8 @@ CbcModel *CbcModel::clone(bool cloneHandler)
 // Copy constructor.
 
 CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
-  : continuousSolver_(nullptr)
+  : lastCutRoundResolveTime_(rhs.lastCutRoundResolveTime_)
+  , continuousSolver_(nullptr)
   , referenceSolver_(nullptr)
   , atSolutionSolver_(nullptr)
   , defaultHandler_(rhs.defaultHandler_)
@@ -10061,7 +10063,25 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         delete basis;
       }
       // solver_->setHintParam(OsiDoDualInResolve,false,OsiHintTry);
-      feasible = (resolve(node ? node->nodeInfo() : nullptr, 2) != 0);
+      {
+        // Timed for lastCutRoundResolveTime()/cbcFilterGeneratedCuts(): this
+        // is the actual LP reoptimisation cost of the cuts just installed.
+        // NOT used to steer any live decision (CPU timing measured
+        // mid-solve is noisy/non-reproducible under system load) -- purely
+        // an offline research signal, logged per round below when
+        // requested, to correlate against static/pre-computable instance
+        // features (rows, cols, nz, density, ...) for offline tuning of
+        // CBC_CUTPOOL_FILTER_* gates. Never read back to change behaviour
+        // within the same run.
+        double resolveStart = CoinCpuTime();
+        feasible = (resolve(node ? node->nodeInfo() : nullptr, 2) != 0);
+        lastCutRoundResolveTime_ = CoinCpuTime() - resolveStart;
+        if (!node && getenv("CBC_LOG_ROOT_RESOLVE_TIME")) {
+          fprintf(stderr, "CBC_ROOT_RESOLVE_TIME pass=%d rows=%d cols=%d resolveTime=%.6f\n",
+            currentPassNumber_, solver_->getNumRows(), solver_->getNumCols(),
+            lastCutRoundResolveTime_);
+        }
+      }
       // solver_->setHintParam(OsiDoDualInResolve,true,OsiHintTry);
       if (maximumSecondsReached()) {
         numberTries = -1000; // exit

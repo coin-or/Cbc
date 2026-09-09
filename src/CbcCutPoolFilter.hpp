@@ -48,11 +48,15 @@ class OsiCuts;
  *        cuts before this index are left untouched.
  * @param x current LP solution (dense, size numCols), used to score cuts.
  * @param numCols number of columns of the model `x` refers to.
+ * @param numElements number of nonzero coefficients in the current
+ *        constraint matrix (OsiSolverInterface::getNumElements()), used
+ *        as a secondary "small model" signal alongside numCols -- see
+ *        CbcCutPoolFilter.cpp's smallModel check for the rationale.
  * @param generatorTag short name of the calling generator (e.g. "Gomory"),
  *        used only for CBC_CLIQUE_POOL_DEBUG-style diagnostic output.
  * @return true if any cuts were removed.
  **/
 bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
-  int numCols, const char *generatorTag);
+  int numCols, int numElements, const char *generatorTag);
 
 #endif //CBCCUTPOOLFILTER_HPP

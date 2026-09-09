@@ -17,8 +17,16 @@
 #
 # Usage:
 #   ./cutfilter-sweep [--configs=cutfilter-configs.tsv] [--sec=180] [--jobs=N]
-#                      [--out=DIR] [--instances=FILE] [--data-dir=PATH]
-#                      [--fixture-dir=PATH] [--bks=PATH]
+#                      [--repeats=N] [--out=DIR] [--instances=FILE]
+#                      [--data-dir=PATH] [--fixture-dir=PATH] [--bks=PATH]
+#
+# --repeats=N (default 1) runs each config N times, once per -randomSeed in
+# 1..N, and averages nodes/obj/bound/elapsed per instance across the
+# repeats before comparing against "today" -- use this to separate a real
+# config-driven effect from noise caused by B&B branching tie-break
+# sensitivity to minor cut-content differences (bbTime/bound can differ
+# run-to-run even for a fixed config once cuts change the tie-break
+# landscape, since CBC's B&B is otherwise deterministic single-threaded).
 #
 # configs.tsv format: one config per line, tab-separated
 #   <name>\t<comma-separated overrides, or - for none>
@@ -60,11 +68,16 @@ if [[ "${1:-}" == --worker=* ]]; then
                # (extra cbc command-line argument) tokens, or "-" for none
   sec="$3"
   data_dir="$4"
+  seed="${5:-1}" # -randomSeed value; varying this across repeats gives
+                 # independent B&B-path realizations to average over,
+                 # separating real config-driven effects from branching
+                 # tie-break sensitivity noise (see --repeats below).
   # Reset every cut-pool-filter env var this sweep knows about so a stale
   # export from a previous worker invocation (same parallel pool, reused
   # shell) can never leak into this one.
   unset CBC_CUTPOOL_FILTER_MIN_COLS CBC_CUTPOOL_FILTER_MIN_CANDIDATES \
-    CBC_CUTPOOL_FILTER_ALWAYS CBC_CUTPOOL_FILTER_MAX_PARALLELISM
+    CBC_CUTPOOL_FILTER_ALWAYS CBC_CUTPOOL_FILTER_MAX_PARALLELISM \
+    CBC_CUTPOOL_FILTER_MIN_ELEMENTS
   EXTRA_ARGS=()
   if [[ "$envspec" != "-" ]]; then
     IFS=',' read -r -a kvs <<< "$envspec"
@@ -82,7 +95,7 @@ if [[ "${1:-}" == --worker=* ]]; then
     exit 0
   fi
   t0=$(date +%s.%N)
-  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 "${EXTRA_ARGS[@]}" -sec "$sec" -solve 2>&1)"
+  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 -randomSeed "$seed" "${EXTRA_ARGS[@]}" -sec "$sec" -solve 2>&1)"
   rc=$?
   t1=$(date +%s.%N)
   elapsed=$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.4f", b-a}')
@@ -108,6 +121,7 @@ OUT_DIR="$SCRIPT_DIR/sanity-results/cutfilter-sweep"
 INSTANCES_FILE=""
 JOBS="$(nproc)"
 SEC=180
+REPEATS=1
 FIXTURE_DIR_ARG="$FIXTURE_DIR"
 BKS_ARG=""
 
@@ -118,6 +132,7 @@ for arg in "$@"; do
     --instances=*) INSTANCES_FILE="${arg#*=}" ;;
     --jobs=*) JOBS="${arg#*=}" ;;
     --sec=*) SEC="${arg#*=}" ;;
+    --repeats=*) REPEATS="${arg#*=}" ;;
     --data-dir=*) DATA_DIR="${arg#*=}" ;;
     --fixture-dir=*) FIXTURE_DIR_ARG="${arg#*=}" ;;
     --bks=*) BKS_ARG="${arg#*=}" ;;
@@ -171,15 +186,68 @@ fi
 for i in "${!NAMES[@]}"; do
   name="${NAMES[$i]}"
   envspec="${ENVSPECS[$i]}"
-  echo "=== running config: $name ($envspec) ===" >&2
-  printf 'instance\tnodes\tobj\tbound\telapsed\n' > "$OUT_DIR/$name.tsv.tmp"
-  printf '%s\n' "${INSTANCES[@]}" | \
-    parallel --will-cite -j "$JOBS" --line-buffer \
-      "$SCRIPT_DIR/$(basename "$0")" --worker={} "$envspec" "$SEC" "$DATA_DIR" \
-      >> "$OUT_DIR/$name.tsv.tmp"
-  mv "$OUT_DIR/$name.tsv.tmp" "$OUT_DIR/$name.tsv"
+  echo "=== running config: $name ($envspec), $REPEATS repeat(s) ===" >&2
+  REPEAT_FILES=()
+  for ((r = 1; r <= REPEATS; r++)); do
+    rep_file="$OUT_DIR/$name.seed$r.tsv"
+    printf 'instance\tnodes\tobj\tbound\telapsed\n' > "$rep_file.tmp"
+    printf '%s\n' "${INSTANCES[@]}" | \
+      parallel --will-cite -j "$JOBS" --line-buffer \
+        "$SCRIPT_DIR/$(basename "$0")" --worker={} "$envspec" "$SEC" "$DATA_DIR" "$r" \
+        >> "$rep_file.tmp"
+    mv "$rep_file.tmp" "$rep_file"
+    REPEAT_FILES+=("$rep_file")
+    n_err=$(grep -c 'ERROR' "$rep_file" || true)
+    echo "  repeat seed=$r done: $(( $(wc -l < "$rep_file") - 1 )) rows, $n_err errors" >&2
+  done
+  if [[ "$REPEATS" -eq 1 ]]; then
+    cp "${REPEAT_FILES[0]}" "$OUT_DIR/$name.tsv"
+  else
+    # Average nodes/obj/bound/elapsed per instance across repeats
+    # (per-instance mean over the seeds where that instance didn't
+    # error; an instance erroring in every repeat stays ERROR).
+    python3 - "$OUT_DIR/$name.tsv" "${REPEAT_FILES[@]}" <<'PYEOF'
+import csv, sys, statistics
+out_path = sys.argv[1]
+rep_paths = sys.argv[2:]
+per_inst = {}
+order = []
+for path in rep_paths:
+    with open(path) as f:
+        reader = csv.reader(f, delimiter="\t")
+        next(reader, None)
+        for row in reader:
+            if len(row) < 2:
+                continue
+            inst = row[0]
+            if inst not in per_inst:
+                per_inst[inst] = []
+                order.append(inst)
+            per_inst[inst].append(row)
+with open(out_path, "w") as f:
+    f.write("instance\tnodes\tobj\tbound\telapsed\n")
+    for inst in order:
+        rows = per_inst[inst]
+        ok_rows = [r for r in rows if len(r) >= 5 and r[1] != "ERROR"]
+        if not ok_rows:
+            f.write(f"{inst}\tERROR\tall-repeats-failed\n")
+            continue
+
+        def favg(vals):
+            fv = [float(v) for v in vals if v not in ("none", "")]
+            return statistics.mean(fv) if fv else None
+        nodes = favg([r[1] for r in ok_rows])
+        obj = favg([r[2] for r in ok_rows])
+        bound = favg([r[3] for r in ok_rows])
+        elapsed = favg([r[4] for r in ok_rows])
+        f.write(f"{inst}\t{nodes if nodes is not None else 0:.2f}\t"
+                f"{obj if obj is not None else 'none'}\t"
+                f"{bound if bound is not None else 'none'}\t"
+                f"{elapsed:.4f}\n")
+PYEOF
+  fi
   n_err=$(grep -c 'ERROR' "$OUT_DIR/$name.tsv" || true)
-  echo "config $name done: $(( $(wc -l < "$OUT_DIR/$name.tsv") - 1 )) rows, $n_err errors" >&2
+  echo "config $name done (averaged over $REPEATS repeat(s)): $(( $(wc -l < "$OUT_DIR/$name.tsv") - 1 )) rows, $n_err errors" >&2
 done
 
 echo "=== summary (each config vs. today) ===" | tee "$OUT_DIR/summary.log" >&2

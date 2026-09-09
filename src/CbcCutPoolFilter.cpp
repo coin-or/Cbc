@@ -36,7 +36,7 @@ double envDouble(const char *name, double def)
 } // namespace
 
 bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
-  int numCols, const char *generatorTag)
+  int numCols, int numElements, const char *generatorTag)
 {
   const int lastRowCut = cs.sizeRowCuts();
   const int nCandidates = lastRowCut - firstRowCut;
@@ -48,6 +48,38 @@ bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
   // exempt, since filtering only pays for itself when there are many
   // candidates competing for a handful of "best cut for this column" slots.
   static const int minCols = envInt("CBC_CUTPOOL_FILTER_MIN_COLS", 500);
+  // Secondary "cheap to reoptimize" signal: constraint-matrix nonzero
+  // count. Derived offline (2026-09) by logging every root cut-generation
+  // round's actual LP reoptimization CPU time
+  // (CbcModel::lastCutRoundResolveTime(), surfaced via
+  // CBC_LOG_ROOT_RESOLVE_TIME) across the 442-instance mip-sanity-data
+  // set and comparing against numElements: instances with
+  // numElements<=8000 show a p90 reoptimization cost (0.032s) matching
+  // the p90 already accepted for cols<minCols instances (0.034s), and a
+  // worst case (0.16s) well under that group's worst case (0.72s) -- so
+  // this class of instances is genuinely as cheap to reoptimize as the
+  // ones already exempted by the cols<500 gate. However, a controlled
+  // apples-to-apples validation sweep of *actually skipping filtering*
+  // there (not just the reoptimization-time proxy) found the effect is a
+  // wash once B&B-path noise is averaged out: a single-seed run showed a
+  // spread-looking "32 improved / 22 worse" split on this zone's 93
+  // instances, but re-running with 5 independent -randomSeed repeats per
+  // config and averaging per-instance (cutfilter-sweep --repeats=5; see
+  // ROOT-FIXTURES.md) collapsed that entirely -- 0.00pp net dual/primal
+  // gap-closed delta, and a negligible +0.05s mean bbTime change -- i.e.
+  // the earlier mixed signal was branching tie-break noise from cut
+  // content changing node visitation order, not a real effect either
+  // way. Ships OFF (0, i.e. no secondary gate) since no benefit was
+  // demonstrated (the harmlessness is not in question, but there's no
+  // reason to add the extra gate/complexity for zero measured gain); the
+  // env var lets this be revisited if a different instance mix or a
+  // harder validation set ever shows a real signal. This is intentionally
+  // a purely static/offline-derived threshold -- CPU timing is never read
+  // back within a live solve to make this decision (see
+  // lastCutRoundResolveTime()'s doc comment for why that would be
+  // unsound: reoptimization CPU time is noisy and machine-load-dependent,
+  // so gating on it live would make cut selection non-reproducible).
+  static const int minElements = envInt("CBC_CUTPOOL_FILTER_MIN_ELEMENTS", 0);
   static const int minCandidates = envInt("CBC_CUTPOOL_FILTER_MIN_CANDIDATES", 20);
   static const bool alwaysFilter = envInt("CBC_CUTPOOL_FILTER_ALWAYS", 0) != 0;
   // Unlike CglBKClique's own clique-cut parallelism filter (disabled by
@@ -59,7 +91,7 @@ bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
   // default here rather than left disabled pending further confirmation.
   static const double maxParallelism = envDouble("CBC_CUTPOOL_FILTER_MAX_PARALLELISM", 0.7);
 
-  const bool smallModel = numCols < minCols;
+  const bool smallModel = numCols < minCols || numElements <= minElements;
   if (smallModel && !alwaysFilter)
     return false;
 

@@ -1,0 +1,5 @@
+# Validates the new CBC_CUTPOOL_FILTER_MIN_ELEMENTS=8000 shipped default
+# (nz-based extension of the small-model exemption) against the previous
+# shipped behavior (cols-only gate, MIN_ELEMENTS effectively off).
+today	-
+old_cols_only_gate	CBC_CUTPOOL_FILTER_MIN_ELEMENTS=0

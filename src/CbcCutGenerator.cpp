@@ -715,7 +715,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       || dynamic_cast< CglTwomir * >(generator_)
       || generator) {
       cbcFilterGeneratedCuts(cs, numberRowCutsBefore, solver->getColSolution(),
-        solver->getNumCols(), generatorName_);
+        solver->getNumCols(), solver->getNumElements(), generatorName_);
     }
 #ifdef CGL_DEBUG
     if (debugger2) {

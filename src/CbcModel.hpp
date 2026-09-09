@@ -430,6 +430,27 @@ public:
     double *saveSolution = NULL,
     double *saveLower = NULL,
     double *saveUpper = NULL);
+  /** \brief CPU time (seconds) of the most recent "reoptimise after cuts"
+      resolve() (whereFrom==2) inside solveWithCuts()'s cut-generation
+      round loop.
+
+      Measures exactly the LP reoptimisation cost that cut-pool filtering
+      (CbcCutPoolFilter.cpp) is meant to control. This is a *diagnostic*
+      accessor for offline research only (e.g. via
+      CBC_LOG_ROOT_RESOLVE_TIME, which logs one line per root cut round)
+      -- correlate it against static/pre-computable instance features
+      (rows, cols, nz, density, ...) across many instances to derive a
+      fixed, deterministic gate offline. It must never be read back
+      *within* the same solve to steer behaviour: CPU timing measured
+      mid-solve is noisy and non-reproducible under system load, which
+      would make cut selection (and therefore the whole search) depend on
+      transient machine conditions rather than the problem itself.
+      Returns -1.0 if no such resolve has happened yet this solve.
+    */
+  inline double lastCutRoundResolveTime() const
+  {
+    return lastCutRoundResolveTime_;
+  }
   /// Make given rows (L or G) into global cuts and remove from lp
   void makeGlobalCuts(int numberRows, const int *which);
   /// Make given cut into a global cut
@@ -3063,6 +3084,9 @@ private:
 
   /// The solver associated with this model.
   OsiSolverInterface *solver_;
+
+  /// See lastCutRoundResolveTime() accessor above.
+  double lastCutRoundResolveTime_;
 
   /** Ownership of objects and other stuff
 

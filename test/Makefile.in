@@ -1073,6 +1073,7 @@ twomir_bench_LDADD = ../src/libCbc.la
 # Not part of the regression suite; it is a measurement tool.
 mir2_bench_SOURCES = mir2-bench.cpp
 mir2_bench_LDADD = ../src/libCbc.la
+
 ########################################################################
 #         odd-wheel replay benchmark (measurement tool)                #
 ########################################################################

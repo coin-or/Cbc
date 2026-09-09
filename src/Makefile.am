@@ -38,6 +38,7 @@ libCbc_la_SOURCES = \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
+	CbcCutPoolFilter.cpp CbcCutPoolFilter.hpp \
 	CbcCutModifier.cpp CbcCutModifier.hpp \
 	CbcCutSubsetModifier.cpp CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
@@ -181,6 +182,7 @@ includecoin_HEADERS = \
 	CbcCompare.hpp \
 	CbcCountRowCut.hpp \
 	CbcCutGenerator.hpp \
+	CbcCutPoolFilter.hpp \
 	CbcCutModifier.hpp \
 	CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.hpp \

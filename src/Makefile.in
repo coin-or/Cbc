@@ -161,8 +161,8 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcCompareDepth.lo libCbc_la-CbcCompareEstimate.lo \
 	libCbc_la-CbcCompareObjective.lo libCbc_la-CbcConsequence.lo \
 	libCbc_la-CbcClique.lo libCbc_la-CbcCountRowCut.lo \
-	libCbc_la-CbcCutGenerator.lo libCbc_la-CbcCutModifier.lo \
-	libCbc_la-CbcCutSubsetModifier.lo \
+	libCbc_la-CbcCutGenerator.lo libCbc_la-CbcCutPoolFilter.lo \
+	libCbc_la-CbcCutModifier.lo libCbc_la-CbcCutSubsetModifier.lo \
 	libCbc_la-CbcDummyBranchingObject.lo \
 	libCbc_la-CbcEventHandler.lo libCbc_la-CbcFathom.lo \
 	libCbc_la-CbcFathomDynamicProgramming.lo \
@@ -255,6 +255,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcCountRowCut.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCutGenerator.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCutModifier.Plo \
+	./$(DEPDIR)/libCbc_la-CbcCutPoolFilter.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCutSubsetModifier.Plo \
 	./$(DEPDIR)/libCbc_la-CbcDiveScheduler.Plo \
 	./$(DEPDIR)/libCbc_la-CbcDummyBranchingObject.Plo \
@@ -584,6 +585,7 @@ libCbc_la_SOURCES = \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
+	CbcCutPoolFilter.cpp CbcCutPoolFilter.hpp \
 	CbcCutModifier.cpp CbcCutModifier.hpp \
 	CbcCutSubsetModifier.cpp CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
@@ -714,6 +716,7 @@ includecoin_HEADERS = \
 	CbcCompare.hpp \
 	CbcCountRowCut.hpp \
 	CbcCutGenerator.hpp \
+	CbcCutPoolFilter.hpp \
 	CbcCutModifier.hpp \
 	CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.hpp \
@@ -951,6 +954,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCountRowCut.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCutGenerator.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCutModifier.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCutPoolFilter.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCutSubsetModifier.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcDiveScheduler.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcDummyBranchingObject.Plo@am__quote@ # am--include-marker
@@ -1178,6 +1182,13 @@ libCbc_la-CbcCutGenerator.lo: CbcCutGenerator.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcCutGenerator.cpp' object='libCbc_la-CbcCutGenerator.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcCutGenerator.lo `test -f 'CbcCutGenerator.cpp' || echo '$(srcdir)/'`CbcCutGenerator.cpp
+
+libCbc_la-CbcCutPoolFilter.lo: CbcCutPoolFilter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcCutPoolFilter.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcCutPoolFilter.Tpo -c -o libCbc_la-CbcCutPoolFilter.lo `test -f 'CbcCutPoolFilter.cpp' || echo '$(srcdir)/'`CbcCutPoolFilter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcCutPoolFilter.Tpo $(DEPDIR)/libCbc_la-CbcCutPoolFilter.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcCutPoolFilter.cpp' object='libCbc_la-CbcCutPoolFilter.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcCutPoolFilter.lo `test -f 'CbcCutPoolFilter.cpp' || echo '$(srcdir)/'`CbcCutPoolFilter.cpp
 
 libCbc_la-CbcCutModifier.lo: CbcCutModifier.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcCutModifier.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcCutModifier.Tpo -c -o libCbc_la-CbcCutModifier.lo `test -f 'CbcCutModifier.cpp' || echo '$(srcdir)/'`CbcCutModifier.cpp
@@ -1857,6 +1868,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCountRowCut.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCutGenerator.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCutModifier.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcCutPoolFilter.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCutSubsetModifier.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcDiveScheduler.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcDummyBranchingObject.Plo
@@ -1996,6 +2008,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCountRowCut.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCutGenerator.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCutModifier.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcCutPoolFilter.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCutSubsetModifier.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcDiveScheduler.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcDummyBranchingObject.Plo

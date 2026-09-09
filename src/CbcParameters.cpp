@@ -868,7 +868,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::FEASIBILITYJUMPDEPTH]->setDefault(0);
      parameters_[CbcParam::FEASIBILITYJUMPONLYNOSOL]->setDefault(1);
      parameters_[CbcParam::FEASIBILITYJUMPMAXCALLS]->setDefault(0);
-     parameters_[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->setDefault(0);
+     parameters_[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->setDefault(1);
      parameters_[CbcParam::FPUMPITS]->setDefault(getFeasPumpIters());
      parameters_[CbcParam::FPUMPTUNE]->setDefault(0);
      parameters_[CbcParam::FPUMPTUNE2]->setDefault(0);
@@ -938,7 +938,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::DIVINGS]->setDefault("off");
      parameters_[CbcParam::DIVINGV]->setDefault("off");
      parameters_[CbcParam::DW]->setDefault("off");
-     parameters_[CbcParam::FEASIBILITYJUMP]->setDefault("off");
+     parameters_[CbcParam::FEASIBILITYJUMP]->setDefault("on");
      parameters_[CbcParam::FPUMP]->setDefault("on");
      parameters_[CbcParam::GREEDY]->setDefault("on");
      parameters_[CbcParam::HEURISTICSTRATEGY]->setDefault("off");
@@ -2465,7 +2465,7 @@ void CbcParameters::addCbcSolverIntParams() {
       "rounded (all-integers-integral, but possibly constraint-infeasible) "
       "attempt, rather than the raw LP relaxation -- a different, often "
       "more promising, starting point to try to repair into a genuinely "
-      "feasible solution. Default: 0 (off).",
+      "feasible solution. Default: 1 (on).",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::FPUMPITS]->setup(

@@ -3066,7 +3066,7 @@ void CbcSolver::initialize()
   parameters_[CbcParam::RENS]->setVal("off");
   parameters_[CbcParam::LOCALTREE]->setVal("off");
   parameters_[CbcParam::BRANCHPRIORITY]->setVal("off");
-  parameters_[CbcParam::FEASIBILITYJUMP]->setVal("off");
+  parameters_[CbcParam::FEASIBILITYJUMP]->setVal("on");
 
   model_.messageHandler()->setLogLevel(1);
   model_.setNumberBeforeTrust(10);
@@ -6897,7 +6897,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   parameters[CbcParam::RENS]->setVal("off");
   parameters[CbcParam::LOCALTREE]->setVal("off");
   parameters[CbcParam::BRANCHPRIORITY]->setVal("off");
-  parameters[CbcParam::FEASIBILITYJUMP]->setVal("off");
+  parameters[CbcParam::FEASIBILITYJUMP]->setVal("on");
 
   model.messageHandler()->setLogLevel(1);
   model.setNumberBeforeTrust(10);

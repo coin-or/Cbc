@@ -445,6 +445,12 @@ public:
     CGCleanAsWellRoot,
     CGBothAsWell,
     CGBothAsWellRoot,
+    // Unused, and kept only for its position: it is referenced by no keyword and
+    // no translation table, but it sits mid-enum, so deleting it would renumber
+    // every enumerator below -- all of which are live. It once held the
+    // "bothaswellroot" keyword, which silently disabled the Lagrangean Gomory
+    // generators because no laTranslate entry matched; see the comment at that
+    // keyword in CbcParameters.cpp.
     CGCleanBothAsWellRoot,
     CGOnlyInstead,
     CGCleanInstead,

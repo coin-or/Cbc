@@ -4761,10 +4761,69 @@ Osi_getRowSense(void *osi, int row)
 void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *oc, int depth, int pass ) {
   assert(cbcModel && oc);
 
+  /* Buffered rows and columns first, for exactly the reason Cbc_solve() opens
+   * with this call (see the long note there): Cbc_addCol()/Cbc_addRow() only
+   * append to the model->cXxx/rXxx staging arrays, so a model built entirely
+   * through them presents solver_ as 0 x 0 until something flushes. Asking for
+   * cuts on that is not merely useless, it is fatal -- CglGomory dies inside
+   * CoinPackedMatrix::reverseOrderedCopyOf() reached via getMatrixByRow(), and
+   * CglLandP dies as well. Of the 46 entry points in this file that touch the
+   * solver, this was the only cut-facing one that did not flush. */
+  Cbc_flush(cbcModel);
+
   OsiClpSolverInterface *solver = cbcModel->solver_;
   CglCutGenerator *cg = NULL;
   OsiCuts *osiCuts = (OsiCuts *) oc;
   int *int_param = cbcModel->int_param;
+
+  /* A CUTTING PLANE IS SEPARATED FROM AN LP SOLUTION, and for most of the
+   * generators below it is literally a row of the simplex tableau at the
+   * current basis -- so there has to be one. All four of CBC's own C++ call
+   * sites test for it (CbcModel.cpp:11239, :16960, :19045, :21714 each skip a
+   * generator when needsOptimalBasis() && !solver_->basisIsAvailable()); this
+   * function did not, which is why a caller who read an MPS file and asked for
+   * cuts got a SIGSEGV instead of cuts.
+   *
+   * The mechanism is worth recording because the obvious guard does not catch
+   * it: OsiClpSolverInterface::getWarmStart() is `return new
+   * CoinWarmStartBasis(basis_);`, so it hands back a NON-NULL basis even for a
+   * never-solved model -- one describing 0 structural and 0 artificial
+   * variables. CglGomory.cpp:399 tests only `if (warmstart)`, passes, and then
+   * indexes a zero-length status array.
+   *
+   * The predicate here is basisIsAvailable(), deliberately NOT
+   * needsOptimalBasis(): a census over the mip-sanity corpus crashed 27 of 27
+   * instances that had a proven optimum, always in the same four cells, and two
+   * of those four -- CglTwomir and its Lagrangean variant -- report
+   * needsOptimalBasis() == false and still die, in DGG_getData(). Skipping only
+   * the generators that admit to needing a basis would have left those crashing.
+   *
+   * Solving rather than returning empty, also deliberately. Returning silently
+   * with no cuts is the same shape of failure commit 609c9c48 introduced
+   * elsewhere in this file: the caller cannot distinguish "this relaxation
+   * yields no cuts" from "you forgot to solve". And it cannot make an answer
+   * wrong -- a cut separated at the LP optimum of the formulation at depth 0 is
+   * valid for the whole integer hull.
+   *
+   * The crash is not the only thing this fixes, and the second case is the more
+   * insidious one. On cvrp_loose, changing one objective coefficient after
+   * solving took CglGMI from 7 cuts to 0, CglRedSplit from 9 to 0 and
+   * CglRedSplit2 from 31 to 0 -- silently, no crash. Since the only new code on
+   * that path is the initialSolve() below, and it runs only when
+   * basisIsAvailable() is false, an objective change must clear the stored basis;
+   * those three generators then found nothing to separate and said so by
+   * returning empty. A caller doing sensitivity analysis would have read that as
+   * "no cuts exist here". */
+  if (!solver->basisIsAvailable()) {
+    solver->initialSolve();
+    if (!solver->isProvenOptimal()) {
+      /* No tableau to cut from, and no valid cut to be found: an infeasible
+       * relaxation has an empty integer hull and an unbounded one has no
+       * optimal basis. Empty is the right answer, and there is nothing the
+       * caller could have done differently. */
+      return;
+    }
+  }
 
   switch (ct) {
     case CT_Probing:
@@ -4835,6 +4894,30 @@ void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *o
       {
         CglTwomir *cgTwomir = new CglTwomir();
         cg = cgTwomir;
+        /* setTwomirType() ALONE DOES NOTHING. CglTwomir::generateCuts() opens
+         * its Lagrangean block with
+         *
+         *   clpSolver = originalSolver_ ? getClpSolver(originalSolver_) : NULL;
+         *   ...
+         *   if (clpSolver) { useSolver = originalSolver_; assert(twomirType_); ...
+         *
+         * so with originalSolver_ still NULL -- passInOriginalSolver() is never
+         * called here, unlike CbcSolverCutSetup.cpp:413 -- the entire block is
+         * skipped and twomirType_ is never read. CT_LaTwoMIR is therefore an
+         * alias for CT_TwoMIR through this entry point.
+         *
+         * Passing the solver in would not fix it, which is why this is left as
+         * documentation rather than "corrected". The Lagrangean variants dualize
+         * the rows that are NOT in the original formulation, and decide whether
+         * to bother by comparing si.getNumRows() against
+         * originalSolver_->getNumRows() (CglTwomir.cpp:137-138, CglGomory.cpp
+         * :205-214). passInOriginalSolver() clones the solver at the moment of
+         * the call, and this function builds a fresh generator per call from the
+         * very solver it then separates on -- so the two row counts would be
+         * equal by construction, the whenToDo==1 gate that type 12 selects would
+         * never fire, and the caller would pay for a full solver clone per call
+         * to reach the same cuts. There is no way for a C caller to say which of
+         * its rows are cuts, which is the information the variant needs. */
         cgTwomir->setTwomirType(12);
         cgTwomir->setMaxElements(250);
         break;
@@ -4890,6 +4973,33 @@ void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *o
   CglTreeInfo treeInfo;
   treeInfo.level = depth;
   treeInfo.pass = pass;
+  /* formulation_rows and inTree both default to -1 / false, and leaving them
+   * there is not neutral. CglTwomir hands formulation_rows straight to
+   * DGG_generateFormulationCuts(), which computes
+   *
+   *     num_rows = (data->nrow < nrows) ? data->nrow : nrows;
+   *
+   * i.e. min(nrow, -1) == -1, and then never enters its loop -- so CT_TwoMIR and
+   * CT_LaTwoMIR silently produced no formulation cuts whatsoever through this
+   * interface, with do_form_ enabled and no diagnostic anywhere. This interface
+   * has no notion of which rows are cuts and which are original, so the row
+   * count IS the formulation size.
+   *
+   * Measured rather than inferred, because the inference alone is not safe: on
+   * cvrp_loose the count is 10 either way, which is exactly what you would see if
+   * the reading were wrong. Calling CglTwomir twice on one solved LP with nothing
+   * but this field changed (twomir-formrows-probe.cpp in the local harness) moves
+   * the count on 8 of the 25 largest mip-sanity instances -- atlanta-ip 0 -> 46,
+   * i.e. the generator's entire output through this interface was empty;
+   * trdta5581 6460 -> 8300; supportcase12 62 -> 80; sp98ar 9 -> 16. The other 17
+   * are unaffected, so an instance-level check can easily miss it.
+   *
+   * inTree has to be set in the same change rather than separately: both of
+   * CglClique's uses of formulation_rows (CglClique.cpp:88-118) are gated on
+   * info.inTree, so switching inTree on while formulation_rows was still -1
+   * would newly feed the -1 to a generator that is correct today. */
+  treeInfo.formulation_rows = solver->getNumRows();
+  treeInfo.inTree = (depth > 0);
 
   if (cg != NULL) {
     cg->generateCuts(*solver, *osiCuts, treeInfo);

@@ -83,7 +83,7 @@ enum CutType {
   CT_FlowCover        =  5,  /*! Flow cover cuts */
   CT_MIR              =  6,  /*! Mixed-integer rounding cuts */
   CT_TwoMIR           =  7,  /*! Two-phase Mixed-integer rounding cuts */
-  CT_LaTwoMIR         =  8,  /*! Lagrangean relaxation for two-phase Mixed-integer rounding cuts, as in CT_LaGomory */
+  CT_LaTwoMIR         =  8,  /*! Two-phase Mixed-integer rounding cuts, requested with the Lagrangean variant selected. NOTE: through Cbc_generateCuts() this behaves exactly as CT_TwoMIR -- the Lagrangean path needs to know which rows are cuts rather than part of the formulation, and a C caller has no way to say. See the comment on the CT_LaTwoMIR case in Cbc_C_Interface.cpp. There is deliberately no CT_LaGomory, for the same reason. */
   CT_LiftAndProject   =  9,  /*! Lift and project cuts */
   CT_ResidualCapacity = 10,  /*! Residual capacity cuts */
   CT_ZeroHalf         = 11,  /*! Zero-half cuts */
@@ -1877,12 +1877,32 @@ CG_conflictingNodes(Cbc_Model *model, void *cgraph, size_t node);
 
 /** @brief Generates cutting planes of a given type
      *
-     *  Generates cutting planes of a given type
+     *  Separates cutting planes from the current linear programming relaxation
+     *  and appends them to \p oc.
+     *
+     *  Any rows and columns still buffered by Cbc_addRow()/Cbc_addCol() are
+     *  flushed first, so a freshly built model may be passed directly.
+     *
+     *  A cutting plane is separated from an LP solution, and for most types it
+     *  is a row of the simplex tableau at the current basis -- so if no basis is
+     *  available this function solves the relaxation itself before separating.
+     *  If that relaxation turns out to be infeasible or unbounded no cuts are
+     *  produced, because none exist to be found. A basis that is already present
+     *  is used as it stands and never refreshed, so a caller who changes bounds
+     *  or the objective after solving and wants cuts for the changed problem
+     *  should call Cbc_solveLinearProgram() again first.
+     *
+     *  Cuts are valid for the problem as \p cbcModel currently stands. Passing a
+     *  \p depth greater than zero declares that the bounds in the model are a
+     *  node's rather than the original ones, and the cuts are then valid only at
+     *  that node.
      *
      *  @param cbcModel problem object
      *  @param ct cut type
      *  @param oc an OsiCuts object where cuts will be stored
-     *  @param depth current three depth, cuts may use this info to decide which strategy to use
+     *  @param depth current tree depth; 0 means the root. Generators use this to
+     *         choose limits and tolerances, and a non-zero value marks the cuts
+     *         as node-local rather than globally valid
      *  @param pass cut pass number
      * */
 CBCLIB_EXPORT void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *oc, int depth, int pass );

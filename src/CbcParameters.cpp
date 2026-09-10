@@ -3093,7 +3093,33 @@ void CbcParameters::addCbcSolverCutParams() {
         parameters_[code]->appendKwd("root", CbcParameters::CGRoot);
         parameters_[code]->appendKwd("onlyaswellroot", CbcParameters::CGOnlyAsWellRoot);
         parameters_[code]->appendKwd("cleanaswellroot", CbcParameters::CGCleanAsWellRoot);
-        parameters_[code]->appendKwd("bothaswellroot", CbcParameters::CGCleanBothAsWellRoot);
+        // CGBothAsWellRoot, not CGCleanBothAsWellRoot. This keyword was the only
+        // reference to CGCleanBothAsWellRoot anywhere, and CGBothAsWellRoot was
+        // referenced only by laTranslate in CbcSolverCutSetup.cpp:82 -- i.e. the
+        // two halves of one mode, each unreachable from the other side. The
+        // consequence was that "-lagomory bothaswellroot" registered NO Lagrangean
+        // generator at all: laTranslate is a std::map, so the missing key made
+        // operator[] insert and return 0, and CbcSolverCutSetup.cpp:191-192 then
+        // computed laGomory = -1, type = (-1 % 3) + 1 = 0, so neither the
+        // (type & 1) GomoryL1 arm nor the (type & 2) GomoryL2 arm fired.
+        //
+        // Silent rather than diagnosable, and measurably so: on 50v-10 the mode
+        // registered exactly one Gomory generator, plain "Gomory", at its normal
+        // every-node frequency -- indistinguishable from "-lagomory off". Plain
+        // Gomory is added at CbcSolverCutSetup.cpp:196, *before* the
+        // "if (!when) gType = -99" at :211, so the -1 did not demote it either;
+        // it read as an ordinary Gomory run with a keyword that did nothing.
+        //
+        // 15 is the right value on the file's own pattern -- onlyaswell 7 /
+        // onlyaswellroot 13, cleanaswell 8 / cleanaswellroot 14, bothaswell 9 /
+        // bothaswellroot 15 -- and yields type 3 (both L1 and L2) with when 4,
+        // i.e. gomoryTypeMajor 20 and root-only, exactly parallel to bothaswell.
+        //
+        // Deliberately NOT deleting the now-unused CGCleanBothAsWellRoot
+        // enumerator: it sits mid-enum, so removing it would renumber
+        // CGOnlyInstead, CGCleanInstead, CGBothInstead, CGOnGlobal, CGLonger,
+        // CGShorter, CGStrongRoot and CGIfLongOn, all of which are live.
+        parameters_[code]->appendKwd("bothaswellroot", CbcParameters::CGBothAsWellRoot);
         // Here, we intentionally drop through to the next set
      case CbcParam::LATWOMIRCUTS:
         parameters_[code]->appendKwd("off", CbcParameters::CGOff);

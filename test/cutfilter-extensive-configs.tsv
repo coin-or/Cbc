@@ -1,0 +1,45 @@
+# Extensive cut-pool-filter parameter sweep (2026-09), on top of the
+# shipped defaults (CBC_CUTPOOL_FILTER_MIN_COLS=500,
+# CBC_CUTPOOL_FILTER_MIN_CANDIDATES=20, CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.7,
+# CBC_CUTPOOL_FILTER_MIN_ELEMENTS=0). Goal: find a config that dominates
+# "today" -- improves (or holds) dual/primal gap closed while keeping
+# bbTime roughly flat, using cutfilter-sweep --repeats=N to separate real
+# effect from B&B branching-tie-break noise (see ROOT-FIXTURES.md).
+#
+# Format: one config per line, tab-separated
+#   <name>\t<comma-separated overrides, or - for none>
+# Each override token is either KEY=VAL (exported as an env var) or
+# CLI:<arg> (appended as an extra cbc command-line argument).
+today	-
+#
+# Stage 1 -- finer MAX_PARALLELISM grid around the shipped 0.7 (lower =
+# more aggressive dedup of near-parallel cuts; 1.0 effectively disables
+# this secondary filter, cuts compete only on best-fitness-per-column).
+par03	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.3
+par04	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.4
+par05	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.5
+par06	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.6
+par08	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.8
+par09	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.9
+par10	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=1.0
+#
+# Stage 2 -- reinvest time saved by filtering into more root
+# cut-generation rounds (default passCuts=100 for <5000 cols/20 otherwise).
+passcuts150	CLI:-passCuts=150
+passcuts200	CLI:-passCuts=200
+passcuts250	CLI:-passCuts=250
+passcuts300	CLI:-passCuts=300
+#
+# Stage 3 -- combine the most promising parallelism value with extra
+# cut-generation rounds.
+par05_passcuts200	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.5,CLI:-passCuts=200
+par09_passcuts200	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.9,CLI:-passCuts=200
+par07_passcuts300	CLI:-passCuts=300
+#
+# Stage 4 -- candidate-count / small-model gate boundary tuning (does the
+# shipped MIN_CANDIDATES=20/MIN_COLS=500 leave value on the table, or is
+# it already well-placed?).
+cand10	CBC_CUTPOOL_FILTER_MIN_CANDIDATES=10
+cand50	CBC_CUTPOOL_FILTER_MIN_CANDIDATES=50
+mincols300	CBC_CUTPOOL_FILTER_MIN_COLS=300
+mincols750	CBC_CUTPOOL_FILTER_MIN_COLS=750

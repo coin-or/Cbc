@@ -80,16 +80,27 @@ bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
   // unsound: reoptimization CPU time is noisy and machine-load-dependent,
   // so gating on it live would make cut selection non-reproducible).
   static const int minElements = envInt("CBC_CUTPOOL_FILTER_MIN_ELEMENTS", 0);
-  static const int minCandidates = envInt("CBC_CUTPOOL_FILTER_MIN_CANDIDATES", 20);
+  // 2026-09/10 extensive parameter sweep (cutfilter-extensive-r3, 19
+  // variants x 3 -randomSeed repeats; then re-confirmed with 5 repeats in
+  // cutfilter-combo-r5) found MIN_CANDIDATES=10 (down from the initial
+  // CglBKClique-parity default of 20) dominates: dual gap closed +0.30pp,
+  // primal gap closed +0.33pp, mean bbTime *improved* (-0.04s) -- a
+  // strictly better, essentially free change (relaxing this gate lets
+  // filtering kick in for more, somewhat smaller cut-candidate rounds,
+  // which turns out to pay for itself in this instance mix). Ships as the
+  // new default.
+  static const int minCandidates = envInt("CBC_CUTPOOL_FILTER_MIN_CANDIDATES", 10);
   static const bool alwaysFilter = envInt("CBC_CUTPOOL_FILTER_ALWAYS", 0) != 0;
-  // Unlike CglBKClique's own clique-cut parallelism filter (disabled by
-  // default -- a 442-instance sweep found no net win for clique cuts
-  // specifically), the 2026-09 mip-sanity-data sweep for these four
-  // generators found MAX_PARALLELISM=0.7 gave the single best combined
-  // primal-gap/efficiency result of every variant tried (see
-  // ROOT-FIXTURES.md's "Cut-pool filtering" section), so it ships as the
-  // default here rather than left disabled pending further confirmation.
-  static const double maxParallelism = envDouble("CBC_CUTPOOL_FILTER_MAX_PARALLELISM", 0.7);
+  // Same 2026-09/10 sweep found MAX_PARALLELISM has a real, repeat-averaged
+  // monotonic trend across 0.3-1.0: higher (less aggressive orthogonality
+  // filtering) consistently improves dual gap closed at a small bbTime
+  // cost. 0.9 gave the best combined result together with
+  // MIN_CANDIDATES=10 above (cand10_par09 in cutfilter-combo-r5, 5
+  // repeats): dual +0.22pp, primal +0.70pp, bbTime +0.03s -- dominates the
+  // previous 0.7 default (itself found in an earlier, less thorough
+  // sweep) on both bound metrics for a negligible time cost. Ships as the
+  // new default, superseding the previous 0.7.
+  static const double maxParallelism = envDouble("CBC_CUTPOOL_FILTER_MAX_PARALLELISM", 0.9);
 
   const bool smallModel = numCols < minCols || numElements <= minElements;
   if (smallModel && !alwaysFilter)

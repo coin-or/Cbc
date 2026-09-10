@@ -1,0 +1,14 @@
+# Follow-up combo sweep (2026-09): testing whether the two independent
+# wins found in cutfilter-extensive-r3 (CBC_CUTPOOL_FILTER_MIN_CANDIDATES=10,
+# essentially free: dual+0.31%/primal+0.33%/bbTime-0.02s; and
+# CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.9, dual+0.23%/primal+0.57%/bbTime+0.08s)
+# combine additively into a config that dominates "today" (shipped
+# MIN_CANDIDATES=20, MAX_PARALLELISM=0.7). Uses --repeats=5 since the
+# individual effects are sub-1pp and cutfilter-extensive-r3 used only 3
+# repeats.
+today	-
+cand10	CBC_CUTPOOL_FILTER_MIN_CANDIDATES=10
+par09	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.9
+par10	CBC_CUTPOOL_FILTER_MAX_PARALLELISM=1.0
+cand10_par09	CBC_CUTPOOL_FILTER_MIN_CANDIDATES=10,CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.9
+cand10_par10	CBC_CUTPOOL_FILTER_MIN_CANDIDATES=10,CBC_CUTPOOL_FILTER_MAX_PARALLELISM=1.0

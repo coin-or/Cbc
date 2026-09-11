@@ -45,26 +45,30 @@ public:
   /** Set a Feasibility Jump heuristic to try as a fallback right after this
    *  pump fails to find a feasible solution (i.e. solution()/solutionInternal()
    *  is about to return 0) while CBC still has no incumbent at all. When
-   *  set, FJ is seeded from the pump's own last rounded (but possibly
-   *  constraint-infeasible) attempt -- a different, and often more
-   *  promising, starting point than the raw LP relaxation FJ would
-   *  otherwise use. Not owned by this object; pass nullptr to disable
-   *  (default). Must point at an object that outlives this heuristic's use
-   *  (in practice: another heuristic already registered on the same
-   *  CbcModel, so both are cloned/destroyed together). */
+   *  set, FJ is seeded from the *least fractional* rounded (but possibly
+   *  constraint-infeasible) attempt seen across the pump's own major
+   *  passes -- a different, and often more promising, starting point than
+   *  the raw LP relaxation FJ would otherwise use. Not owned by this
+   *  object; pass nullptr to disable (default). Must point at an object
+   *  that outlives this heuristic's use (in practice: another heuristic
+   *  already registered on the same CbcModel, so both are cloned/destroyed
+   *  together). */
   void setFeasibilityJumpFallback(CbcHeuristicFeasibilityJump *fj) { fjFallback_ = fj; }
   /// Get the Feasibility Jump fallback heuristic (nullptr if none set).
   CbcHeuristicFeasibilityJump *feasibilityJumpFallback() const { return fjFallback_; }
 
   /// Whether the last call captured a rounded-but-failed attempt (see
-  /// lastRoundedAttempt()). Cleared whenever a call succeeds.
-  bool hasLastRoundedAttempt() const { return !lastRoundedAttempt_.empty(); }
-  /// The pump's last rounded (all-integers-integral, but possibly
-  /// constraint-infeasible) attempt from its most recent failed call, or
-  /// nullptr if the last call succeeded (or none has run yet).
-  const double *lastRoundedAttempt() const
+  /// bestRoundedAttempt()). Cleared whenever a call succeeds.
+  bool hasBestRoundedAttempt() const { return !bestRoundedAttempt_.empty(); }
+  /// The pump's *least fractional* rounded (all-integers-integral, but
+  /// possibly constraint-infeasible) attempt across every major pass of its
+  /// most recent failed call -- not merely its last pass, which can be more
+  /// fractional than an earlier one once the cutoff tightens or the
+  /// neighborhood objective bounces around -- or nullptr if the last call
+  /// succeeded (or none has run yet).
+  const double *bestRoundedAttempt() const
   {
-    return lastRoundedAttempt_.empty() ? nullptr : lastRoundedAttempt_.data();
+    return bestRoundedAttempt_.empty() ? nullptr : bestRoundedAttempt_.data();
   }
 
   /// Resets stuff if model changes
@@ -270,8 +274,8 @@ protected:
   // Data
   /// Not owned. See setFeasibilityJumpFallback().
   CbcHeuristicFeasibilityJump *fjFallback_ = nullptr;
-  /// See lastRoundedAttempt().
-  std::vector< double > lastRoundedAttempt_;
+  /// See bestRoundedAttempt().
+  std::vector< double > bestRoundedAttempt_;
   /// Start time
   double startTime_;
   /// Maximum Cpu seconds

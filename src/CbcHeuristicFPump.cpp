@@ -200,7 +200,7 @@ CbcHeuristicFPump::operator=(const CbcHeuristicFPump &rhs)
     roundExpensive_ = rhs.roundExpensive_;
     fpOutput_ = nullptr; // not copied: caller must reinstall
     fjFallback_ = nullptr; // not copied: caller must reinstall
-    lastRoundedAttempt_.clear();
+    bestRoundedAttempt_.clear();
   }
   return *this;
 }
@@ -441,6 +441,14 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   numberIntegers = j;
   double *newSolution = new double[numberColumns];
   double newSolutionValue = COIN_DBL_MAX;
+  // Track the rounded candidate obtained from the least-fractional LP
+  // solution seen across all major passes (not just the very last one --
+  // later passes can end up more fractional than an earlier one, e.g. once
+  // the cutoff tightens or the neighborhood objective bounces around). This
+  // is what gets handed to the Feasibility Jump fallback on failure (see
+  // bestRoundedAttempt_ below), since it is a more promising starting point
+  // than an arbitrary last attempt.
+  double bestRoundedSumInfeas = COIN_DBL_MAX;
   int maxSolutions = model_->getMaximumSolutions();
   int numberSolutions = 0;
   bool solutionFound = false;
@@ -902,6 +910,16 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       if (exitAll || exitThis)
         break;
       memcpy(newSolution, solution, numberColumns * sizeof(double));
+      // Fractionality of the LP solution about to be rounded, used below to
+      // decide whether this pass's rounded candidate is the new
+      // "least fractional" one seen so far (see bestRoundedSumInfeas above).
+      double thisPassSumInfeas = 0.0;
+      for (i = 0; i < numberIntegers; i++) {
+        int iColumn = integerVariable[i];
+        double value = solution[iColumn];
+        double nearest = floor(value + 0.5);
+        thisPassSumInfeas += fabs(value - nearest);
+      }
       int flip;
       if (numberPasses == 0 && false) {
         // always use same seed
@@ -943,6 +961,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         numberIntegers, integerVariable,
         /*pumpPrint,*/ numberPasses,
         /*roundExpensive_,*/ defaultRounding_, &flip);
+      if (thisPassSumInfeas < bestRoundedSumInfeas) {
+        bestRoundedSumInfeas = thisPassSumInfeas;
+        bestRoundedAttempt_.assign(newSolution, newSolution + numberColumns);
+      }
       if (numberPasses == 0 && false) {
         // Make sure random will be different
         for (i = 1; i < numberTries; i++)
@@ -2601,10 +2623,13 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   // Feasibility Jump fallback: FPump found no solution (nor did the
   // closest-solution B&B fallback just above). If configured (see
   // setFeasibilityJumpFallback()) and CBC still has no incumbent at all,
-  // give FJ a shot, seeded from FPump's own last rounded (all-integers-
-  // integral, but possibly constraint-infeasible) attempt -- a different,
-  // often more promising, starting point than the raw LP relaxation FJ
-  // would otherwise use on its own.
+  // give FJ a shot, seeded from the *least fractional* rounded candidate
+  // FPump produced across all of its major passes (bestRoundedAttempt_,
+  // tracked pass-by-pass above) -- not merely its last attempt, which can
+  // be more fractional than an earlier pass once the cutoff tightens or the
+  // neighborhood objective bounces around. This is a different, and often
+  // more promising, starting point than the raw LP relaxation FJ would
+  // otherwise use on its own.
   // NOTE: solutionFound alone is not a reliable "FPump never found anything"
   // signal -- it is reset to false at the top of the retry loop whenever a
   // further (tighter-cutoff) retry is attempted after an earlier retry
@@ -2612,11 +2637,14 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   // in the "else" branch that continues to another retry). finalReturnCode
   // is the sticky signal that mirrors this function's actual return value,
   // so require both to be false before treating this as a genuine failure.
-  if (!finalReturnCode && !solutionFound && newSolution) {
-    lastRoundedAttempt_.assign(newSolution, newSolution + numberColumns);
+  if (!finalReturnCode && !solutionFound && (newSolution || !bestRoundedAttempt_.empty())) {
+    // Fall back to the last-available rounded array only in the (rare) edge
+    // case where the main loop never got to run a single pass.
+    if (bestRoundedAttempt_.empty() && newSolution)
+      bestRoundedAttempt_.assign(newSolution, newSolution + numberColumns);
     if (fjFallback_ && !model_->getSolutionCount()) {
       double fjObjective = COIN_DBL_MAX;
-      if (fjFallback_->solveFromSeed(fjObjective, betterSolution, newSolution) > 0) {
+      if (fjFallback_->solveFromSeed(fjObjective, betterSolution, bestRoundedAttempt_.data()) > 0) {
         solutionValue = fjObjective;
         finalReturnCode = 1;
         solutionFound = true;
@@ -2624,7 +2652,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       }
     }
   } else {
-    lastRoundedAttempt_.clear();
+    bestRoundedAttempt_.clear();
   }
   delete clonedSolver;
   delete[] roundingSolution;

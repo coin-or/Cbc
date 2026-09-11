@@ -1209,13 +1209,28 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     model->addHeuristic(&heuristic13);
   }
 #endif
-  // Feasibility Jump runs first: it's LP-free and fast, so it's the
-  // cheapest way to try to get *some* incumbent as early as possible.
+  // Feasibility Jump normally runs first: it's LP-free and fast, so it's
+  // the cheapest way to try to get *some* incumbent as early as possible.
   // Like FPump, it is most valuable while there is still no solution at
   // all -- see feasibilityJumpOnlyNoSol.
+  //
+  // feasibilityJumpAfterFPump==2 flips this ordering: FJ is *not*
+  // registered as its own standalone heuristic at all (it never gets a
+  // turn on its own schedule), and is only ever invoked as FPump's
+  // failure-recovery fallback (CbcHeuristicFPump::solveFromSeed(), wired
+  // up below). This is the literal "run FJ only if FPump fails" mode --
+  // as opposed to the default (1), where FJ still runs first standalone
+  // *and* is additionally available as a fallback for the (now rare)
+  // case where FJ's own standalone attempt also failed.
+  int fjAfterFPump = parameters[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->intVal();
+  bool fjFallbackOnly = (fjAfterFPump >= 2);
   int fjCloneIndex = -1;
-  if (useFeasibilityJump >= kType && useFeasibilityJump <= kType + 1) {
-    anyToDo = true;
+  bool fjWantsStandalone = !fjFallbackOnly
+    && useFeasibilityJump >= kType && useFeasibilityJump <= kType + 1;
+  bool fjWantsFallbackObject = fjFallbackOnly
+    && useFeasibilityJump != CbcParameters::CGOff;
+  if (fjWantsStandalone || fjWantsFallbackObject) {
+    anyToDo = anyToDo || fjWantsStandalone;
     CbcHeuristicFeasibilityJump heuristicFJ(*model);
     heuristicFJ.setHeuristicName("FeasibilityJump");
     heuristicFJ.setMaxEffort(parameters[CbcParam::FEASIBILITYJUMPEFFORT]->intVal());
@@ -1226,7 +1241,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     heuristicFJ.setMaxCalls(parameters[CbcParam::FEASIBILITYJUMPMAXCALLS]->intVal());
     int fjMinDepth = parameters[CbcParam::FEASIBILITYJUMPDEPTH]->intVal();
     heuristicFJ.setMinDepth(fjMinDepth);
-    if (fjMinDepth > 0) {
+    if (fjMinDepth > 0 && !fjFallbackOnly) {
       // Enable tree execution: bit 4 = called during tree node processing.
       heuristicFJ.setWhereFrom(heuristicFJ.whereFrom() | (1 << 4));
       heuristicFJ.setWhen(3); // 3 = always (root + tree)
@@ -1235,6 +1250,12 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       parameters[CbcParam::INTEGERTOLERANCE]->dblVal());
     heuristicFJ.setIntegerTolerance(
       parameters[CbcParam::INTEGERTOLERANCE]->dblVal());
+    if (fjFallbackOnly)
+      // Never run on its own schedule -- shouldHeurRun()/solution() both
+      // bail out immediately on when()==0. Only reachable from here on via
+      // the direct solveFromSeed() call FPump makes on failure, which
+      // bypasses this throttle by design (see CbcHeuristicFeasibilityJump.hpp).
+      heuristicFJ.setWhen(0);
     model->addHeuristic(&heuristicFJ);
     // Remember where the clone landed so FPump (below) can be wired up to
     // fall back to it -- see feasibilityJumpAfterFPump.
@@ -1423,7 +1444,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     // the actual clones stored on the model -- addHeuristic() always
     // clones its argument, so pointing at the local stack objects here
     // would dangle once this function returns.
-    if (fjCloneIndex >= 0 && parameters[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->intVal() != 0) {
+    if (fjCloneIndex >= 0 && fjAfterFPump != 0) {
       CbcHeuristicFeasibilityJump *fjClone =
         dynamic_cast< CbcHeuristicFeasibilityJump * >(model->heuristic(fjCloneIndex));
       CbcHeuristicFPump *fpumpClone =

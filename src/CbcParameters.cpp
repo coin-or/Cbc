@@ -868,7 +868,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::FEASIBILITYJUMPDEPTH]->setDefault(0);
      parameters_[CbcParam::FEASIBILITYJUMPONLYNOSOL]->setDefault(1);
      parameters_[CbcParam::FEASIBILITYJUMPMAXCALLS]->setDefault(0);
-     parameters_[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->setDefault(1);
+     parameters_[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->setDefault(2);
      parameters_[CbcParam::FPUMPITS]->setDefault(getFeasPumpIters());
      parameters_[CbcParam::FPUMPTUNE]->setDefault(0);
      parameters_[CbcParam::FPUMPTUNE2]->setDefault(0);
@@ -2466,16 +2466,24 @@ void CbcParameters::addCbcSolverIntParams() {
 
   parameters_[CbcParam::FEASIBILITYJUMPAFTERFPUMP]->setup(
       "feasibilityJumpAfterFPump",
-      "Fall back to Feasibility Jump when FPump fails to find a solution (0/1)",
-      0, 1,
-      "When 1, and both feasibilityJump and feasibilityPump are enabled, "
-      "Feasibility Jump is automatically tried right after Feasibility "
-      "Pump fails to find any feasible solution (and only while CBC still "
-      "has no incumbent at all). FJ is seeded from FPump's own last "
-      "rounded (all-integers-integral, but possibly constraint-infeasible) "
-      "attempt, rather than the raw LP relaxation -- a different, often "
-      "more promising, starting point to try to repair into a genuinely "
-      "feasible solution. Default: 1 (on).",
+      "Fall back to Feasibility Jump when FPump fails to find a solution (0/1/2)",
+      0, 2,
+      "0: Feasibility Jump never runs as a fallback for FPump (it may "
+      "still run standalone per feasibilityJump). "
+      "1: Feasibility Jump still runs standalone per feasibilityJump "
+      "*and* is automatically tried right after Feasibility Pump fails "
+      "to find any feasible solution (only while CBC still has no "
+      "incumbent at all). "
+      "2 (default): Feasibility Jump is *not* registered as a standalone "
+      "heuristic at all -- it only ever runs as this FPump-failure "
+      "fallback, i.e. 'run FJ only if FPump fails'. This ordering (FPump "
+      "first, FJ only as rescue) was found to find a feasible solution "
+      "on more root-node instances than running FJ standalone first (as "
+      "mode 1 does), at the cost of a somewhat worse average gap on "
+      "instances both approaches solve -- see ROOT-FIXTURES.md. Use 1 "
+      "to restore the older FJ-runs-first behavior, e.g. to isolate "
+      "FPump's own behavior or when FJ's cheap, eager first attempt is "
+      "specifically wanted regardless of FPump's outcome.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::FPUMPITS]->setup(

@@ -120,6 +120,16 @@ void CbcHeuristicFeasibilityJump::setModel(CbcModel *model)
 int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
   double *newSolution)
 {
+  // Note: the base CbcHeuristic::shouldHeurRun() does *not* consult when()
+  // at all (only the whereFrom_ bitmask plus hotstart/no-rows checks), so a
+  // plain setWhen(0) alone would not stop this heuristic's normal per-round
+  // schedule -- it would still fire via the standard doHeuristics() loop.
+  // Check when() explicitly here so setWhen(0) can be used to disable
+  // standalone execution entirely (e.g. feasibilityJumpAfterFPump==2's
+  // "run FJ only via solveFromSeed()" fallback-only mode), matching how
+  // CbcHeuristicFPump::solutionInternal() gates itself.
+  if (!when())
+    return 0;
   // Depth-based control: run at root (depth 0) always, and at tree nodes
   // every minDepth_ levels (e.g. depth 6, 12, 18...) so that FJ runs when
   // enough new variables have been fixed by branching.

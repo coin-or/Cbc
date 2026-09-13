@@ -127,9 +127,10 @@ static std::string exeDir()
   return (slash == std::string::npos) ? "." : path.substr(0, slash);
 }
 
-/* Parse a whitespace-delimited .sol file into a name -> value map. Lines
- * whose first token is not numeric (header lines, e.g. "Optimal - objective
- * value ...") are skipped. */
+/* Parse a whitespace-delimited .sol file into a name -> value map. Mirrors
+ * CbcMipStart::read()'s two accepted layouts (decided per line): Cbc's own
+ * "<index> <name> <value> [reduced-cost]" and the plain MIPLIB 2017
+ * "<name> <value>". Header/comment lines (neither shape) are skipped. */
 static bool readSolFile(const std::string &path, std::map<std::string, double> &values)
 {
   std::ifstream in(path);
@@ -139,17 +140,33 @@ static bool readSolFile(const std::string &path, std::map<std::string, double> &
   while (std::getline(in, line)) {
     std::istringstream ls(line);
     std::string tok0, tok1, tok2;
-    if (!(ls >> tok0))
+    int nread = 0;
+    if (ls >> tok0)
+      ++nread;
+    if (nread == 1 && (ls >> tok1))
+      nread = 2;
+    if (nread == 2 && (ls >> tok2))
+      nread = 3;
+    if (nread == 0)
       continue;
-    if (tok0.empty() || !(isdigit((unsigned char)tok0[0]) || tok0[0] == '-'))
-      continue; /* not an "<index> <name> <value> ..." line */
-    if (!(ls >> tok1 >> tok2))
-      continue;
+    const std::string *name;
+    const std::string *valueStr;
+    if (nread >= 3 && !tok0.empty() && isdigit((unsigned char)tok0[0])) {
+      /* "<index> <name> <value> ..." */
+      name = &tok1;
+      valueStr = &tok2;
+    } else if (nread == 2) {
+      /* "<name> <value>" */
+      name = &tok0;
+      valueStr = &tok1;
+    } else {
+      continue; /* header or comment line */
+    }
     char *endp = nullptr;
-    double value = strtod(tok2.c_str(), &endp);
-    if (endp == tok2.c_str())
+    double value = strtod(valueStr->c_str(), &endp);
+    if (endp == valueStr->c_str())
       continue; /* not numeric */
-    values[tok1] = value;
+    values[*name] = value;
   }
   return true;
 }

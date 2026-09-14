@@ -2475,12 +2475,29 @@ static void putBackOtherSolutions(CbcModel *presolvedModel, CbcModel *model,
   int numberSolutions = presolvedModel->numberSavedSolutions();
   int numberColumns = presolvedModel->getNumCols();
   if (numberSolutions > 1) {
+    FILE *fp = model->messageHandler()->filePointer();
+    if (!fp)
+      fp = stdout;
+    const int ll = model->messageHandler()->logLevel();
+    double funcStart = CoinWallclockTime();
     model->deleteSolutions();
     double *bestSolution = CoinCopyOfArray(presolvedModel->bestSolution(), numberColumns);
     // double cutoff = presolvedModel->getCutoff();
     double objectiveValue = presolvedModel->getObjValue();
     // model->createSpaceForSavedSolutions(numberSolutions-1);
-    for (int iSolution = numberSolutions - 1; iSolution >= 0; iSolution--) {
+    // Solution index 0 is the current best -- it is deliberately NOT
+    // postprocessed here. The caller (CbcSolver::postprocess()) runs its
+    // own postProcess() call for the best solution right after this
+    // function returns anyway (and that call already benefits from the
+    // fast "already feasible -> skip repair pass" path), so postprocessing
+    // it a second time here was pure duplicated cost -- on very large
+    // models each postProcess() call can take minutes, and this loop used
+    // to pay that cost once per saved solution (up to maxSavedSols_,
+    // default 10) *plus* one more time in the caller for the identical
+    // best solution. The caller now reuses its own result to populate
+    // `model`'s best solution instead (see postprocess()).
+    for (int iSolution = numberSolutions - 1; iSolution >= 1; iSolution--) {
+      double callStart = CoinWallclockTime();
       presolvedModel->setCutoff(COIN_DBL_MAX);
       presolvedModel->solver()->setColSolution(
         presolvedModel->savedSolution(iSolution));
@@ -2489,6 +2506,20 @@ static void putBackOtherSolutions(CbcModel *presolvedModel, CbcModel *model,
       model->setBestSolution(preProcess->originalModel()->getColSolution(),
         model->solver()->getNumCols(),
         presolvedModel->savedSolutionObjective(iSolution));
+      if (ll >= 1) {
+        fprintf(fp,
+          "  Restored saved solution %d/%d (obj %.6g) in %.2fs\n",
+          numberSolutions - iSolution, numberSolutions - 1,
+          presolvedModel->savedSolutionObjective(iSolution),
+          CoinWallclockTime() - callStart);
+        fflush(fp);
+      }
+    }
+    if (ll >= 1 && numberSolutions > 1) {
+      fprintf(fp,
+        "  Restored %d extra saved solution(s) in %.2fs total\n",
+        numberSolutions - 1, CoinWallclockTime() - funcStart);
+      fflush(fp);
     }
     presolvedModel->setBestObjectiveValue(objectiveValue);
     presolvedModel->solver()->setColSolution(bestSolution);
@@ -5176,6 +5207,19 @@ int CbcSolver::postprocess(
       // objective and .sol file can never disagree again.
       originalSolver->getModelPtr()->computeObjectiveValue(false);
       babModel_->setObjValue(originalSolver->getObjValue());
+      // putBackOtherSolutions() (called earlier in this preProcess_ branch)
+      // already pushed any EXTRA saved solutions (indices 1..N-1) into
+      // model_, but deliberately skipped index 0 (the best) to avoid
+      // running a second, full CglPreProcess::postProcess() call for the
+      // identical best solution (this can cost minutes on very large
+      // models, e.g. z26's 850513-row original formulation).
+      // bestSolution/n above are that same best solution, already computed
+      // by this branch's own postProcess() call, so reuse them to populate
+      // model_'s best slot here instead.
+      if (babModel_->numberSavedSolutions() > 1) {
+        model_.setBestSolution(bestSolution, n,
+          babModel_->getMinimizationObjValue(), false);
+      }
     } else {
       n = babModel_->solver()->getNumCols();
       bestSolution = new double[n];

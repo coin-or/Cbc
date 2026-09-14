@@ -5153,7 +5153,29 @@ int CbcSolver::postprocess(
       babModel_->assignSolver(saveSolver_);
       memcpy(bestSolution, originalSolver->getColSolution(),
         n * sizeof(double));
-      // already set babModel_->setObjValue(babModel_->solver()->getObjValue());
+      // The "already feasible" fast path just above only calls
+      // originalSolver->setColSolution() (no resolve()), so its underlying
+      // ClpSimplex's cached objectiveValue() can still reflect whatever
+      // *earlier* solve last ran on it -- OsiClpSolverInterface::getObjValue()
+      // returns that stale cache verbatim once any iterations have been
+      // recorded, instead of recomputing from the column solution just
+      // copied in. The commit that removed the setObjValue() call which used
+      // to live here ("try and improve solution file on max node/time")
+      // assumed the objective was "already set" elsewhere, but nothing
+      // downstream recomputes it either: babModel_->getMinimizationObjValue()
+      // (read by every setBestSolution()/deleteSolutions() call below, and
+      // by the final "Objective value:" print) simply returns babModel_'s
+      // own pre-postprocessing bestObjective_ unchanged, so it can disagree
+      // with the solution actually returned -- exactly what happened on
+      // supportcase7 (console printed -1131.84, matching neither the
+      // pre-postprocess incumbent nor BKS, while the .sol file's
+      // independently-recomputed header, and the postprocessing sanity
+      // check's own re-solve, both landed on the correct -1132.22). Force a
+      // fresh recompute here, mirroring the -solu file writer's own
+      // "lpSolver->computeObjectiveValue(false)" safeguard, so the console
+      // objective and .sol file can never disagree again.
+      originalSolver->getModelPtr()->computeObjectiveValue(false);
+      babModel_->setObjValue(originalSolver->getObjValue());
     } else {
       n = babModel_->solver()->getNumCols();
       bestSolution = new double[n];

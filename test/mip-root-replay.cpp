@@ -45,6 +45,7 @@
 
 #include "CbcModel.hpp"
 #include "CbcParameters.hpp"
+#include "CbcSolverCutSetup.hpp"
 #include "CbcSolverHeuristics.hpp"
 #include "CbcStrategy.hpp"
 #include "ClpSimplex.hpp"
@@ -208,10 +209,32 @@ static std::vector< std::string > lookupRow(const std::string &tsvPath, const st
   return {};
 }
 
-/// Thin wrapper so --no-cuts/--no-heur can skip either half of
-/// CbcStrategyDefault's setup without reimplementing it. When a CbcParameters
-/// is supplied, heuristics are attached via the real doHeuristics() used by
-/// the `cbc` command line itself (rounding, Feasibility Pump, RINS, diving,
+/// Thin wrapper so --no-cuts/--no-heur can skip either half of root setup.
+///
+/// Cut generators are installed via the *real* installCutGenerators()
+/// (CbcSolverCutSetup.hpp) -- the exact free function the production `cbc`
+/// CLI calls from CbcSolver::configureCutGenerators() -- rather than
+/// CbcStrategyDefault::setupCutGenerators(). The latter looked like the
+/// obvious choice (it's what a hand-built CbcStrategy would normally use),
+/// but CbcStrategy.cpp's setupCutGenerators() hardcodes `genFlags=0` in its
+/// non-CBC_GENERATE_TEST build path, which silently adds *zero* cut
+/// generators (dead code, apparently a leftover from CBC_GENERATE_TEST
+/// scaffolding) -- confirmed by a replay that produced exactly one cut pass
+/// with 0 tight cuts on an instance the real CLI cuts substantially. Calling
+/// the real free function instead, with the same scalar defaults
+/// CbcSolver::run() uses (complicatedInteger=0, dominatedCuts=false,
+/// cgraphMode="on", oldCliqueMode=parameters' CLIQUECUTS default,
+/// maxCallsBK=1000, bkClqExtMethod=4, bkPivotingStrategy=Weight,
+/// oddWExtMethod=2, mixedRoundStrategy=1; see CbcSolver.cpp's `run()`
+/// whereFrom==2 block) reproduces the exact generator set/tuning the CLI
+/// installs, then reapplies the CLI's own minimumDrop /
+/// maximumCutPassesAtRoot / maximumCutPasses formulas (CbcSolver.cpp ~8194-
+/// 8211) so an unmodified replay matches the real CLI's root behavior
+/// pass-for-pass. --pass-cuts=N (passCutsOverride) is applied last, so a
+/// sweep can substitute a candidate tiering rule for the CLI's default one.
+///
+/// Heuristics are attached via the real doHeuristics() used by the `cbc`
+/// command line itself (rounding, Feasibility Pump, RINS, diving,
 /// Feasibility Jump, the FPump->FJ fallback, ...) rather than
 /// CbcStrategyDefault::setupHeuristics()'s much smaller fixed set (rounding
 /// only) -- this is what lets replay experiments faithfully compare against
@@ -219,32 +242,60 @@ static std::vector< std::string > lookupRow(const std::string &tsvPath, const st
 class ReplayStrategy : public CbcStrategyDefault {
 public:
   ReplayStrategy(bool doCuts, bool doHeur, int numberStrong, int numberBeforeTrust,
-    CbcParameters *params = NULL)
+    CbcParameters &cutParams, CbcParameters *heurParams = NULL, int passCutsOverride = 0)
     : CbcStrategyDefault(1, numberStrong, numberBeforeTrust)
     , doCuts_(doCuts)
     , doHeur_(doHeur)
-    , params_(params)
+    , cutParams_(cutParams)
+    , heurParams_(heurParams)
+    , passCutsOverride_(passCutsOverride)
   {
   }
   virtual CbcStrategy *clone() const { return new ReplayStrategy(*this); }
   virtual void setupCutGenerators(CbcModel &model)
   {
-    if (doCuts_)
-      CbcStrategyDefault::setupCutGenerators(model);
+    if (!doCuts_)
+      return;
+    installCutGenerators(model, cutParams_, /*complicatedInteger=*/0,
+      /*dominatedCuts=*/false, /*cgraphMode=*/"on",
+      /*oldCliqueMode=*/cutParams_[CbcParam::CLIQUECUTS]->modeVal(),
+      /*maxCallsBK=*/1000, /*bkClqExtMethod=*/4,
+      CoinBronKerbosch::PivotingStrategy::Weight,
+      /*oddWExtMethod=*/2, /*mixedRoundStrategy=*/1);
+    // Same recipe as CbcSolver.cpp's run() (whereFrom==2 block): minimum drop
+    // scaled off the root objective, then the CLI's tiered
+    // maximumCutPassesAtRoot rule (numCols<500 -> -100, <5000 -> 100, else
+    // 50), unless overridden.
+    double minimumDrop = fabs(model.solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
+    model.setMinimumDrop(std::min(5.0e-2, minimumDrop));
+    if (passCutsOverride_ != 0) {
+      model.setMaximumCutPassesAtRoot(passCutsOverride_);
+    } else {
+      int numCols = model.getNumCols();
+      if (numCols < 500)
+        model.setMaximumCutPassesAtRoot(-100);
+      else if (numCols < 5000)
+        model.setMaximumCutPassesAtRoot(100);
+      else
+        model.setMaximumCutPassesAtRoot(50);
+    }
+    model.setMaximumCutPasses(4);
   }
   virtual void setupHeuristics(CbcModel &model)
   {
     if (!doHeur_)
       return;
-    if (params_)
-      doHeuristics(&model, 1, *params_, /*noPrinting_=*/1, /*initialPumpTune=*/0);
+    if (heurParams_)
+      doHeuristics(&model, 1, *heurParams_, /*noPrinting_=*/1, /*initialPumpTune=*/0);
     else
       CbcStrategyDefault::setupHeuristics(model);
   }
 
 private:
   bool doCuts_, doHeur_;
-  CbcParameters *params_;
+  CbcParameters &cutParams_;
+  CbcParameters *heurParams_;
+  int passCutsOverride_;
 };
 
 static void usage(const char *prog)
@@ -279,7 +330,12 @@ static void usage(const char *prog)
     "  --fj-max-sol=N       stop FJ after this many solutions per call (default 1)\n"
     "  --fj-only-no-sol=0|1 only run FJ while no incumbent exists (default 1)\n"
     "  --fj-max-calls=N     cap on total FJ invocations (default 0 = unlimited)\n"
-    "  --fj-depth=N         run FJ every N tree levels (default 0 = root only)\n",
+    "  --fj-depth=N         run FJ every N tree levels (default 0 = root only)\n"
+    "  --pass-cuts=N        override maximumCutPassesAtRoot after strategy setup\n"
+    "                       (default: leave CbcStrategyDefault's own rule alone).\n"
+    "                       Same encoding as the real CLI's -passCuts: positive N\n"
+    "                       stops early once the minimum-drop test fails; negative\n"
+    "                       N (abs value used as the pass cap) ignores minimum drop.\n",
     prog);
 }
 
@@ -312,6 +368,7 @@ int main(int argc, char **argv)
   std::string fjMode; // "off"/"on"/"before"/"both"
   int fjAfterFPump = -1, fjEffort = -1, fjEffortMult = -1, fjStall = -1;
   int fjMaxSol = -1, fjOnlyNoSol = -1, fjMaxCalls = -1, fjDepth = -1;
+  int passCutsOverride = 0;
 
   for (int i = 1; i < argc; ++i) {
     const std::string a = argv[i];
@@ -349,6 +406,8 @@ int main(int argc, char **argv)
       fjMaxCalls = atoi(a.c_str() + 15);
     else if (a.rfind("--fj-depth=", 0) == 0)
       fjDepth = atoi(a.c_str() + 11);
+    else if (a.rfind("--pass-cuts=", 0) == 0)
+      passCutsOverride = atoi(a.c_str() + 12);
     else if (a.rfind("--log=", 0) == 0)
       logLevel = atoi(a.c_str() + 6);
     else if (a.rfind("--data-dir=", 0) == 0)
@@ -496,7 +555,7 @@ int main(int argc, char **argv)
   // CLI's default heuristic set, unless --minimal-heur asks for
   // CbcStrategyDefault's much smaller bare-rounding fallback instead.
   ReplayStrategy strategy(doCuts, doHeur, model.numberStrong(), model.numberBeforeTrust(),
-    minimalHeur ? NULL : &params);
+    params, minimalHeur ? NULL : &params, passCutsOverride);
   model.setStrategy(strategy);
 
   const double t1 = wallClock();

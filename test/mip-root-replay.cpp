@@ -242,13 +242,15 @@ static std::vector< std::string > lookupRow(const std::string &tsvPath, const st
 class ReplayStrategy : public CbcStrategyDefault {
 public:
   ReplayStrategy(bool doCuts, bool doHeur, int numberStrong, int numberBeforeTrust,
-    CbcParameters &cutParams, CbcParameters *heurParams = NULL, int passCutsOverride = 0)
+    CbcParameters &cutParams, CbcParameters *heurParams = NULL, int passCutsOverride = 0,
+    double minDropScale = 1.0)
     : CbcStrategyDefault(1, numberStrong, numberBeforeTrust)
     , doCuts_(doCuts)
     , doHeur_(doHeur)
     , cutParams_(cutParams)
     , heurParams_(heurParams)
     , passCutsOverride_(passCutsOverride)
+    , minDropScale_(minDropScale)
   {
   }
   virtual CbcStrategy *clone() const { return new ReplayStrategy(*this); }
@@ -263,22 +265,29 @@ public:
       CoinBronKerbosch::PivotingStrategy::Weight,
       /*oddWExtMethod=*/2, /*mixedRoundStrategy=*/1);
     // Same recipe as CbcSolver.cpp's run() (whereFrom==2 block): minimum drop
-    // scaled off the root objective, then the CLI's tiered
-    // maximumCutPassesAtRoot rule (numCols<500 -> -100, <5000 -> 100, else
-    // 50), unless overridden.
+    // scaled off the root objective, then the CLI's cols-tiered rule with an
+    // OR-widened top tier: numCols<500 OR numRows<500 -> minDrop ignored, up
+    // to 100 passes; numCols<5000 -> minDrop-limited, up to 100 passes; else
+    // -> minDrop-limited, up to 50 passes. Overridden by --pass-cuts=N /
+    // --min-drop-scale=X when passed explicitly (minDropScale_ multiplies
+    // minimumDrop even in the default path, so --min-drop-scale=X alone can
+    // still be used to explore alternative minDrop thresholds without a
+    // --pass-cuts override).
     double minimumDrop = fabs(model.solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
-    model.setMinimumDrop(std::min(5.0e-2, minimumDrop));
+    minimumDrop = std::min(5.0e-2, minimumDrop);
     if (passCutsOverride_ != 0) {
       model.setMaximumCutPassesAtRoot(passCutsOverride_);
     } else {
       int numCols = model.getNumCols();
-      if (numCols < 500)
+      int numRows = model.getNumRows();
+      if (numCols < 500 || numRows < 500)
         model.setMaximumCutPassesAtRoot(-100);
       else if (numCols < 5000)
         model.setMaximumCutPassesAtRoot(100);
       else
         model.setMaximumCutPassesAtRoot(50);
     }
+    model.setMinimumDrop(minimumDrop * minDropScale_);
     model.setMaximumCutPasses(4);
   }
   virtual void setupHeuristics(CbcModel &model)
@@ -296,6 +305,7 @@ private:
   CbcParameters &cutParams_;
   CbcParameters *heurParams_;
   int passCutsOverride_;
+  double minDropScale_;
 };
 
 static void usage(const char *prog)
@@ -335,7 +345,8 @@ static void usage(const char *prog)
     "                       (default: leave CbcStrategyDefault's own rule alone).\n"
     "                       Same encoding as the real CLI's -passCuts: positive N\n"
     "                       stops early once the minimum-drop test fails; negative\n"
-    "                       N (abs value used as the pass cap) ignores minimum drop.\n",
+    "                       N (abs value used as the pass cap) ignores minimum drop.\n"
+    "  --min-drop-scale=X   multiply minimumDrop by X before applying it (default 1.0)\n",
     prog);
 }
 
@@ -369,6 +380,7 @@ int main(int argc, char **argv)
   int fjAfterFPump = -1, fjEffort = -1, fjEffortMult = -1, fjStall = -1;
   int fjMaxSol = -1, fjOnlyNoSol = -1, fjMaxCalls = -1, fjDepth = -1;
   int passCutsOverride = 0;
+  double minDropScale = 1.0;
 
   for (int i = 1; i < argc; ++i) {
     const std::string a = argv[i];
@@ -408,6 +420,8 @@ int main(int argc, char **argv)
       fjDepth = atoi(a.c_str() + 11);
     else if (a.rfind("--pass-cuts=", 0) == 0)
       passCutsOverride = atoi(a.c_str() + 12);
+    else if (a.rfind("--min-drop-scale=", 0) == 0)
+      minDropScale = atof(a.c_str() + 17);
     else if (a.rfind("--log=", 0) == 0)
       logLevel = atoi(a.c_str() + 6);
     else if (a.rfind("--data-dir=", 0) == 0)
@@ -555,7 +569,7 @@ int main(int argc, char **argv)
   // CLI's default heuristic set, unless --minimal-heur asks for
   // CbcStrategyDefault's much smaller bare-rounding fallback instead.
   ReplayStrategy strategy(doCuts, doHeur, model.numberStrong(), model.numberBeforeTrust(),
-    params, minimalHeur ? NULL : &params, passCutsOverride);
+    params, minimalHeur ? NULL : &params, passCutsOverride, minDropScale);
   model.setStrategy(strategy);
 
   const double t1 = wallClock();

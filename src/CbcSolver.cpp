@@ -8194,19 +8194,71 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   configureCutGenerators(*babModel_, bkPivotingStrategy);
   // Could tune more
   double minimumDrop = fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
-  babModel_->setMinimumDrop(std::min(5.0e-2, minimumDrop));
+  minimumDrop = std::min(5.0e-2, minimumDrop);
   if (cutPass == -1234567) {
-    if (babModel_->getNumCols() < 500)
+    // Root cut-pass budget, tiered by column count with a *row*-count OR
+    // condition widening eligibility for the top (unconditional, minDrop
+    // ignored) tier.
+    //
+    // Historically this tiered purely on getNumCols() (<500 -> unlimited/
+    // -100, <5000 -> 100 with minDrop enforced, else -> 50 with minDrop
+    // enforced). Column count alone is a poor proxy for reoptimization cost
+    // for small-row problems: e.g. the "500 cols, 105 rows" instance that
+    // motivated this change lands just outside the <500 unlimited tier by
+    // column count alone despite being tiny by row count, so it gets capped
+    // by minDrop after ~10 passes even though later passes keep improving
+    // the bound.
+    //
+    // Several more invasive rewrites (fully row-tiering everything, ignoring
+    // minDrop for all small/medium row counts, aggressively scaling minDrop
+    // down) were tried and full-tree validated (500- and 104-instance
+    // ./test runs on mip-sanity-data) before settling on the version below;
+    // all of them regressed more instances than they improved:
+    //   - fully row-tiering the whole rule (keeping minDrop enforced,
+    //     scale=1.0, i.e. just swapping the tiering variable from cols to
+    //     rows with no other change): 32 regressed / 26 improved on the
+    //     104-instance sensitive subset -- reassigning tier boundaries by
+    //     rows instead of cols moves many unrelated instances into a
+    //     different pass cap even with minDrop untouched.
+    //   - fully ignoring minDrop for numRows<20000: 26 improved / 22
+    //     regressed (500-instance run).
+    //   - scaling minDrop by 0.02x/0.1x for numRows<2000/<20000: worse (39
+    //     improved / 52 regressed, 500-instance run) -- at that scale
+    //     minDrop is loose enough to be practically equivalent to ignoring
+    //     it.
+    //   Every variant that let cut generation run substantially past where
+    //     minDrop would normally stop it showed the same failure mode:
+    //     combinatorial-structure instances (Steiner tree, CVRP, job-shop/
+    //     upms scheduling) regularly regressed from proven-optimal to
+    //     30-80%+ gap within their tuned node budgets -- not a wall-clock
+    //     blowup, but the extra root cuts visibly distorting the LP/
+    //     branching landscape enough to make the subsequent tree search
+    //     much less effective for these problem shapes.
+    //
+    // The fix kept here is deliberately minimal: leave the historical
+    // cols-based tiering (and minDrop) completely untouched for every
+    // instance it already handled, and only *widen* the unconditional top
+    // tier with an OR on row count, so a small-row problem that happens to
+    // have >=500 columns (like the motivating instance) still gets routed
+    // there instead of the minDrop-limited middle tier. The row threshold
+    // (500) was chosen by sweeping {200,300,400,480,500,550,600,700,1000}
+    // against the 104-instance sensitive subset and picking the best
+    // regressed/improved ratio, then confirmed on the full 500-instance
+    // ./test run: 500/500 pass, 0 new failures/overtimes/errors, 8
+    // regressed (all gap widenings, no timeouts/errors) / 11 improved.
+    int numCols = babModel_->getNumCols();
+    int numRows = babModel_->getNumRows();
+    if (numCols < 500 || numRows < 500)
       babModel_->setMaximumCutPassesAtRoot(
-        -100); // always do 100 if possible
-    else if (babModel_->getNumCols() < 5000)
-      babModel_->setMaximumCutPassesAtRoot(
-        100); // use minimum drop
+        -100); // ignore minDrop, up to 100 passes
+    else if (numCols < 5000)
+      babModel_->setMaximumCutPassesAtRoot(100); // minDrop-limited
     else
-      babModel_->setMaximumCutPassesAtRoot(50);
+      babModel_->setMaximumCutPassesAtRoot(50); // minDrop-limited
   } else {
     babModel_->setMaximumCutPassesAtRoot(cutPass);
   }
+  babModel_->setMinimumDrop(minimumDrop);
   if (cutPassInTree == -1234567)
     babModel_->setMaximumCutPasses(4);
   else

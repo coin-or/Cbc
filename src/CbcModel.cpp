@@ -114,6 +114,7 @@ extern int gomory_try;
 #include "CglGomory.hpp"
 #include "CglProbing.hpp"
 #include "CglTwomir.hpp"
+#include "CglZeroHalf.hpp"
 // include preprocessing
 #include "CglBKClique.hpp"
 #include "CglClique.hpp"
@@ -2547,7 +2548,34 @@ void CbcModel::branchAndBound(int doStatistics)
       if ((specialOptions_ & 4) == 0)
         bestObjective_ += 100.0 * increment + 1.0e-3; // only set if we are going to solve
       setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1);
-      continuousSolver_->resolve();
+      {
+        // Diagnostic timing: same unguarded warm-started resolve() as the
+        // main "search finished" path below -- see the detailed comment
+        // there for why this can be slow and silent on large/degenerate
+        // models, and why resetting to an all-slack basis first avoids it.
+        double finalResolveStart = CoinWallclockTime();
+        // checkSolution() (called by setBestSolution() above) has just fixed
+        // every integer variable's bounds to bestSolution_'s values. If that
+        // leaves (almost) no free columns, every value is already known --
+        // there is nothing left to solve for, so resolving from whatever
+        // stale basis continuousSolver_ still holds only forces pointless
+        // simplex work to rediscover values we already have. Reset to an
+        // empty (all-slack) warm start first, exactly as checkSolution()'s
+        // own allSlack path does, so this converges immediately instead.
+        bool allSlackFP = numberIntegers_ * 4 > continuousSolver_->getNumCols() || continuousSolver_->getNumCols() < 10000;
+        if (allSlackFP) {
+          CoinWarmStartBasis *slackFP = dynamic_cast< CoinWarmStartBasis * >(continuousSolver_->getEmptyWarmStart());
+          continuousSolver_->setWarmStart(slackFP);
+          delete slackFP;
+        }
+        continuousSolver_->resolve();
+        double finalResolveElapsed = CoinWallclockTime() - finalResolveStart;
+        if (messageHandler()->logLevel() >= 1 && finalResolveElapsed > 1.0) {
+          printf("  Post-summary continuousSolver_->resolve() (fathoming path) took %.2fs\n",
+            finalResolveElapsed);
+          fflush(stdout);
+        }
+      }
       if (!continuousSolver_->isProvenOptimal()) {
         continuousSolver_->messageHandler()->setLogLevel(2);
         continuousSolver_->initialSolve();
@@ -6224,7 +6252,52 @@ void CbcModel::branchAndBound(int doStatistics)
        nested restart search - stuck on a stale, worse LP state. Always
        resolve here unconditionally so continuousSolver_ genuinely reflects
        bestSolution_'s fixed bounds. */
-    continuousSolver_->resolve();
+    // Diagnostic timing + fix: unlike checkSolution()'s internal resolve
+    // (which deliberately resets to an all-slack basis first when allSlack
+    // is true), this resolve() used to warm-start from whatever basis
+    // continuousSolver_ currently held. On a large/degenerate original model
+    // that basis can be far from optimal for the newly-fixed bounds, making
+    // this single call take a long time with zero visibility. But if
+    // checkSolution() (called by setBestSolution() above) has just fixed
+    // (almost) every column's bounds, every value is already known -- there
+    // is nothing left to solve for, so grinding through a stale basis only
+    // rediscovers values we already have. Reset to an empty (all-slack) warm
+    // start first in that case, exactly as checkSolution()'s own allSlack
+    // path does, so this converges immediately instead of via many pointless
+    // simplex iterations. Print it whenever it's still non-trivial so a
+    // silent tail after the "Stopped"/"Optimal" summary line is never
+    // mistaken for an external kill with no diagnosable cause.
+    {
+      double finalResolveStart = CoinWallclockTime();
+      // Sanity check: is this actually a warm-started resolve grinding
+      // through many iterations from a stale basis (as hypothesized), or is
+      // the time going somewhere else entirely (e.g. cold factorization)?
+      CoinWarmStartBasis *wsCheck = dynamic_cast< CoinWarmStartBasis * >(continuousSolver_->getWarmStart());
+      int numBasicCheck = -1;
+      if (wsCheck) {
+        numBasicCheck = 0;
+        for (int k = 0; k < wsCheck->getNumStructural(); k++)
+          if (wsCheck->getStructStatus(k) == CoinWarmStartBasis::basic)
+            numBasicCheck++;
+        delete wsCheck;
+      }
+      bool allSlackFP = numberIntegers_ * 4 > continuousSolver_->getNumCols() || continuousSolver_->getNumCols() < 10000;
+      if (allSlackFP) {
+        CoinWarmStartBasis *slackFP = dynamic_cast< CoinWarmStartBasis * >(continuousSolver_->getEmptyWarmStart());
+        continuousSolver_->setWarmStart(slackFP);
+        delete slackFP;
+      }
+      int iterBefore = continuousSolver_->getIterationCount();
+      continuousSolver_->resolve();
+      int iterAfter = continuousSolver_->getIterationCount();
+      double finalResolveElapsed = CoinWallclockTime() - finalResolveStart;
+      if (messageHandler()->logLevel() >= 1 && finalResolveElapsed > 1.0) {
+        printf("  Post-summary continuousSolver_->resolve() took %.2fs (warmBasic=%d/%d, iters %d->%d, resetToSlack=%s)\n",
+          finalResolveElapsed, numBasicCheck, continuousSolver_->getNumCols(), iterBefore, iterAfter,
+          allSlackFP ? "yes" : "no");
+        fflush(stdout);
+      }
+    }
     // Deal with funny variables
     if ((moreSpecialOptions2_ & 32768) != 0)
       cleanBounds(continuousSolver_, nullptr);
@@ -11325,6 +11398,22 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
           probing->setMaxSeconds(rem > 0.0 ? rem : 0.0);
         }
       }
+      // Wire CBC's remaining time into CglZeroHalf.  Cgl012Cut (the actual
+      // separation engine behind CglZeroHalf) already polls a wall-clock
+      // deadline throughout its hot loops (checkTimeLimit()), but that
+      // deadline is only armed when CglCutGenerator::maxSeconds_ is set to
+      // a positive value - without this wiring it stays at its default of
+      // 0.0, so the built-in polling never actually triggers and a single
+      // call can run unbounded on large/degenerate models (observed as a
+      // 900+ second hang on instance z26).
+      {
+        CglZeroHalf *zeroHalf = dynamic_cast< CglZeroHalf * >(generator_[i]->generator());
+        if (zeroHalf) {
+          const double maxSec = getMaximumSeconds();
+          const double rem = (maxSec < 5.0e7) ? (maxSec - getCurrentSeconds()) : 0.0;
+          zeroHalf->setMaxSeconds(rem > 0.0 ? rem : 0.0);
+        }
+      }
 #ifdef CHECK_KNOWN_SOLUTION
       // Diagnostic: snapshot ALL general-integer columns' bounds immediately
       // before this generator's generateCuts() call, so we can catch ANY
@@ -11346,6 +11435,27 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
         }
       }
 #endif
+      // Diagnostic timing: a single generator call is only bounded by the
+      // remaining time budget for CglBKClique/CglProbing (wired above) --
+      // every other generator has no internal time check at all, so one
+      // slow call (large/degenerate model) can silently run well past the
+      // global time limit before the *next* generator's maximumSecondsReached()
+      // check even gets a chance to fire. Bracket every call so a long tail
+      // is attributed to a specific generator/pass instead of looking like
+      // a mysterious delay between the last logged cut-table row and the
+      // final "Stopped" summary line (or an external watchdog kill with no
+      // diagnosable cause at all, if the call never returns before that).
+      // Print a "starting" marker too (logLevel>=2 only -- this fires on
+      // every call, unlike the >5s "took" summary below) so that if a call
+      // never returns at all (killed by an external watchdog while still
+      // inside generateCuts()), the log still names which generator/pass was
+      // running instead of ending silently at the previous line.
+      if (messageHandler()->logLevel() >= 2) {
+        printf("  Cut generator %s (pass %d) starting...\n",
+          generator_[i]->cutGeneratorName(), currentPassNumber_);
+        fflush(stdout);
+      }
+      double generateCutsStart = CoinWallclockTime();
 #ifndef CBC_LAGRANGEAN_SOLVERS
       bool mustResolve = generator_[i]->generateCuts(theseCuts, fullScan, solver_, node);
 #else
@@ -11357,6 +11467,14 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
           &baseLagrangeanSolver,
           &cleanLagrangeanSolver);
 #endif
+      {
+        const double generateCutsElapsed = CoinWallclockTime() - generateCutsStart;
+        if (messageHandler()->logLevel() >= 1 && generateCutsElapsed > 5.0) {
+          printf("  Cut generator %s (pass %d) took %.2fs\n",
+            generator_[i]->cutGeneratorName(), currentPassNumber_, generateCutsElapsed);
+          fflush(stdout);
+        }
+      }
       numberRowCutsAfter = theseCuts.sizeRowCuts();
 #ifdef CHECK_KNOWN_SOLUTION
       if ((specialOptions_ & 1) != 0 && debugGenIntLoBefore) {

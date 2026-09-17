@@ -3110,12 +3110,20 @@ void CbcSolver::initialize()
   parameters_[CbcParam::KNAPSACKCUTS]->setVal("ifmove");
   parameters_[CbcParam::ZEROHALFCUTS]->setVal("ifmove");
   parameters_[CbcParam::REDSPLITCUTS]->setVal("off");
-  parameters_[CbcParam::REDSPLIT2CUTS]->setVal("off");
-  parameters_[CbcParam::GMICUTS]->setVal("off");
+  // RedSplit2/GMI/LandP are expensive at root but were being left entirely
+  // off by default. Enabled at "root" here now that CbcCutGenerator has a
+  // boundStallAware() gate (see installCutGenerators()/CbcModel::serialCuts())
+  // that, combined with the on-by-default adaptive root cut-generator skip,
+  // throttles them once root progress stalls -- a 2026-09 fixture-replay
+  // sweep (periodic-cuts-bench, see BENCHMARKING-CUT-GENERATORS.md) found
+  // this recovers ~99.9-100% of each generator's root bound-improvement
+  // value at 21-41% less time versus firing every pass.
+  parameters_[CbcParam::REDSPLIT2CUTS]->setVal("root");
+  parameters_[CbcParam::GMICUTS]->setVal("root");
   parameters_[CbcParam::MIRCUTS]->setVal("ifmove");
   parameters_[CbcParam::FLOWCUTS]->setVal("ifmove");
   parameters_[CbcParam::TWOMIRCUTS]->setVal("ifmove");
-  parameters_[CbcParam::LANDPCUTS]->setVal("off");
+  parameters_[CbcParam::LANDPCUTS]->setVal("root");
   parameters_[CbcParam::RESIDCAPCUTS]->setVal("off");
   parameters_[CbcParam::ROUNDING]->setVal("on");
   parameters_[CbcParam::FPUMP]->setVal("on");
@@ -6976,12 +6984,12 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   parameters[CbcParam::KNAPSACKCUTS]->setVal("ifmove");
   parameters[CbcParam::ZEROHALFCUTS]->setVal("ifmove");
   parameters[CbcParam::REDSPLITCUTS]->setVal("off");
-  parameters[CbcParam::REDSPLIT2CUTS]->setVal("off");
-  parameters[CbcParam::GMICUTS]->setVal("off");
+  parameters[CbcParam::REDSPLIT2CUTS]->setVal("root");
+  parameters[CbcParam::GMICUTS]->setVal("root");
   parameters[CbcParam::MIRCUTS]->setVal("ifmove");
   parameters[CbcParam::FLOWCUTS]->setVal("ifmove");
   parameters[CbcParam::TWOMIRCUTS]->setVal("ifmove");
-  parameters[CbcParam::LANDPCUTS]->setVal("off");
+  parameters[CbcParam::LANDPCUTS]->setVal("root");
   parameters[CbcParam::RESIDCAPCUTS]->setVal("off");
   parameters[CbcParam::ROUNDING]->setVal("on");
   parameters[CbcParam::FPUMP]->setVal("on");
@@ -11046,7 +11054,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     assert(parameters[CbcParam::REDSPLITCUTS]->modeVal() == redsplitMode);
 
     CglRedSplit2 redsplit2Gen;
-    redsplit2Mode_ = CbcParameters::CGOff;
+    redsplit2Mode_ = CbcParameters::CGRoot;
     int &redsplit2Mode = redsplit2Mode_;
     assert(parameters[CbcParam::REDSPLIT2CUTS]->modeVal() == redsplit2Mode);
 
@@ -11114,10 +11122,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     assert(parameters[CbcParam::TWOMIRCUTS]->modeVal() == twomirMode);
 #ifndef DEBUG_MALLOC
     CglLandP landpGen;
-    landpGen.parameter().maximumCutLength = 2000;
+    landpGen.parameter().maximumCutLength = 200;
     landpGen.validator().setMinViolation(1.0e-4);
 #endif
-    landpMode_ = CbcParameters::CGOff;
+    landpMode_ = CbcParameters::CGRoot;
     int &landpMode = landpMode_;
     assert(parameters[CbcParam::LANDPCUTS]->modeVal() == landpMode);
     CglResidualCapacity residualCapacityGen;

@@ -11676,6 +11676,15 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
     numberColumnCutsAfter = theseCuts.sizeColCuts();
     if (generate && !node && !parentModel_ && cutAdaptiveSkip) {
       bool producedCuts = (numberRowCutsAfter > numberRowCutsBefore) || (numberColumnCutsAfter > numberColumnCutsBefore);
+      // For generators marked boundStallAware(), a pass where root progress
+      // has been negligible (ineffectualCuts(), set just before this loop
+      // from the last two passes' objectives -- see solveWithCuts()) still
+      // counts as a miss even if the generator DID produce cuts: those cuts
+      // are not moving the bound, so letting them keep resetting the
+      // adaptive-skip backoff would defeat its purpose for exactly the
+      // expensive/marginal generators it exists to throttle.
+      if (producedCuts && generator_[i]->boundStallAware() && generator_[i]->ineffectualCuts())
+        producedCuts = false;
       if (getenv("CBC_CUT_ADAPTIVE_SKIP_DEBUG"))
         fprintf(stderr, "[adaptive-skip] pass=%d generator=%s produced=%d misses-before=%d\n",
           currentPassNumber_, generator_[i]->cutGeneratorName(), (int)producedCuts,

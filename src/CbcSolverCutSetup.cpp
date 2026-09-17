@@ -84,6 +84,33 @@ void installCutGenerators(
   laTranslate[CbcParameters::CGCleanInstead] = 11;
   laTranslate[CbcParameters::CGBothInstead] = 12;
   int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
+  // See CbcSolver.cpp's REDSPLIT2CUTS/GMICUTS/LANDPCUTS default ("root"): a
+  // 2026-09 sanity-suite sweep found these only pay for themselves in
+  // aggregate within a "sweet spot" instance-size window. Below it, the
+  // adaptive root cut-generator skip's own size floor
+  // (ADAPTIVE_SKIP_MIN_COLS, default 500 -- see CbcModel::serialCuts())
+  // never engages, so the generator just burns time every pass with no
+  // throttling; above it, even a single call can be expensive enough to
+  // blow the node/time budget before enough misses accumulate for backoff
+  // to kick in. This only narrows the "root" default itself -- a user who
+  // wants a generator regardless of size can still force it on explicitly
+  // (e.g. -redsplit2Cuts=on/ifmove).
+  const int numberColumnsForGate = babModel.getNumCols();
+  // Window bounds are env-var overridable (no rebuild) purely to speed up
+  // experimentation/tuning sweeps; the defaults below (500/50000) are the
+  // ones actually shipped.
+  int gateMinCols = 500;
+  int gateMaxCols = 50000;
+  if (const char *s = getenv("CBC_CUT_ROOT_GATE_MIN_COLS"))
+    gateMinCols = atoi(s);
+  if (const char *s = getenv("CBC_CUT_ROOT_GATE_MAX_COLS"))
+    gateMaxCols = atoi(s);
+  auto gateRootDefault = [numberColumnsForGate, gateMinCols, gateMaxCols](int mode) {
+    if (mode == CbcParameters::CGRoot
+      && (numberColumnsForGate < gateMinCols || numberColumnsForGate >= gateMaxCols))
+      return static_cast< int >(CbcParameters::CGOff);
+    return mode;
+  };
 
   // --- Probing ---
   int probingMode = parameters[CbcParam::PROBINGCUTS]->modeVal();
@@ -261,7 +288,7 @@ void installCutGenerators(
   }
 
   // --- RedSplit2 ---
-  int redsplit2Mode = parameters[CbcParam::REDSPLIT2CUTS]->modeVal();
+  int redsplit2Mode = gateRootDefault(parameters[CbcParam::REDSPLIT2CUTS]->modeVal());
   if (redsplit2Mode && !complicatedInteger) {
     CglRedSplit2 redsplit2Gen;
     int maxLength = 256;
@@ -280,11 +307,15 @@ void installCutGenerators(
         ->setMaximumTries(maximumSlowPasses);
       babModel.cutGenerator(numberGenerators)->setHowOften(5);
     }
+    // Expensive generator: only counts as "productive" for the adaptive
+    // root skip (CbcModel::serialCuts()) when it actually moves the bound,
+    // not just when it emits some (possibly near-useless) cuts.
+    babModel.cutGenerator(numberGenerators)->setBoundStallAware(true);
     switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
   }
 
   // --- GMI ---
-  int GMIMode = parameters[CbcParam::GMICUTS]->modeVal();
+  int GMIMode = gateRootDefault(parameters[CbcParam::GMICUTS]->modeVal());
   if (GMIMode && !complicatedInteger) {
     CglGMI GMIGen;
     if (GMIMode > CbcParameters::CGOnGlobal) {
@@ -301,6 +332,9 @@ void installCutGenerators(
       babModel.cutGenerator(numberGenerators)->setHowOften(1);
     }
     accuracyFlag[numberGenerators] = 5;
+    // See RedSplit2 comment above: only count as productive when the bound
+    // actually moves, not merely when some cut is produced.
+    babModel.cutGenerator(numberGenerators)->setBoundStallAware(true);
     switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN * lagrangeanFlag);
   }
 
@@ -333,6 +367,10 @@ void installCutGenerators(
     oddWheelGen.setExtendingMethod(oddWExtMethod);
     babModel.addCutGenerator(&oddWheelGen, translate[oddWheelMode], "OddWheel");
     accuracyFlag[numberGenerators] = 0;
+    // Also expensive at root on dense/large conflict graphs; only count as
+    // productive for the adaptive root skip when it actually moves the
+    // bound (see RedSplit2/GMI/LandP comment above).
+    babModel.cutGenerator(numberGenerators)->setBoundStallAware(true);
     switches[numberGenerators++] = 0;
   }
 
@@ -430,10 +468,13 @@ void installCutGenerators(
 
   // --- LandP ---
 #ifndef DEBUG_MALLOC
-  int landpMode = parameters[CbcParam::LANDPCUTS]->modeVal();
+  int landpMode = gateRootDefault(parameters[CbcParam::LANDPCUTS]->modeVal());
   if (landpMode) {
     CglLandP landpGen;
-    landpGen.parameter().maximumCutLength = 2000;
+    // Lowered from 2000: a 2026-09 fixture-replay sweep found capping cut
+    // length here cuts LandP's worst-case root time by ~50x for only
+    // ~1-5% of its bound value (see BENCHMARKING-CUT-GENERATORS.md).
+    landpGen.parameter().maximumCutLength = 200;
     landpGen.validator().setMinViolation(1.0e-4);
     if (landpMode == CbcParameters::CGOnGlobal) {
       landpGen.parameter().maximumCutLength = 2000000;
@@ -446,6 +487,9 @@ void installCutGenerators(
         ->setMaximumTries(maximumSlowPasses);
       babModel.cutGenerator(numberGenerators)->setHowOften(10);
     }
+    // See RedSplit2 comment above: only count as productive when the bound
+    // actually moves, not merely when some cut is produced.
+    babModel.cutGenerator(numberGenerators)->setBoundStallAware(true);
     switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
   }
 #endif
@@ -483,6 +527,10 @@ void installCutGenerators(
       storedZeroHalf->setRowMaxFractionalCount(
         parameters[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->intVal());
     babModel.cutGenerator(numberGenerators)->setNeedsRefresh(true);
+    // Also expensive on dense graphs at root; only count as productive for
+    // the adaptive root skip when it actually moves the bound (see
+    // RedSplit2/GMI/LandP comment above).
+    babModel.cutGenerator(numberGenerators)->setBoundStallAware(true);
     switches[numberGenerators++] = 2;
   }
 

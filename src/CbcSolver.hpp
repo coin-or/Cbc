@@ -191,9 +191,9 @@ protected:
   /// Reduce-and-split cuts strategy
   int redsplitMode_ = CbcParameters::CGOff;
   /// Reduce-and-split (v2) cuts strategy
-  int redsplit2Mode_ = CbcParameters::CGOff;
+  int redsplit2Mode_ = CbcParameters::CGRoot;
   /// Gomory mixed-integer (alternative implementation) cuts strategy
-  int GMIMode_ = CbcParameters::CGOff;
+  int GMIMode_ = CbcParameters::CGRoot;
   /// Clique cuts strategy
   int cliqueMode_ = CbcParameters::CGIfMove;
   /// Legacy (pre-conflict-graph) clique cuts strategy
@@ -209,7 +209,7 @@ protected:
   /// Two-step MIR (twomir) cuts strategy
   int twomirMode_ = CbcParameters::CGIfMove;
   /// Lift-and-project cuts strategy
-  int landpMode_ = CbcParameters::CGOff;
+  int landpMode_ = CbcParameters::CGRoot;
   /// Residual capacity cuts strategy
   int residualCapacityMode_ = CbcParameters::CGOff;
   /// Zero-half cuts strategy

@@ -158,7 +158,8 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
                << "clqstr_extended,clqstr_dominated,clqstr_time,"
                << "coefstr_changed,coefstr_rows,coefstr_time,"
                << "coefstr_cliquecover_rows,coefstr_cliquecover_reduction,"
-               << "rowred_fixed,rowred_duplicate,rowred_parallel,rowred_time";
+               << "rowred_fixed,rowred_duplicate,rowred_parallel,rowred_time,"
+               << "postprocess_time";
   for (const std::string &gn : finalGenerators)
     headerStream << ',' << gn << "_cuts," << gn << "_time";
   headerStream << ",runtime_options";
@@ -198,7 +199,12 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
              << ',' << rowred_parallel
              // Six decimals for the same reason as the two timings above: this
              // step is sub-millisecond by design.
-             << ',' << formatDouble(rowred_time, 6, std::ios_base::fixed);
+             << ',' << formatDouble(rowred_time, 6, std::ios_base::fixed)
+             // Two decimals here (not six): unlike the pre-root-LP steps
+             // above, postprocessing is a full LP resolve/repair pass on
+             // potentially the entire original model and can range from
+             // sub-millisecond to many minutes.
+             << ',' << formatDouble(postprocess_time, 2, std::ios_base::fixed);
 
   // Output generator cuts/time aligned to the canonical set; 0/0.0 for any
   // generator not active in this particular run.

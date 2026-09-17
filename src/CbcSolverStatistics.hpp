@@ -121,6 +121,16 @@ public:
   /** Row reduction time (before LP) */
   double rowred_time = 0.0;
 
+  /** Time (wallclock seconds) spent in CbcSolver::postprocess() restoring
+   * the best solution from preprocessed space back to the original model
+   * (CglPreProcess::postProcess() plus any repair pass). On very large or
+   * ill-conditioned models this phase can itself take minutes -- see the
+   * "Warning: postprocessing took Xs" message emitted alongside it in the
+   * solve log -- so it is tracked here to make that cost visible/queryable
+   * across a whole benchmark run, not just discoverable instance-by-instance
+   * from individual logs. */
+  double postprocess_time = 0.0;
+
   /** Number of cut generators */
   int number_generators = 0;
 

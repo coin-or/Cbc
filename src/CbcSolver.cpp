@@ -4956,6 +4956,7 @@ int CbcSolver::postprocess(
         }
         process.postProcess(*babModel_->solver());
         double ppElapsed = CoinWallclockTime() - ppStart;
+        statistics.postprocess_time = ppElapsed;
         if (ll >= 1) {
           fprintf(ppfp, "%s Postprocessing complete \xe2\x80\x94 Time: %.3gs\n",
             u8 ? "\xe2\x9c\x94" : "OK", ppElapsed);

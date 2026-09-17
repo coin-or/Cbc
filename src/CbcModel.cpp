@@ -6192,7 +6192,21 @@ void CbcModel::branchAndBound(int doStatistics)
       atSolutionSolver_ = nullptr;
     }
     // was not a good idea to set max time on solvers anyway
-    setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1);
+    // Diagnostic timing: this final setBestSolution() call runs *after* the
+    // CBC_END_GOOD/CBC_END message just above has already printed the
+    // "Stopped"/"Optimal" summary line, but can itself still run for a long
+    // time (checkSolution()'s LP resolve(s) on large/degenerate models).
+    // Bracket it so a silent tail after the summary line is never invisible.
+    {
+      double setBestStart = CoinWallclockTime();
+      setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1);
+      double setBestElapsed = CoinWallclockTime() - setBestStart;
+      if (messageHandler()->logLevel() >= 1 && setBestElapsed > 1.0) {
+        printf("  Post-summary setBestSolution() (final solution re-check) took %.2fs\n",
+          setBestElapsed);
+        fflush(stdout);
+      }
+    }
     currentNode_ = nullptr;
     /* setBestSolution() -> checkSolution() fixes the integer variables to
        their solution values in continuousSolver_ and, when its own internal
@@ -14737,7 +14751,23 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
     // save basis
     CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver_->getWarmStart());
     assert(basis != nullptr);
+    // Diagnostic timing: checkSolution() below re-fixes the integer
+    // variables and resolves the LP to double-check the final solution.
+    // This runs *after* the CBC_END_GOOD/CBC_END "Stopped"/"Optimal" summary
+    // message has already been printed (that message is emitted just above,
+    // in the caller, via a message hook -- it does not mean branchAndBound()
+    // is done), and on large/degenerate models this resolve can itself take
+    // a very long time with no other visibility. Print it whenever it's
+    // non-trivial so a silent multi-hundred-second tail after "Stopped"
+    // doesn't look identical to an external watchdog kill with no cause.
+    double checkSol1Start = CoinWallclockTime();
     objectiveValue = checkSolution(cutoff, solution, fixVariables, objectiveValue);
+    double checkSol1Elapsed = CoinWallclockTime() - checkSol1Start;
+    if (messageHandler()->logLevel() >= 1 && checkSol1Elapsed > 1.0) {
+      printf("  setBestSolution: first checkSolution() resolve took %.2fs\n",
+        checkSol1Elapsed);
+      fflush(stdout);
+    }
     if (cutoff > 1.0e40 && objectiveValue < 1.0e10)
       saveObjectiveValue = objectiveValue; // take anyway
     if (saveObjectiveValue + 1.0e-3 + 1.0e-7 * fabs(saveObjectiveValue) < objectiveValue) {
@@ -14753,7 +14783,14 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
       int numberColumns = solver_->getNumCols();
       double *solution2 = CoinCopyOfArray(solutionIn, numberColumns);
       double objectiveValue2 = saveObjectiveValue;
+      double checkSol2Start = CoinWallclockTime();
       objectiveValue2 = checkSolution(cutoff, solution2, -1, objectiveValue2);
+      double checkSol2Elapsed = CoinWallclockTime() - checkSol2Start;
+      if (messageHandler()->logLevel() >= 1 && checkSol2Elapsed > 1.0) {
+        printf("  setBestSolution: second (relaxed) checkSolution() resolve took %.2fs\n",
+          checkSol2Elapsed);
+        fflush(stdout);
+      }
 #if CBC_FEASIBILITY_INVESTIGATE
       printf("Relaxed second try had objective of %.16g\n", objectiveValue2);
 #endif

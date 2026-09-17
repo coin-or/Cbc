@@ -103,6 +103,7 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	row-activity-test$(EXEEXT) bkclique-bench$(EXEEXT) \
 	clqext-bench$(EXEEXT) zerohalf-bench$(EXEEXT) \
 	probing-bench$(EXEEXT) gomory-bench$(EXEEXT) \
+	lagomory-bench$(EXEEXT) \
 	twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
 	impclique-explore$(EXEEXT) impclique-bench$(EXEEXT) \
 	impclique-vs-clique-bench$(EXEEXT) \
@@ -154,6 +155,9 @@ am_impclique_vs_clique_bench_OBJECTS =  \
 impclique_vs_clique_bench_OBJECTS =  \
 	$(am_impclique_vs_clique_bench_OBJECTS)
 impclique_vs_clique_bench_DEPENDENCIES = ../src/libCbc.la
+am_lagomory_bench_OBJECTS = lagomory-bench.$(OBJEXT)
+lagomory_bench_OBJECTS = $(am_lagomory_bench_OBJECTS)
+lagomory_bench_DEPENDENCIES = ../src/libCbc.la
 am_lazy_constraint_test_OBJECTS = lazy-constraint-test.$(OBJEXT)
 lazy_constraint_test_OBJECTS = $(am_lazy_constraint_test_OBJECTS)
 lazy_constraint_test_DEPENDENCIES = ../src/libCbc.la
@@ -215,6 +219,7 @@ am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
 	./$(DEPDIR)/impclique-explore.Po \
 	./$(DEPDIR)/impclique-real-bench.Po \
 	./$(DEPDIR)/impclique-vs-clique-bench.Po \
+	./$(DEPDIR)/lagomory-bench.Po \
 	./$(DEPDIR)/lazy-constraint-test.Po \
 	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po \
 	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mip-root-replay.Po \
@@ -246,6 +251,7 @@ SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
 	$(gomory_bench_SOURCES) $(impclique_bench_SOURCES) \
 	$(impclique_explore_SOURCES) $(impclique_real_bench_SOURCES) \
 	$(impclique_vs_clique_bench_SOURCES) \
+	$(lagomory_bench_SOURCES) \
 	$(lazy_constraint_test_SOURCES) $(lp_relaxation_test_SOURCES) \
 	$(mip_c_solve_SOURCES) $(mip_debug_cuts_SOURCES) \
 	$(mip_root_replay_SOURCES) $(mipstart_test_SOURCES) \
@@ -906,6 +912,55 @@ gomory_bench_SOURCES = gomory-bench.cpp
 gomory_bench_LDADD = ../src/libCbc.la
 
 ########################################################################
+#      Lagrangean Gomory replay benchmark (measurement tool)            #
+########################################################################
+#
+# lagomory-bench replays one Lagrangean Gomory separation call captured by
+# CglLagomoryFixtureDump.hpp. It exists because gomory-bench cannot do this job
+# even though it has a --orig-solver flag: that flag passes the *fixture solver
+# itself* to passInOriginalSolver, so originalSolver_ and si are the same LP,
+# numberOriginalRows equals si.getNumRows(), and there is nothing to dualize.
+# Measured over the 330 gomoryFixtures, --gomory-type=11 and =12 return 0 cuts in
+# ~4 us because the whenToDo==1 gate is false, and =21/=22 return statistics
+# byte-identical to plain =0. That is lagomory not running, not lagomory being
+# cheap.
+#
+# The cause is in the capture, not the bench: the Cbc-side Gomory dump fires at
+# currentPassNumber_ == 1, before any generator has contributed a row, and all
+# 330 .meta files confirm it -- rows equals infoFormulationRows in every one. A
+# lagomory call is only defined once the LP already holds cut rows.
+#
+# SO THE FIXTURE IS A PAIR OF LPs, AND BOTH COME FROM DISK. <stem>.mps.gz is the
+# augmented LP whose trailing rows are the cuts to dualize; <stem>.orig.mps.gz is
+# the original formulation the cuts will be rows of. The second cannot be
+# recovered by deleting the first's cut rows, because the Lagrangean pass copies
+# si's *column* bounds into originalSolver_ on every call and never its *row*
+# bounds, so the two drift apart -- the .meta's rowBoundDrift counts the
+# formulation rows where they already disagree, and a nonzero value is proof that
+# the shortcut would replay a different LP.
+#
+# --plain is the baseline any Lagrangean variant has to beat, and the only
+# like-for-like one available: same augmented LP, same basis, same knobs, with the
+# original solver simply not passed in.
+#
+# piMaxDev/solMaxDev are fidelity checks, never injections. The replay reaches its
+# own duals by reading the .bas and resolving, as Cbc does; pi over the cut rows
+# is exactly the vector that perturbs the objective, so a fixture whose replayed
+# duals disagree with the captured ones is separating a different problem and must
+# be filtered out rather than averaged in.
+#
+# The basis is the algorithm's input here for the same reason as in gomory-bench,
+# and objImprove outranks cut count for the same reason as in every bench above.
+# Timing is meaningful only serially: the per-stage accumulators behind --profile
+# are file-static in CglGomory.cpp and would be summed across threads.
+#
+# Not part of the regression suite; it is a measurement tool.
+
+lagomory_bench_SOURCES = lagomory-bench.cpp
+
+lagomory_bench_LDADD = ../src/libCbc.la
+
+########################################################################
 #           two-step MIR replay benchmark (measurement tool)            #
 ########################################################################
 #
@@ -1196,6 +1251,10 @@ impclique-vs-clique-bench$(EXEEXT): $(impclique_vs_clique_bench_OBJECTS) $(impcl
 	@rm -f impclique-vs-clique-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(impclique_vs_clique_bench_OBJECTS) $(impclique_vs_clique_bench_LDADD) $(LIBS)
 
+lagomory-bench$(EXEEXT): $(lagomory_bench_OBJECTS) $(lagomory_bench_DEPENDENCIES) $(EXTRA_lagomory_bench_DEPENDENCIES) 
+	@rm -f lagomory-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(lagomory_bench_OBJECTS) $(lagomory_bench_LDADD) $(LIBS)
+
 lazy-constraint-test$(EXEEXT): $(lazy_constraint_test_OBJECTS) $(lazy_constraint_test_DEPENDENCIES) $(EXTRA_lazy_constraint_test_DEPENDENCIES) 
 	@rm -f lazy-constraint-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(lazy_constraint_test_OBJECTS) $(lazy_constraint_test_LDADD) $(LIBS)
@@ -1263,6 +1322,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-explore.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-real-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-vs-clique-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lagomory-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lazy-constraint-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lp-relaxation-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-c-solve.Po@am__quote@ # am--include-marker
@@ -1413,6 +1473,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/impclique-explore.Po
 	-rm -f ./$(DEPDIR)/impclique-real-bench.Po
 	-rm -f ./$(DEPDIR)/impclique-vs-clique-bench.Po
+	-rm -f ./$(DEPDIR)/lagomory-bench.Po
 	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po
@@ -1480,6 +1541,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/impclique-explore.Po
 	-rm -f ./$(DEPDIR)/impclique-real-bench.Po
 	-rm -f ./$(DEPDIR)/impclique-vs-clique-bench.Po
+	-rm -f ./$(DEPDIR)/lagomory-bench.Po
 	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
 	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
 	-rm -f ./$(DEPDIR)/mip-c-solve.Po

@@ -46,6 +46,7 @@ test: cbc_validate_sol$(EXEEXT)
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
 	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test \
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
+	lagomory-bench \
 	twomir-bench mir2-bench impclique-explore impclique-bench impclique-vs-clique-bench \
 	impclique-real-bench mip-root-replay oddwheel-bench
 
@@ -548,6 +549,55 @@ probing_bench_LDADD = ../src/libCbc.la
 gomory_bench_SOURCES = gomory-bench.cpp
 
 gomory_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#      Lagrangean Gomory replay benchmark (measurement tool)            #
+########################################################################
+#
+# lagomory-bench replays one Lagrangean Gomory separation call captured by
+# CglLagomoryFixtureDump.hpp. It exists because gomory-bench cannot do this job
+# even though it has a --orig-solver flag: that flag passes the *fixture solver
+# itself* to passInOriginalSolver, so originalSolver_ and si are the same LP,
+# numberOriginalRows equals si.getNumRows(), and there is nothing to dualize.
+# Measured over the 330 gomoryFixtures, --gomory-type=11 and =12 return 0 cuts in
+# ~4 us because the whenToDo==1 gate is false, and =21/=22 return statistics
+# byte-identical to plain =0. That is lagomory not running, not lagomory being
+# cheap.
+#
+# The cause is in the capture, not the bench: the Cbc-side Gomory dump fires at
+# currentPassNumber_ == 1, before any generator has contributed a row, and all
+# 330 .meta files confirm it -- rows equals infoFormulationRows in every one. A
+# lagomory call is only defined once the LP already holds cut rows.
+#
+# SO THE FIXTURE IS A PAIR OF LPs, AND BOTH COME FROM DISK. <stem>.mps.gz is the
+# augmented LP whose trailing rows are the cuts to dualize; <stem>.orig.mps.gz is
+# the original formulation the cuts will be rows of. The second cannot be
+# recovered by deleting the first's cut rows, because the Lagrangean pass copies
+# si's *column* bounds into originalSolver_ on every call and never its *row*
+# bounds, so the two drift apart -- the .meta's rowBoundDrift counts the
+# formulation rows where they already disagree, and a nonzero value is proof that
+# the shortcut would replay a different LP.
+#
+# --plain is the baseline any Lagrangean variant has to beat, and the only
+# like-for-like one available: same augmented LP, same basis, same knobs, with the
+# original solver simply not passed in.
+#
+# piMaxDev/solMaxDev are fidelity checks, never injections. The replay reaches its
+# own duals by reading the .bas and resolving, as Cbc does; pi over the cut rows
+# is exactly the vector that perturbs the objective, so a fixture whose replayed
+# duals disagree with the captured ones is separating a different problem and must
+# be filtered out rather than averaged in.
+#
+# The basis is the algorithm's input here for the same reason as in gomory-bench,
+# and objImprove outranks cut count for the same reason as in every bench above.
+# Timing is meaningful only serially: the per-stage accumulators behind --profile
+# are file-static in CglGomory.cpp and would be summed across threads.
+#
+# Not part of the regression suite; it is a measurement tool.
+
+lagomory_bench_SOURCES = lagomory-bench.cpp
+
+lagomory_bench_LDADD = ../src/libCbc.la
 
 ########################################################################
 #           two-step MIR replay benchmark (measurement tool)            #

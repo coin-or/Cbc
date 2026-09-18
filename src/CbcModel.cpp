@@ -7976,6 +7976,28 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
         // But copy across maximumTries and switches
         generator_[i]->setMaximumTries(rhs.generator_[i]->maximumTries());
         generator_[i]->setSwitches(rhs.generator_[i]->switches());
+        // Also carry across the adaptive root cut-generator skip's runtime
+        // state (see CbcModel::serialCuts()) -- otherwise a generator that
+        // had already proven itself expensive/ineffectual and backed off
+        // (e.g. boundStallAware() LandP/GMI/RedSplit2) gets a completely
+        // clean slate on a reduced-cost-fixing restart (this rebuilds
+        // generator_[i] from the pristine virginGenerator_[i], which has
+        // never been through a single cut pass) and fires unconditionally
+        // again for several passes before re-accumulating enough misses to
+        // re-enter backoff, silently repeating the exact cost this
+        // mechanism exists to avoid.
+        generator_[i]->setNumberConsecutiveMisses(
+          rhs.generator_[i]->numberConsecutiveMisses());
+        generator_[i]->setRetryPeriod(rhs.generator_[i]->retryPeriod());
+        if (rhs.generator_[i]->nextRetryPass() > 0) {
+          // Old model was already skipping this generator on backoff --
+          // pass numbering restarts at 0 in the new root, so re-express
+          // the remaining skip as a fresh backoff window of the same
+          // width rather than copying the old (now meaningless) absolute
+          // pass number.
+          generator_[i]->setNextRetryPass(
+            std::max(1, generator_[i]->retryPeriod()));
+        }
       }
       virginGenerator_[i] = new CbcCutGenerator(*rhs.virginGenerator_[i]);
     }

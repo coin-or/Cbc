@@ -46,7 +46,7 @@ test: cbc_validate_sol$(EXEEXT)
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
 	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test \
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
-	lagomory-bench \
+	lagomory-bench landp-bench \
 	twomir-bench mir2-bench impclique-explore impclique-bench impclique-vs-clique-bench \
 	impclique-real-bench mip-root-replay oddwheel-bench
 
@@ -822,3 +822,88 @@ mir2_bench_LDADD = ../src/libCbc.la
 oddwheel_bench_SOURCES = oddwheel-bench.cpp
 
 oddwheel_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#        lift-and-project replay benchmark (measurement tool)          #
+########################################################################
+#
+# landp-bench replays one CglLandP call captured from Cbc. Same motive and the
+# same metric hierarchy as the benches above -- objImprove decides, totalViol is
+# the pre-resolve proxy, time is third, cut count is the weakest figure and must
+# never be ranked by.
+#
+# IT REUSES THE GOMORY FIXTURES, and no CbcLandPFixtureDump.hpp exists. That is a
+# claim about LandP's inputs rather than a convenience: CglLandP reads exactly the
+# matrix and bounds, isContinuous() per column (CglLandP.cpp:297), getWarmStart()
+# (:236) and getColSolution()/getRowActivity() (:329-330), all four of which the
+# five-file fixture carries. It caches nothing across calls that a fresh generator
+# does not rebuild, so unlike lagomory-bench -- whose call is only defined once the
+# LP already holds cut rows -- there is no shape requirement beyond "an optimal
+# basis of the model".
+#
+# THE BASIS IS THE ALGORITHM'S INPUT, and more forcefully than for any other bench
+# here. needsOptimalBasis() is true, and LandP does not merely read a tableau row
+# at that basis: it PIVOTS AWAY FROM IT, up to pivotLimit times, choosing each
+# pivot from the current tableau (CglLandPSimplex.cpp:668-720). So a different
+# optimal basis of the same vertex starts a different search and ends at a
+# different cut after a different amount of work -- warmStartIters != 0 makes a
+# run incomparable rather than merely noisy, and the CSV carries the column so a
+# sweep can be filtered on it.
+#
+# IT CLONES THE SOLVER TWICE PER CANDIDATE ROW AND THE FIRST CLONE IS DEAD, which
+# is the headline reason this bench exists. CglLandP.cpp:721 does
+# `ncSi = t_si->clone(); landpSi.setSi(ncSi)`, and optimize() opens with
+# `delete si_; si_ = cached.solver_->clone()` (CglLandPSimplex.cpp:645-646) without
+# having read si_ in between -- setSi only stores the pointer
+# (CglLandPSimplex.hpp:78-101). So every candidate pays two full
+# OsiClpSolverInterface deep copies where one is used, and the
+# setDblParam(OsiDualObjectiveLimit) and setLogLevel(0) applied at :723-724 never
+# reach the solver that actually pivots. Removing the first clone is not a one-line
+# deletion: it also keeps optimize()'s `delete si_` from destroying the caller's
+# &si, which the CglLandPSimplex constructor stores.
+#
+# A RANGE ROW MAKES LandP SWITCH ITSELF OFF FOR THE REST OF THE SOLVE, independently
+# of Cbc's kill switch, and the bench reports it exactly rather than inferring it.
+# On any row with -1e50 < lower < upper < 1e50, :599-668 clones the solver and
+# appends one slack column per range row, and :880 then negates
+# params_.maximumCutLength, which the guard at :552 turns into an immediate return
+# on every later call. rangeDisabled is read back from
+# parameter().maximumCutLength < 0 after the call; rangeRows counts the rows by the
+# generator's own rule. Note the OTHER range-row switch-off, at :548, is dead --
+# its condition is `if (numberRanges && false)`.
+#
+# TWO CONTROL FLAGS, giving a three-point decomposition no other bench here offers:
+#   --away=0.5           the per-call floor. away gates candidate selection at
+#                        :918-931, so 0.5 admits almost nothing and what remains
+#                        timed is cached_.getData() including its own solver clone
+#                        (:355), the CglLandPSimplex constructor and the candidate
+#                        sort. CHECK rowCuts_n AND benchCandidates BEFORE BELIEVING
+#                        IT: the test is strict, so a basic integer sitting at
+#                        exactly 0.5 still passes, and a half-integral LP admits
+#                        nearly everything.
+#   --pivot-limit=0      the no-pivoting path: generateMig() per candidate, no
+#                        clones, no cut-improving simplex. time(default) - time(0)
+#                        prices the whole L&P search including both per-candidate
+#                        clones. THE CUTS DIFFER at 0 (they are plain MIG cuts), so
+#                        this is a timing control only, never an exactness
+#                        baseline; the bench says so on stderr when it is used.
+#
+# ITS DEFAULTS ARE CBC'S ROOT CALL, not CglLandP's constructor defaults, which
+# differ on two knobs: CbcSolverCutSetup.cpp:431-450 sets maximumCutLength = 2000
+# (library default 10000) and validator().setMinViolation(1e-4) (library default 0,
+# i.e. accept any violation). --self-test pins that the two still differ, so the
+# claim cannot go stale silently. Unlike gomory-bench, --pass=N is COSMETIC here:
+# LandP reads info.pass only for a log message (:558) and info.inTree is the real
+# mode switch (:562-566 lowers pivotLimit to pivotLimitInTree).
+#
+# The validator's rejection counters are reported per code because they say WHY
+# pivoting produced nothing, which no other column does -- but they are a
+# diagnostic, not a census: CglLandPValidator.cpp:56-57 returns SmallViolation
+# without incrementing the counter, so rejSmallViol undercounts and no acceptance
+# rate can be computed from these.
+#
+# Not part of the regression suite; it is a measurement tool.
+
+landp_bench_SOURCES = landp-bench.cpp
+
+landp_bench_LDADD = ../src/libCbc.la

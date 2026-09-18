@@ -11491,7 +11491,7 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
 #endif
       {
         const double generateCutsElapsed = CoinWallclockTime() - generateCutsStart;
-        if (messageHandler()->logLevel() >= 1 && generateCutsElapsed > 5.0) {
+        if (messageHandler()->logLevel() >= 2 && generateCutsElapsed > 5.0) {
           printf("  Cut generator %s (pass %d) took %.2fs\n",
             generator_[i]->cutGeneratorName(), currentPassNumber_, generateCutsElapsed);
           fflush(stdout);

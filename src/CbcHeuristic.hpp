@@ -116,6 +116,90 @@ public:
   /// Classification: constructive vs improvement heuristic
   virtual HeuristicCategory category() const { return HeuristicCategory::CONSTRUCTIVE; }
 
+  /** Orchestration order used by CbcRootHeuristicSchedule (and any other
+      scheduler that wants it) to decide, among heuristics eligible to run
+      at the same moment, which ones to try first. Lower runs first; ties
+      keep insertion order (stable sort). Purely a hint used by whichever
+      scheduler groups multiple heuristics together -- it has no effect on
+      when a heuristic runs on its own (see rootHooks()/shouldHeurRun()). */
+  inline void setOrder(int value) { order_ = value; }
+  inline int order() const { return order_; }
+
+  /** Minimum number of incumbent solutions CBC must already have before
+      this heuristic is allowed to start. 0 (the default for constructive
+      heuristics, e.g. FeasibilityPump/Diving/FeasibilityJump) means "no
+      incumbent needed yet". Improvement heuristics that require at least
+      one/two solutions to build a neighbourhood (RINS/VND: 1, Combine2: 2)
+      should set this explicitly; category() supplies a sensible default
+      (see effectiveMinSolutionsToStart()) when it is left unset. */
+  inline void setMinSolutionsToStart(int value) { minSolutionsToStart_ = value; }
+  inline int minSolutionsToStart() const { return minSolutionsToStart_; }
+
+  /** Maximum number of incumbent solutions CBC may already have for this
+      heuristic to still be worth starting. -1 (default) means unlimited.
+      Set to 0 for heuristics that should only be tried while no feasible
+      solution has been found at all (e.g. an expensive constructive
+      heuristic that stops being useful once cheaper ones already
+      succeeded). */
+  inline void setMaxSolutionsToStart(int value) { maxSolutionsToStart_ = value; }
+  inline int maxSolutionsToStart() const { return maxSolutionsToStart_; }
+
+  /** category()-derived default for minSolutionsToStart() when the user has
+      not explicitly overridden it (minSolutionsToStart_ == -1 sentinel). */
+  inline int effectiveMinSolutionsToStart() const
+  {
+    if (minSolutionsToStart_ >= 0)
+      return minSolutionsToStart_;
+    switch (category()) {
+    case HeuristicCategory::IMPROVEMENT:
+      return 1;
+    case HeuristicCategory::IMPROVEMENT_2:
+      return 2;
+    case HeuristicCategory::CONSTRUCTIVE:
+    default:
+      return 0;
+    }
+  }
+
+  /** Whether, given that CBC currently has numberSolutions incumbent(s),
+      this heuristic is allowed to start at all (independent of *where* --
+      see runsAtRootHook()). Centralises the
+      minSolutionsToStart()/maxSolutionsToStart() gate so schedulers don't
+      each reimplement it. */
+  inline bool solutionCountAllowsStart(int numberSolutions) const
+  {
+    if (numberSolutions < effectiveMinSolutionsToStart())
+      return false;
+    if (maxSolutionsToStart_ >= 0 && numberSolutions > maxSolutionsToStart_)
+      return false;
+    return true;
+  }
+
+  /** Root-node "hook" moments (see CbcRootHeuristicSchedule) at which this
+      heuristic is allowed to run, encoded as a string of single-letter
+      codes:
+        l - first LP solution (before pre-processing)
+        L - pre-processed LP solution (default; matches historical
+            behaviour of "root heuristics before cuts")
+        c - an intermediate round of cut generation
+        C - after cut generation is finished at the root
+        P - after FeasibilityPump, seeded with its least-fractional
+            attempt (currently implemented directly inside
+            CbcHeuristicFPump's failure-recovery fallback -- see
+            CbcHeuristicFPump::setFeasibilityJumpFallback() -- rather than
+            through this generic hook, since it needs FPump's internal
+            per-pass tracking; the code is reserved here for future use by
+            a scheduler-level equivalent)
+      Default is "LC", i.e. runs both before and after root cuts, which is
+      what every root heuristic has always done. */
+  inline void setRootHooks(const char *hooks) { rootHooks_ = hooks ? hooks : ""; }
+  inline void setRootHooks(const std::string &hooks) { rootHooks_ = hooks; }
+  inline const std::string &rootHooks() const { return rootHooks_; }
+  inline bool runsAtRootHook(char hook) const
+  {
+    return rootHooks_.find(hook) != std::string::npos;
+  }
+
   /// Assignment operator
   CbcHeuristic &operator=(const CbcHeuristic &rhs);
 
@@ -395,6 +479,15 @@ protected:
   CoinThreadRandom randomNumberGenerator_;
   /// Name for printing
   std::string heuristicName_;
+
+  /// See setOrder()
+  int order_;
+  /// See setMinSolutionsToStart(); -1 sentinel means "use category() default"
+  int minSolutionsToStart_;
+  /// See setMaxSolutionsToStart(); -1 means unlimited
+  int maxSolutionsToStart_;
+  /// See setRootHooks()
+  std::string rootHooks_;
 
   /// How often to do (code can change)
   mutable int howOften_;

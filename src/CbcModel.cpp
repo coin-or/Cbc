@@ -46,6 +46,8 @@ inline void set_omp_threads(int) {}
 #endif
 
 #include <string>
+#include <algorithm>
+#include <vector>
 // #define CBC_DEBUG 1
 // #define CHECK_CUT_COUNTS
 // #define CHECK_NODE
@@ -10652,16 +10654,28 @@ void CbcModel::doRootHeuristicsAfterCuts(bool feasible, CbcNode *node,
         CbcRootHeuristicSchedule schedule(*this);
         schedule.setMaxSolutionsPhase1(1);
         schedule.setNumThreads(numberThreads_);
-        int nFound = schedule.run(true);
+        int nFound = schedule.run('C');
         if (nFound > 0)
           found = 0;
         // Add conflict cuts discovered during diving to the LP
         addDiveConflictCuts(schedule);
       } else {
       int whereFrom = node ? 3 : 2;
-      for (int i = 0; i < numberHeuristics_; i++) {
+      // Order+hook filtering only applies at the true root (node == nullptr,
+      // rootHooks() 'C' == after root cut generation); tree-node heuristic
+      // calls (node != nullptr) are unaffected, exactly as before.
+      std::vector< int > heurOrder(numberHeuristics_);
+      for (int k = 0; k < numberHeuristics_; k++)
+        heurOrder[k] = k;
+      if (!node)
+        std::stable_sort(heurOrder.begin(), heurOrder.end(),
+          [this](int a, int b) { return heuristic_[a]->order() < heuristic_[b]->order(); });
+      for (int k = 0; k < numberHeuristics_; k++) {
+        int i = heurOrder[k];
         // skip if can't run here
         if (!heuristic_[i]->shouldHeurRun(whereFrom))
+          continue;
+        if (!node && !heuristic_[i]->runsAtRootHook('C'))
           continue;
         // see if heuristic will do anything
         double saveValue = heuristicValue;
@@ -17617,7 +17631,7 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
       schedule.addDefaultDivingConfigs();
       schedule.setMaxSolutionsPhase1(1);
       schedule.setNumThreads(numberThreads_);
-      schedule.run();
+      schedule.run('L');
       // Add conflict cuts discovered during diving to the LP
       addDiveConflictCuts(schedule);
       delete[] newSolution;
@@ -17724,9 +17738,23 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
         } else {
 #endif
           int whereFrom = 0;
-          for (i = 0; i < numberHeuristics_; i++) {
+          // Iterate heuristics in order() (ties keep registration order via
+          // a stable sort), restricted to those configured to run at this
+          // root moment (rootHooks() 'L' == pre-processed LP solution,
+          // before any cuts). Every built-in heuristic defaults to
+          // order()==0 and rootHooks()=="LC", so this is a no-op against
+          // historical behaviour unless a heuristic explicitly opts out.
+          std::vector< int > heurOrder(numberHeuristics_);
+          for (int k = 0; k < numberHeuristics_; k++)
+            heurOrder[k] = k;
+          std::stable_sort(heurOrder.begin(), heurOrder.end(),
+            [this](int a, int b) { return heuristic_[a]->order() < heuristic_[b]->order(); });
+          for (int k = 0; k < numberHeuristics_; k++) {
+            i = heurOrder[k];
             // skip if can't run here
             if (!heuristic_[i]->shouldHeurRun(whereFrom))
+              continue;
+            if (!heuristic_[i]->runsAtRootHook('L'))
               continue;
             if (lastSolutionCount > 0 && (heuristic_[i]->switches() & 16) == 0)
               continue; // no point

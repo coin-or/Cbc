@@ -101,6 +101,10 @@ CbcHeuristic::CbcHeuristic()
   , feasibilityPumpOptions_(-1)
   , fractionSmall_(1.0)
   , heuristicName_("Unknown")
+  , order_(0)
+  , minSolutionsToStart_(-1)
+  , maxSolutionsToStart_(-1)
+  , rootHooks_("LC")
   , howOften_(1)
   , decayFactor_(0.0)
   , switches_(0)
@@ -129,6 +133,10 @@ CbcHeuristic::CbcHeuristic(CbcModel &model)
   , feasibilityPumpOptions_(-1)
   , fractionSmall_(1.0)
   , heuristicName_("Unknown")
+  , order_(0)
+  , minSolutionsToStart_(-1)
+  , maxSolutionsToStart_(-1)
+  , rootHooks_("LC")
   , howOften_(1)
   , decayFactor_(0.0)
   , switches_(0)
@@ -157,6 +165,10 @@ void CbcHeuristic::gutsOfCopy(const CbcHeuristic &rhs)
   fractionSmall_ = rhs.fractionSmall_;
   randomNumberGenerator_ = rhs.randomNumberGenerator_;
   heuristicName_ = rhs.heuristicName_;
+  order_ = rhs.order_;
+  minSolutionsToStart_ = rhs.minSolutionsToStart_;
+  maxSolutionsToStart_ = rhs.maxSolutionsToStart_;
+  rootHooks_ = rhs.rootHooks_;
   howOften_ = rhs.howOften_;
   decayFactor_ = rhs.decayFactor_;
   switches_ = rhs.switches_;

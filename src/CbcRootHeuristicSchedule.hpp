@@ -28,8 +28,12 @@ public:
   CbcRootHeuristicSchedule(CbcModel &model);
   ~CbcRootHeuristicSchedule();
 
-  /// Run the two-phase schedule. Returns number of solutions found.
-  int run(bool afterCuts = false);
+  /** Run the two-phase schedule for the given root "hook" moment (see
+      CbcHeuristic::rootHooks()): 'L' (default) is the pre-processed LP
+      solution before any cuts, 'C' is after root cut generation finished.
+      Only heuristics whose rootHooks() include hookCode are considered.
+      Returns number of solutions found. */
+  int run(char hookCode = 'L');
 
   /// Add the default v5 diving schedule to the model
   void addDefaultDivingConfigs();

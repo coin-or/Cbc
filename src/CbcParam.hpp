@@ -124,6 +124,8 @@ public:
       MAXMEMORY,
       PRINTMASK,
       OUTPUTPRECISION,
+      PUMPROOTPLACES,
+      JUMPROOTPLACES,
       LASTSTRINGPARAM,
 
       // Cut Parameters

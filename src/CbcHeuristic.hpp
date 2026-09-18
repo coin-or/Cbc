@@ -190,8 +190,11 @@ public:
             through this generic hook, since it needs FPump's internal
             per-pass tracking; the code is reserved here for future use by
             a scheduler-level equivalent)
-      Default is "LC", i.e. runs both before and after root cuts, which is
-      what every root heuristic has always done. */
+      Default is "LcC", i.e. runs before cuts, during intermediate cut
+      rounds, and after root cuts, which is what every root heuristic has
+      always done (the 'c' gate at CbcModel's intermediate-cut-round
+      heuristics call was only added alongside this attribute, so the
+      default had to include it to avoid changing behaviour). */
   inline void setRootHooks(const char *hooks) { rootHooks_ = hooks ? hooks : ""; }
   inline void setRootHooks(const std::string &hooks) { rootHooks_ = hooks; }
   inline const std::string &rootHooks() const { return rootHooks_; }

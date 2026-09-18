@@ -9956,6 +9956,11 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         // skip if can't run here
         if (!heuristic_[i]->shouldHeurRun(whereFrom))
           continue;
+        // At root (numberNodes_==0), this is the "intermediate cut round"
+        // moment (hook 'c'); tree-node calls (numberNodes_>0) are governed
+        // by minDepth_/whereFrom_ instead and are not subject to rootHooks().
+        if (!numberNodes_ && !heuristic_[i]->runsAtRootHook('c'))
+          continue;
         // see if heuristic will do anything
         double saveValue = heuristicValue;
         int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);

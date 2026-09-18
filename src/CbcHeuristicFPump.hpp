@@ -57,6 +57,18 @@ public:
   /// Get the Feasibility Jump fallback heuristic (nullptr if none set).
   CbcHeuristicFeasibilityJump *feasibilityJumpFallback() const { return fjFallback_; }
 
+  /** Explicit, letter-coded override for which root-processing moments
+   *  Feasibility Pump is allowed to run at ('L' pre-processed LP solution
+   *  before any cuts, 'C' after root cuts, 'c' an intermediate cut round --
+   *  see CbcHeuristic::rootHooks()), replacing the classic pumpTune/
+   *  moreTune numeric encoding entirely once set. Empty string (default)
+   *  means "no override" -- solution() falls back to the historical
+   *  feasibilityPumpOptions()-driven logic, so behavior is unchanged
+   *  unless this is explicitly configured (see the pumpRootPlaces CLI
+   *  parameter in CbcSolverHeuristics.cpp). */
+  void setRootPlacesOverride(const std::string &places) { rootPlacesOverride_ = places; }
+  const std::string &rootPlacesOverride() const { return rootPlacesOverride_; }
+
   /// Whether the last call captured a rounded-but-failed attempt (see
   /// bestRoundedAttempt()). Cleared whenever a call succeeds.
   bool hasBestRoundedAttempt() const { return !bestRoundedAttempt_.empty(); }
@@ -274,6 +286,8 @@ protected:
   // Data
   /// Not owned. See setFeasibilityJumpFallback().
   CbcHeuristicFeasibilityJump *fjFallback_ = nullptr;
+  /// See setRootPlacesOverride().
+  std::string rootPlacesOverride_;
   /// See bestRoundedAttempt().
   std::vector< double > bestRoundedAttempt_;
   /// Start time

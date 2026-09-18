@@ -173,6 +173,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump &rhs)
   , fixOnReducedCosts_(rhs.fixOnReducedCosts_)
   , roundExpensive_(rhs.roundExpensive_)
   , fpOutput_(nullptr) // not copied: caller must reinstall
+  , rootPlacesOverride_(rhs.rootPlacesOverride_)
 {
 }
 
@@ -200,6 +201,7 @@ CbcHeuristicFPump::operator=(const CbcHeuristicFPump &rhs)
     roundExpensive_ = rhs.roundExpensive_;
     fpOutput_ = nullptr; // not copied: caller must reinstall
     fjFallback_ = nullptr; // not copied: caller must reinstall
+    rootPlacesOverride_ = rhs.rootPlacesOverride_;
     bestRoundedAttempt_.clear();
   }
   return *this;
@@ -283,7 +285,19 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   // just do once
   if (!atRoot)
     return 0;
+  // Explicit rootPlacesOverride() (see setRootPlacesOverride() / the
+  // pumpRootPlaces CLI parameter) replaces the legacy
+  // feasibilityPumpOptions()-driven logic below entirely, once configured.
+  // passNumber==999999 is the sentinel doRootHeuristicsAfterCuts sets for
+  // "after root cuts" (hook 'C'); passNumber<=1 is "before any cuts" (hook
+  // 'L'); anything else is an intermediate cut round (hook 'c').
+  if (!rootPlacesOverride_.empty()) {
+    char hook = (passNumber == 999999) ? 'C' : (passNumber <= 1 ? 'L' : 'c');
+    if (rootPlacesOverride_.find(hook) == std::string::npos)
+      return 0;
+  }
   int options = feasibilityPumpOptions_;
+  if (rootPlacesOverride_.empty()) {
   if ((options % 1000000) > 0) {
     int kOption = options / 1000000;
     options = options % 1000000;
@@ -315,6 +329,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   } else {
     if (passNumber > 1)
       return 0;
+  }
   }
   // loop round doing repeated pumps
   double cutoff;

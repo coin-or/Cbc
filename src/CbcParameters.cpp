@@ -803,6 +803,8 @@ void CbcParameters::setDefaults(int strategy) {
   parameters_[CbcParam::PRINTMASK]->setDefault("");
   parameters_[CbcParam::MAXMEMORY]->setDefault("");
   parameters_[CbcParam::OUTPUTPRECISION]->setDefault("%15.15g");
+  parameters_[CbcParam::PUMPROOTPLACES]->setDefault("");
+  parameters_[CbcParam::JUMPROOTPLACES]->setDefault("");
   parameters_[CbcParam::PRIORITYFILE]->setDefault(std::string("priorities.txt"));
   parameters_[CbcParam::SOLUTIONFILE]->setDefault(std::string("opt.sol"));
   parameters_[CbcParam::SOLUTIONBINARYFILE]->setDefault(std::string("solution.file"));
@@ -1702,6 +1704,34 @@ void CbcParameters::addCbcSolverStrParams() {
       "Remember the f or g at end as %18.5 by itself gives garbage."
   );
   parameters_[CbcParam::OUTPUTPRECISION]->setPushFunc(CbcParamUtils::doOutputPrecisionParam);
+
+  parameters_[CbcParam::PUMPROOTPLACES]->setup(
+      "pumpRootPlaces",
+      "Root moments at which Feasibility Pump is allowed to run",
+      "A string of single-letter codes for which root-processing moments "
+      "Feasibility Pump may run at: 'L' pre-processed LP solution, before "
+      "any cuts (the historical default); 'C' after root cut generation is "
+      "finished; 'c' an intermediate round of cut generation. Combine "
+      "letters to allow more than one, e.g. 'LC' to try both before and "
+      "after cuts. Default is '' (unset), which reproduces the classic "
+      "behavior controlled by pumpTune/moreTune's cryptic numeric "
+      "encoding (root-before-cuts only, unless moreTune's '/1000' digit "
+      "says otherwise). Setting this option takes over that decision "
+      "entirely, in an intuitive way, instead of pumpTune/moreTune.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::JUMPROOTPLACES]->setup(
+      "jumpRootPlaces",
+      "Root moments at which Feasibility Jump is allowed to run",
+      "A string of single-letter codes for which root-processing moments "
+      "Feasibility Jump may run at: 'L' pre-processed LP solution, before "
+      "any cuts; 'C' after root cut generation is finished (the historical "
+      "default for standalone FJ). Combine letters to allow more than one, "
+      "e.g. 'LC'. Default is '' (unset), which reproduces the classic "
+      "behavior. Does not affect FJ's tree-node execution "
+      "(feasibilityJumpDepth) or its use as Feasibility Pump's "
+      "failure-recovery fallback (feasibilityJumpAfterFPump).",
+      CoinParam::displayPriorityLow);
 }
 //###########################################################################
 //###########################################################################

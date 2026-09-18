@@ -13557,6 +13557,19 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             paramChanges_.push_back(message);
           }
           break;
+        case CbcParam::PUMPROOTPLACES:
+        case CbcParam::JUMPROOTPLACES:
+          if ((status = cbcParam->readValue(inputQueue, field, &message))) {
+            printGeneralMessage(model_, message);
+            continue;
+          }
+          if (cbcParam->setVal(field, &message)) {
+            printGeneralMessage(model_, message);
+            continue;
+          } else if (!message.empty()) {
+            paramChanges_.push_back(message);
+          }
+          break;
         case CbcParam::WRITEMODEL: {
           cbcParam->readValue(inputQueue, fileName, &message);
           CoinParamUtils::processFile(fileName,

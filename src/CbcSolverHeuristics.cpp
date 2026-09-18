@@ -1250,6 +1250,15 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       parameters[CbcParam::INTEGERTOLERANCE]->dblVal());
     heuristicFJ.setIntegerTolerance(
       parameters[CbcParam::INTEGERTOLERANCE]->dblVal());
+    // jumpRootPlaces (see CbcParameters.cpp) is an intuitive letter-coded
+    // replacement for hand-tuning FJ's placement via whereFrom_ bit
+    // arithmetic; it only affects the standard sequential root-heuristic
+    // loops (doHeuristicsAtRoot()/doRootHeuristicsAfterCuts()) via
+    // runsAtRootHook(), not tree execution or the FPump-failure fallback.
+    const std::string &jumpRootPlaces =
+      parameters[CbcParam::JUMPROOTPLACES]->strVal();
+    if (!jumpRootPlaces.empty())
+      heuristicFJ.setRootHooks(jumpRootPlaces);
     if (fjFallbackOnly)
       // Never run on its own schedule -- shouldHeurRun()/solution() both
       // bail out immediately on when()==0. Only reachable from here on via
@@ -1424,6 +1433,14 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       }
     }
     heuristic4.setHeuristicName("feasibility pump");
+    // pumpRootPlaces (see CbcParameters.cpp) is an intuitive letter-coded
+    // replacement for pumpTune/moreTune's cryptic kOption digit; only takes
+    // effect when explicitly set (default "" leaves the classic
+    // feasibilityPumpOptions()-driven behavior fully intact).
+    const std::string &pumpRootPlaces =
+      parameters[CbcParam::PUMPROOTPLACES]->strVal();
+    if (!pumpRootPlaces.empty())
+      heuristic4.setRootPlacesOverride(pumpRootPlaces);
     // #define ROLF
 #ifdef ROLF
     CbcHeuristicFPump pump(*model);

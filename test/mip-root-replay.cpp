@@ -341,6 +341,10 @@ static void usage(const char *prog)
     "  --fj-only-no-sol=0|1 only run FJ while no incumbent exists (default 1)\n"
     "  --fj-max-calls=N     cap on total FJ invocations (default 0 = unlimited)\n"
     "  --fj-depth=N         run FJ every N tree levels (default 0 = root only)\n"
+    "  --jump-root-places=STR  jumpRootPlaces override, e.g. \"L\" (letters "
+    "from LcCP; default: unset, uses CbcHeuristic's built-in \"LcC\")\n"
+    "  --pump-root-places=STR  pumpRootPlaces override, e.g. \"L\" (default: "
+    "unset, uses the legacy pumpTune-driven after-cuts logic)\n"
     "  --pass-cuts=N        override maximumCutPassesAtRoot after strategy setup\n"
     "                       (default: leave CbcStrategyDefault's own rule alone).\n"
     "                       Same encoding as the real CLI's -passCuts: positive N\n"
@@ -379,6 +383,7 @@ int main(int argc, char **argv)
   std::string fjMode; // "off"/"on"/"before"/"both"
   int fjAfterFPump = -1, fjEffort = -1, fjEffortMult = -1, fjStall = -1;
   int fjMaxSol = -1, fjOnlyNoSol = -1, fjMaxCalls = -1, fjDepth = -1;
+  std::string jumpRootPlacesOverride, pumpRootPlacesOverride;
   int passCutsOverride = 0;
   double minDropScale = 1.0;
 
@@ -418,6 +423,10 @@ int main(int argc, char **argv)
       fjMaxCalls = atoi(a.c_str() + 15);
     else if (a.rfind("--fj-depth=", 0) == 0)
       fjDepth = atoi(a.c_str() + 11);
+    else if (a.rfind("--jump-root-places=", 0) == 0)
+      jumpRootPlacesOverride = a.substr(19);
+    else if (a.rfind("--pump-root-places=", 0) == 0)
+      pumpRootPlacesOverride = a.substr(19);
     else if (a.rfind("--pass-cuts=", 0) == 0)
       passCutsOverride = atoi(a.c_str() + 12);
     else if (a.rfind("--min-drop-scale=", 0) == 0)
@@ -556,6 +565,10 @@ int main(int argc, char **argv)
     params[CbcParam::FEASIBILITYJUMPMAXCALLS]->setVal(fjMaxCalls);
   if (fjDepth >= 0)
     params[CbcParam::FEASIBILITYJUMPDEPTH]->setVal(fjDepth);
+  if (!jumpRootPlacesOverride.empty())
+    params[CbcParam::JUMPROOTPLACES]->setVal(jumpRootPlacesOverride);
+  if (!pumpRootPlacesOverride.empty())
+    params[CbcParam::PUMPROOTPLACES]->setVal(pumpRootPlacesOverride);
 
   // Same recipe the normal `cbc` command line uses for its default cut
   // generators (see CbcSolver.cpp's babExecuteSearchAndPostprocess,

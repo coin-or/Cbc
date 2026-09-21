@@ -12130,6 +12130,24 @@ int CbcModel::takeOffCuts(OsiCuts &newCuts, bool allowResolve,
   return numberDropped;
 }
 /*
+  Detect a resolve that was cut short specifically because it hit the
+  remaining-time deadline (Clp status==3, secondaryStatus==9 -- see
+  ClpModel::onStopped()), as opposed to a genuine iteration-limit stop.
+  OsiClpSolverInterface::isIterationLimitReached() deliberately excludes
+  this case, and isAbandoned() does not cover it either, so a time-abandoned
+  resolve would otherwise fall through as plain "infeasible" here and risk
+  being mistaken for a proven-infeasible node/branch rather than an
+  inconclusive one caused by running out of time.
+*/
+static bool resolveHitTimeLimit(const OsiSolverInterface *solver)
+{
+  const OsiClpSolverInterface *clpSolver = dynamic_cast< const OsiClpSolverInterface * >(solver);
+  if (!clpSolver)
+    return false;
+  const ClpSimplex *clpSimplex = clpSolver->getModelPtr();
+  return (clpSimplex->status() == 3 && clpSimplex->secondaryStatus() == 9);
+}
+/*
   Return values:
     1:	feasible
     0:	infeasible
@@ -12372,7 +12390,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
 #endif
           feasible = false;
         }
-      } else if (solver_->isAbandoned()) {
+      } else if (solver_->isAbandoned() || resolveHitTimeLimit(solver_)) {
         if (nFix != -1)
           setMaximumSeconds(-COIN_DBL_MAX);
         else

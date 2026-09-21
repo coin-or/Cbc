@@ -11044,10 +11044,17 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
         // may have been switched off - report
         if (!numberNodes_) {
           int n = generator_[i]->numberCutsInTotal();
-          if (n) {
+          // Report even when n==0 if the generator burned non-trivial time:
+          // a generator that produced nothing but spent real time is exactly
+          // the case worth surfacing (silently dropping it here previously
+          // hid, e.g., a 37s/190s CglRedSplit2 call that generated 0 cuts).
+          bool tookNotableTime = generator_[i]->timing() && generator_[i]->timeInCutGenerator() > 0.01;
+          if (n || tookNotableTime) {
             double average = 0.0;
-            average = generator_[i]->numberElementsInTotal();
-            average /= n;
+            if (n) {
+              average = generator_[i]->numberElementsInTotal();
+              average /= n;
+            }
             handler_->message(CBC_GENERATOR, messages_)
               << i << generator_[i]->cutGeneratorName() << n << average
               << generator_[i]->numberColumnCuts()

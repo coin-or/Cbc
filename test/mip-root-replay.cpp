@@ -175,6 +175,63 @@ static int restoreColTypes(OsiSolverInterface &si, const std::string &stem, bool
   return restored;
 }
 
+/**
+ * Load a `.debugsol` sidecar written by cbcRootFixtureWriteDebugSol() and
+ * attach it to `si` via activateRowCutDebugger(), so every debugger->
+ * invalidCut()/CoinAssert check already wired throughout CbcModel.cpp /
+ * CbcCutGenerator.cpp fires exactly as it would on the real solve -- turning
+ * an invalid-cut bug (a cut generator silently cutting off the true optimum)
+ * into an instant, offline-reproducible failure instead of a full solve.
+ *
+ * Returns true if a debugger was attached. Absence of the sidecar is silent,
+ * not a warning: it only exists when the fixture was captured with
+ * "-debugCuts <file>" active, which is the exception, not the rule.
+ */
+static bool loadDebugSol(OsiSolverInterface &si, const std::string &stem, bool quiet)
+{
+  const std::string path = stem + ".debugsol";
+  FILE *fp = fopen(path.c_str(), "r");
+  if (!fp)
+    return false;
+
+  int sidecarCols = -1;
+  if (fscanf(fp, "cols %d\n", &sidecarCols) != 1 || sidecarCols != si.getNumCols()) {
+    fprintf(stderr, "ERROR: %s: .debugsol is for %d columns, model has %d; ignoring it\n",
+      baseName(stem).c_str(), sidecarCols, si.getNumCols());
+    fclose(fp);
+    return false;
+  }
+
+  std::vector< double > values(sidecarCols, 0.0);
+  int idx = 0;
+  double value = 0.0;
+  int loaded = 0, nonzero = 0;
+  while (fscanf(fp, "%d %lf\n", &idx, &value) == 2) {
+    if (idx < 0 || idx >= sidecarCols) {
+      fprintf(stderr, "ERROR: %s: .debugsol names column %d, out of range\n",
+        baseName(stem).c_str(), idx);
+      fclose(fp);
+      return false;
+    }
+    values[idx] = value;
+    ++loaded;
+    if (value != 0.0)
+      ++nonzero;
+  }
+  fclose(fp);
+
+  // activateRowCutDebugger(solution) builds a fresh OsiRowCutDebugger from
+  // this array against si's CURRENT columns -- exactly the state the sidecar
+  // was written in, since it was captured in the same preprocessed column
+  // order as the .mps.gz this si was just loaded from.
+  si.activateRowCutDebugger(values.data());
+  if (!quiet)
+    fprintf(stderr, "[replay] %s: loaded debug/reference solution (%d values, "
+                    "%d nonzero) -- cuts will be checked against it\n",
+      baseName(stem).c_str(), loaded, nonzero);
+  return true;
+}
+
 static std::vector< std::string > splitTab(const std::string &line)
 {
   std::vector< std::string > fields;
@@ -350,7 +407,17 @@ static void usage(const char *prog)
     "                       Same encoding as the real CLI's -passCuts: positive N\n"
     "                       stops early once the minimum-drop test fails; negative\n"
     "                       N (abs value used as the pass cap) ignores minimum drop.\n"
-    "  --min-drop-scale=X   multiply minimumDrop by X before applying it (default 1.0)\n",
+    "  --min-drop-scale=X   multiply minimumDrop by X before applying it (default 1.0)\n"
+    "\n"
+    "Invalid-cut / debug-cuts reproduction:\n"
+    "  If <stem>.debugsol exists (written by CbcRootFixtureDump.hpp when the\n"
+    "  dumping run was started with \"-debugCuts <solfile>\"), it is loaded\n"
+    "  automatically and attached to the solver via activateRowCutDebugger()\n"
+    "  before branchAndBound() runs. Every debugger->invalidCut()/CoinAssert\n"
+    "  check already wired throughout CbcModel.cpp/CbcCutGenerator.cpp then\n"
+    "  fires exactly as it would on the real solve, reproducing a false\n"
+    "  \"proven infeasible\"/wrong-cut bug in milliseconds instead of a full\n"
+    "  run. No flag is needed to opt in; there is no flag to opt out.\n",
     prog);
 }
 
@@ -482,6 +549,11 @@ int main(int argc, char **argv)
 
   dropPadRow(si, stem, quiet);
   restoreColTypes(si, stem, quiet);
+  // Must run before CbcModel model(si) below (whose copy constructor is what
+  // carries rowCutDebugger_ into the model's own solver): ordering relative
+  // to the LP resolve does not matter, activateRowCutDebugger() only sets up
+  // the known-solution bookkeeping and does not touch the LP.
+  const bool haveDebugSol = loadDebugSol(si, stem, quiet);
 
   bool haveBasis = false;
   if (fileExists(bas)) {
@@ -529,8 +601,10 @@ int main(int argc, char **argv)
   // post-cuts bound alone which isn't comparable across instances.
   const double lpBound = si.getObjValue();
 
-  printf("[replay] %s: rows=%d cols=%d warmStartIters=%d loadTime=%.4fs lpBound=%.10g\n",
-    name.c_str(), si.getNumRows(), si.getNumCols(), warmStartIters, loadTime, lpBound);
+  printf("[replay] %s: rows=%d cols=%d warmStartIters=%d loadTime=%.4fs lpBound=%.10g "
+         "debugSol=%d\n",
+    name.c_str(), si.getNumRows(), si.getNumCols(), warmStartIters, loadTime, lpBound,
+    (int)haveDebugSol);
 
   CbcModel model(si);
   model.setLogLevel(0);

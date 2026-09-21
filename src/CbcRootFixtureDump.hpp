@@ -24,6 +24,25 @@
  *                          CbcClqFixtureDump.hpp for why this matters)
  *   <name>.<tag>.meta      rows/cols/density/objValue/lpOptimal/... so a driver
  *                          can filter fixtures without loading them
+ *   <name>.<tag>.debugsol  ONLY written when a row-cut debugger is active on
+ *                          `si` (i.e. the dumping run was started with
+ *                          "-debugCuts <solfile>") -- one value per column, in
+ *                          the SAME preprocessed column order as the .mps.gz,
+ *                          straight from OsiRowCutDebugger::optimalSolution().
+ *                          This is what lets a replay driver reproduce an
+ *                          invalid-cut bug (a false "proven infeasible"/wrong
+ *                          result caused by a cut generator cutting off the
+ *                          true optimum) offline: attach it to the loaded
+ *                          fixture's solver via activateRowCutDebugger()
+ *                          before building the CbcModel, and every
+ *                          debugger->invalidCut()/CoinAssert check already
+ *                          wired throughout CbcModel.cpp/CbcCutGenerator.cpp
+ *                          fires exactly as it would on the real solve --
+ *                          reproducing the abort in milliseconds instead of a
+ *                          full run. Without -debugCuts on the dumping run,
+ *                          no debugger is active and this file is simply not
+ *                          written -- silent, not an error (see
+ *                          cbcRootFixtureWriteDebugSol()).
  *
  * Unlike the per-generator fixtures (CbcClqFixtureDump.hpp and friends), this
  * one carries no generator-specific payload at all -- a replay driver is
@@ -68,6 +87,7 @@
 #endif
 
 #include "CoinWarmStartBasis.hpp"
+#include "OsiRowCutDebugger.hpp"
 #include "OsiSolverInterface.hpp"
 
 /// mkdir -p, so a driver need not pre-create the tree.
@@ -297,6 +317,55 @@ static bool cbcRootFixtureWriteColTypes(const OsiSolverInterface *si,
 }
 
 /**
+ * Write the debug/reference solution, in the SAME column order as the
+ * .mps.gz, straight from the attached OsiRowCutDebugger. This is what makes an
+ * invalid-cut bug reproducible offline: see the file header comment.
+ *
+ * Uses getRowCutDebuggerAlways() rather than getRowCutDebugger() -- the same
+ * choice made everywhere else a debugger is consulted in this codebase (see
+ * CbcSolver.cpp's -debugCuts handling) -- because onOptimalPath() is checked
+ * against the CURRENT LP relaxation and is unreliable this early: the root LP
+ * relaxation routinely does not itself satisfy every integer/bound
+ * restriction the known solution does, which would make onOptimalPath()
+ * return false and silently skip the dump even though a debugger is very
+ * much active and its solution is exactly what we want to capture.
+ *
+ * Silent no-op (not an error) when no debugger is active: only runs started
+ * with "-debugCuts <file>" attach one, and the common case -- an ordinary
+ * fixture-generation sweep with no such flag -- should not spam a warning per
+ * instance.
+ */
+static bool cbcRootFixtureWriteDebugSol(const OsiSolverInterface *si,
+  const std::string &path)
+{
+  const OsiRowCutDebugger *debugger = si->getRowCutDebuggerAlways();
+  if (!debugger)
+    return false; // no -debugCuts on this run: nothing to capture, not a failure
+
+  const int n = si->getNumCols();
+  if (debugger->numberColumns() != n) {
+    // Should not happen -- the debugger is remapped to the solver's current
+    // column space (redoSolution()) wherever preprocessing shrinks/renumbers
+    // columns -- but a mismatch here would silently produce a useless sidecar,
+    // so refuse rather than write one an off-by-one bug would go undetected.
+    printf("[rootfixture] debugsol: SKIP (debugger has %d columns, solver has %d)\n",
+      debugger->numberColumns(), n);
+    return false;
+  }
+
+  FILE *fp = fopen(path.c_str(), "w");
+  if (!fp)
+    return false;
+
+  const double *knownSolution = debugger->optimalSolution();
+  fprintf(fp, "cols %d\n", n);
+  for (int j = 0; j < n; ++j)
+    fprintf(fp, "%d %.17g\n", j, knownSolution[j]);
+  fclose(fp);
+  return true;
+}
+
+/**
  * Write the provenance file. Carries only what a replay driver needs to sanity
  * check a fixture without loading it, plus the fields a rebuilt CbcModel cannot
  * otherwise infer (objective sense, whether the root LP was actually optimal).
@@ -363,13 +432,16 @@ static bool cbcDumpRootFixture(OsiSolverInterface *si, const char *tag)
   const bool haveLp = si->isProvenOptimal();
   const bool basOk = haveLp ? cbcRootFixtureWriteBasis(si, stem + ".bas") : true;
   const bool solOk = haveLp ? cbcRootFixtureWriteSol(si, stem + ".sol") : true;
+  // Not counted toward DUMPED/PARTIAL: absent whenever the run wasn't started
+  // with -debugCuts, which is the overwhelmingly common case.
+  const bool debugSolOk = cbcRootFixtureWriteDebugSol(si, stem + ".debugsol");
 
   printf("[rootfixture] %s.%s: %s rows=%d cols=%d int=%d padded=%d lpOptimal=%d "
-         "obj=%.15g (mps=%d ctype=%d meta=%d bas=%d sol=%d)\n",
+         "obj=%.15g debugSol=%d (mps=%d ctype=%d meta=%d bas=%d sol=%d)\n",
     name.c_str(), tag,
     (mpsRc == 0 && ctOk && metaOk && basOk && solOk) ? "DUMPED" : "PARTIAL",
     si->getNumRows(), si->getNumCols(), integerColumns, paddedColumns,
-    (int)haveLp, si->getObjValue(),
+    (int)haveLp, si->getObjValue(), (int)debugSolOk,
     mpsRc, (int)ctOk, (int)metaOk, (int)basOk, (int)solOk);
   fflush(stdout);
 

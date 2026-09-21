@@ -4486,6 +4486,10 @@ int CbcSolver::postprocess(
       setPreProcessingMode(babModel_->solver(), 2);
       process.postProcess(*babModel_->solver());
       setPreProcessingMode(saveSolver_, 0);
+      // solution is now back in saveSolver_. Keep it: the resolves below only polish it with the
+      // integers fixed, and they can stop short (time limit already spent, numerical trouble),
+      // leaving an infeasible iterate in the solver's column solution
+      memcpy(bestSolution, saveSolver_->getColSolution(), n * sizeof(double));
 #ifdef COIN_DEVELOP
       if (model_.bestSolution() && fabs(model_.getMinimizationObjValue() - babModel_->getMinimizationObjValue()) < 1.0e-8) {
         const double *b1 = model_.bestSolution();
@@ -4630,8 +4634,12 @@ int CbcSolver::postprocess(
       // assert(originalSolver->isProvenOptimal());
 #endif
       babModel_->assignSolver(saveSolver_);
-      memcpy(bestSolution, originalSolver->getColSolution(),
-        n * sizeof(double));
+      if (originalSolver->isProvenOptimal()) {
+        memcpy(bestSolution, originalSolver->getColSolution(),
+          n * sizeof(double));
+      } else {
+        printGeneralWarning(model_, "Final resolve did not finish, keeping postprocessed solution\n");
+      }
       // already set babModel_->setObjValue(babModel_->solver()->getObjValue());
     } else {
       n = babModel_->solver()->getNumCols();

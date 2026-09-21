@@ -368,8 +368,13 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       //void * saveData = solver->getApplicationData();
       //solver->setApplicationData(model_);
       // Propagate remaining wall-clock time so cut generators can self-limit.
-      // This uses a lot of time - try and reduce 
-      if (!depth && model_->getMaximumSeconds()<1.0e6) {
+      // Previously root-only (!depth): but a single cut-generation pass at
+      // any depth can be expensive and uninterruptible (e.g. CglRedSplit2
+      // on irish-electricity ran ~39s unconstrained at the root because it
+      // never saw this budget). getMaximumSeconds()<1.0e6 already gates
+      // this to only when a real -sec limit is active, so the extra
+      // CoinCpuTime() call below only fires on time-bounded runs.
+      if (model_->getMaximumSeconds()<1.0e6) {
         double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
         if (remaining > 0.0 && remaining <5.0e7)
           generator_->setMaxSeconds(remaining);

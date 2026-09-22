@@ -109,8 +109,9 @@ are archived as part of Cbc
  * *Windows*: The easiest way to get Cbc on Windows is to download an archive as described above.
  * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
      ```
-     $ brew tap coin-or-tools/coinor
-     $ brew install coin-or-tools/coinor/cbc
+     brew tap coin-or-tools/coinor
+     brew trust coin-or-tools/coinor
+     brew install coin-or-tools/coinor/cbc
      ```
 
 * *conda* (cross-platform):

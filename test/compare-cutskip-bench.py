@@ -61,15 +61,22 @@ def read_tsv(path):
 
 
 def read_bks(path):
+    # bks.tsv schema varies by collection: mip-sanity-data's own is
+    # "instance\tstatus\tobjective\tsense\tsource", while the simple
+    # MIPLIB-set format (e.g. miplib/2017+spp) is just "instance\tbks" --
+    # same detection mip-root-replay.cpp's lookupRow()/bksCol already does
+    # on the C++ side. Without this, every row silently fails to parse
+    # (KeyError caught below) and every gap metric reports as n/a.
     bks = {}
     if not os.path.exists(path):
         return bks
     with open(path) as f:
         reader = csv.DictReader(f, delimiter="\t")
+        obj_col = "objective" if reader.fieldnames and "objective" in reader.fieldnames else "bks"
         for row in reader:
             try:
-                bks[row["instance"]] = (float(row["objective"]), row.get("sense", "min"))
-            except (KeyError, ValueError):
+                bks[row["instance"]] = (float(row[obj_col]), row.get("sense", "min"))
+            except (KeyError, ValueError, TypeError):
                 continue
     return bks
 

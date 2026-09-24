@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+# cutgen-throttle-sweep — root-fixture replay (mip-root-replay: root LP +
+# basis already captured, no full preprocessing/root-LP re-solve cost per
+# run) sweep to benchmark the RedSplit2/GMI/LandP per-round/per-lifetime
+# cost throttles added in CbcSolverCutSetup.cpp (CBC_REDSPLIT2_TIME_LIMIT/
+# MAX_NUM_CUTS/MAX_NUM_COMPUTED_CUTS, CBC_GMI_HOW_OFTEN,
+# CBC_LANDP_TIME_LIMIT/SINGLE_CUT_TIME_LIMIT/MAX_CUT_PER_ROUND) and the
+# CoinCutPool filter extension to these three generators
+# (CbcCutGenerator.cpp's dynamic_cast list), against turning any of the
+# three off entirely.
+#
+# Each config is a set of mip-root-replay CLI args / env vars, run across
+# every fixture in --fixture-dir at --nodes/--sec. One config MUST be named
+# "baseline" (current shipped defaults, no overrides).
+#
+# Usage:
+#   ./cutgen-throttle-sweep [--configs=cutgen-throttle-configs.tsv]
+#                           [--nodes=128] [--sec=7200] [--jobs=N]
+#                           [--mem-limit-gb=16]
+#                           [--fixture-dir=PATH] [--data-dir=PATH]
+#                           [--out=DIR] [--instances=FILE]
+#
+# configs.tsv format: one config per line, tab-separated
+#   <name>\t<comma-separated overrides, or - for none>
+# Each override token is either KEY=VAL (exported as an env var, e.g.
+# CBC_LANDP_TIME_LIMIT=1e30) or CLI:<arg> (appended as an extra
+# mip-root-replay argument, e.g. CLI:--landp=off).
+#
+# Output layout under --out (default: sanity-results/cutgen-throttle-sweep):
+#   <name>.tsv     instance rows cols nodes optimal infeasible bound best gap bbTime
+#   summary.log    compare-cutskip-bench.py output for every config vs baseline
+#
+# Safe to run under nohup/disown -- launch that way given the ~2h/instance
+# cap, e.g.:
+#   nohup ./cutgen-throttle-sweep --nodes=128 --sec=7200 --jobs=14 \
+#     > /tmp/cutgen-throttle-sweep.log 2>&1 &
+#   disown
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+REPLAY="$SCRIPT_DIR/mip-root-replay"
+FIXTURE_DIR="${CBC_ROOT_FIXTURE_DIR:-$HOME/instances/mip-sanity-data/rootFixtures}"
+DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
+
+# Worker mode: re-invoked once per (config, instance) pair by GNU parallel
+# (parallel dispatches through /bin/sh, which does not see exported bash
+# functions -- same fix as gen-root-fixtures/cutfilter-sweep).
+if [[ "${1:-}" == --worker=* ]]; then
+  inst="${1#--worker=}"
+  envspec="$2" # comma-separated KEY=VAL / CLI:<arg> tokens, or "-"
+  nodes="$3"
+  sec="$4"
+  fixture_dir="$5"
+  mem_limit_gb="${6:-16}"
+  # Reset every throttle env var this sweep knows about so a stale export
+  # from a previous worker invocation (same parallel pool, reused shell)
+  # can never leak into this one.
+  unset CBC_REDSPLIT2_TIME_LIMIT CBC_REDSPLIT2_MAX_NUM_CUTS \
+    CBC_REDSPLIT2_MAX_NUM_COMPUTED_CUTS CBC_GMI_HOW_OFTEN \
+    CBC_LANDP_TIME_LIMIT CBC_LANDP_SINGLE_CUT_TIME_LIMIT \
+    CBC_LANDP_MAX_CUT_PER_ROUND CBC_CUT_ROOT_GATE_MIN_COLS \
+    CBC_CUT_ROOT_GATE_MAX_COLS CBC_CUTPOOL_FILTER_MIN_COLS \
+    CBC_CUTPOOL_FILTER_MIN_CANDIDATES CBC_CUTPOOL_FILTER_ALWAYS \
+    CBC_CUTPOOL_FILTER_MAX_PARALLELISM CBC_CUTPOOL_FILTER_MIN_ELEMENTS
+  EXTRA_ARGS=()
+  if [[ "$envspec" != "-" ]]; then
+    IFS=',' read -r -a kvs <<< "$envspec"
+    for kv in "${kvs[@]}"; do
+      if [[ "$kv" == CLI:* ]]; then
+        EXTRA_ARGS+=("${kv#CLI:}")
+      else
+        export "${kv?}"
+      fi
+    done
+  fi
+  # Safety-net address-space cap (defense-in-depth; see MEM_LIMIT_GB comment
+  # above). Applied in a subshell so it never affects this script itself.
+  out="$(
+    ulimit -v "$((mem_limit_gb * 1024 * 1024))"
+    timeout -k 10 "$((sec + 30))s" "$REPLAY" "$inst" --fixture-dir="$fixture_dir" \
+      --nodes="$nodes" --sec="$sec" --quiet "${EXTRA_ARGS[@]}" 2>&1
+  )"
+  rc=$?
+  line1="$(echo "$out" | grep -m1 '^\[replay\].*rows=')"
+  line2="$(echo "$out" | grep -m1 '^\[replay\].*nodes=.*bound=')"
+  if [[ $rc -ne 0 || -z "$line2" ]]; then
+    printf '%s\tERROR\trc=%s\n' "$inst" "$rc"
+    exit 0
+  fi
+  rows="$(sed -n 's/.*rows=\([0-9]*\).*/\1/p' <<<"$line1")"
+  cols="$(sed -n 's/.*cols=\([0-9]*\).*/\1/p' <<<"$line1")"
+  nnodes="$(sed -n 's/.*nodes=\([0-9]*\).*/\1/p' <<<"$line2")"
+  optimal="$(sed -n 's/.*optimal=\([0-9]*\).*/\1/p' <<<"$line2")"
+  infeasible="$(sed -n 's/.*infeasible=\([0-9]*\).*/\1/p' <<<"$line2")"
+  bound="$(sed -n 's/.*bound=\([^ ]*\).*/\1/p' <<<"$line2")"
+  best="$(sed -n 's/.*best=\([^ ]*\).*/\1/p' <<<"$line2")"
+  gap="$(sed -n 's/.*gap=\([^ ]*\).*/\1/p' <<<"$line2")"
+  bbtime="$(sed -n 's/.*bbTime=\([0-9.]*\)s.*/\1/p' <<<"$line2")"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$inst" "$rows" "$cols" "$nnodes" "$optimal" "$infeasible" "$bound" "$best" "$gap" "$bbtime"
+  exit 0
+fi
+
+CONFIGS="$SCRIPT_DIR/cutgen-throttle-configs.tsv"
+OUT_DIR="$SCRIPT_DIR/sanity-results/cutgen-throttle-sweep"
+INSTANCES_FILE=""
+JOBS="$(nproc)"
+NODES=128
+SEC=7200
+# Defense-in-depth only: the real fix for the RedSplit2 O(maxNumComputedCuts *
+# nrow) blowup is the row-gate + dynamic buffer cap in CbcSolverCutSetup.cpp.
+# This ulimit just protects against any *other* unforeseen memory blowup
+# (different generator/instance) during an unattended multi-hour sweep, after
+# this workspace hit 4 separate OOM-triggered crashes/reboots.
+MEM_LIMIT_GB=16
+
+for arg in "$@"; do
+  case "$arg" in
+    --configs=*) CONFIGS="${arg#*=}" ;;
+    --out=*) OUT_DIR="${arg#*=}" ;;
+    --instances=*) INSTANCES_FILE="${arg#*=}" ;;
+    --jobs=*) JOBS="${arg#*=}" ;;
+    --nodes=*) NODES="${arg#*=}" ;;
+    --sec=*) SEC="${arg#*=}" ;;
+    --mem-limit-gb=*) MEM_LIMIT_GB="${arg#*=}" ;;
+    --data-dir=*) DATA_DIR="${arg#*=}" ;;
+    --fixture-dir=*) FIXTURE_DIR="${arg#*=}" ;;
+    -h|--help)
+      sed -n '2,/^set -uo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+if [[ ! -x "$REPLAY" ]]; then
+  echo "Building mip-root-replay..." >&2
+  make -C "$SCRIPT_DIR" -j"$JOBS" mip-root-replay || exit 1
+fi
+if [[ ! -f "$CONFIGS" ]]; then
+  echo "ERROR: configs file not found: $CONFIGS" >&2
+  exit 2
+fi
+
+mkdir -p "$OUT_DIR"
+
+if [[ -n "$INSTANCES_FILE" ]]; then
+  mapfile -t INSTANCES < "$INSTANCES_FILE"
+else
+  mapfile -t INSTANCES < <(ls "$FIXTURE_DIR"/*.root.meta 2>/dev/null | sed 's#.*/##; s/\.root\.meta$//' | sort)
+fi
+echo "${#INSTANCES[@]} instances, jobs=$JOBS nodes=$NODES sec=$SEC out=$OUT_DIR configs=$CONFIGS" >&2
+
+NAMES=()
+ENVSPECS=()
+while IFS=$'\t' read -r name envspec; do
+  [[ -z "$name" || "$name" == \#* ]] && continue
+  NAMES+=("$name")
+  ENVSPECS+=("$envspec")
+done < "$CONFIGS"
+
+if [[ ! " ${NAMES[*]} " == *" baseline "* ]]; then
+  echo "ERROR: configs file must contain a config named 'baseline'" >&2
+  exit 2
+fi
+
+HEADER='instance\trows\tcols\tnodes\toptimal\tinfeasible\tbound\tbest\tgap\tbbTime'
+
+for i in "${!NAMES[@]}"; do
+  name="${NAMES[$i]}"
+  envspec="${ENVSPECS[$i]}"
+  echo "=== running config: $name ($envspec) ===" >&2
+  echo -e "$HEADER" > "$OUT_DIR/$name.tsv.tmp"
+  printf '%s\n' "${INSTANCES[@]}" | \
+    parallel --will-cite -j "$JOBS" --line-buffer \
+      "$SCRIPT_DIR/$(basename "$0")" --worker={} "$envspec" "$NODES" "$SEC" "$FIXTURE_DIR" "$MEM_LIMIT_GB" \
+      >> "$OUT_DIR/$name.tsv.tmp"
+  mv "$OUT_DIR/$name.tsv.tmp" "$OUT_DIR/$name.tsv"
+  n_err=$(grep -c 'ERROR' "$OUT_DIR/$name.tsv" || true)
+  echo "config $name done: $(( $(wc -l < "$OUT_DIR/$name.tsv") - 1 )) rows, $n_err errors" >&2
+done
+
+echo "=== summary (each config vs. baseline) ===" | tee "$OUT_DIR/summary.log" >&2
+for i in "${!NAMES[@]}"; do
+  name="${NAMES[$i]}"
+  [[ "$name" == "baseline" ]] && continue
+  {
+    echo
+    echo "--- baseline vs. $name ---"
+    python3 "$SCRIPT_DIR/compare-cutskip-bench.py" \
+      "$OUT_DIR/baseline.tsv" "$OUT_DIR/$name.tsv" \
+      --label-base=baseline --label-other="$name" \
+      --fixture-dir="$FIXTURE_DIR" \
+      --bks="$DATA_DIR/bks.tsv"
+  } | tee -a "$OUT_DIR/summary.log" >&2
+done
+
+echo "Done. Per-config TSVs and summary.log in $OUT_DIR" >&2

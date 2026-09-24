@@ -408,6 +408,15 @@ static void usage(const char *prog)
     "                       stops early once the minimum-drop test fails; negative\n"
     "                       N (abs value used as the pass cap) ignores minimum drop.\n"
     "  --min-drop-scale=X   multiply minimumDrop by X before applying it (default 1.0)\n"
+    "  --gmi=off|root|ifmove|on       GMI cut mode (default: root, matching the\n"
+    "                       real CLI's shipped default -- NOT CbcParameters()'s\n"
+    "                       own out-of-the-box default of off)\n"
+    "  --landp=off|root|ifmove|on     LandP cut mode (default: root, same rationale)\n"
+    "  --redsplit2=off|root|ifmove|on RedSplit2 cut mode (default: root, same rationale)\n"
+    "  --seed=N             CbcModel random seed (default: 1, matches CbcModel's\n"
+    "                       own default). Vary this across repeats of the same\n"
+    "                       config to average out branching tie-break noise\n"
+    "                       (single-threaded B&B is otherwise deterministic).\n"
     "\n"
     "Invalid-cut / debug-cuts reproduction:\n"
     "  If <stem>.debugsol exists (written by CbcRootFixtureDump.hpp when the\n"
@@ -453,6 +462,15 @@ int main(int argc, char **argv)
   std::string jumpRootPlacesOverride, pumpRootPlacesOverride;
   int passCutsOverride = 0;
   double minDropScale = 1.0;
+  // GMI/LandP/RedSplit2 cut-generator mode overrides. Default to "root" --
+  // matching CbcSolver.cpp's initialize() shipped defaults (REDSPLIT2CUTS/
+  // GMICUTS/LANDPCUTS all "root", see eeed3493) -- NOT the bare
+  // CbcParameters() constructor default ("ifmove"/"off"/"off"), so an
+  // unmodified replay (no --gmi=/--landp=/--redsplit2= flag) matches what
+  // the real `cbc` CLI actually ships today, not CbcParameters' own
+  // out-of-the-box defaults which predate that change.
+  std::string gmiMode = "root", landpMode = "root", redsplit2Mode = "root";
+  unsigned int randomSeed = 1; // matches CbcModel's own default
 
   for (int i = 1; i < argc; ++i) {
     const std::string a = argv[i];
@@ -498,6 +516,14 @@ int main(int argc, char **argv)
       passCutsOverride = atoi(a.c_str() + 12);
     else if (a.rfind("--min-drop-scale=", 0) == 0)
       minDropScale = atof(a.c_str() + 17);
+    else if (a.rfind("--gmi=", 0) == 0)
+      gmiMode = a.substr(6);
+    else if (a.rfind("--landp=", 0) == 0)
+      landpMode = a.substr(8);
+    else if (a.rfind("--redsplit2=", 0) == 0)
+      redsplit2Mode = a.substr(12);
+    else if (a.rfind("--seed=", 0) == 0)
+      randomSeed = (unsigned int)strtoul(a.c_str() + 7, NULL, 10);
     else if (a.rfind("--log=", 0) == 0)
       logLevel = atoi(a.c_str() + 6);
     else if (a.rfind("--data-dir=", 0) == 0)
@@ -611,6 +637,7 @@ int main(int argc, char **argv)
   model.messageHandler()->setLogLevel(logLevel);
   model.setMaximumNodes(nodes);
   model.setMaximumSeconds(sec);
+  model.setRandomSeed(randomSeed);
 
   // CbcParameters() self-initializes with the exact same defaults the real
   // `cbc` command line uses (CbcParameters::init() -> addCbcParams() ->
@@ -643,6 +670,12 @@ int main(int argc, char **argv)
     params[CbcParam::JUMPROOTPLACES]->setVal(jumpRootPlacesOverride);
   if (!pumpRootPlacesOverride.empty())
     params[CbcParam::PUMPROOTPLACES]->setVal(pumpRootPlacesOverride);
+  // See default-init rationale above the flag parsing block: these three
+  // default to "root" here (not CbcParameters()'s own "off"/"off"/"ifmove"
+  // out-of-the-box defaults) to match CbcSolver.cpp's shipped CLI defaults.
+  params[CbcParam::GMICUTS]->setVal(gmiMode);
+  params[CbcParam::LANDPCUTS]->setVal(landpMode);
+  params[CbcParam::REDSPLIT2CUTS]->setVal(redsplit2Mode);
 
   // Same recipe the normal `cbc` command line uses for its default cut
   // generators (see CbcSolver.cpp's babExecuteSearchAndPostprocess,

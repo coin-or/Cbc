@@ -575,6 +575,17 @@ int main(int argc, char **argv)
   static const double fixCloseGrid[] = { 0.0, 0.2, 0.4, 0.6 };
   static const int nodesGrid[] = { 50, 200, 1000 };
 
+  if (!quiet) {
+    fprintf(stderr,
+      "NOTE: --sweep runs all 48 grid points back-to-back inside this one process.\n"
+      "Confirmed empirically (2026-09) that some grid points -- especially later ones,\n"
+      "and VND in particular -- can silently return a worse/no-solution result here than\n"
+      "an isolated single-point run with the IDENTICAL options would (root cause not yet\n"
+      "found; some state is leaking between successive CbcModel/OsiSolverInterface builds\n"
+      "in one process). Treat --sweep as a fast, DIRECTIONAL ranking tool only -- always\n"
+      "re-confirm any promising cell with a separate one-shot invocation (no --sweep)\n"
+      "before trusting its exact found/improve value.\n");
+  }
   printf("%-30s %-6s %-4s %-8s %-6s %-9s %-9s %-6s %-14s %-9s\n", "instance", "method",
     "shl", "fixClose", "nodes", "nFixExact", "numInt", "found", "improve", "time(s)");
   for (size_t si2 = 0; si2 < sizeof(shallowGrid) / sizeof(shallowGrid[0]); ++si2) {

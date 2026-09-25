@@ -153,8 +153,15 @@ fi
 
 MIPS_DIR="$DATA_DIR/mips"
 if [[ ! -d "$MIPS_DIR" ]]; then
-  echo "No such directory: $MIPS_DIR (pass --data-dir, or git submodule update mip-sanity-data)" >&2
-  exit 2
+  # Not a mip-sanity-data-style checkout (instance/mips subdir) -- fall back
+  # to treating --data-dir itself as the flat directory of *.mps.gz files
+  # (e.g. an ad hoc MIPLIB collection like ~/inst/miplib/2017+spp).
+  if compgen -G "$DATA_DIR"/*.mps.gz >/dev/null 2>&1; then
+    MIPS_DIR="$DATA_DIR"
+  else
+    echo "No *.mps.gz found under $DATA_DIR or $DATA_DIR/mips (pass --data-dir)" >&2
+    exit 2
+  fi
 fi
 
 DUMP_BIN="$SCRIPT_DIR/.cbc-rootdump-bin"

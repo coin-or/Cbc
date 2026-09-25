@@ -37,11 +37,15 @@
 #
 # Options:
 #   --jobs=N           Parallel jobs (default: nproc)
-#   --sec=N             Per-instance wall time limit (default 900)
-#   --nodes=N           Per-instance node limit backstop (default 200000;
-#                       RINS' own -100-node modulo gate needs some minimum
-#                       tree size to ever fire even after an incumbent
-#                       exists)
+#   --sec=N             Per-instance wall time limit (default 7200 = 2h;
+#                       most instances finish far sooner -- RINS is only
+#                       ever reached with unlimited nodes if a real
+#                       incumbent shows up, and the 2h cap just bounds the
+#                       worst case)
+#   --nodes=N           Per-instance node limit (default 0 = unlimited, same
+#                       convention as mip-sanity-data's limits.tsv -- NOT
+#                       literal "-maxNodes 0", which stops after the root
+#                       node with no branching at all)
 #   --fixture-dir=PATH  Where to write fixtures (default
 #                       ~/instances/mip-sanity-data/rinsFixtures)
 #   --data-dir=PATH     mip-sanity-data checkout (default ./mip-sanity-data)
@@ -57,8 +61,8 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SRC_DIR="$REPO_ROOT/src"
 
 JOBS=""
-SECS=900
-NODES=200000
+SECS=7200
+NODES=0
 FIXTURE_DIR="${CBC_RINS_FIXTURE_DIR:-$HOME/instances/mip-sanity-data/rinsFixtures}"
 DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
 PREFIX="${PREFIX:-$HOME/prog/cbc}"
@@ -100,9 +104,20 @@ if [[ -n "$WORKER_NAME" ]]; then
   # than one worker thread at once, and a single-threaded solve is enough --
   # this dump only needs to reach RINS' first real opportunity, not solve
   # fast.
+  # NODES_ENV=0 means truly unlimited nodes (omit -maxNodes entirely, same
+  # convention as mip-sanity-data's limits.tsv/run-mip-sanity-tests) -- NOT
+  # "-maxNodes 0", which CbcModel treats as a special root-only stop (no
+  # branching at all; confirmed via CbcModel.cpp's "if (!getMaximumNodes())"
+  # early-exit right after doHeuristicsAtRoot()). Real branch-and-bound is
+  # needed here since many instances only find their first incumbent via
+  # tree-search heuristics (diving/rounding mid-tree), not root heuristics
+  # alone -- -maxNodes 0 would silently exclude all of those from ever
+  # getting a RINS fixture, regardless of how generous -sec is.
+  node_args=()
+  [[ "$NODES_ENV" != "0" ]] && node_args=(-maxNodes "$NODES_ENV")
   CBC_RINS_FIXTURE_DIR="$FIXTURE_DIR_ENV" CBC_RINS_FIXTURE_NAME="$name" \
     timeout "$((SECS_ENV + 60))" "$DUMP_BIN_ENV" "$mps" \
-      -threads 1 -maxNodes "$NODES_ENV" -sec "$SECS_ENV" -solve -quit \
+      -threads 1 "${node_args[@]}" -sec "$SECS_ENV" -solve -quit \
       > "$log" 2>&1
   rc=$?
   if [[ -f "$FIXTURE_DIR_ENV/$name.rins.meta" ]]; then
@@ -128,8 +143,15 @@ fi
 
 MIPS_DIR="$DATA_DIR/mips"
 if [[ ! -d "$MIPS_DIR" ]]; then
-  echo "No such directory: $MIPS_DIR (pass --data-dir, or git submodule update mip-sanity-data)" >&2
-  exit 2
+  # Not a mip-sanity-data-style checkout (instance/mips subdir) -- fall back
+  # to treating --data-dir itself as the flat directory of *.mps.gz files
+  # (e.g. an ad hoc MIPLIB collection like ~/inst/miplib/2017+spp).
+  if compgen -G "$DATA_DIR"/*.mps.gz >/dev/null 2>&1; then
+    MIPS_DIR="$DATA_DIR"
+  else
+    echo "No *.mps.gz found under $DATA_DIR or $DATA_DIR/mips (pass --data-dir)" >&2
+    exit 2
+  fi
 fi
 
 DUMP_BIN="$SCRIPT_DIR/.cbc-rinsdump-bin"

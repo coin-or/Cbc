@@ -1,0 +1,228 @@
+#!/usr/bin/env bash
+# gen-rins-fixtures-from-root — generate RINS fixtures by replaying from
+# EXISTING root fixtures (see gen-root-fixtures/ROOT-FIXTURES.md), instead of
+# re-running pre-processing and the root LP solve from the raw .mps.gz every
+# time (what gen-rins-fixtures does). This is the preferred/fast path
+# whenever a root fixture already exists for an instance: on large
+# instances, pre-processing + the root LP relaxation itself can be by far
+# the most expensive part of reaching RINS's first opportunity, and a root
+# fixture already captures the exact preprocessed problem + optimal root
+# basis CBC would reach at that point -- so replay only pays for cut
+# generation, heuristics, and whatever branch-and-bound is needed to reach
+# an incumbent + RINS's periodic node gate, typically a small fraction of
+# the raw-.mps.gz cost (observed ~4x on a medium instance in practice, far
+# more on large ones where the root LP dominates).
+#
+# Uses test/mip-root-replay (built with -DCBC_DUMP_RINS_FIXTURE, same macro
+# gen-rins-fixtures uses) instead of the full `cbc` CLI. mip-root-replay
+# attaches cut generators via the real installCutGenerators() and heuristics
+# (RINS included) via the real doHeuristics() -- the exact same production
+# code the `cbc` command line calls -- so a replay is faithful to a real
+# solve, just without paying for pre-processing/root-LP again.
+#
+# Instances with NO existing root fixture are reported as SKIPPED (not
+# MISSING): use gen-root-fixtures first, or fall back to gen-rins-fixtures
+# (raw .mps.gz path) for those specific instances.
+#
+# This script never leaves the workspace's normal `cbc`/`mip-root-replay`
+# binaries altered: fixture dumping only happens in throwaway binaries built
+# with -DCBC_DUMP_RINS_FIXTURE (test/.cbc-rinsdump-bin, kept only for
+# building mip-root-replay against the instrumented libCbc.la, and
+# test/.mip-root-replay-rinsdump-bin), and the normal no-dump `cbc`/
+# `mip-root-replay` are rebuilt immediately afterward.
+#
+# Usage (from the `test/` directory):
+#   ./gen-rins-fixtures-from-root                  # every instance with a root fixture
+#   ./gen-rins-fixtures-from-root 'bpc_*' 'cvrp_*' # only instances matching these globs
+#   ./gen-rins-fixtures-from-root --nodes=256      # widen the node cap
+#
+# Options:
+#   --jobs=N               Parallel jobs (default: nproc)
+#   --nodes=N               Max nodes per replay, root counts as node 1
+#                           (default 128 -- RINS/VND tuning is about early-
+#                           tree behavior, not deep search, and RINS' own
+#                           ~100-node periodic gate needs at least this much
+#                           room to open a real post-root opportunity)
+#   --sec=N                 Wall time backstop per instance (default 300;
+#                           replays are normally seconds even at --nodes=128,
+#                           this only bounds pathological LPs/cut rounds)
+#   --root-fixture-dir=PATH Where existing root fixtures live (default
+#                           ~/instances/mip-sanity-data/rootFixtures)
+#   --fixture-dir=PATH      Where to write RINS fixtures (default
+#                           ~/instances/mip-sanity-data/rinsFixtures)
+#   --prefix=PATH           Install prefix used to rebuild/restore the
+#                           normal cbc/mip-root-replay (default ~/prog/cbc)
+#   --skip-build            Reuse existing throwaway binaries
+#   --keep-bin              Don't delete the throwaway binaries when done
+#   --no-color              Disable ANSI colors
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SRC_DIR="$REPO_ROOT/src"
+
+JOBS=""
+NODES=128
+SECS=300
+ROOT_FIXTURE_DIR="${CBC_ROOT_FIXTURE_DIR:-$HOME/instances/mip-sanity-data/rootFixtures}"
+FIXTURE_DIR="${CBC_RINS_FIXTURE_DIR:-$HOME/instances/mip-sanity-data/rinsFixtures}"
+PREFIX="${PREFIX:-$HOME/prog/cbc}"
+SKIP_BUILD=0
+KEEP_BIN=0
+FORCE_COLOR=1
+PATTERNS=()
+WORKER_NAME=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --jobs=*) JOBS="${arg#*=}" ;;
+    --nodes=*) NODES="${arg#*=}" ;;
+    --sec=*) SECS="${arg#*=}" ;;
+    --root-fixture-dir=*) ROOT_FIXTURE_DIR="${arg#*=}" ;;
+    --fixture-dir=*) FIXTURE_DIR="${arg#*=}" ;;
+    --prefix=*) PREFIX="${arg#*=}" ;;
+    --skip-build) SKIP_BUILD=1 ;;
+    --keep-bin) KEEP_BIN=1 ;;
+    --no-color) FORCE_COLOR=0 ;;
+    --worker=*) WORKER_NAME="${arg#*=}" ;;
+    -h|--help)
+      sed -n '2,/^set -uo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $arg" >&2
+      exit 2
+      ;;
+    *) PATTERNS+=("$arg") ;;
+  esac
+done
+
+if [[ -n "$WORKER_NAME" ]]; then
+  name="$WORKER_NAME"
+  log="$FIXTURE_DIR_ENV/$name.rins.dumplog"
+  CBC_RINS_FIXTURE_DIR="$FIXTURE_DIR_ENV" CBC_RINS_FIXTURE_NAME="$name" \
+    timeout "$((SECS_ENV + 60))" "$REPLAY_BIN_ENV" "$name" \
+      --fixture-dir="$ROOT_FIXTURE_DIR_ENV" --nodes="$NODES_ENV" --sec="$SECS_ENV" \
+      --log=0 --quiet \
+      > "$log" 2>&1
+  rc=$?
+  if [[ -f "$FIXTURE_DIR_ENV/$name.rins.meta" ]]; then
+    echo "DUMPED  $name"
+  else
+    echo "MISSING $name (exit $rc, see $log)"
+  fi
+  exit 0
+fi
+
+JOBS="${JOBS:-$(nproc)}"
+
+if [[ $FORCE_COLOR -eq 1 && -t 1 ]]; then
+  C_BOLD=$'\033[1m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_RED=$'\033[31m'; C_RESET=$'\033[0m'
+else
+  C_BOLD=""; C_GREEN=""; C_YELLOW=""; C_RED=""; C_RESET=""
+fi
+
+if ! command -v parallel >/dev/null 2>&1; then
+  echo "GNU parallel is required (apt install parallel)." >&2
+  exit 2
+fi
+
+if [[ ! -d "$ROOT_FIXTURE_DIR" ]]; then
+  echo "No such directory: $ROOT_FIXTURE_DIR (pass --root-fixture-dir, or run gen-root-fixtures first)" >&2
+  exit 2
+fi
+
+DUMP_LIB_TOUCH="$SRC_DIR/CbcHeuristicRINS.cpp"
+REPLAY_BIN="$SCRIPT_DIR/.mip-root-replay-rinsdump-bin"
+
+build_dump_binary() {
+  echo "${C_BOLD}Building fixture-dump libCbc (CBC_DUMP_RINS_FIXTURE) + mip-root-replay...${C_RESET}"
+  ( cd "$SRC_DIR" \
+    && touch "$DUMP_LIB_TOUCH" \
+    && make CPPFLAGS="-DCBC_DUMP_RINS_FIXTURE" -j"$(nproc)" >/tmp/gen-rins-from-root-build.log 2>&1 ) \
+    || { echo "${C_RED}libCbc build failed, see /tmp/gen-rins-from-root-build.log${C_RESET}" >&2; exit 1; }
+  ( cd "$SCRIPT_DIR" \
+    && make -j"$(nproc)" mip-root-replay >>/tmp/gen-rins-from-root-build.log 2>&1 ) \
+    || { echo "${C_RED}mip-root-replay build failed, see /tmp/gen-rins-from-root-build.log${C_RESET}" >&2; exit 1; }
+  cp "$SCRIPT_DIR/mip-root-replay" "$REPLAY_BIN"
+  echo "${C_BOLD}Restoring normal (no-dump) libCbc/mip-root-replay/cbc and reinstalling to $PREFIX...${C_RESET}"
+  ( cd "$SRC_DIR" \
+    && touch "$DUMP_LIB_TOUCH" \
+    && make -j"$(nproc)" >/tmp/gen-rins-from-root-restore.log 2>&1 \
+    && make prefix="$PREFIX" install >>/tmp/gen-rins-from-root-restore.log 2>&1 ) \
+    || { echo "${C_RED}Restore build/install failed, see /tmp/gen-rins-from-root-restore.log${C_RESET}" >&2; exit 1; }
+  ( cd "$SCRIPT_DIR" \
+    && make -j"$(nproc)" mip-root-replay >>/tmp/gen-rins-from-root-restore.log 2>&1 ) \
+    || { echo "${C_RED}mip-root-replay restore-build failed, see /tmp/gen-rins-from-root-restore.log${C_RESET}" >&2; exit 1; }
+}
+
+if [[ $SKIP_BUILD -eq 1 ]]; then
+  if [[ ! -x "$REPLAY_BIN" ]]; then
+    echo "--skip-build given but $REPLAY_BIN does not exist" >&2
+    exit 2
+  fi
+else
+  build_dump_binary
+fi
+
+mkdir -p "$FIXTURE_DIR"
+
+mapfile -t ALL_INSTANCES < <(
+  for f in "$ROOT_FIXTURE_DIR"/*.root.meta; do
+    [[ -e "$f" ]] || continue
+    stem="$(basename "$f" .root.meta)"
+    mps="$ROOT_FIXTURE_DIR/$stem.root.mps.gz"
+    size=0
+    [[ -e "$mps" ]] && size="$(stat -c%s "$mps")"
+    printf '%s\t%s\n' "$size" "$stem"
+  done | sort -rn -k1,1 | cut -f2
+)
+
+TODO=()
+SKIPPED=0
+for name in "${ALL_INSTANCES[@]}"; do
+  if [[ ${#PATTERNS[@]} -gt 0 ]]; then
+    matched=0
+    for pat in "${PATTERNS[@]}"; do
+      # shellcheck disable=SC2053
+      [[ "$name" == $pat ]] && { matched=1; break; }
+    done
+    [[ $matched -eq 1 ]] || continue
+  fi
+  if [[ -f "$FIXTURE_DIR/$name.rins.meta" ]]; then
+    SKIPPED=$((SKIPPED + 1))
+    continue
+  fi
+  TODO+=("$name")
+done
+
+echo "${C_BOLD}${#TODO[@]} instance(s) to dump (from root fixtures), ${SKIPPED} already done, jobs=$JOBS, nodes=$NODES, sec=$SECS${C_RESET}"
+
+if [[ ${#TODO[@]} -eq 0 ]]; then
+  echo "${C_GREEN}Nothing to do.${C_RESET}"
+  [[ $KEEP_BIN -eq 1 ]] || rm -f "$REPLAY_BIN"
+  exit 0
+fi
+
+export ROOT_FIXTURE_DIR_ENV="$ROOT_FIXTURE_DIR" FIXTURE_DIR_ENV="$FIXTURE_DIR" \
+  NODES_ENV="$NODES" SECS_ENV="$SECS" REPLAY_BIN_ENV="$REPLAY_BIN"
+
+printf '%s\n' "${TODO[@]}" | parallel --jobs "$JOBS" --line-buffer "$0" --worker={}
+
+FINAL_MISSING=()
+for name in "${TODO[@]}"; do
+  [[ -f "$FIXTURE_DIR/$name.rins.meta" ]] || FINAL_MISSING+=("$name")
+done
+
+echo
+echo "${C_BOLD}Done: $(( ${#TODO[@]} - ${#FINAL_MISSING[@]} ))/${#TODO[@]} dumped.${C_RESET}"
+if [[ ${#FINAL_MISSING[@]} -gt 0 ]]; then
+  echo "${C_YELLOW}${#FINAL_MISSING[@]} instance(s) produced no fixture (RINS never fired with an" \
+    "incumbent present within the budget, or the instance was solved/proved" \
+    "infeasible before that could happen -- see each *.rins.dumplog):${C_RESET}"
+  printf '  %s\n' "${FINAL_MISSING[@]}"
+fi
+
+[[ $KEEP_BIN -eq 1 ]] || rm -f "$REPLAY_BIN"
+
+exit 0

@@ -1534,6 +1534,9 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     // costing ~25-30% less time. Was 50.
     int nodes[] = { -2, 200, 200, 200, 200, 1000, 10000 };
     heuristic6b.setNumberNodes(nodes[useVND]);
+    // See the matching RINS comment above -- same scheduling default and
+    // rationale apply to VND.
+    heuristic6b.setScheduleMode(HeuristicScheduleMode::EveryKNodesNoImprove, 100);
     model->addHeuristic(&heuristic6b);
     anyToDo = true;
   }
@@ -1745,6 +1748,18 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       heuristic5.setDecayFactor(1.5);
     }
     heuristic5.setFixCloseMaxDist(parameters[CbcParam::RINSCLOSEMAXDIST]->dblVal());
+    // Default per-node scheduling: re-run RINS whenever 100+ nodes have
+    // elapsed since its last call, but immediately whenever a new
+    // incumbent has just been found (so it doesn't wait out a stale
+    // window right after real progress). This works around a real bug in
+    // the base CbcHeuristic::shouldHeurRun() deep-tree gate that otherwise
+    // silently stops RINS from firing again after the first few
+    // root-adjacent calls -- see RINS-FIXTURES.md's "Per-node scheduling
+    // API" section for the full derivation and the sweep/full-suite
+    // validation (500-instance mip-sanity-data run: 62 improvements vs.
+    // 16 regressions, +2 optimal, 0 new failures/overtimes) that justified
+    // shipping this as the default instead of Legacy.
+    heuristic5.setScheduleMode(HeuristicScheduleMode::EveryKNodesNoImprove, 100);
     model->addHeuristic(&heuristic5);
     anyToDo = true;
   }

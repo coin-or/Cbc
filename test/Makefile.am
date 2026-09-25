@@ -48,7 +48,7 @@ noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
 	lagomory-bench landp-bench \
 	twomir-bench mir2-bench impclique-explore impclique-bench impclique-vs-clique-bench \
-	impclique-real-bench mip-root-replay oddwheel-bench
+	impclique-real-bench mip-root-replay oddwheel-bench rins-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -436,6 +436,26 @@ impclique_real_bench_LDADD = ../src/libCbc.la
 mip_root_replay_SOURCES = mip-root-replay.cpp
 
 mip_root_replay_LDADD = ../src/libCbc.la
+
+########################################################################
+#              RINS (and VND) heuristic replay/sweep bench             #
+########################################################################
+#
+# rins-bench loads a fixture written by CbcHeuristicRinsFixtureDump.hpp
+# (CBC_DUMP_RINS_FIXTURE) -- the current node's LP relaxation plus the
+# incumbent solution, captured at the exact call site inside
+# CbcHeuristicRINS::solution() -- rebuilds a CbcModel around it, installs the
+# incumbent as the best solution, and calls the REAL CbcHeuristicRINS (or
+# CbcHeuristicVND) class directly with tunable knobs (shallow-fixing mode,
+# close-fix distance, sub-MIP node budget, fractionSmall). This makes a
+# parameter sweep over how aggressively RINS fixes variables a
+# milliseconds-per-point question instead of a full branch-and-bound run --
+# see RINS-FIXTURES.md and `gen-rins-fixtures` for how fixtures are produced.
+# Not part of the regression suite; a measurement tool.
+
+rins_bench_SOURCES = rins-bench.cpp
+
+rins_bench_LDADD = ../src/libCbc.la
 
 ########################################################################
 #        0-1/2 separation replay benchmark (measurement tool)          #

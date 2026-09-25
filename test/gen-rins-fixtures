@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+# gen-rins-fixtures — generate RINS fixtures for every instance in
+# mip-sanity-data, for fast offline experimentation on RINS/VND-style
+# incumbent-based heuristics (see CbcHeuristicRinsFixtureDump.hpp and
+# RINS-FIXTURES.md).
+#
+# A "RINS fixture" is the current node's LP relaxation (matrix + optimal
+# basis) plus the incumbent solution, dumped from inside
+# CbcHeuristicRINS::solution() the first time it is actually invoked with an
+# incumbent present, then the process exits immediately -- so a dump-enabled
+# run costs whatever it takes to reach RINS's first real opportunity, not a
+# full solve. Loading one lets test/rins-bench re-run RINS (or VND) directly
+# with any parameter combination in milliseconds.
+#
+# Unlike root fixtures, this needs an INCUMBENT to exist -- reaching that can
+# require substantially more search than reaching the root LP alone, so the
+# per-instance time budget here defaults higher than gen-root-fixtures'. Not
+# every instance will produce a fixture even given a generous budget: RINS
+# is only installed at all when the CLI's -rins default is active, only
+# actually reached once the node/frequency gate first matches, and some
+# instances are solved to proven optimality/infeasibility (by heuristics or
+# presolve) before any node with both an incumbent and a fresh LP relaxation
+# ever arises. That is an expected skip, not a failure -- same distinction
+# gen-root-fixtures already makes for its own "never reached the call site"
+# case.
+#
+# This script never leaves the workspace's normal `cbc` binary/install
+# altered: fixture dumping only happens in a build compiled with
+# -DCBC_DUMP_RINS_FIXTURE, which this script builds into a private,
+# throwaway binary (test/.cbc-rinsdump-bin) and then rebuilds+reinstalls the
+# normal no-dump `cbc` immediately afterward, before running anything.
+#
+# Usage (from the `test/` directory):
+#   ./gen-rins-fixtures                   # every instance, default budget
+#   ./gen-rins-fixtures 'bpc_*' 'cvrp_*'   # only instances matching these globs
+#   ./gen-rins-fixtures --skip-build       # reuse an existing dump binary
+#
+# Options:
+#   --jobs=N           Parallel jobs (default: nproc)
+#   --sec=N             Per-instance wall time limit (default 900)
+#   --nodes=N           Per-instance node limit backstop (default 200000;
+#                       RINS' own -100-node modulo gate needs some minimum
+#                       tree size to ever fire even after an incumbent
+#                       exists)
+#   --fixture-dir=PATH  Where to write fixtures (default
+#                       ~/instances/mip-sanity-data/rinsFixtures)
+#   --data-dir=PATH     mip-sanity-data checkout (default ./mip-sanity-data)
+#   --prefix=PATH       Install prefix used to rebuild/restore the normal cbc
+#                       (default ~/prog/cbc)
+#   --skip-build        Reuse test/.cbc-rinsdump-bin instead of rebuilding it
+#   --keep-bin          Don't delete test/.cbc-rinsdump-bin when done
+#   --no-color          Disable ANSI colors
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SRC_DIR="$REPO_ROOT/src"
+
+JOBS=""
+SECS=900
+NODES=200000
+FIXTURE_DIR="${CBC_RINS_FIXTURE_DIR:-$HOME/instances/mip-sanity-data/rinsFixtures}"
+DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
+PREFIX="${PREFIX:-$HOME/prog/cbc}"
+SKIP_BUILD=0
+KEEP_BIN=0
+FORCE_COLOR=1
+PATTERNS=()
+WORKER_NAME=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --jobs=*) JOBS="${arg#*=}" ;;
+    --sec=*) SECS="${arg#*=}" ;;
+    --nodes=*) NODES="${arg#*=}" ;;
+    --fixture-dir=*) FIXTURE_DIR="${arg#*=}" ;;
+    --data-dir=*) DATA_DIR="${arg#*=}" ;;
+    --prefix=*) PREFIX="${arg#*=}" ;;
+    --skip-build) SKIP_BUILD=1 ;;
+    --keep-bin) KEEP_BIN=1 ;;
+    --no-color) FORCE_COLOR=0 ;;
+    --worker=*) WORKER_NAME="${arg#*=}" ;;
+    -h|--help)
+      sed -n '2,/^set -uo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $arg" >&2
+      exit 2
+      ;;
+    *) PATTERNS+=("$arg") ;;
+  esac
+done
+
+if [[ -n "$WORKER_NAME" ]]; then
+  name="$WORKER_NAME"
+  mps="$MIPS_DIR_ENV/$name.mps.gz"
+  log="$FIXTURE_DIR_ENV/$name.rins.dumplog"
+  # -threads 1: RINS' dump-then-exit() is not thread-safe to call from more
+  # than one worker thread at once, and a single-threaded solve is enough --
+  # this dump only needs to reach RINS' first real opportunity, not solve
+  # fast.
+  CBC_RINS_FIXTURE_DIR="$FIXTURE_DIR_ENV" CBC_RINS_FIXTURE_NAME="$name" \
+    timeout "$((SECS_ENV + 60))" "$DUMP_BIN_ENV" "$mps" \
+      -threads 1 -maxNodes "$NODES_ENV" -sec "$SECS_ENV" -solve -quit \
+      > "$log" 2>&1
+  rc=$?
+  if [[ -f "$FIXTURE_DIR_ENV/$name.rins.meta" ]]; then
+    echo "DUMPED  $name"
+  else
+    echo "MISSING $name (exit $rc, see $log)"
+  fi
+  exit 0
+fi
+
+JOBS="${JOBS:-$(nproc)}"
+
+if [[ $FORCE_COLOR -eq 1 && -t 1 ]]; then
+  C_BOLD=$'\033[1m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_RED=$'\033[31m'; C_RESET=$'\033[0m'
+else
+  C_BOLD=""; C_GREEN=""; C_YELLOW=""; C_RED=""; C_RESET=""
+fi
+
+if ! command -v parallel >/dev/null 2>&1; then
+  echo "GNU parallel is required (apt install parallel)." >&2
+  exit 2
+fi
+
+MIPS_DIR="$DATA_DIR/mips"
+if [[ ! -d "$MIPS_DIR" ]]; then
+  echo "No such directory: $MIPS_DIR (pass --data-dir, or git submodule update mip-sanity-data)" >&2
+  exit 2
+fi
+
+DUMP_BIN="$SCRIPT_DIR/.cbc-rinsdump-bin"
+
+build_dump_binary() {
+  echo "${C_BOLD}Building fixture-dump cbc (CBC_DUMP_RINS_FIXTURE)...${C_RESET}"
+  ( cd "$SRC_DIR" \
+    && touch CbcHeuristicRINS.cpp \
+    && make CPPFLAGS="-DCBC_DUMP_RINS_FIXTURE" -j"$(nproc)" >/tmp/gen-rins-fixtures-build.log 2>&1 ) \
+    || { echo "${C_RED}Build failed, see /tmp/gen-rins-fixtures-build.log${C_RESET}" >&2; exit 1; }
+  cp "$SRC_DIR/cbc" "$DUMP_BIN"
+  echo "${C_BOLD}Restoring normal (no-dump) cbc and reinstalling to $PREFIX...${C_RESET}"
+  ( cd "$SRC_DIR" \
+    && touch CbcHeuristicRINS.cpp \
+    && make -j"$(nproc)" >/tmp/gen-rins-fixtures-restore.log 2>&1 \
+    && make prefix="$PREFIX" install >>/tmp/gen-rins-fixtures-restore.log 2>&1 ) \
+    || { echo "${C_RED}Restore build/install failed, see /tmp/gen-rins-fixtures-restore.log${C_RESET}" >&2; exit 1; }
+}
+
+if [[ $SKIP_BUILD -eq 1 ]]; then
+  if [[ ! -x "$DUMP_BIN" ]]; then
+    echo "--skip-build given but $DUMP_BIN does not exist" >&2
+    exit 2
+  fi
+else
+  build_dump_binary
+fi
+
+mkdir -p "$FIXTURE_DIR"
+
+mapfile -t ALL_INSTANCES < <(
+  for f in "$MIPS_DIR"/*.mps.gz; do
+    [[ -e "$f" ]] || continue
+    printf '%s\t%s\n' "$(stat -c%s "$f")" "$(basename "$f" .mps.gz)"
+  done | sort -rn -k1,1 | cut -f2
+)
+
+TODO=()
+SKIPPED=0
+for name in "${ALL_INSTANCES[@]}"; do
+  if [[ ${#PATTERNS[@]} -gt 0 ]]; then
+    matched=0
+    for pat in "${PATTERNS[@]}"; do
+      # shellcheck disable=SC2053
+      [[ "$name" == $pat ]] && { matched=1; break; }
+    done
+    [[ $matched -eq 1 ]] || continue
+  fi
+  if [[ -f "$FIXTURE_DIR/$name.rins.meta" ]]; then
+    SKIPPED=$((SKIPPED + 1))
+    continue
+  fi
+  TODO+=("$name")
+done
+
+echo "${C_BOLD}${#TODO[@]} instance(s) to dump, ${SKIPPED} already done, jobs=$JOBS, sec=$SECS, nodes=$NODES${C_RESET}"
+
+if [[ ${#TODO[@]} -eq 0 ]]; then
+  echo "${C_GREEN}Nothing to do.${C_RESET}"
+  [[ $KEEP_BIN -eq 1 ]] || rm -f "$DUMP_BIN"
+  exit 0
+fi
+
+export MIPS_DIR_ENV="$MIPS_DIR" FIXTURE_DIR_ENV="$FIXTURE_DIR" \
+  SECS_ENV="$SECS" NODES_ENV="$NODES" DUMP_BIN_ENV="$DUMP_BIN"
+
+printf '%s\n' "${TODO[@]}" | parallel --jobs "$JOBS" --line-buffer "$0" --worker={}
+
+FINAL_MISSING=()
+for name in "${TODO[@]}"; do
+  [[ -f "$FIXTURE_DIR/$name.rins.meta" ]] || FINAL_MISSING+=("$name")
+done
+
+echo
+echo "${C_BOLD}Done: $(( ${#TODO[@]} - ${#FINAL_MISSING[@]} ))/${#TODO[@]} dumped.${C_RESET}"
+if [[ ${#FINAL_MISSING[@]} -gt 0 ]]; then
+  echo "${C_YELLOW}${#FINAL_MISSING[@]} instance(s) produced no fixture (RINS never fired with an" \
+    "incumbent present within the budget, or the instance was solved/proved" \
+    "infeasible before that could happen -- see each *.rins.dumplog):${C_RESET}"
+  printf '  %s\n' "${FINAL_MISSING[@]}"
+fi
+
+[[ $KEEP_BIN -eq 1 ]] || rm -f "$DUMP_BIN"
+
+exit 0

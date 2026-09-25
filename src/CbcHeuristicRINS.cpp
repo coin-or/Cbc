@@ -18,6 +18,7 @@
 #include "CbcBranchActual.hpp"
 #include "CbcStrategy.hpp"
 #include "CglPreProcess.hpp"
+#include "CbcHeuristicRinsFixtureDump.hpp"
 
 // Default Constructor
 CbcHeuristicRINS::CbcHeuristicRINS()
@@ -210,6 +211,15 @@ int CbcHeuristicRINS::solution(double &solutionValue,
       model_->getNodeCount(), model_->getCurrentPassNumber());
 #endif
     OsiSolverInterface *solver = model_->solver();
+
+#ifdef CBC_DUMP_RINS_FIXTURE
+    // Dump once, at the first opportunity RINS actually reaches this block
+    // with an incumbent present, then exit -- see
+    // CbcHeuristicRinsFixtureDump.hpp / RINS-FIXTURES.md. Bounds the cost of
+    // fixture generation the same way -maxNodes 1 bounds gen-root-fixtures.
+    if (cbcDumpRinsFixture(model_, solver, bestSolution))
+      exit(0);
+#endif
 
     int numberIntegers = model_->numberIntegers();
     const int *integerVariable = model_->integerVariable();

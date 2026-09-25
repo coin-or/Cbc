@@ -91,6 +91,38 @@ enum class HeuristicCategory {
   IMPROVEMENT_2 = 2
 };
 
+/** Node-count/depth-based scheduling policy for periodic re-invocation of a
+    heuristic deep in the tree. Several heuristics (notably
+    CbcHeuristicRINS/CbcHeuristicVND) historically reimplemented their own
+    ad-hoc node-count math for this (magic constants like "wait at least 12
+    nodes", "force a run at node 50 or 100", "double the interval if 2x it
+    has passed with no trigger", decay the interval by a fixed fraction
+    every 10 tries if success rate is below 30% -- see
+    CbcHeuristicRINS::solution()/CbcHeuristicVND::solution() pre-refactor).
+    This enum gives that policy an explicit, named, reusable form:
+      - Legacy: unchanged, heuristic-specific historical behavior (default;
+        shouldRunBySchedule() below is a no-op observer in this mode --
+        each heuristic's own pre-existing gating logic remains solely
+        responsible).
+      - EveryKDepth: run only when the current tree depth is a multiple of
+        K (i.e. at depths 0, K, 2K, 3K, ...).
+      - EveryKNodes: run once every K nodes explored overall, independent
+        of depth.
+      - EveryKNodesNoImprove: run every K nodes since the last incumbent
+        improvement, AND immediately again right after any improvement
+        (which resets the K-node window). Suited to improvement
+        heuristics like RINS/VND: a fresh incumbent is itself a natural
+        trigger (there is a new target to compare the LP relaxation
+        against), while a long stall (no improvement for K nodes) should
+        prompt another attempt.
+    See RINS-FIXTURES.md for the benchmarking behind these modes. */
+enum class HeuristicScheduleMode {
+  Legacy = 0,
+  EveryKDepth = 1,
+  EveryKNodes = 2,
+  EveryKNodesNoImprove = 3
+};
+
 /** Heuristic base class */
 
 class CBCLIB_EXPORT CbcHeuristic {
@@ -410,6 +442,31 @@ public:
   {
     minDistanceToRun_ = value;
   }
+  /** Select a HeuristicScheduleMode and its K parameter. Only takes
+      effect for heuristics that consult shouldRunBySchedule() from their
+      own gating logic (currently CbcHeuristicRINS and CbcHeuristicVND);
+      other heuristics ignore it. Default is Legacy (no behavior change). */
+  inline void setScheduleMode(HeuristicScheduleMode mode, int k = 1)
+  {
+    scheduleMode_ = mode;
+    scheduleK_ = k > 0 ? k : 1;
+  }
+  inline HeuristicScheduleMode scheduleMode() const
+  {
+    return scheduleMode_;
+  }
+  inline int scheduleK() const
+  {
+    return scheduleK_;
+  }
+  /** Returns true if, per scheduleMode()/scheduleK(), this is a node at
+      which the heuristic should attempt to run. Has side effects
+      (advances internal node/solution-count bookkeeping), so a heuristic
+      should call it at most once per candidate invocation. Always
+      returns true when scheduleMode() is Legacy -- in that mode it is a
+      pure no-op observer and gates nothing; the heuristic's own
+      pre-existing logic remains solely responsible. */
+  bool shouldRunBySchedule();
 
   /** Check whether the heuristic should run at all
         0 - before cuts at root node (or from doHeuristics)
@@ -539,6 +596,16 @@ protected:
         run in order to allow the heuristic to run in this node, too. Currently
         this is tested, but we may switch to avgDistanceToRun_ in the future. */
   int minDistanceToRun_;
+
+  /// See setScheduleMode()
+  HeuristicScheduleMode scheduleMode_;
+  /// See setScheduleMode()
+  int scheduleK_;
+  /// Node count at which this heuristic last ran under the schedule
+  int scheduleLastRunNode_;
+  /// model_->getSolutionCount() observed at the last shouldRunBySchedule()
+  /// call, used by EveryKNodesNoImprove to detect a fresh incumbent
+  int scheduleLastSolutionCount_;
 
   /// The description of the nodes where this heuristic has been applied
   CbcHeuristicNodeList runNodes_;

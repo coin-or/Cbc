@@ -59,6 +59,18 @@ public:
     double *newSolution,
     const int *keep);
 
+  /// See CbcHeuristic::shouldHeurRun() -- overridden so that a non-Legacy
+  /// setScheduleMode() bypasses the base class's depth/shallow node-count
+  /// gating (which has a latent bug interacting with the whereFrom==3
+  /// per-node tree call site: that call site resets currentPassNumber_ to 0
+  /// right before this check, so the base class's "deep" branch invocation
+  /// counter -- gated on getCurrentPassNumber()==1 -- never increments,
+  /// permanently blocking solution() from being reached beyond the first
+  /// few root-adjacent calls). Legacy mode is untouched: it still defers to
+  /// CbcHeuristic::shouldHeurRun() byte-for-byte, bug included, to preserve
+  /// exact historical behavior for anyone not opting in to the new API.
+  virtual bool shouldHeurRun(int whereFrom);
+
   /// Sets how often to do it
   inline void setHowOften(int value)
   {

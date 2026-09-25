@@ -58,6 +58,10 @@ public:
     double *newSolution,
     const int *keep);
 
+  /// See CbcHeuristicRINS::shouldHeurRun() -- same rationale/override
+  /// (VND has the identical howOften_ per-node gating pattern as RINS).
+  virtual bool shouldHeurRun(int whereFrom);
+
   /// Sets how often to do it
   inline void setHowOften(int value)
   {

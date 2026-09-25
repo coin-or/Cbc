@@ -149,6 +149,25 @@ void CbcHeuristicRINS::resetModel(CbcModel * /*model*/)
   First tries setting a variable to better value.  If feasible then
   tries setting others.  If not feasible then tries swaps
   Returns 1 if solution, 0 if not */
+bool CbcHeuristicRINS::shouldHeurRun(int whereFrom)
+{
+  if (scheduleMode() == HeuristicScheduleMode::Legacy)
+    return CbcHeuristic::shouldHeurRun(whereFrom);
+  // Non-Legacy schedule: bypass the base class's depth/shallow node-count
+  // gating -- see the doc comment on the declaration in CbcHeuristicRINS.hpp
+  // for why that gating never actually opens up beyond the first few
+  // root-adjacent calls in real per-node tree search. Still respect the
+  // whereFrom_ context-type bitmask and the hot-start/no-rows guard (these
+  // are orthogonal, correctly-functioning checks); periodic gating is left
+  // entirely to shouldRunBySchedule(), called from within solution().
+  const int wf = whereFrom & 7;
+  if ((whereFrom_ & (1 << wf)) == 0)
+    return false;
+  if (!model_ || model_->hotstartSolution() || !model_->getNumRows())
+    return false;
+  return true;
+}
+
 int CbcHeuristicRINS::solution(double &solutionValue,
   double *betterSolution)
 {
@@ -192,19 +211,32 @@ int CbcHeuristicRINS::solution(double &solutionValue,
       }
     }
   }
-  int numberNodes = model_->getNodeCount();
-  if (howOften_ == 100) {
-    if (numberNodes < lastNode_ + 12)
-      return 0;
-    // Do at 50 and 100
-    if ((numberNodes > 40 && numberNodes <= 50) || (numberNodes > 90 && numberNodes < 100))
+  const bool passOK = (model_->getCurrentPassNumber() <= 1 || model_->getCurrentPassNumber() == 999999);
+  bool runNow;
+  if (scheduleMode() != HeuristicScheduleMode::Legacy) {
+    // See CbcHeuristic::shouldRunBySchedule() / setScheduleMode() --
+    // replaces the magic-number node-count math below with an explicit,
+    // named policy. Must still call shouldRunBySchedule() exactly once
+    // per candidate invocation to keep its internal bookkeeping correct,
+    // even when passOK is false (so a multi-pass node doesn't get
+    // double-counted against the schedule).
+    runNow = shouldRunBySchedule() && passOK;
+  } else {
+    int numberNodes = model_->getNodeCount();
+    if (howOften_ == 100) {
+      if (numberNodes < lastNode_ + 12)
+        return 0;
+      // Do at 50 and 100
+      if ((numberNodes > 40 && numberNodes <= 50) || (numberNodes > 90 && numberNodes < 100))
+        numberNodes = howOften_;
+    }
+    // Allow for infeasible nodes - so do anyway after a bit
+    if (howOften_ >= 100 && numberNodes >= lastNode_ + 2 * howOften_) {
       numberNodes = howOften_;
+    }
+    runNow = (numberNodes % howOften_) == 0 && passOK;
   }
-  // Allow for infeasible nodes - so do anyway after a bit
-  if (howOften_ >= 100 && numberNodes >= lastNode_ + 2 * howOften_) {
-    numberNodes = howOften_;
-  }
-  if ((numberNodes % howOften_) == 0 && (model_->getCurrentPassNumber() <= 1 || model_->getCurrentPassNumber() == 999999)) {
+  if (runNow) {
     lastNode_ = model_->getNodeCount();
 #ifdef RINS_CLOSE_DEBUG
     printf("RINS close-fix: entering work block at node=%d passNumber=%d\n",

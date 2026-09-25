@@ -116,6 +116,10 @@ CbcHeuristic::CbcHeuristic()
   , lastRunDeep_(0)
   , numRuns_(0)
   , minDistanceToRun_(1)
+  , scheduleMode_(HeuristicScheduleMode::Legacy)
+  , scheduleK_(1)
+  , scheduleLastRunNode_(-1000000)
+  , scheduleLastSolutionCount_(0)
   , runNodes_()
   , numCouldRun_(0)
   , numberSolutionsFound_(0)
@@ -148,6 +152,10 @@ CbcHeuristic::CbcHeuristic(CbcModel &model)
   , lastRunDeep_(0)
   , numRuns_(0)
   , minDistanceToRun_(1)
+  , scheduleMode_(HeuristicScheduleMode::Legacy)
+  , scheduleK_(1)
+  , scheduleLastRunNode_(-1000000)
+  , scheduleLastSolutionCount_(0)
   , runNodes_()
   , numCouldRun_(0)
   , numberSolutionsFound_(0)
@@ -181,6 +189,10 @@ void CbcHeuristic::gutsOfCopy(const CbcHeuristic &rhs)
   numRuns_ = rhs.numRuns_;
   numCouldRun_ = rhs.numCouldRun_;
   minDistanceToRun_ = rhs.minDistanceToRun_;
+  scheduleMode_ = rhs.scheduleMode_;
+  scheduleK_ = rhs.scheduleK_;
+  scheduleLastRunNode_ = rhs.scheduleLastRunNode_;
+  scheduleLastSolutionCount_ = rhs.scheduleLastSolutionCount_;
   runNodes_ = rhs.runNodes_;
   numberSolutionsFound_ = rhs.numberSolutionsFound_;
   numberNodesDone_ = rhs.numberNodesDone_;
@@ -366,6 +378,43 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
   ++numRuns_;
   return true;
 #endif
+}
+
+bool CbcHeuristic::shouldRunBySchedule()
+{
+  if (scheduleMode_ == HeuristicScheduleMode::Legacy || !model_)
+    return true;
+  const int nodeCount = model_->getNodeCount();
+  switch (scheduleMode_) {
+  case HeuristicScheduleMode::EveryKDepth: {
+    const int depth = model_->currentDepth();
+    return (depth % scheduleK_) == 0;
+  }
+  case HeuristicScheduleMode::EveryKNodesNoImprove: {
+    const int solCount = model_->getSolutionCount();
+    const bool improved = solCount != scheduleLastSolutionCount_;
+    scheduleLastSolutionCount_ = solCount;
+    if (improved) {
+      // A fresh incumbent is itself a natural trigger -- run now and
+      // reset the stall window.
+      scheduleLastRunNode_ = nodeCount;
+      return true;
+    }
+    if (nodeCount - scheduleLastRunNode_ >= scheduleK_) {
+      scheduleLastRunNode_ = nodeCount;
+      return true;
+    }
+    return false;
+  }
+  case HeuristicScheduleMode::EveryKNodes:
+  default: {
+    if (nodeCount - scheduleLastRunNode_ >= scheduleK_) {
+      scheduleLastRunNode_ = nodeCount;
+      return true;
+    }
+    return false;
+  }
+  }
 }
 
 bool CbcHeuristic::shouldHeurRun_randomChoice()

@@ -296,11 +296,29 @@ static std::vector< std::string > lookupRow(const std::string &tsvPath, const st
 /// CbcStrategyDefault::setupHeuristics()'s much smaller fixed set (rounding
 /// only) -- this is what lets replay experiments faithfully compare against
 /// full-CLI heuristic behavior.
+/// Parse --rins-schedule=/--vnd-schedule= string values into
+/// HeuristicScheduleMode. Empty string means "not requested" (legacy,
+/// unchanged). Exits with an error message on an unrecognized value.
+static HeuristicScheduleMode parseScheduleModeArg(const std::string &s)
+{
+  if (s.empty() || s == "legacy")
+    return HeuristicScheduleMode::Legacy;
+  if (s == "depth")
+    return HeuristicScheduleMode::EveryKDepth;
+  if (s == "nodes")
+    return HeuristicScheduleMode::EveryKNodes;
+  if (s == "nodes-no-improve")
+    return HeuristicScheduleMode::EveryKNodesNoImprove;
+  fprintf(stderr, "Unknown schedule mode: %s\n", s.c_str());
+  exit(2);
+}
+
 class ReplayStrategy : public CbcStrategyDefault {
 public:
   ReplayStrategy(bool doCuts, bool doHeur, int numberStrong, int numberBeforeTrust,
     CbcParameters &cutParams, CbcParameters *heurParams = NULL, int passCutsOverride = 0,
-    double minDropScale = 1.0)
+    double minDropScale = 1.0, const std::string &rinsSchedule = "", int rinsScheduleK = 1,
+    const std::string &vndSchedule = "", int vndScheduleK = 1)
     : CbcStrategyDefault(1, numberStrong, numberBeforeTrust)
     , doCuts_(doCuts)
     , doHeur_(doHeur)
@@ -308,6 +326,10 @@ public:
     , heurParams_(heurParams)
     , passCutsOverride_(passCutsOverride)
     , minDropScale_(minDropScale)
+    , rinsSchedule_(rinsSchedule)
+    , rinsScheduleK_(rinsScheduleK)
+    , vndSchedule_(vndSchedule)
+    , vndScheduleK_(vndScheduleK)
   {
   }
   virtual CbcStrategy *clone() const { return new ReplayStrategy(*this); }
@@ -355,6 +377,26 @@ public:
       doHeuristics(&model, 1, *heurParams_, /*noPrinting_=*/1, /*initialPumpTune=*/0);
     else
       CbcStrategyDefault::setupHeuristics(model);
+    // Apply --rins-schedule=/--vnd-schedule= overrides here, right after the
+    // heuristics doHeuristics()/CbcStrategyDefault attached are actually
+    // present on the model -- this runs synchronously inside
+    // branchAndBound(), before the tree search starts, so it is the correct
+    // (and only) place to reach the RINS/VND instances before they fire.
+    if (rinsSchedule_.empty() && vndSchedule_.empty())
+      return;
+    const HeuristicScheduleMode rinsMode = parseScheduleModeArg(rinsSchedule_);
+    const HeuristicScheduleMode vndMode = parseScheduleModeArg(vndSchedule_);
+    for (int i = 0; i < model.numberHeuristics(); ++i) {
+      CbcHeuristic *h = model.heuristic(i);
+      if (!h)
+        continue;
+      const std::string hn = h->heuristicName() ? h->heuristicName() : "";
+      if (!rinsSchedule_.empty() && hn == "RINS") {
+        h->setScheduleMode(rinsMode, rinsScheduleK_);
+      } else if (!vndSchedule_.empty() && hn == "VND") {
+        h->setScheduleMode(vndMode, vndScheduleK_);
+      }
+    }
   }
 
 private:
@@ -363,6 +405,10 @@ private:
   CbcParameters *heurParams_;
   int passCutsOverride_;
   double minDropScale_;
+  std::string rinsSchedule_;
+  int rinsScheduleK_;
+  std::string vndSchedule_;
+  int vndScheduleK_;
 };
 
 static void usage(const char *prog)
@@ -417,6 +463,13 @@ static void usage(const char *prog)
     "                       own default). Vary this across repeats of the same\n"
     "                       config to average out branching tie-break noise\n"
     "                       (single-threaded B&B is otherwise deterministic).\n"
+    "  --rins-schedule=legacy|depth|nodes|nodes-no-improve\n"
+    "                       override RINS's re-invocation policy (default: legacy,\n"
+    "                       the existing howOften_/decayFactor_ node-count math).\n"
+    "                       See HeuristicScheduleMode in CbcHeuristic.hpp.\n"
+    "  --rins-schedule-k=N  the K parameter for --rins-schedule (default 1)\n"
+    "  --vnd-schedule=legacy|depth|nodes|nodes-no-improve   same, for VND\n"
+    "  --vnd-schedule-k=N   the K parameter for --vnd-schedule (default 1)\n"
     "\n"
     "Invalid-cut / debug-cuts reproduction:\n"
     "  If <stem>.debugsol exists (written by CbcRootFixtureDump.hpp when the\n"
@@ -471,6 +524,8 @@ int main(int argc, char **argv)
   // out-of-the-box defaults which predate that change.
   std::string gmiMode = "root", landpMode = "root", redsplit2Mode = "root";
   unsigned int randomSeed = 1; // matches CbcModel's own default
+  std::string rinsScheduleMode, vndScheduleMode; // empty = legacy (no change)
+  int rinsScheduleK = 1, vndScheduleK = 1;
 
   for (int i = 1; i < argc; ++i) {
     const std::string a = argv[i];
@@ -524,6 +579,14 @@ int main(int argc, char **argv)
       redsplit2Mode = a.substr(12);
     else if (a.rfind("--seed=", 0) == 0)
       randomSeed = (unsigned int)strtoul(a.c_str() + 7, NULL, 10);
+    else if (a.rfind("--rins-schedule=", 0) == 0)
+      rinsScheduleMode = a.substr(16);
+    else if (a.rfind("--rins-schedule-k=", 0) == 0)
+      rinsScheduleK = atoi(a.c_str() + 18);
+    else if (a.rfind("--vnd-schedule=", 0) == 0)
+      vndScheduleMode = a.substr(15);
+    else if (a.rfind("--vnd-schedule-k=", 0) == 0)
+      vndScheduleK = atoi(a.c_str() + 17);
     else if (a.rfind("--log=", 0) == 0)
       logLevel = atoi(a.c_str() + 6);
     else if (a.rfind("--data-dir=", 0) == 0)
@@ -689,7 +752,8 @@ int main(int argc, char **argv)
   // CLI's default heuristic set, unless --minimal-heur asks for
   // CbcStrategyDefault's much smaller bare-rounding fallback instead.
   ReplayStrategy strategy(doCuts, doHeur, model.numberStrong(), model.numberBeforeTrust(),
-    params, minimalHeur ? NULL : &params, passCutsOverride, minDropScale);
+    params, minimalHeur ? NULL : &params, passCutsOverride, minDropScale,
+    rinsScheduleMode, rinsScheduleK, vndScheduleMode, vndScheduleK);
   model.setStrategy(strategy);
 
   const double t1 = wallClock();

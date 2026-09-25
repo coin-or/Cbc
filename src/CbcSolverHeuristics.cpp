@@ -1519,9 +1519,20 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   if (useVND >= kType && useVND <= kType + 1) {
     CbcHeuristicVND heuristic6b(*model);
     heuristic6b.setHeuristicName("VND");
-    heuristic6b.setFractionSmall(0.4);
+    // fractionSmall_=1.0 (no restriction on which columns count as
+    // "small"/eligible to fix) strictly dominated every other value tested
+    // at every node budget in root-fixture benchmarking -- see
+    // RINS-FIXTURES.md's "Primal-gap impact and VND parameter tuning"
+    // section. Was 0.4.
+    heuristic6b.setFractionSmall(1.0);
     heuristic6b.setFeasibilityPumpOptions(1008003);
-    int nodes[] = { -2, 50, 50, 50, 200, 1000, 10000 };
+    // Indices 1-3 are the only ones reachable given the useVND>=kType &&
+    // useVND<=kType+1 guard above (kType is always 1 or 2, and VND has no
+    // "200"/"1000"/"10000" keyword like RENS does). 200 nodes matched
+    // RINS's own default and was the measured sweet spot: it captures
+    // essentially all of the found-rate gain of a 1000-node budget while
+    // costing ~25-30% less time. Was 50.
+    int nodes[] = { -2, 200, 200, 200, 200, 1000, 10000 };
     heuristic6b.setNumberNodes(nodes[useVND]);
     model->addHeuristic(&heuristic6b);
     anyToDo = true;
@@ -1719,11 +1730,18 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   if (useRINS >= kType && useRINS <= kType + 1) {
     CbcHeuristicRINS heuristic5(*model);
     heuristic5.setHeuristicName("RINS");
+    // fractionSmall_=1.0 (no restriction on which columns count as
+    // "small"/eligible to fix) strictly dominated every other value tested
+    // (0.3/0.5/0.7) at nodes=200 in root-fixture benchmarking -- higher
+    // found-rate (33.8%->44.6%) and lower population median gap-vs-BKS
+    // (27.0%->23.1%) monotonically as fractionSmall increases. See
+    // RINS-FIXTURES.md's "Primal-gap impact and VND parameter tuning"
+    // section. Was 0.5/0.6.
     if (useRINS < 4) {
-      heuristic5.setFractionSmall(0.5);
+      heuristic5.setFractionSmall(1.0);
       heuristic5.setDecayFactor(5.0);
     } else {
-      heuristic5.setFractionSmall(0.6);
+      heuristic5.setFractionSmall(1.0);
       heuristic5.setDecayFactor(1.5);
     }
     heuristic5.setFixCloseMaxDist(parameters[CbcParam::RINSCLOSEMAXDIST]->dblVal());

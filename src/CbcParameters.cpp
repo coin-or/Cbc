@@ -965,7 +965,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::RENS]->setDefault("off");
      parameters_[CbcParam::RINS]->setDefault("on");
      parameters_[CbcParam::ROUNDING]->setDefault("on");
-     parameters_[CbcParam::VND]->setDefault("off");
+     parameters_[CbcParam::VND]->setDefault("on");
      parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-6);
      parameters_[CbcParam::CUTOFF]->setDefault(1.0e50);
      parameters_[CbcParam::DIRECTION]->setDefault("min!imize");

@@ -1962,6 +1962,12 @@ double *get_All_trueobj = nullptr;
 // debug
 int *get_All_trueseq;
 #endif
+// Forward declaration -- defined (with full rationale) just above
+// CbcModel::resolve(); detects a resolve cut short by the remaining-time
+// deadline (Clp status==3, secondaryStatus==9) as opposed to a genuine
+// proven infeasibility, so callers don't misreport "infeasible" for what
+// was really just running out of time.
+static bool resolveHitTimeLimit(const OsiSolverInterface *solver);
 void CbcModel::branchAndBound(int doStatistics)
 
 {
@@ -2515,7 +2521,17 @@ void CbcModel::branchAndBound(int doStatistics)
     */
   if (!feasible) {
     status_ = 0;
-    if (!solver_->isProvenDualInfeasible()) {
+    if (solver_->isAbandoned() || resolveHitTimeLimit(solver_)) {
+      // The root LP resolve above didn't actually prove anything -- it was
+      // cut short by the remaining time budget (typically because
+      // preprocessing itself already consumed nearly all of it) or
+      // abandoned for numerical reasons. Report an honest "stopped on
+      // time" rather than falsely claiming the relaxation is infeasible
+      // (see resolveHitTimeLimit()).
+      handler_->message(CBC_MAXTIME, messages_) << CoinMessageEol;
+      secondaryStatus_ = 4;
+      status_ = 1;
+    } else if (!solver_->isProvenDualInfeasible()) {
       handler_->message(CBC_INFEAS, messages_) << CoinMessageEol;
       secondaryStatus_ = 1;
     } else {
@@ -12453,8 +12469,14 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
     memcpy(saveUpper, solver_->getColUpper(), numberColumns * sizeof(double));
   }
   if (clpSolver && !feasible) {
-    // make sure marked infeasible
-    if (!clpSolver->isProvenDualInfeasible())
+    // make sure marked infeasible -- but never stomp on a resolve that was
+    // merely cut short by the remaining-time deadline (or abandoned for
+    // numerical reasons) with a false proven-infeasible status; doing so
+    // would erase the only signal (Clp status==3) that lets callers tell
+    // "ran out of time" apart from "genuinely infeasible". See
+    // resolveHitTimeLimit().
+    if (!clpSolver->isProvenDualInfeasible() && !solver_->isAbandoned()
+      && !resolveHitTimeLimit(solver_))
       clpSolver->getModelPtr()->setProblemStatus(1);
   }
   int returnStatus = feasible ? 1 : 0;

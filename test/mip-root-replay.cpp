@@ -318,7 +318,8 @@ public:
   ReplayStrategy(bool doCuts, bool doHeur, int numberStrong, int numberBeforeTrust,
     CbcParameters &cutParams, CbcParameters *heurParams = NULL, int passCutsOverride = 0,
     double minDropScale = 1.0, const std::string &rinsSchedule = "", int rinsScheduleK = 1,
-    const std::string &vndSchedule = "", int vndScheduleK = 1)
+    const std::string &vndSchedule = "", int vndScheduleK = 1,
+    const std::string &diveSchedule = "", int diveScheduleK = 1, int diveOnlyNoSol = -1)
     : CbcStrategyDefault(1, numberStrong, numberBeforeTrust)
     , doCuts_(doCuts)
     , doHeur_(doHeur)
@@ -330,6 +331,9 @@ public:
     , rinsScheduleK_(rinsScheduleK)
     , vndSchedule_(vndSchedule)
     , vndScheduleK_(vndScheduleK)
+    , diveSchedule_(diveSchedule)
+    , diveScheduleK_(diveScheduleK)
+    , diveOnlyNoSol_(diveOnlyNoSol)
   {
   }
   virtual CbcStrategy *clone() const { return new ReplayStrategy(*this); }
@@ -382,10 +386,11 @@ public:
     // present on the model -- this runs synchronously inside
     // branchAndBound(), before the tree search starts, so it is the correct
     // (and only) place to reach the RINS/VND instances before they fire.
-    if (rinsSchedule_.empty() && vndSchedule_.empty())
+    if (rinsSchedule_.empty() && vndSchedule_.empty() && diveSchedule_.empty() && diveOnlyNoSol_ < 0)
       return;
     const HeuristicScheduleMode rinsMode = parseScheduleModeArg(rinsSchedule_);
     const HeuristicScheduleMode vndMode = parseScheduleModeArg(vndSchedule_);
+    const HeuristicScheduleMode diveMode = parseScheduleModeArg(diveSchedule_);
     for (int i = 0; i < model.numberHeuristics(); ++i) {
       CbcHeuristic *h = model.heuristic(i);
       if (!h)
@@ -395,6 +400,18 @@ public:
         h->setScheduleMode(rinsMode, rinsScheduleK_);
       } else if (!vndSchedule_.empty() && hn == "VND") {
         h->setScheduleMode(vndMode, vndScheduleK_);
+      } else if (hn.rfind("Dive", 0) == 0) {
+        // All CbcHeuristicDive subclasses ("DiveCoefficient",
+        // "DiveFractional", ...) share the same generic scheduling knobs
+        // (see CbcHeuristicDive::solution()'s shouldRunBySchedule() /
+        // solutionCountAllowsStart() gate) -- no dive-specific code needed.
+        if (!diveSchedule_.empty()) {
+          h->setScheduleMode(diveMode, diveScheduleK_);
+          if (diveMode != HeuristicScheduleMode::Legacy)
+            h->enableTreeCalls();
+        }
+        if (diveOnlyNoSol_ >= 0)
+          h->setMaxSolutionsToStart(diveOnlyNoSol_ ? 0 : -1);
       }
     }
   }
@@ -409,6 +426,9 @@ private:
   int rinsScheduleK_;
   std::string vndSchedule_;
   int vndScheduleK_;
+  std::string diveSchedule_;
+  int diveScheduleK_;
+  int diveOnlyNoSol_;
 };
 
 static void usage(const char *prog)
@@ -470,6 +490,32 @@ static void usage(const char *prog)
     "  --rins-schedule-k=N  the K parameter for --rins-schedule (default 1)\n"
     "  --vnd-schedule=legacy|depth|nodes|nodes-no-improve   same, for VND\n"
     "  --vnd-schedule-k=N   the K parameter for --vnd-schedule (default 1)\n"
+    "  --dive-schedule=legacy|depth|nodes|nodes-no-improve  same, applied to ALL\n"
+    "                       CbcHeuristicDive subclasses (DiveCoefficient,\n"
+    "                       DiveFractional, DiveGuided, ...); \"depth\" also\n"
+    "                       enables tree execution (enableTreeCalls()), since\n"
+    "                       diving is root-only by default.\n"
+    "  --dive-schedule-k=N  the K parameter for --dive-schedule (default 1)\n"
+    "  --dive-only-no-sol=0|1  only run diving while no incumbent exists\n"
+    "                       (default: unset, leaves each dive's own default)\n"
+    "  --diving-c=off|on|before|both  toggle DiveCoefficient (default: on,\n"
+    "                       the real CLI default -- the only Dive variant on\n"
+    "                       by default)\n"
+    "  --diving-f=off|on|before|both  toggle DiveFractional (default: off)\n"
+    "  --diving-g=off|on|before|both  toggle DiveGuided (default: off)\n"
+    "  --diving-l=off|on|before|both  toggle DiveLineSearch (default: off)\n"
+    "  --diving-p=off|on|before|both  toggle DivePseudoCost (default: off)\n"
+    "  --diving-v=off|on|before|both  toggle DiveVectorLength (default: off)\n"
+    "  --diveopt=N          real CbcParam DIVEOPT: encodes setWhen()+optional\n"
+    "                       \"active set\" mode (percentageToFix=0,\n"
+    "                       maxSimplexIterations(AtRoot)=near-unlimited) for\n"
+    "                       every enabled Dive variant. See CbcParameters.cpp/\n"
+    "                       CbcSolverHeuristics.cpp for the exact encoding\n"
+    "                       (default: -1, i.e. unset/leave CbcParameters default)\n"
+    "  --diveoptsolves=N    real CbcParam DIVEOPTSOLVES: major-iterations cap\n"
+    "                       (setMaxIterations) for every enabled Dive variant\n"
+    "                       (default: -1, i.e. unset/leave CbcParameters default,\n"
+    "                       which is 100)\n"
     "\n"
     "Invalid-cut / debug-cuts reproduction:\n"
     "  If <stem>.debugsol exists (written by CbcRootFixtureDump.hpp when the\n"
@@ -526,6 +572,10 @@ int main(int argc, char **argv)
   unsigned int randomSeed = 1; // matches CbcModel's own default
   std::string rinsScheduleMode, vndScheduleMode; // empty = legacy (no change)
   int rinsScheduleK = 1, vndScheduleK = 1;
+  std::string diveScheduleMode; // empty = legacy (no change)
+  int diveScheduleK = 1, diveOnlyNoSol = -1; // -1 = unset (leave each dive's own default)
+  std::string divingC, divingF, divingG, divingL, divingP, divingV; // empty = leave CbcParameters default
+  int diveOpt = -1, diveOptSolves = -1; // -1 = unset
 
   for (int i = 1; i < argc; ++i) {
     const std::string a = argv[i];
@@ -587,6 +637,28 @@ int main(int argc, char **argv)
       vndScheduleMode = a.substr(15);
     else if (a.rfind("--vnd-schedule-k=", 0) == 0)
       vndScheduleK = atoi(a.c_str() + 17);
+    else if (a.rfind("--dive-schedule=", 0) == 0)
+      diveScheduleMode = a.substr(16);
+    else if (a.rfind("--dive-schedule-k=", 0) == 0)
+      diveScheduleK = atoi(a.c_str() + 18);
+    else if (a.rfind("--dive-only-no-sol=", 0) == 0)
+      diveOnlyNoSol = atoi(a.c_str() + 19);
+    else if (a.rfind("--diving-c=", 0) == 0)
+      divingC = a.substr(11);
+    else if (a.rfind("--diving-f=", 0) == 0)
+      divingF = a.substr(11);
+    else if (a.rfind("--diving-g=", 0) == 0)
+      divingG = a.substr(11);
+    else if (a.rfind("--diving-l=", 0) == 0)
+      divingL = a.substr(11);
+    else if (a.rfind("--diving-p=", 0) == 0)
+      divingP = a.substr(11);
+    else if (a.rfind("--diving-v=", 0) == 0)
+      divingV = a.substr(11);
+    else if (a.rfind("--diveopt=", 0) == 0)
+      diveOpt = atoi(a.c_str() + 10);
+    else if (a.rfind("--diveoptsolves=", 0) == 0)
+      diveOptSolves = atoi(a.c_str() + 16);
     else if (a.rfind("--log=", 0) == 0)
       logLevel = atoi(a.c_str() + 6);
     else if (a.rfind("--data-dir=", 0) == 0)
@@ -733,6 +805,22 @@ int main(int argc, char **argv)
     params[CbcParam::JUMPROOTPLACES]->setVal(jumpRootPlacesOverride);
   if (!pumpRootPlacesOverride.empty())
     params[CbcParam::PUMPROOTPLACES]->setVal(pumpRootPlacesOverride);
+  if (!divingC.empty())
+    params[CbcParam::DIVINGC]->setKwdVal(divingC);
+  if (!divingF.empty())
+    params[CbcParam::DIVINGF]->setKwdVal(divingF);
+  if (!divingG.empty())
+    params[CbcParam::DIVINGG]->setKwdVal(divingG);
+  if (!divingL.empty())
+    params[CbcParam::DIVINGL]->setKwdVal(divingL);
+  if (!divingP.empty())
+    params[CbcParam::DIVINGP]->setKwdVal(divingP);
+  if (!divingV.empty())
+    params[CbcParam::DIVINGV]->setKwdVal(divingV);
+  if (diveOpt >= 0)
+    params[CbcParam::DIVEOPT]->setVal(diveOpt);
+  if (diveOptSolves >= 0)
+    params[CbcParam::DIVEOPTSOLVES]->setVal(diveOptSolves);
   // See default-init rationale above the flag parsing block: these three
   // default to "root" here (not CbcParameters()'s own "off"/"off"/"ifmove"
   // out-of-the-box defaults) to match CbcSolver.cpp's shipped CLI defaults.
@@ -753,7 +841,8 @@ int main(int argc, char **argv)
   // CbcStrategyDefault's much smaller bare-rounding fallback instead.
   ReplayStrategy strategy(doCuts, doHeur, model.numberStrong(), model.numberBeforeTrust(),
     params, minimalHeur ? NULL : &params, passCutsOverride, minDropScale,
-    rinsScheduleMode, rinsScheduleK, vndScheduleMode, vndScheduleK);
+    rinsScheduleMode, rinsScheduleK, vndScheduleMode, vndScheduleK,
+    diveScheduleMode, diveScheduleK, diveOnlyNoSol);
   model.setStrategy(strategy);
 
   const double t1 = wallClock();

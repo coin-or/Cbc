@@ -11,6 +11,7 @@
 #include <cfloat>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <vector>
 
 #include "CbcHeuristicFeasibilityJump.hpp"
@@ -38,12 +39,14 @@ CbcHeuristicFeasibilityJump::CbcHeuristicFeasibilityJump()
   : CbcHeuristic()
 {
   setHeuristicName("FeasibilityJump");
+  setMaxSolutionsToStart(0); // onlyIfNoIncumbent_ default: true
 }
 
 CbcHeuristicFeasibilityJump::CbcHeuristicFeasibilityJump(CbcModel &model)
   : CbcHeuristic(model)
 {
   setHeuristicName("FeasibilityJump");
+  setMaxSolutionsToStart(0); // onlyIfNoIncumbent_ default: true
 }
 
 CbcHeuristicFeasibilityJump::CbcHeuristicFeasibilityJump(const CbcHeuristicFeasibilityJump &rhs)
@@ -54,13 +57,9 @@ CbcHeuristicFeasibilityJump::CbcHeuristicFeasibilityJump(const CbcHeuristicFeasi
   , maxEffort_(rhs.maxEffort_)
   , effortMultiplier_(rhs.effortMultiplier_)
   , stallMultiplier_(rhs.stallMultiplier_)
-  , minDepth_(rhs.minDepth_)
   , maxSolutions_(rhs.maxSolutions_)
   , feasibilityTolerance_(rhs.feasibilityTolerance_)
   , integerTolerance_(rhs.integerTolerance_)
-  , onlyIfNoIncumbent_(rhs.onlyIfNoIncumbent_)
-  , maxCalls_(rhs.maxCalls_)
-  , callsMade_(rhs.callsMade_)
 {
 }
 
@@ -81,25 +80,11 @@ CbcHeuristicFeasibilityJump &CbcHeuristicFeasibilityJump::operator=(const CbcHeu
     maxEffort_ = rhs.maxEffort_;
     effortMultiplier_ = rhs.effortMultiplier_;
     stallMultiplier_ = rhs.stallMultiplier_;
-    minDepth_ = rhs.minDepth_;
     maxSolutions_ = rhs.maxSolutions_;
     feasibilityTolerance_ = rhs.feasibilityTolerance_;
     integerTolerance_ = rhs.integerTolerance_;
-    onlyIfNoIncumbent_ = rhs.onlyIfNoIncumbent_;
-    maxCalls_ = rhs.maxCalls_;
-    callsMade_ = rhs.callsMade_;
   }
   return *this;
-}
-
-bool CbcHeuristicFeasibilityJump::shouldHeurRun(int whereFrom)
-{
-  if (whereFrom == 4 && minDepth_ > 0) {
-    // Tree call: allow if deep enough (bypass complex distance/frequency logic)
-    numCouldRun_++;
-    return true;
-  }
-  return CbcHeuristic::shouldHeurRun(whereFrom);
 }
 
 void CbcHeuristicFeasibilityJump::resetModel(CbcModel *model)
@@ -110,7 +95,6 @@ void CbcHeuristicFeasibilityJump::resetModel(CbcModel *model)
 void CbcHeuristicFeasibilityJump::setModel(CbcModel *model)
 {
   model_ = model;
-  callsMade_ = 0; // fresh solve: reset the per-solve call counter
 }
 
 // ---------------------------------------------------------------------------
@@ -130,25 +114,41 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
   // CbcHeuristicFPump::solutionInternal() gates itself.
   if (!when())
     return 0;
-  // Depth-based control: run at root (depth 0) always, and at tree nodes
-  // every minDepth_ levels (e.g. depth 6, 12, 18...) so that FJ runs when
-  // enough new variables have been fixed by branching.
-  int depth = model_->currentDepth();
-  int nodeCount = model_->getNodeCount();
 
-  if (nodeCount == 0) {
-    // Root node: use standard shouldHeurRun check
-    if (!shouldHeurRun(0))
-      return 0;
-  } else {
-    // Tree node: run every minDepth_ levels.
-    if (minDepth_ <= 0)
-      return 0; // disabled in tree
-    if (depth < minDepth_ || (depth % minDepth_) != 0)
-      return 0; // not deep enough
+  // TEMPORARY orchestration-verification trace, opt-in via CBC_HEUR_TRACE=1.
+  // See CbcHeuristic::shouldRunBySchedule() for the sibling RINS/VND trace;
+  // not meant to be permanent.
+  const bool trace = std::getenv("CBC_HEUR_TRACE") && std::getenv("CBC_HEUR_TRACE")[0] != '0';
+  const int depth = model_->currentDepth();
+  const int nodeCount = model_->getNodeCount();
+
+  // shouldHeurRun(whereFrom) has already been checked by the caller (with
+  // the real whereFrom for this moment: 0/1/2 at root, 3/4 in the tree) --
+  // see CbcModel.cpp's heuristic-invocation loops. All that remains here is
+  // the generic periodic schedule: at depth 0 (root) this is always true
+  // (0 is a multiple of any K); in the tree it is true only every scheduleK()
+  // levels, per setMinDepth()/setScheduleMode(EveryKDepth, K). In Legacy
+  // mode (the default, minDepth()==0) this is a pure no-op (always true),
+  // matching FJ's original "root only" behavior since tree calls are never
+  // even routed here in that mode (enableTreeCalls() was never called).
+  if (!shouldRunBySchedule()) {
+    if (trace)
+      fprintf(stderr, "[HEUR-TRACE] FeasibilityJump node=%d depth=%d minDepth=%d -> skip (not a scheduled depth)\n",
+        nodeCount, depth, minDepth());
+    return 0;
   }
 
-  return solveFJ(objectiveValue, newSolution, depth);
+  if (trace)
+    fprintf(stderr, "[HEUR-TRACE] FeasibilityJump node=%d depth=%d minDepth=%d nSol=%d -> attempting solveFJ\n",
+      nodeCount, depth, minDepth(), model_->getSolutionCount());
+
+  int rc = solveFJ(objectiveValue, newSolution, depth);
+
+  if (trace)
+    fprintf(stderr, "[HEUR-TRACE] FeasibilityJump node=%d depth=%d -> solveFJ returned %d (calls made=%d)\n",
+      nodeCount, depth, rc, callsMade());
+
+  return rc;
 }
 
 int CbcHeuristicFeasibilityJump::solveFromSeed(double &objectiveValue,
@@ -156,9 +156,9 @@ int CbcHeuristicFeasibilityJump::solveFromSeed(double &objectiveValue,
 {
   // Triggered directly by another heuristic's failure (currently: Feasibility
   // Pump, see CbcHeuristicFPump::setFeasibilityJumpFallback()), not by the
-  // normal per-round schedule, so shouldHeurRun()'s throttling does not
-  // apply here. onlyIfNoIncumbent_/maxCalls_ are still honoured (checked
-  // inside solveFJ()).
+  // normal per-round schedule, so shouldHeurRun()/shouldRunBySchedule()'s
+  // throttling does not apply here. maxSolutionsToStart()/maxInvocations()
+  // are still honoured (checked inside solveFJ()).
   return solveFJ(objectiveValue, newSolution, /*depth=*/0, seedSolution);
 }
 
@@ -167,12 +167,22 @@ int CbcHeuristicFeasibilityJump::solveFJ(double &objectiveValue,
 {
   // Per the observation that FJ is most valuable for producing the very
   // first incumbent, skip entirely once CBC already has one (of any origin),
-  // unless explicitly configured to also try improving on it.
-  if (onlyIfNoIncumbent_ && model_->getSolutionCount() > 0)
+  // unless explicitly configured to also try improving on it (generic
+  // CbcHeuristic::solutionCountAllowsStart()/maxSolutionsToStart()).
+  const bool trace = std::getenv("CBC_HEUR_TRACE") && std::getenv("CBC_HEUR_TRACE")[0] != '0';
+  if (!solutionCountAllowsStart(model_->getSolutionCount())) {
+    if (trace)
+      fprintf(stderr, "[HEUR-TRACE] FeasibilityJump solveFJ node=%d depth=%d -> skip (maxSolutionsToStart, nSol=%d)\n",
+        model_->getNodeCount(), depth, model_->getSolutionCount());
     return 0;
+  }
 
-  if (maxCalls_ > 0 && callsMade_ >= maxCalls_)
+  if (!invocationBudgetAllows()) {
+    if (trace)
+      fprintf(stderr, "[HEUR-TRACE] FeasibilityJump solveFJ node=%d depth=%d -> skip (maxInvocations=%d reached)\n",
+        model_->getNodeCount(), depth, maxInvocations());
     return 0;
+  }
 
   OsiSolverInterface *solver = model_->solver();
   if (!solver)
@@ -412,7 +422,7 @@ int CbcHeuristicFeasibilityJump::solveFJ(double &objectiveValue,
   };
 
   fj.solve(initialValues.data(), callback);
-  ++callsMade_;
+  recordInvocation();
 
   // Close table and print phase-end summary (root only).
   if (printProgress) {

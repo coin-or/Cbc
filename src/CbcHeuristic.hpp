@@ -468,6 +468,33 @@ public:
       pre-existing logic remains solely responsible. */
   bool shouldRunBySchedule();
 
+  /** Allow this heuristic to be considered during in-tree node processing
+      (whereFrom 3 "after cuts at other nodes" / 4 "during cuts at other
+      nodes"), on top of whatever root-only whereFrom_ bits the
+      constructor already set. Centralises the whereFrom_ bit-twiddling
+      ("magic numbers") that used to be hand-rolled at each call site
+      wanting tree execution (e.g. CbcSolverHeuristics.cpp's old
+      `setWhereFrom(whereFrom() | (1 << 4))`). Pair with
+      setScheduleMode(EveryKDepth, K) so the heuristic doesn't fire on
+      every single tree node. */
+  inline void enableTreeCalls() { whereFrom_ |= (1 << 3) | (1 << 4); }
+
+  /** Caps the total number of times this heuristic is allowed to actually
+      execute its search (as opposed to being merely considered and
+      skipped) over the whole solve. 0 (default) means unlimited. Any
+      heuristic that wants this cap should call recordInvocation() itself
+      exactly once per real (non-skipped) execution, and consult
+      invocationBudgetAllows() beforehand. Generic replacement for each
+      heuristic hand-rolling its own "maxCalls_/callsMade_" pair. */
+  inline void setMaxInvocations(int n) { maxInvocations_ = n; }
+  inline int maxInvocations() const { return maxInvocations_; }
+  inline int invocationsMade() const { return invocationsMade_; }
+  inline bool invocationBudgetAllows() const
+  {
+    return maxInvocations_ <= 0 || invocationsMade_ < maxInvocations_;
+  }
+  inline void recordInvocation() { ++invocationsMade_; }
+
   /** Check whether the heuristic should run at all
         0 - before cuts at root node (or from doHeuristics)
         1 - during cuts at root
@@ -475,7 +502,19 @@ public:
         3 - after cuts at other nodes
         4 - during cuts at other nodes
             8 added if previous heuristic in loop found solution
-    */
+
+      When scheduleMode() is non-Legacy, this base implementation bypasses
+      the legacy shallowDepth_/howOftenShallow_/minDistanceToRun_ per-node
+      throttling below entirely (that math was tuned for -- and only ever
+      really opens up during -- shallow, root-adjacent calls; see
+      CbcHeuristicRINS::shouldHeurRun()'s original override, which this
+      generalises) and only checks the whereFrom_ context bitmask plus the
+      hot-start/no-rows guard. The actual periodic decision is then left
+      to shouldRunBySchedule(), which the heuristic's solution() must call
+      itself. This lets ANY heuristic opt into schedule-based tree
+      execution (setScheduleMode() + enableTreeCalls()) with no need to
+      override shouldHeurRun() at all -- see CbcHeuristicFeasibilityJump
+      and CbcHeuristicDive for heuristics that rely on this default. */
   virtual bool shouldHeurRun(int whereFrom);
   /** Check whether the heuristic should run this time */
   bool shouldHeurRun_randomChoice();
@@ -606,6 +645,10 @@ protected:
   /// model_->getSolutionCount() observed at the last shouldRunBySchedule()
   /// call, used by EveryKNodesNoImprove to detect a fresh incumbent
   int scheduleLastSolutionCount_;
+  /// See setMaxInvocations()
+  int maxInvocations_ = 0;
+  /// See recordInvocation()
+  int invocationsMade_ = 0;
 
   /// The description of the nodes where this heuristic has been applied
   CbcHeuristicNodeList runNodes_;

@@ -149,25 +149,6 @@ void CbcHeuristicRINS::resetModel(CbcModel * /*model*/)
   First tries setting a variable to better value.  If feasible then
   tries setting others.  If not feasible then tries swaps
   Returns 1 if solution, 0 if not */
-bool CbcHeuristicRINS::shouldHeurRun(int whereFrom)
-{
-  if (scheduleMode() == HeuristicScheduleMode::Legacy)
-    return CbcHeuristic::shouldHeurRun(whereFrom);
-  // Non-Legacy schedule: bypass the base class's depth/shallow node-count
-  // gating -- see the doc comment on the declaration in CbcHeuristicRINS.hpp
-  // for why that gating never actually opens up beyond the first few
-  // root-adjacent calls in real per-node tree search. Still respect the
-  // whereFrom_ context-type bitmask and the hot-start/no-rows guard (these
-  // are orthogonal, correctly-functioning checks); periodic gating is left
-  // entirely to shouldRunBySchedule(), called from within solution().
-  const int wf = whereFrom & 7;
-  if ((whereFrom_ & (1 << wf)) == 0)
-    return false;
-  if (!model_ || model_->hotstartSolution() || !model_->getNumRows())
-    return false;
-  return true;
-}
-
 int CbcHeuristicRINS::solution(double &solutionValue,
   double *betterSolution)
 {

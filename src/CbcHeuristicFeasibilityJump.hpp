@@ -28,10 +28,14 @@
  *    b) after each round of root cut generation, seeded from the round's
  *       optimal LP basis (the default whereFrom=1/2 hooks used by all Cbc
  *       heuristics already provide this, once per pass after the first);
- *    c) periodically inside the tree, every N levels of depth (setMinDepth);
+ *    c) periodically inside the tree, every N levels of depth -- via the
+ *       generic CbcHeuristic::setScheduleMode(EveryKDepth, N) +
+ *       enableTreeCalls() (setMinDepth() below is a thin convenience
+ *       wrapper over both, kept for API/CLI compatibility);
  *
  *  In all cases, by default the heuristic only runs while CBC still has no
- *  incumbent solution at all (setOnlyIfNoIncumbent) -- once *some* feasible
+ *  incumbent solution at all (setOnlyIfNoIncumbent, a thin wrapper over the
+ *  generic CbcHeuristic::setMaxSolutionsToStart(0)) -- once *some* feasible
  *  solution exists, further FJ calls are of much more limited value and just
  *  add overhead, so this is skippable to save time for other cut/heuristic
  *  work. Getting *some* incumbent as early/reliably as possible is itself an
@@ -39,9 +43,18 @@
  *  (e.g. reduced-cost fixing, best-first node selection) cannot help at all.
  *
  *  A configurable cap on the number of separate FJ invocations across the
- *  whole solve (setMaxCalls) lets experiments trade off calling FJ fewer
- *  times with a larger iteration budget each vs. calling it more often with
- *  a smaller budget each.
+ *  whole solve (setMaxCalls, a thin wrapper over the generic
+ *  CbcHeuristic::setMaxInvocations) lets experiments trade off calling FJ
+ *  fewer times with a larger iteration budget each vs. calling it more often
+ *  with a smaller budget each.
+ *
+ *  None of the above scheduling logic is FJ-specific: it is entirely
+ *  implemented in the CbcHeuristic base class (scheduleMode_/
+ *  shouldRunBySchedule(), maxSolutionsToStart_/solutionCountAllowsStart(),
+ *  maxInvocations_/invocationBudgetAllows()) so any other constructive
+ *  heuristic (e.g. CbcHeuristicDive) can opt into the identical
+ *  depth-periodic, no-incumbent-only, invocation-capped behavior with no
+ *  heuristic-specific code of its own.
  */
 class CBCLIB_EXPORT CbcHeuristicFeasibilityJump : public CbcHeuristic {
 public:
@@ -56,9 +69,6 @@ public:
   virtual void resetModel(CbcModel *model) override;
   virtual void setModel(CbcModel *model) override;
 
-  /// Override to enable tree execution when minDepth > 0.
-  virtual bool shouldHeurRun(int whereFrom) override;
-
   /** Run the heuristic.  Returns 1 and fills newSolution/objectiveValue if a
    *  feasible integer solution is found; 0 otherwise. */
   using CbcHeuristic::solution;
@@ -69,10 +79,10 @@ public:
    *  Pump's last rounded-but-infeasible attempt when it fails to find a
    *  solution (point (d) of the FJ integration plan -- see
    *  CbcHeuristicFPump::setFeasibilityJumpFallback()). Bypasses
-   *  shouldHeurRun()'s throttling (this is a one-off, event-triggered call,
-   *  not part of the normal per-round schedule) but still honours
-   *  onlyIfNoIncumbent_/maxCalls_. Returns 1 and fills
-   *  objectiveValue/newSolution on success, exactly like solution(). */
+   *  shouldHeurRun()/shouldRunBySchedule() throttling (this is a one-off,
+   *  event-triggered call, not part of the normal per-round schedule) but
+   *  still honours maxSolutionsToStart()/maxInvocations(). Returns 1 and
+   *  fills objectiveValue/newSolution on success, exactly like solution(). */
   int solveFromSeed(double &objectiveValue, double *newSolution,
     const double *seedSolution);
 
@@ -105,10 +115,24 @@ public:
   inline void setStallMultiplier(int m) { stallMultiplier_ = m; }
   inline int stallMultiplier() const { return stallMultiplier_; }
 
-  /// Run FJ every N levels in the tree. Default: 0 (root only).
-  /// Set to e.g. 6 to run FJ at depths 6, 12, 18... (like bound propagation).
-  inline void setMinDepth(int d) { minDepth_ = d; }
-  inline int minDepth() const { return minDepth_; }
+  /// Run FJ every N levels in the tree (root always included, since depth 0
+  /// is trivially a multiple of any N). Default: 0 (root only, i.e. tree
+  /// execution left disabled -- Legacy schedule mode). Thin convenience
+  /// wrapper over the generic setScheduleMode(EveryKDepth, N) +
+  /// enableTreeCalls().
+  inline void setMinDepth(int d)
+  {
+    if (d > 0) {
+      setScheduleMode(HeuristicScheduleMode::EveryKDepth, d);
+      enableTreeCalls();
+    } else {
+      setScheduleMode(HeuristicScheduleMode::Legacy);
+    }
+  }
+  inline int minDepth() const
+  {
+    return scheduleMode() == HeuristicScheduleMode::EveryKDepth ? scheduleK() : 0;
+  }
 
   /// Stop after finding this many feasible solutions in a single call.
   /// Default: 1.
@@ -128,9 +152,10 @@ public:
   /// Default: true, per the observation that FJ is most valuable for
   /// producing the very first incumbent; once one exists, repeated FJ calls
   /// mostly just add overhead relative to other root/tree work. Set false
-  /// to also let FJ try to improve on an existing incumbent.
-  inline void setOnlyIfNoIncumbent(bool val) { onlyIfNoIncumbent_ = val; }
-  inline bool onlyIfNoIncumbent() const { return onlyIfNoIncumbent_; }
+  /// to also let FJ try to improve on an existing incumbent. Thin wrapper
+  /// over the generic setMaxSolutionsToStart(0)/(-1).
+  inline void setOnlyIfNoIncumbent(bool val) { setMaxSolutionsToStart(val ? 0 : -1); }
+  inline bool onlyIfNoIncumbent() const { return maxSolutionsToStart() == 0; }
 
   /// Caps the total number of separate FJ invocations (across all trigger
   /// points: before-first-cut-round, root-after-cuts, and tree) for the
@@ -142,14 +167,15 @@ public:
   /// maxEffort_/effortMultiplier_ to explore the tradeoff between calling FJ
   /// fewer times (at fewer of these distinct points) with a bigger iteration
   /// budget each vs. more times (at more of these points) with a smaller
-  /// budget each.
-  inline void setMaxCalls(int n) { maxCalls_ = n; }
-  inline int maxCalls() const { return maxCalls_; }
+  /// budget each. Thin wrapper over the generic setMaxInvocations().
+  inline void setMaxCalls(int n) { setMaxInvocations(n); }
+  inline int maxCalls() const { return maxInvocations(); }
 
-  /// Number of times solution() has actually run the FJ local search so far
-  /// (i.e. wasn't skipped by shouldHeurRun(), onlyIfNoIncumbent_, or
-  /// maxCalls_).
-  inline int callsMade() const { return callsMade_; }
+  /// Number of times solution()/solveFromSeed() has actually run the FJ
+  /// local search so far (i.e. wasn't skipped by shouldHeurRun(),
+  /// shouldRunBySchedule(), maxSolutionsToStart(), or maxInvocations()).
+  /// Thin wrapper over the generic invocationsMade().
+  inline int callsMade() const { return invocationsMade(); }
 
 protected:
   /// Shared implementation for solution().
@@ -162,13 +188,9 @@ protected:
   int64_t maxEffort_ = 0; // 0 = use NNZ-scaled
   int effortMultiplier_ = 1024;
   int stallMultiplier_ = 256;
-  int minDepth_ = 0; // 0 = root only
   int maxSolutions_ = 1;
   double feasibilityTolerance_ = 1.0e-6;
   double integerTolerance_ = 1.0e-6;
-  bool onlyIfNoIncumbent_ = true;
-  int maxCalls_ = 0; // 0 = unlimited
-  int callsMade_ = 0;
 };
 
 #endif // CbcHeuristicFeasibilityJump_H

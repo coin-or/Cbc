@@ -153,19 +153,6 @@ void CbcHeuristicVND::resetModel(CbcModel * /*model*/)
   First tries setting a variable to better value.  If feasible then
   tries setting others.  If not feasible then tries swaps
   Returns 1 if solution, 0 if not */
-bool CbcHeuristicVND::shouldHeurRun(int whereFrom)
-{
-  if (scheduleMode() == HeuristicScheduleMode::Legacy)
-    return CbcHeuristic::shouldHeurRun(whereFrom);
-  // See CbcHeuristicRINS::shouldHeurRun() for the full rationale.
-  const int wf = whereFrom & 7;
-  if ((whereFrom_ & (1 << wf)) == 0)
-    return false;
-  if (!model_ || model_->hotstartSolution() || !model_->getNumRows())
-    return false;
-  return true;
-}
-
 int CbcHeuristicVND::solution(double &solutionValue,
   double *betterSolution)
 {

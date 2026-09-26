@@ -10,6 +10,7 @@
 #include "CbcConfig.h"
 
 #include <cassert>
+#include <cstdio>
 #include <cstdlib>
 #include <cmath>
 #include <cfloat>
@@ -193,6 +194,8 @@ void CbcHeuristic::gutsOfCopy(const CbcHeuristic &rhs)
   scheduleK_ = rhs.scheduleK_;
   scheduleLastRunNode_ = rhs.scheduleLastRunNode_;
   scheduleLastSolutionCount_ = rhs.scheduleLastSolutionCount_;
+  maxInvocations_ = rhs.maxInvocations_;
+  invocationsMade_ = rhs.invocationsMade_;
   runNodes_ = rhs.runNodes_;
   numberSolutionsFound_ = rhs.numberSolutionsFound_;
   numberNodesDone_ = rhs.numberNodesDone_;
@@ -289,6 +292,16 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
   whereFrom &= 7;
   if ((whereFrom_ & (1 << whereFrom)) == 0)
     return false;
+  if (scheduleMode_ != HeuristicScheduleMode::Legacy) {
+    // Generic schedule-based gating (see the declaration's doc comment):
+    // skip the legacy shallowDepth_/howOftenShallow_/minDistanceToRun_
+    // per-node throttling below entirely. Only the hot-start/no-rows
+    // guard still applies; the periodic decision itself is left to
+    // shouldRunBySchedule(), called from the heuristic's own solution().
+    if (!model_ || model_->hotstartSolution() || !model_->getNumRows())
+      return false;
+    return true;
+  }
     // No longer used for original purpose - so use for ever run at all JJF
 #ifndef JJF_REDUCE_HEURISTICS
   // Don't run if hot start or no rows!
@@ -380,6 +393,20 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
 #endif
 }
 
+// TEMPORARY orchestration-verification trace, opt-in via CBC_HEUR_TRACE=1.
+// Not meant to be a permanent feature; remove (or promote to a real
+// CbcMessage) once the depth/schedule gating experiments it was added for
+// are done. See shouldRunBySchedule() and
+// CbcHeuristicFeasibilityJump::solution().
+static bool cbcHeurTraceEnabled()
+{
+  static const bool enabled = [] {
+    const char *env = std::getenv("CBC_HEUR_TRACE");
+    return env && env[0] && env[0] != '0';
+  }();
+  return enabled;
+}
+
 bool CbcHeuristic::shouldRunBySchedule()
 {
   if (scheduleMode_ == HeuristicScheduleMode::Legacy || !model_)
@@ -388,7 +415,11 @@ bool CbcHeuristic::shouldRunBySchedule()
   switch (scheduleMode_) {
   case HeuristicScheduleMode::EveryKDepth: {
     const int depth = model_->currentDepth();
-    return (depth % scheduleK_) == 0;
+    const bool run = (depth % scheduleK_) == 0;
+    if (cbcHeurTraceEnabled())
+      fprintf(stderr, "[HEUR-TRACE] %s schedule=EveryKDepth(K=%d) node=%d depth=%d -> %s\n",
+        heuristicName_.c_str(), scheduleK_, nodeCount, depth, run ? "RUN" : "skip");
+    return run;
   }
   case HeuristicScheduleMode::EveryKNodesNoImprove: {
     const int solCount = model_->getSolutionCount();
@@ -398,21 +429,28 @@ bool CbcHeuristic::shouldRunBySchedule()
       // A fresh incumbent is itself a natural trigger -- run now and
       // reset the stall window.
       scheduleLastRunNode_ = nodeCount;
+      if (cbcHeurTraceEnabled())
+        fprintf(stderr, "[HEUR-TRACE] %s schedule=EveryKNodesNoImprove(K=%d) node=%d -> RUN (new incumbent)\n",
+          heuristicName_.c_str(), scheduleK_, nodeCount);
       return true;
     }
-    if (nodeCount - scheduleLastRunNode_ >= scheduleK_) {
+    const bool run = (nodeCount - scheduleLastRunNode_ >= scheduleK_);
+    if (run)
       scheduleLastRunNode_ = nodeCount;
-      return true;
-    }
-    return false;
+    if (cbcHeurTraceEnabled())
+      fprintf(stderr, "[HEUR-TRACE] %s schedule=EveryKNodesNoImprove(K=%d) node=%d lastRun=%d -> %s\n",
+        heuristicName_.c_str(), scheduleK_, nodeCount, scheduleLastRunNode_, run ? "RUN" : "skip");
+    return run;
   }
   case HeuristicScheduleMode::EveryKNodes:
   default: {
-    if (nodeCount - scheduleLastRunNode_ >= scheduleK_) {
+    const bool run = (nodeCount - scheduleLastRunNode_ >= scheduleK_);
+    if (run)
       scheduleLastRunNode_ = nodeCount;
-      return true;
-    }
-    return false;
+    if (cbcHeurTraceEnabled())
+      fprintf(stderr, "[HEUR-TRACE] %s schedule=EveryKNodes(K=%d) node=%d lastRun=%d -> %s\n",
+        heuristicName_.c_str(), scheduleK_, nodeCount, scheduleLastRunNode_, run ? "RUN" : "skip");
+    return run;
   }
   }
 }

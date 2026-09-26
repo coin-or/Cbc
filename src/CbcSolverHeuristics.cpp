@@ -1240,12 +1240,9 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     heuristicFJ.setOnlyIfNoIncumbent(parameters[CbcParam::FEASIBILITYJUMPONLYNOSOL]->intVal() != 0);
     heuristicFJ.setMaxCalls(parameters[CbcParam::FEASIBILITYJUMPMAXCALLS]->intVal());
     int fjMinDepth = parameters[CbcParam::FEASIBILITYJUMPDEPTH]->intVal();
-    heuristicFJ.setMinDepth(fjMinDepth);
-    if (fjMinDepth > 0 && !fjFallbackOnly) {
-      // Enable tree execution: bit 4 = called during tree node processing.
-      heuristicFJ.setWhereFrom(heuristicFJ.whereFrom() | (1 << 4));
+    heuristicFJ.setMinDepth(fjMinDepth); // enables tree calls internally when > 0
+    if (fjMinDepth > 0 && !fjFallbackOnly)
       heuristicFJ.setWhen(3); // 3 = always (root + tree)
-    }
     heuristicFJ.setFeasibilityTolerance(
       parameters[CbcParam::INTEGERTOLERANCE]->dblVal());
     heuristicFJ.setIntegerTolerance(

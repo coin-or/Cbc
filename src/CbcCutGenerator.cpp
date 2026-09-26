@@ -25,6 +25,9 @@
 #include "CglGomory.hpp"
 #include "CglTwomir.hpp"
 #include "CglMixedIntegerRounding2.hpp"
+#include "CglGMI.hpp"
+#include "CglLandP.hpp"
+#include "CglRedSplit2.hpp"
 // CglMixedIntegerRounding2.hpp unconditionally #define's CGL_DEBUG 0 (its own
 // internal debug switch) if not already defined -- undo that here so it
 // doesn't spuriously enable this file's own `#ifdef CGL_DEBUG` blocks, which
@@ -708,16 +711,23 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 #endif
     }
 
-    // Post-generation cut-pool filtering: these four generators can flood
+    // Post-generation cut-pool filtering: these generators can flood
     // a single round with many redundant/dominated cuts (same rationale
     // as CglBKClique's own CoinCutPool-based clique-cut filtering, see
     // insertCuts() there). Applies to both root and in-tree rounds; gated
     // off for small models/candidate counts inside cbcFilterGeneratedCuts()
     // itself. Only affects cuts appended by *this* generateCuts() call
-    // (numberRowCutsBefore..cs.sizeRowCuts()).
+    // (numberRowCutsBefore..cs.sizeRowCuts()). GMI/LandP/RedSplit2 added
+    // 2026-09 alongside the boundStallAware() round-skip -- that mechanism
+    // only decides *whether* a generator fires again next pass, it does
+    // nothing to cap how many cuts a single productive round emits, which
+    // is exactly the gap this filter closes for them too.
     if (dynamic_cast< CglGomory * >(generator_)
       || dynamic_cast< CglMixedIntegerRounding2 * >(generator_)
       || dynamic_cast< CglTwomir * >(generator_)
+      || dynamic_cast< CglGMI * >(generator_)
+      || dynamic_cast< CglLandP * >(generator_)
+      || dynamic_cast< CglRedSplit2 * >(generator_)
       || generator) {
       cbcFilterGeneratedCuts(cs, numberRowCutsBefore, solver->getColSolution(),
         solver->getNumCols(), solver->getNumElements(), generatorName_);

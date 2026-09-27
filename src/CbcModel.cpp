@@ -2521,7 +2521,8 @@ void CbcModel::branchAndBound(int doStatistics)
     */
   if (!feasible) {
     status_ = 0;
-    if (solver_->isAbandoned() || resolveHitTimeLimit(solver_)) {
+    if (solver_->isAbandoned() || resolveHitTimeLimit(solver_)
+      || maximumSecondsReached()) {
       // The root LP resolve above didn't actually prove anything -- it was
       // cut short by the remaining time budget (typically because
       // preprocessing itself already consumed nearly all of it) or
@@ -10108,7 +10109,10 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       // infeasible
       feasible = false;
       violated = -2;
-      if (!numberNodes_)
+      // A resolve cut short by the deadline also lands here; that is no
+      // proof of infeasibility, and the end of branchAndBound reports it
+      // as a time limit.
+      if (!numberNodes_ && !resolveHitTimeLimit(solver_) && !maximumSecondsReached())
         messageHandler()->message(CBC_INFEAS, messages()) << CoinMessageEol;
       break;
     }

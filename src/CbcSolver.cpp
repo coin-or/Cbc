@@ -196,6 +196,27 @@ void printGeneralMessage(CbcModel &model, std::string message, int type)
   }
 }
 
+/* The "Result - " block for the early exits where B&B never starts because
+   the time limit was reached first (root LP or preprocessing cut short).
+   Without it the log carries no status at all, and log-driven harnesses
+   (run_experiments_cbc_210.sh keys on the last "Result - " line) cannot tell
+   a timeout from "no solution found". */
+static void printStoppedOnTimeResult(CbcModel &model)
+{
+  std::ostringstream buffer;
+  buffer << std::endl
+         << "Result - Stopped on time limit" << std::endl
+         << std::endl;
+  if (model.bestSolution()) {
+    char line[20];
+    sprintf(line, "%.12g", model.getObjValue());
+    buffer << "Objective value:                " << line << std::endl;
+  } else {
+    buffer << "No feasible solution found" << std::endl;
+  }
+  printGeneralMessage(model, buffer.str());
+}
+
 /** Write a solution validation report to a file.
  *  Calls ClpSimplex::checkSolution() to recompute violations, then writes
  *  a tab-separated report with feasibility status, error metrics, and
@@ -4014,13 +4035,16 @@ int CbcSolver::preprocess(
 #endif
       solver2 = process.preProcessNonDefault(*saveSolver_, translate[preProcess_], numberPasses,
         tunePreProcess_);
-      if (!solver2) {
+      if (!solver2 && !babModel_->maximumSecondsReached()) {
         // Case A: preprocessing itself detected infeasibility —
-        // retry with simpler settings (no double check possible)
+        // retry with simpler settings (no double check possible).
+        // Not once the deadline has passed: a NULL then may only mean
+        // "ran out of time", which the !solver2 block below reports.
         process.clean();
         solver2 = process.preProcessNonDefault(*saveSolver_,
           0, 99, 0);
-      } else if (!solver2->isProvenOptimal()) {
+      } else if (solver2 && !solver2->isProvenOptimal()
+        && !babModel_->maximumSecondsReached()) {
         /* Infeasible - but most real problems are not
            infeasible - so try simpler preprocessing which
            is less affected by tolerance issues */
@@ -4038,7 +4062,9 @@ int CbcSolver::preprocess(
           if (clpSolver2 && remaining < 1.0e8)
             clpSolver2->getModelPtr()->setMaximumWallSeconds(1.0e100);
         }
-        if (!solver2->isProvenOptimal()) {
+        // A resolve cut short by the deadline is not evidence of
+        // infeasibility: keep solver2 and let B&B report the time limit.
+        if (!solver2->isProvenOptimal() && !babModel_->maximumSecondsReached()) {
           process.clean();
           solver2 = process.preProcessNonDefault(*saveSolver_,
             0, 99, 0);
@@ -4121,22 +4147,41 @@ int CbcSolver::preprocess(
       solver2->setHintParam(OsiDoInBranchAndCut, false,
         OsiHintDo);
   }
+  // CglPreProcess also returns NULL when it runs out of time ("Preprocessing
+  // exiting on time ... ignore infeasibility message"), and the Case A retry
+  // above cannot help once the deadline has passed. That proves nothing, so
+  // it must be reported as a time limit, not as infeasibility.
+  const bool preprocStoppedOnTime = !solver2 && babModel_->maximumSecondsReached();
   if (info && !solver2 && statusUserFunction_[0]) {
-    // infeasible
-    info->problemStatus = 1;
+    // infeasible (or stopped on time)
+    info->problemStatus = preprocStoppedOnTime ? 3 : 1;
     info->objValue = 1.0e100;
-    sprintf(info->buffer,
-      "infeasible/unbounded by pre-processing");
+    sprintf(info->buffer, preprocStoppedOnTime
+        ? "stopped on time limit during pre-processing"
+        : "infeasible/unbounded by pre-processing");
     info->primalSolution = NULL;
     info->dualSolution = NULL;
     if (preprocHandler) {
-      preprocHandler->markInfeasible("infeasible or unbounded");
+      if (!preprocStoppedOnTime)
+        preprocHandler->markInfeasible("infeasible or unbounded");
       process.passInMessageHandler(model_.messageHandler());
       delete preprocHandler;
       preprocHandler = nullptr;
     }
   }
-  if (!solver2) {
+  if (preprocStoppedOnTime) {
+    printGeneralMessage(model_, "Pre-processing stopped on time limit");
+    // say stopped for solution
+    integerStatus_ = 3;
+    delete saveSolver_;
+    saveSolver_ = NULL;
+    model_.setProblemStatus(1);
+    model_.setSecondaryStatus(4);
+    babModel_->setProblemStatus(1);
+    babModel_->setSecondaryStatus(4);
+    statistics.result = "Stopped on time limit";
+    printStoppedOnTimeResult(model_);
+  } else if (!solver2) {
     printGeneralMessage(model_,
       "Pre-processing says infeasible or unbounded");
     if (preprocHandler)
@@ -5836,6 +5881,8 @@ int CbcSolver::solveInitialLp(
     }
     buffer << " - " << CoinCpuTime() - time1a << " seconds";
     printGeneralMessage(model_, buffer.str());
+    if (iStatus == 3 && clpSolver->secondaryStatus() == 9)
+      printStoppedOnTimeResult(model_);
     return 1;
   }
   clpSolver->setSpecialOptions(
@@ -5861,6 +5908,7 @@ int CbcSolver::solveInitialLp(
     // never starts here either, so record the timeout in `statistics.result`
     // ourselves (the "obj" field is left at its 1e50 "no solution" default).
     statistics.result = "Stopped on time limit";
+    printStoppedOnTimeResult(model_);
     return 1;
   }
   if (model_.getMaximumNodes() == -987654321) {

@@ -507,7 +507,10 @@ int CbcHeuristicRINS::solution(double &solutionValue,
 
     numberTries_++;
     if ((numberTries_ % 10) == 0 && numberSuccesses_ * 3 < numberTries_)
-      howOften_ += static_cast< int >(howOften_ * decayFactor_);
+      // compute the decayed value in double and clamp before truncating back
+      // to int, otherwise repeated growth (e.g. across a long B&B run) can
+      // silently overflow howOften_ (see CbcHeuristic.cpp's analogous cap)
+      howOften_ = static_cast< int >(std::min(howOften_ * (1.0 + decayFactor_), 1.0e6));
     delete newSolver;
   }
   return returnCode;

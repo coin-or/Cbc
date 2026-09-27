@@ -19613,13 +19613,29 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         baseModel->bestSolution_ = new double[numberColumns];
       CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
       baseModel->setCutoff(getCutoff());
-      // Use this worker's own handler to avoid racing with the main thread on
-      // baseModel->handler_ (workers are cloned with their own handlers).
-      handler_->message(CBC_ROUNDING, messages_)
-        << trueBestObjValue() << "heuristic" << baseModel->numberIterations_
-        << baseModel->numberNodes_
-	<< currentDepth_ << tree_->size()
-	<< getCurrentSeconds() << CoinMessageEol;
+      // Report through baseModel's own handler (the one wired to the B&B
+      // progress table via CbcOutputHandler/bnbOut_) rather than this
+      // worker's handler, which is a CbcSilentHandler clone (see
+      // CbcOutputHandler::clone()) and would otherwise swallow the message
+      // entirely -- this is what made opportunistic-mode (-threads>=1)
+      // incumbents show up with no "Method" attribution at all. We are
+      // already inside the lockThread()/unlockThread() pair guarding
+      // baseModel's shared fields above, so this is safe from the same
+      // race the removed comment warned about. Report the real heuristic
+      // (if any) instead of a generic "heuristic" label, mirroring the
+      // serial (non-threaded) reporting in CbcModel::setBestSolution().
+      if (lastHeuristic_) {
+        baseModel->handler_->message(CBC_ROUNDING, messages_)
+          << trueBestObjValue() << lastHeuristic_->heuristicName()
+          << baseModel->numberIterations_ << baseModel->numberNodes_
+          << currentDepth_ << tree_->size()
+          << getCurrentSeconds() << CoinMessageEol;
+      } else {
+        baseModel->handler_->message(CBC_SOLUTION, messages_)
+          << trueBestObjValue() << baseModel->numberIterations_ << baseModel->numberNodes_
+          << currentDepth_ << tree_->size()
+          << getCurrentSeconds() << CoinMessageEol;
+      }
     }
     baseModel->numberSolutions_++;
     unlockThread();

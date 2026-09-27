@@ -1851,12 +1851,31 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
           baseModel->bestSolution_ = new double[numberColumns];
         CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
         baseModel->setCutoff(getCutoff());
-        baseModel->handler_->message(CBC_ROUNDING, messages_)
-          << bestObjective_
-          << "heuristic"
-          << baseModel->numberIterations_
-          << baseModel->numberNodes_ << getCurrentSeconds()
-          << CoinMessageEol;
+        // Report the real heuristic (if any) instead of a generic
+        // "heuristic" label, mirroring the serial (non-threaded) reporting
+        // in CbcModel::setBestSolution() -- see the analogous opportunistic-
+        // mode fix above/in CbcModel::doOneNode(). Also supply the depth/
+        // ontree arguments the CBC_ROUNDING/CBC_SOLUTION message formats
+        // require; the previous call omitted them, leaving those two %d
+        // conversions unfed.
+        if (lastHeuristic_) {
+          baseModel->handler_->message(CBC_ROUNDING, messages_)
+            << bestObjective_
+            << lastHeuristic_->heuristicName()
+            << baseModel->numberIterations_
+            << baseModel->numberNodes_
+            << currentDepth_ << 0
+            << getCurrentSeconds()
+            << CoinMessageEol;
+        } else {
+          baseModel->handler_->message(CBC_SOLUTION, messages_)
+            << bestObjective_
+            << baseModel->numberIterations_
+            << baseModel->numberNodes_
+            << currentDepth_ << 0
+            << getCurrentSeconds()
+            << CoinMessageEol;
+        }
       }
       //stateOfSearch_
       if (stuff->saveStuff()[0] != searchStrategy_) {

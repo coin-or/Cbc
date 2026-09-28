@@ -121,6 +121,7 @@ public:
 
       // String Parameters
       FIRSTSTRINGPARAM,
+      CUTSWITCHOFF,
       MAXMEMORY,
       PRINTMASK,
       OUTPUTPRECISION,

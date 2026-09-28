@@ -543,9 +543,12 @@ public:
       \param babModel  the CbcModel to install cut generators on
       \param bkPivotingStrategy  Bron-Kerbosch pivoting strategy for
                        clique/odd-wheel cut generation
+      \param switchOffChoice  if not NULL, receives a log line with the
+                       cutSwitchOff values in effect
   */
   void configureCutGenerators(CbcModel &babModel,
-    CoinBronKerbosch::PivotingStrategy bkPivotingStrategy);
+    CoinBronKerbosch::PivotingStrategy bkPivotingStrategy,
+    std::string *switchOffChoice = NULL);
   //@}
 
   ///@name Individual solve actions (reusable on any solver instance)

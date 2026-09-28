@@ -34,7 +34,11 @@
 #include "CglTwomir.hpp"
 #include "CglZeroHalf.hpp"
 
+#include <cctype>
+#include <climits>
+#include <cstring>
 #include <cstdlib>
+#include <sstream>
 
 namespace {
 int envInt(const char *name, int def)
@@ -42,12 +46,126 @@ int envInt(const char *name, int def)
   const char *v = getenv(name);
   return v ? atoi(v) : def;
 }
+
+// -cutSwitchOff key for each name a generator is registered under below.
+// The key is the option that enables it, minus "Cuts", in lower case.
+struct SwitchOffKey {
+  const char *generatorName;
+  const char *key;
+};
+const SwitchOffKey switchOffKeys[] = {
+  { "Probing", "probing" },
+  { "Gomory", "gomory" },
+  { "GomoryL1", "lagomory" },
+  { "GomoryL2", "lagomory" },
+  { "Knapsack", "knapsack" },
+  { "Reduce-and-split", "reduceandsplit" },
+  { "Reduce-and-split(2)", "reduce2andsplit" },
+  { "Gomory(2)", "gmi" },
+  { "Clique", "clique" },
+  { "OddWheel", "oddwheel" },
+  { "ImpliedClique", "impliedclique" },
+  { "MixedIntegerRounding2", "mixedintegerrounding" },
+  { "FlowCover", "flowcover" },
+  { "TwoMirCuts", "twomir" },
+  { "TwoMirCutsL1", "latwomir" },
+  { "TwoMirCutsL2", "latwomir" },
+  { "LiftAndProject", "liftandproject" },
+  { "ResidualCapacity", "residualcapacity" },
+  { "ZeroHalf", "zerohalf" },
+};
+const int numberSwitchOffKeys = sizeof(switchOffKeys) / sizeof(switchOffKeys[0]);
+
+const char *switchOffKeyFor(const char *generatorName)
+{
+  for (int i = 0; i < numberSwitchOffKeys; i++) {
+    if (!strcmp(switchOffKeys[i].generatorName, generatorName))
+      return switchOffKeys[i].key;
+  }
+  return NULL;
+}
+
+bool isSwitchOffKey(const std::string &key)
+{
+  for (int i = 0; i < numberSwitchOffKeys; i++) {
+    if (key == switchOffKeys[i].key)
+      return true;
+  }
+  return false;
+}
+
+std::string lowerCase(std::string text)
+{
+  for (size_t i = 0; i < text.size(); i++)
+    text[i] = static_cast< char >(tolower(static_cast< unsigned char >(text[i])));
+  return text;
+}
+
+// `auto' or an integer >= -2 (-1 and -2 select CbcModel's cut-count
+// multipliers; anything below is rejected there by an assert).
+bool parseSwitchOffValue(const std::string &text, int &value)
+{
+  if (lowerCase(text) == "auto") {
+    value = CbcCutSwitchOff::autoValue;
+    return true;
+  }
+  if (text.empty())
+    return false;
+  char *end;
+  long number = strtol(text.c_str(), &end, 10);
+  if (*end || number < -2 || number > INT_MAX)
+    return false;
+  value = static_cast< int >(number);
+  return true;
+}
 double envDouble(const char *name, double def)
 {
   const char *v = getenv(name);
   return v ? atof(v) : def;
 }
 } // namespace
+
+const int CbcCutSwitchOff::autoValue = INT_MIN;
+
+bool parseCutSwitchOff(const std::string &spec, CbcCutSwitchOff &result,
+  std::string *error)
+{
+  CbcCutSwitchOff parsed;
+  std::istringstream items(spec);
+  std::string item;
+  while (std::getline(items, item, ',')) {
+    // `:' because the command line turns any `a=b' argument into `-a b'.
+    size_t equals = item.find_first_of(":=");
+    std::string valueText = equals == std::string::npos ? item : item.substr(equals + 1);
+    int value;
+    if (!parseSwitchOffValue(valueText, value)) {
+      if (error)
+        *error = "cutSwitchOff: `" + valueText + "' is not auto or an integer >= -2";
+      return false;
+    }
+    if (equals == std::string::npos) {
+      parsed.allAuto = value == CbcCutSwitchOff::autoValue;
+      parsed.all = parsed.allAuto ? 0 : value;
+    } else {
+      std::string key = lowerCase(item.substr(0, equals));
+      if (!isSwitchOffKey(key)) {
+        if (error) {
+          *error = "cutSwitchOff: unknown generator `" + item.substr(0, equals) + "'; expected one of";
+          const char *previous = "";
+          for (int i = 0; i < numberSwitchOffKeys; i++) {
+            if (strcmp(previous, switchOffKeys[i].key))
+              *error += std::string(" ") + switchOffKeys[i].key;
+            previous = switchOffKeys[i].key;
+          }
+        }
+        return false;
+      }
+      parsed.byKey[key] = value;
+    }
+  }
+  result = parsed;
+  return true;
+}
 
 // Register all cut generators on babModel based on parameter settings,
 // then apply per-generator tuning (switches, accuracy, timing, cutDepth).
@@ -62,7 +180,8 @@ void installCutGenerators(
   int bkClqExtMethod,
   CoinBronKerbosch::PivotingStrategy bkPivotingStrategy,
   int oddWExtMethod,
-  int mixedRoundStrategy)
+  int mixedRoundStrategy,
+  std::string *switchOffChoice)
 {
   int switches[30] = {};
   int accuracyFlag[30] = {};
@@ -675,6 +794,13 @@ void installCutGenerators(
   // Per-generator tuning
   numberGenerators = babModel.numberCutGenerators();
   int cutDepth = parameters[CbcParam::CUTDEPTH]->intVal();
+  // Validated when set, so this only fails for a value set from code.
+  const std::string &switchOffSpec = parameters[CbcParam::CUTSWITCHOFF]->strVal();
+  CbcCutSwitchOff switchOff;
+  std::string switchOffError;
+  if (!parseCutSwitchOff(switchOffSpec, switchOff, &switchOffError) && switchOffChoice)
+    *switchOffChoice = switchOffError + ", using auto";
+  std::ostringstream armed;
   for (int iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
     CbcCutGenerator *generator = babModel.cutGenerator(iGenerator);
     int howOften = generator->howOften();
@@ -687,8 +813,19 @@ void installCutGenerators(
     } else {
       iSwitch2 = iSwitch;
     }
-    if (howOften == -98 || howOften == -99 || generator->maximumTries() > 0)
+    const char *key = switchOffKeyFor(generator->cutGeneratorName());
+    std::map< std::string, int >::const_iterator entry = key ? switchOff.byKey.find(key) : switchOff.byKey.end();
+    if (entry != switchOff.byKey.end()) {
+      if (entry->second != CbcCutSwitchOff::autoValue)
+        iSwitch2 = entry->second;
+    } else if (!switchOff.allAuto && key) {
+      iSwitch2 = switchOff.all;
+    }
+    if (howOften == -98 || howOften == -99 || generator->maximumTries() > 0) {
       generator->setSwitchOffIfLessThan(iSwitch2);
+      if (iSwitch2)
+        armed << (armed.tellp() ? ", " : "") << generator->cutGeneratorName() << ' ' << iSwitch2;
+    }
     generator->setInaccuracy(accuracyFlag[iGenerator]);
     if (doAtEnd[iGenerator]) {
       generator->setWhetherCallAtEnd(true);
@@ -696,6 +833,11 @@ void installCutGenerators(
     generator->setTiming(true);
     if (cutDepth >= 0)
       generator->setWhatDepth(cutDepth);
+  }
+  if (switchOffChoice) {
+    std::string choice = "cutSwitchOff " + switchOffSpec + " -> "
+      + (armed.tellp() ? armed.str() + " (others 0)" : std::string("all 0"));
+    *switchOffChoice = switchOffChoice->empty() ? choice : *switchOffChoice + "; " + choice;
   }
 }
 

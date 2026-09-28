@@ -8476,7 +8476,9 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
   int bothFlags = std::max(std::min(experimentFlag, 1), strategyFlag);
   // add cut generators if wanted
-  configureCutGenerators(*babModel_, bkPivotingStrategy);
+  std::string switchOffChoice;
+  configureCutGenerators(*babModel_, bkPivotingStrategy, &switchOffChoice);
+  printGeneralMessage(model_, switchOffChoice);
   // Could tune more
   // passCuts and minDrop may be `auto', resolved here from the instance;
   // every resolved value is logged so the choice is visible.
@@ -10911,12 +10913,13 @@ int CbcSolver::configureHeuristics(CbcModel *model, int type)
 }
 
 void CbcSolver::configureCutGenerators(CbcModel &babModel,
-  CoinBronKerbosch::PivotingStrategy bkPivotingStrategy)
+  CoinBronKerbosch::PivotingStrategy bkPivotingStrategy,
+  std::string *switchOffChoice)
 {
   installCutGenerators(babModel, parameters_, complicatedInteger_,
     dominatedCuts_, cgraphMode_, oldCliqueMode_, maxCallsBK_,
     bkClqExtMethod_, bkPivotingStrategy, oddWExtMethod_,
-    mixedRoundStrategy_);
+    mixedRoundStrategy_, switchOffChoice);
 }
 
 // ###########################################################################
@@ -13849,6 +13852,23 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             paramChanges_.push_back(message);
           }
           break;
+        case CbcParam::CUTSWITCHOFF: {
+          if ((status = cbcParam->readValue(inputQueue, field, &message))) {
+            printGeneralMessage(model_, message);
+            continue;
+          }
+          CbcCutSwitchOff parsed;
+          if (!parseCutSwitchOff(field, parsed, &message)) {
+            printGeneralMessage(model_, message);
+            continue;
+          }
+          if (cbcParam->setVal(field, &message)) {
+            printGeneralMessage(model_, message);
+            continue;
+          } else if (!message.empty()) {
+            paramChanges_.push_back(message);
+          }
+        } break;
         case CbcParam::PUMPROOTPLACES:
         case CbcParam::JUMPROOTPLACES:
           if ((status = cbcParam->readValue(inputQueue, field, &message))) {

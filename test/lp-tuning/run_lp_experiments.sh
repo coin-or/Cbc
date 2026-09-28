@@ -33,7 +33,8 @@
 #                        to $OUTDIR/parallel_jobs, edit that file to change
 #                        it while the experiment runs
 #   --instance-list FILE Only run instances named in FILE (one name per line,
-#                        with or without .mps.gz; '#' comments allowed)
+#                        with or without .mps.gz; lines starting with '#'
+#                        are comments)
 #   --common-args ARGS   CBC args added to every job, before the per-tag params
 #                        (e.g. "-rowReductions force" to solve exactly the LP
 #                        the default branch-and-bound root solves)
@@ -156,7 +157,9 @@ if [[ -n "$INSTANCE_LIST" ]]; then
   [[ -f "$INSTANCE_LIST" ]] || { echo "Error: instance list not found: $INSTANCE_LIST" >&2; exit 1; }
   declare -A WANTED=()
   while IFS= read -r name; do
-    name="${name%%#*}"; name="${name//[[:space:]]/}"; name="${name%.mps.gz}"
+    # whole-line comments only: '#' is legal inside instance names
+    [[ "$name" =~ ^[[:space:]]*# ]] && continue
+    name="${name//[[:space:]]/}"; name="${name%.mps.gz}"
     [[ -n "$name" ]] && WANTED["$name"]=1
   done < "$INSTANCE_LIST"
   FILTERED=()

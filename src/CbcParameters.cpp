@@ -852,7 +852,14 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::CPP]->setDefault(0);
      parameters_[CbcParam::CUTDEPTH]->setDefault(getCutDepth());
      parameters_[CbcParam::CUTLENGTH]->setDefault(-1);
-     parameters_[CbcParam::CUTPASSINTREE]->setDefault(1);
+     parameters_[CbcParam::CUTPASSINTREE]->setDefault(4);
+     parameters_[CbcParam::CUTPASSSMALL]->setDefault(-100);
+     parameters_[CbcParam::CUTPASSMEDIUM]->setDefault(100);
+     parameters_[CbcParam::CUTPASSLARGE]->setDefault(50);
+     parameters_[CbcParam::SIZESMALLROWS]->setDefault(500);
+     parameters_[CbcParam::SIZESMALLCOLS]->setDefault(500);
+     parameters_[CbcParam::SIZELARGECOLS]->setDefault(5000);
+     parameters_[CbcParam::MINIMUMDROP]->setDefault(CoinParam::autoDblValue());
      parameters_[CbcParam::DEPTHMINIBAB]->setDefault(1);
      parameters_[CbcParam::DIVEOPT]->setDefault(-1);
      parameters_[CbcParam::DIVEOPTSOLVES]->setDefault(100);
@@ -986,7 +993,7 @@ void CbcParameters::setDefaults(int strategy) {
 #endif
      parameters_[CbcParam::NUMBERANALYZE]->setDefault(0);
      parameters_[CbcParam::REVERSE]->setType(CoinParam::paramAct);
-     parameters_[CbcParam::CUTPASS]->setDefault(100);
+     parameters_[CbcParam::CUTPASS]->setDefault(CoinParam::autoIntValue());
      parameters_[CbcParam::GAPRATIO]->setDefault(1.0e-4);
      parameters_[CbcParam::TIMELIMIT]->setDefault( 1.0e11);
      parameters_[CbcParam::STRONGBRANCHING]->setDefault(0);
@@ -1023,6 +1030,8 @@ struct CbcParamAcessorsEntry {
 };
 
 void CbcParameters::synchronizeParameter(CbcParam::CbcParamCode paramCode, CbcModel::CbcIntParam modelParam) {
+  if (parameters_[paramCode]->isAuto())
+    return; // resolved by CbcSolver from the instance, not a model value
   int value;
   parameters_[paramCode]->getVal(value);
 #ifdef PRINT_CBC_CHANGES
@@ -1036,6 +1045,8 @@ void CbcParameters::synchronizeParameter(CbcParam::CbcParamCode paramCode, CbcMo
 }
 
 void CbcParameters::synchronizeParameter(CbcParam::CbcParamCode paramCode, CbcModel::CbcDblParam modelParam) {
+  if (parameters_[paramCode]->isAuto())
+    return; // resolved by CbcSolver from the instance, not a model value
   double value;
   parameters_[paramCode]->getVal(value);
 #ifdef PRINT_CBC_CHANGES
@@ -1051,6 +1062,8 @@ void CbcParameters::synchronizeParameter(CbcParam::CbcParamCode paramCode, CbcMo
 
 template <typename IntType>
 void CbcParameters::synchronizeParameter(CbcParam::CbcParamCode paramCode, void (CbcModel::*setIntMethod)(IntType), IntType (CbcModel::*getIntMethod)() const) {
+  if (parameters_[paramCode]->isAuto())
+    return; // resolved by CbcSolver from the instance, not a model value
   int value; // CbcParam only supports int
   parameters_[paramCode]->getVal(value);
 #ifdef PRINT_CBC_CHANGES
@@ -2136,6 +2149,16 @@ void CbcParameters::addCbcSolverDblParams() {
       "Print feasibility pump progress every N seconds (0 = disabled, default 5).",
       0.0, 1e10, "", CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::MINIMUMDROP]->setup(
+      "minD!rop", "Minimum objective improvement for a root cut pass to count",
+      0.0, COIN_DBL_MAX,
+      "Root cut generation stops once a pass improves the objective by less "
+      "than this, unless passCuts (or the cutPassSmall/cutPassMedium/cutPassLarge "
+      "value it resolves to) is negative. The default, auto, is "
+      "min(0.05, 1e-5*|objective| + 1e-5), using the LP objective when "
+      "branch-and-bound is set up. The choice is logged.");
+  parameters_[CbcParam::MINIMUMDROP]->setAutoAllowed();
+
   parameters_[CbcParam::RANKCONFLICT]->setup(
       "rankConflict",
       "Weight for conflict-graph degree in strong branching sort-key (0 = disabled).",
@@ -2344,9 +2367,52 @@ void CbcParameters::addCbcSolverIntParams() {
   parameters_[CbcParam::CUTPASSINTREE]->setup(
       "passT!reeCuts",
       "Number of rounds that cut generators are applied in the tree",
-      -COIN_INT_MAX, COIN_INT_MAX, "The default is to do one pass. "
+      -COIN_INT_MAX, COIN_INT_MAX, "The default is 4 passes at each node, "
+      "stopping early once the objective stops dropping. "
       "A negative value -n means that n passes are also applied if "
       "the objective does not drop.");
+
+  parameters_[CbcParam::CUTPASSSMALL]->setup(
+      "cutPassS!mall", "Root cut passes for a small problem when passCuts is auto",
+      -COIN_INT_MAX, COIN_INT_MAX,
+      "Used when passCuts is auto and the problem has fewer rows than "
+      "sizeSmallRows or fewer columns than sizeSmallCols. The default -100 "
+      "means up to 100 passes, ignoring minDrop.");
+
+  parameters_[CbcParam::CUTPASSMEDIUM]->setup(
+      "cutPassM!edium", "Root cut passes for a medium problem when passCuts is auto",
+      -COIN_INT_MAX, COIN_INT_MAX,
+      "Used when passCuts is auto and the problem is neither small nor has "
+      "at least sizeLargeCols columns. The default 100 means up to 100 "
+      "passes, stopping once a pass improves the objective by less than "
+      "minDrop.");
+
+  parameters_[CbcParam::CUTPASSLARGE]->setup(
+      "cutPassL!arge", "Root cut passes for a large problem when passCuts is auto",
+      -COIN_INT_MAX, COIN_INT_MAX,
+      "Used when passCuts is auto and the problem is not small and has at "
+      "least sizeLargeCols columns. The default 50 means up to 50 passes, "
+      "stopping once a pass improves the objective by less than minDrop.");
+
+  parameters_[CbcParam::SIZESMALLROWS]->setup(
+      "sizeSmallRows", "Row count below which a problem is small",
+      0, COIN_INT_MAX,
+      "A problem with fewer rows than this, or fewer columns than "
+      "sizeSmallCols, is small for the settings that are auto (at present "
+      "passCuts).");
+
+  parameters_[CbcParam::SIZESMALLCOLS]->setup(
+      "sizeSmallCols", "Column count below which a problem is small",
+      0, COIN_INT_MAX,
+      "A problem with fewer columns than this, or fewer rows than "
+      "sizeSmallRows, is small for the settings that are auto (at present "
+      "passCuts).");
+
+  parameters_[CbcParam::SIZELARGECOLS]->setup(
+      "sizeLargeCols", "Column count from which a problem is large",
+      0, COIN_INT_MAX,
+      "A problem that is not small and has at least this many columns is "
+      "large for the settings that are auto (at present passCuts).");
 
   parameters_[CbcParam::DEPTHMINIBAB]->setup(
       "depth!MiniBab", "Depth at which to try mini branch-and-bound",
@@ -3616,8 +3682,14 @@ void CbcParameters::addCbcModelParams()
 
   parameters_[CbcParam::CUTPASS]->setup(
       "passC!uts", "Number of cut passes at root node", -COIN_INT_MAX, COIN_INT_MAX,
-      "The default is 100 passes if less than 500 columns, 100 passes (but "
-      "stop if the drop is small) if less than 5000 columns, 20 otherwise.");
+      "A positive value n means up to n passes, stopping once a pass "
+      "improves the objective by less than minDrop; a negative value -n "
+      "means up to n passes, ignoring minDrop. The default, auto, chooses "
+      "by problem size: cutPassSmall if the problem has fewer rows than "
+      "sizeSmallRows or fewer columns than sizeSmallCols, otherwise "
+      "cutPassMedium if it has fewer columns than sizeLargeCols, otherwise "
+      "cutPassLarge. The choice is logged.");
+  parameters_[CbcParam::CUTPASS]->setAutoAllowed();
 
   parameters_[CbcParam::GAPRATIO]->setup(
       "ratio!Gap",

@@ -97,10 +97,6 @@ protected:
   bool strongChanged_ = false;
   /// Whether FPump was changed by user
   bool pumpChanged_ = false;
-  /// Max cut passes at root (-1234567 = auto)
-  int cutPass_ = -1234567;
-  /// Max cut passes in tree (-1234567 = auto)
-  int cutPassInTree_ = -1234567;
   /// Preprocessing tuning flags
   int tunePreProcess_ = 0;
   /// Test OSI parameters flag

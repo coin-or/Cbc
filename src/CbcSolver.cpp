@@ -1027,12 +1027,20 @@ static void dumpParametersAsJson(CbcParameters &cbcParams,
       if (p->type() == CoinParam::paramInt) {
         out << ", \"lowerInt\": " << p->lowerIntVal()
             << ", \"upperInt\": " << p->upperIntVal()
-            << ", \"defaultValue\": " << p->intVal();
+            << ", \"autoAllowed\": " << (p->autoAllowed() ? "true" : "false");
+        if (p->isAuto())
+          out << ", \"defaultValue\": \"auto\"";
+        else
+          out << ", \"defaultValue\": " << p->intVal();
       } else if (p->type() == CoinParam::paramDbl) {
         out << std::setprecision(15)
             << ", \"lowerDbl\": " << p->lowerDblVal()
             << ", \"upperDbl\": " << p->upperDblVal()
-            << ", \"defaultValue\": " << p->dblVal();
+            << ", \"autoAllowed\": " << (p->autoAllowed() ? "true" : "false");
+        if (p->isAuto())
+          out << ", \"defaultValue\": \"auto\"";
+        else
+          out << ", \"defaultValue\": " << p->dblVal();
       } else if (p->type() == CoinParam::paramKwd) {
         out << ", \"keywords\": [";
         auto kwds = p->definedKwdsSorted();
@@ -3341,7 +3349,6 @@ void CbcSolver::initialize()
   parameters_[CbcParam::ODDWEXTMETHOD]->setVal(2);
   parameters_[CbcParam::PREPROCESS]->setVal("sos");
   parameters_[CbcParam::MIPOPTIONS]->setVal(1057);
-  parameters_[CbcParam::CUTPASSINTREE]->setVal(10);
   parameters_[CbcParam::MOREMIPOPTIONS]->setVal(-1);
   parameters_[CbcParam::MAXHOTITS]->setVal(100);
   parameters_[CbcParam::CUTSTRATEGY]->setVal("on");
@@ -7242,7 +7249,6 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   parameters[CbcParam::ODDWEXTMETHOD]->setVal(2);
   parameters[CbcParam::PREPROCESS]->setVal("sos");
   parameters[CbcParam::MIPOPTIONS]->setVal(1057);
-  parameters[CbcParam::CUTPASSINTREE]->setVal(10);
   parameters[CbcParam::MOREMIPOPTIONS]->setVal(-1);
   parameters[CbcParam::MAXHOTITS]->setVal(100);
   parameters[CbcParam::CUTSTRATEGY]->setVal("on");
@@ -8341,8 +8347,6 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   int *&knapsackStart = knapsackStart_;
   int *&knapsackRow = knapsackRow_;
   int &numberKnapsack = numberKnapsack_;
-  int &cutPass = cutPass_;
-  int &cutPassInTree = cutPassInTree_;
   double &normalIncrement = normalIncrement_;
   double *&debugValues = debugValues_;
   int &numberDebugValues = numberDebugValues_;
@@ -8474,9 +8478,20 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   // add cut generators if wanted
   configureCutGenerators(*babModel_, bkPivotingStrategy);
   // Could tune more
-  double minimumDrop = fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
-  minimumDrop = std::min(5.0e-2, minimumDrop);
-  if (cutPass == -1234567) {
+  // passCuts and minDrop may be `auto', resolved here from the instance;
+  // every resolved value is logged so the choice is visible.
+  std::string autoChoices;
+  double minimumDrop;
+  if (parameters[CbcParam::MINIMUMDROP]->isAuto()) {
+    minimumDrop = fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
+    minimumDrop = std::min(5.0e-2, minimumDrop);
+    std::ostringstream choice;
+    choice << "minDrop auto -> " << minimumDrop;
+    autoChoices = choice.str();
+  } else {
+    minimumDrop = parameters[CbcParam::MINIMUMDROP]->dblVal();
+  }
+  if (parameters[CbcParam::CUTPASS]->isAuto()) {
     // Root cut-pass budget, tiered by column count with a *row*-count OR
     // condition widening eligibility for the top (unconditional, minDrop
     // ignored) tier.
@@ -8527,23 +8542,43 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
     // regressed/improved ratio, then confirmed on the full 500-instance
     // ./test run: 500/500 pass, 0 new failures/overtimes/errors, 8
     // regressed (all gap widenings, no timeouts/errors) / 11 improved.
+    //
+    // The tiers are now the cutPassSmall/cutPassMedium/cutPassLarge parameters and
+    // the thresholds sizeSmallRows/sizeSmallCols/sizeLargeCols, with the
+    // values above as their defaults.
     int numCols = babModel_->getNumCols();
     int numRows = babModel_->getNumRows();
-    if (numCols < 500 || numRows < 500)
-      babModel_->setMaximumCutPassesAtRoot(
-        -100); // ignore minDrop, up to 100 passes
-    else if (numCols < 5000)
-      babModel_->setMaximumCutPassesAtRoot(100); // minDrop-limited
-    else
-      babModel_->setMaximumCutPassesAtRoot(50); // minDrop-limited
-  } else {
+    int smallRows = parameters[CbcParam::SIZESMALLROWS]->intVal();
+    int smallCols = parameters[CbcParam::SIZESMALLCOLS]->intVal();
+    int largeCols = parameters[CbcParam::SIZELARGECOLS]->intVal();
+    std::ostringstream choice;
+    int cutPass;
+    if (numCols < smallCols || numRows < smallRows) {
+      cutPass = parameters[CbcParam::CUTPASSSMALL]->intVal();
+      choice << "passCuts auto -> " << cutPass << " (small: ";
+      if (numRows < smallRows)
+        choice << "rows " << numRows << " < sizeSmallRows " << smallRows;
+      else
+        choice << "cols " << numCols << " < sizeSmallCols " << smallCols;
+    } else if (numCols < largeCols) {
+      cutPass = parameters[CbcParam::CUTPASSMEDIUM]->intVal();
+      choice << "passCuts auto -> " << cutPass << " (medium: cols "
+             << numCols << " < sizeLargeCols " << largeCols;
+    } else {
+      cutPass = parameters[CbcParam::CUTPASSLARGE]->intVal();
+      choice << "passCuts auto -> " << cutPass << " (large: cols "
+             << numCols << " >= sizeLargeCols " << largeCols;
+    }
+    choice << (cutPass < 0 ? ", minDrop ignored)" : ")");
+    autoChoices = autoChoices.empty() ? choice.str() : choice.str() + ", " + autoChoices;
     babModel_->setMaximumCutPassesAtRoot(cutPass);
+  } else {
+    babModel_->setMaximumCutPassesAtRoot(parameters[CbcParam::CUTPASS]->intVal());
   }
+  if (!autoChoices.empty())
+    printGeneralMessage(model_, autoChoices);
   babModel_->setMinimumDrop(minimumDrop);
-  if (cutPassInTree == -1234567)
-    babModel_->setMaximumCutPasses(4);
-  else
-    babModel_->setMaximumCutPasses(cutPassInTree);
+  babModel_->setMaximumCutPasses(parameters[CbcParam::CUTPASSINTREE]->intVal());
   // Do more strong branching if small
   // if (babModel_->getNumCols()<5000)
   // babModel_->setNumberStrong(20);
@@ -11031,14 +11066,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
       signal(SIGINT, signal_handler);
 #endif
     // Set up all non-standard stuff
-    // Initialize from parameters so values set before run() are respected.
-    // The sentinel -1234567 means "let CBC auto-size based on problem dimensions".
-    cutPass_ = parameters[CbcParam::CUTPASS]->intVal();
-    if (cutPass_ == 100)
-      cutPass_ = -1234567; // 100 is the default; treat as "not user-set"
-    cutPassInTree_ = parameters[CbcParam::CUTPASSINTREE]->intVal();
-    if (cutPassInTree_ == 10)
-      cutPassInTree_ = -1234567; // 10 is CbcMain0's default; treat as "not user-set"
     tunePreProcess_ = 0;
     testOsiParameters_ = -1;
     // 0 normal, 1 from ampl or MIQP etc (2 allows cuts)
@@ -11248,8 +11275,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     int &verbose = verbose_;
     int &testOsiParameters = testOsiParameters_;
     int &complicatedInteger = complicatedInteger_;
-    int &cutPass = cutPass_;
-    int &cutPassInTree = cutPassInTree_;
     int &tunePreProcess = tunePreProcess_;
     int &integerStatus = integerStatus_;
     int &returnMode = returnMode_;
@@ -11881,12 +11906,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
           if (!message.empty())
             paramChanges_.push_back(message);
-          if (cbcParamCode == CbcParam::CUTPASS) {
-            cutPass = iValue;
-          } else if (cbcParamCode == CbcParam::USESOLUTION) {
+          if (cbcParamCode == CbcParam::USESOLUTION) {
             useSolution = iValue;
-          } else if (cbcParamCode == CbcParam::CUTPASSINTREE) {
-            cutPassInTree = iValue;
           } else if (cbcParamCode == CbcParam::STRONGBRANCHING || cbcParamCode == CbcParam::NUMBERBEFORE) {
             strongChanged = true;
           } else if (cbcParamCode == CbcParam::FPUMPTUNE || cbcParamCode == CbcParam::FPUMPTUNE2 || cbcParamCode == CbcParam::FPUMPITS) {
@@ -12036,7 +12057,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               // lpSolver->factorization()->forceOtherFactorization(3);
               parameters[CbcParam::MAXHOTITS]->setVal(100);
               parameters[CbcParam::CUTPASS]->setVal(1000);
-              cutPass = 1000;
               parameters[CbcParam::RENS]->setVal("on");
             }
           } else if (cbcParamCode == CbcParam::STRATEGY) {

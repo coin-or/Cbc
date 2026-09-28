@@ -534,6 +534,10 @@ public:
 
   enum OnOffMode { ParamOff = 0, ParamOn, ParamEndMarker };
 
+  /// Extra -rowReductions keyword (beyond off/on): also remove rows on the
+  /// LP-only commands (-initialSolve, -dualSimplex, ...).
+  static const int ROWREDUCTIONS_FORCE = ParamEndMarker;
+
   /*! \brief Codes to specify the assignment of branching priorities
 
       - BPOff: no priorities are passed to cbc

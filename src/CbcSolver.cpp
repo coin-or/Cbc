@@ -2004,7 +2004,12 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   // allowRowRemoval is left at its default false: these commands report dual
   // values, and the row-removal step has no postsolve to recover a dual for a
   // row it deleted.
-  if (!preRootLPStrenghtening(model_.solver())) {
+  //
+  // -rowReductions force opts in to row removal here as well, so these
+  // commands solve exactly the LP the branch-and-bound root would.
+  const bool forceRowRemoval = parameters_[CbcParam::ROWREDUCTIONS]->modeVal()
+    == CbcParameters::ROWREDUCTIONS_FORCE;
+  if (!preRootLPStrenghtening(model_.solver(), forceRowRemoval)) {
     // Infeasibility proved by bound propagation — mark model.
     model_.setProblemStatus(0);
     model_.setSecondaryStatus(1);

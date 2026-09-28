@@ -2924,8 +2924,13 @@ void CbcParameters::addCbcSolverBoolParams() {
       "postsolve at this point to recover one. Cbc reports no duals for a "
       "MIP, so this is free on the branch-and-bound path, but it is skipped "
       "for the LP-only commands (-solveContinuous, -dualSimplex, "
-      "-primalSimplex, -barrier) whatever this parameter says. Requires "
-      "-preRootLPStrenghtening to be on.");
+      "-primalSimplex, -barrier) unless this parameter is set to force. "
+      "force: like on, but also removes rows on the LP-only commands, so "
+      "that e.g. -initialSolve solves exactly the LP the branch-and-bound "
+      "root sees (useful for benchmarking root LP methods); dual values "
+      "are then not available for removed rows. Requires "
+      "-preRootLPStrenghtening to be on for -solve.");
+  parameters_[CbcParam::ROWREDUCTIONS]->appendKwd("force", ROWREDUCTIONS_FORCE);
 
   parameters_[CbcParam::USESOLUTION]->setup(
       "force!Solution", "Whether to use given solution as crash for BAB",

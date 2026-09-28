@@ -4362,6 +4362,21 @@ void CbcModel::branchAndBound(int doStatistics)
   }
   int numberIterationsAtContinuous = numberIterations_;
   // solverCharacteristics_->setSolver(solver_);
+  if (!feasible && (solver_->isAbandoned() || resolveHitTimeLimit(solver_)
+                     || maximumSecondsReached())) {
+    // Root cut generation (solveWithCuts(), possibly several calls above)
+    // concluded "infeasible" purely because some LP resolve along the way
+    // was abandoned (numerical difficulties) or cut short by the remaining
+    // time budget -- not because infeasibility was actually proven. Report
+    // this honestly as "stopped", matching the equivalent guard just above
+    // for the very first root resolve. Without this, falling through with
+    // status_/secondaryStatus_ still at their defaults would make
+    // isProvenInfeasible() (which only checks bestObjective_ >= 1e30 and
+    // status_==0) wrongly report the whole problem as proven infeasible.
+    handler_->message(CBC_MAXTIME, messages_) << CoinMessageEol;
+    secondaryStatus_ = 4;
+    status_ = 1;
+  }
   if (feasible) {
     // mark all cuts as globally valid
     int numberCuts = cuts.sizeRowCuts();
@@ -16558,14 +16573,20 @@ int CbcModel::resolve(OsiSolverInterface *solver)
       double error = std::max(clpSimplex->largestDualError(),
         clpSimplex->largestPrimalError());
       if (error > 1.0e-2 || !clpSolver->isProvenOptimal()) {
-#if CBC_USEFUL_PRINTING > 1
-        printf("Problem was %s largest dual error %g largest primal %g - safer "
-               "cuts\n",
-          clpSolver->isProvenOptimal() ? "optimal" : "!infeasible",
-          clpSimplex->largestDualError(),
-          clpSimplex->largestPrimalError());
-#endif
-        if (!clpSolver->isProvenOptimal()) {
+        // NOTE: even when Clp *reports* isProvenOptimal() == true, a large
+        // largestDualError()/largestPrimalError() means that "optimal"
+        // claim cannot be trusted -- on severely ill-conditioned LPs (e.g.
+        // after many passes of cut generation widen the coefficient/RHS
+        // range further) Clp can converge to a numerically garbage solution
+        // (wildly wrong objective, sometimes many orders of magnitude off)
+        // while still declaring victory. Previously this branch only ran
+        // when Clp openly admitted failure (!isProvenOptimal()), so a
+        // "confidently wrong" solve was accepted as-is: CBC would treat the
+        // garbage objective as a valid new dual bound, eventually pruning
+        // away the true optimum and reporting the problem as infeasible.
+        // Trigger the same all-slack-basis / dual-off recovery whenever the
+        // error is large, regardless of what Clp claims about optimality.
+        if (!clpSolver->isProvenOptimal() || error > 1.0e-2) {
           // check if proven infeasible i.e. bad bounds
           int numberColumns = clpSolver->getNumCols();
           const double *columnLower = clpSolver->getColLower();
@@ -16589,7 +16610,9 @@ int CbcModel::resolve(OsiSolverInterface *solver)
             clpSolver->resolve();
             clpSimplex->setMaximumSeconds(-1.0);
             clpSimplex->setMaximumWallSeconds(-1.0);
-            if (!clpSolver->isProvenOptimal()) {
+            double errorAfterSlackRestart = std::max(clpSimplex->largestDualError(),
+              clpSimplex->largestPrimalError());
+            if (!clpSolver->isProvenOptimal() || errorAfterSlackRestart > 1.0e-2) {
               bool takeHint;
               OsiHintStrength strength;
               clpSolver->getHintParam(OsiDoDualInResolve, takeHint, strength);
@@ -16630,8 +16653,21 @@ int CbcModel::resolve(OsiSolverInterface *solver)
         clpSimplex->numberIterations());
 #endif
     clpSimplex->setSpecialOptions(save);
-    if (clpSimplex->status() == 4)
-      clpSimplex->setProblemStatus(1);
+    // NOTE: this used to unconditionally rewrite a Clp status==4 ("stopped
+    // due to errors" / numerically abandoned, see ClpModel::isAbandoned())
+    // into problemStatus==1 (proven primal infeasible). That silently
+    // destroyed the only signal (isAbandoned()) that callers further up the
+    // call chain (resolve(CbcNodeInfo*,...), serialCuts(), the root
+    // feasibility check in branchAndBound()) rely on to tell "this LP resolve
+    // never actually finished" apart from "this LP is genuinely infeasible".
+    // On a severely ill-conditioned root LP (huge coefficient/RHS/bound
+    // ranges), Clp can abandon a resolve for numerical reasons with plenty of
+    // wall-clock budget still remaining; forcing that into "infeasible" here
+    // caused the whole model to be wrongly reported as proven infeasible
+    // after cut generation, even though the LP was never actually solved to
+    // a conclusive status. Leave the real status (4) in place so it can
+    // propagate honestly; see resolveHitTimeLimit() and the isAbandoned()
+    // checks in resolve(CbcNodeInfo*,...) and branchAndBound().
   } else {
     solver->resolve();
   }

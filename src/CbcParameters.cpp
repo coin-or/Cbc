@@ -729,6 +729,7 @@ void CbcParameters::addCbcParams() {
                     CbcParam::ZEROHALFROWMAXPAIRCOUNT,
                     CbcParam::ZEROHALFSPARSETHRESH})
     parameters_[code]->setTopic("Cuts");
+  parameters_[CbcParam::TWOMIRLENGTH]->setTopic("Cuts");
 
   // Bool params
   parameters_[CbcParam::SOS]->setTopic("MIP Preprocessing");
@@ -917,6 +918,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::USERCBC]->setDefault(0);
      parameters_[CbcParam::VERBOSE]->setDefault(verbose_);
      parameters_[CbcParam::VUBTRY]->setDefault(-1);
+     parameters_[CbcParam::TWOMIRLENGTH]->setDefault(500);
      parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setDefault(-1);
      parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
@@ -2878,6 +2880,17 @@ void CbcParameters::addCbcSolverIntParams() {
       "A value of 0 forces sparse mode for testing. Negative values disable "
       "threshold-based switching, but sparse mode is still used automatically "
       "when the dense graph would be unsafe.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::TWOMIRLENGTH]->setup(
+      "twoMirL!ength", "Maximum length of a TwoMir cut", 1, COIN_INT_MAX,
+      "A hard ceiling on the number of nonzeros in a TwoMir cut (including "
+      "the Lagrangean variants). A tableau row longer than this is not used "
+      "to derive cuts, and a longer cut is discarded. It applies at the root "
+      "and in the tree, on top of the generator's own limits: in the tree "
+      "those are normally tighter (250), so in practice this caps root cuts. "
+      "On the first root pass the limit is also bounded by the number of "
+      "columns. The default, 500, is the value CglTwomir has always used.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setup(

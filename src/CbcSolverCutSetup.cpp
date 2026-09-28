@@ -643,6 +643,7 @@ void installCutGenerators(
   if (twomirMode && (complicatedInteger != 1 || (twomirMode == CbcParameters::CGOn || twomirMode >= CbcParameters::CGForceOn))) {
     CglTwomir twomirGen;
     twomirGen.setMaxElements(250);
+    twomirGen.setMaxLength(parameters[CbcParam::TWOMIRLENGTH]->intVal());
     // MORE_CUTS defaults
 #ifdef MORE_CUTS
     twomirGen.setAwayAtRoot(0.005);

@@ -270,7 +270,7 @@
 <a href="#mip-preprocessing" class="sb-link">MIP Preprocessing<span class="sb-count">12</span></a>
 <a href="#mip-preprocessing-bound-propagation" class="sb-link">MIP Preprocessing — Bound Propagation<span class="sb-count">9</span></a>
 <a href="#lp-presolve" class="sb-link">LP Presolve<span class="sb-count">3</span></a>
-<a href="#cuts" class="sb-link">Cuts<span class="sb-count">27</span></a>
+<a href="#cuts" class="sb-link">Cuts<span class="sb-count">28</span></a>
 <a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">35</span></a>
 <a href="#branching" class="sb-link">Branching<span class="sb-count">6</span></a>
 <a href="#tolerances" class="sb-link">Tolerances<span class="sb-count">6</span></a>
@@ -290,7 +290,7 @@
   <div class="main-content">
     <header class="page-header">
       <h1>Parameter Reference</h1>
-      <p>CBC v2.933-90-ge60549a4-dirty &mdash; September 2026 &mdash; 283 parameters across 18 sections</p>
+      <p>CBC v2.933-90-ge60549a4-dirty &mdash; September 2026 &mdash; 284 parameters across 18 sections</p>
     </header>
 
 <section id="stopping" class="topic-section">
@@ -620,6 +620,11 @@
   <summary><span class="pname"><code>-slowcutpasses</code></span><span class="badge badge-int">Integer</span><span class="pshort">Maximum number of rounds for slower cut generators</span><span class="pmeta">default:&nbsp;<code>10</code></span></summary>
   <div class="pbody"><p class="plong">Some cut generators are fairly slow - this limits the number of times they are tried. The cut generators identified as &#x27;may be slow&#x27; at present are Lift and project cuts and both versions of Reduce and Split cuts.</p>
 <div class="pextra"><strong>Range:</strong> -1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;10)</span></div></div>
+</details>
+<details class="param" data-search="twomirlength maximum length of a twomir cut">
+  <summary><span class="pname"><code>-twoMirLength</code></span><span class="badge badge-int">Integer</span><span class="pshort">Maximum length of a TwoMir cut</span><span class="pmeta">default:&nbsp;<code>500</code></span></summary>
+  <div class="pbody"><p class="plong">A hard ceiling on the number of nonzeros in a TwoMir cut (including the Lagrangean variants). A tableau row longer than this is not used to derive cuts, and a longer cut is discarded. It applies at the root and in the tree, on top of the generator&#x27;s own limits: in the tree those are normally tighter (250), so in practice this caps root cuts. On the first root pass the limit is also bounded by the number of columns. The default, 500, is the value CglTwomir has always used.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;500)</span></div></div>
 </details>
 <details class="param" data-search="zerohalfrowmaxfractionalcount skip zerohalf rows whose fractional count exceeds this threshold">
   <summary><span class="pname"><code>-zeroHalfRowMaxFractionalCount</code></span><span class="badge badge-int">Integer</span><span class="pshort">Skip ZeroHalf rows whose fractional count exceeds this threshold</span><span class="pmeta">default:&nbsp;<code>-1</code></span></summary>

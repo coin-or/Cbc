@@ -15,7 +15,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [MIP Preprocessing](#mip-preprocessing) (12 parameters)
 - [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (9 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
-- [Cuts](#cuts) (27 parameters)
+- [Cuts](#cuts) (28 parameters)
 - [Heuristics](#heuristics) (35 parameters)
 - [Branching](#branching) (6 parameters)
 - [Tolerances](#tolerances) (6 parameters)
@@ -518,6 +518,14 @@ Maximum number of rounds for slower cut generators
 Some cut generators are fairly slow - this limits the number of times they are tried. The cut generators identified as 'may be slow' at present are Lift and project cuts and both versions of Reduce and Split cuts.
 
 **Range:** -1 to INT_MAX (default: 10)
+
+### `-twoMirLength`
+
+Maximum length of a TwoMir cut
+
+A hard ceiling on the number of nonzeros in a TwoMir cut (including the Lagrangean variants). A tableau row longer than this is not used to derive cuts, and a longer cut is discarded. It applies at the root and in the tree, on top of the generator's own limits: in the tree those are normally tighter (250), so in practice this caps root cuts. On the first root pass the limit is also bounded by the number of columns. The default, 500, is the value CglTwomir has always used.
+
+**Range:** 1 to INT_MAX (default: 500)
 
 ### `-zeroHalfRowMaxFractionalCount`
 

@@ -1,13 +1,18 @@
 # LP relaxation — barrier method parameter settings
-# Kept separately because barrier uses too much memory for large-scale experiments.
-# Re-integrate into lp_params.txt when memory is not a concern.
+# Kept separately because barrier uses much more memory than simplex: run it
+# with fewer parallel jobs and a per-job memory cap, e.g.
+#   run_lp_experiments.sh --params lp_params_barrier.txt --parallel 32 \
+#     --mem-limit 12G --common-args "-rowReductions force" ...
+# (see LP-RELAXATION-TUNING.md, "Barrier round").
+#
+# All variants use the default crossover (on), so the result is a basis the
+# MIP search can warm-start from, exactly as -lpMethod barrier inside -solve.
+# `-cholesky native` is the default, so a separate barrier_default tag would
+# only duplicate barrier_native.
 #
 # Format: tag|cbc_params
 
-# ── Defaults (no tuning) ──────────────────────────────────────────────
-barrier_default|-lpMethod barrier
-
-# ── Barrier variants (from guess_option.tex) ─────────────────────────
 barrier_native|-cholesky native -lpMethod barrier
 barrier_dense|-cholesky dense -lpMethod barrier
-barrier_univ|-cholesky univ -lpMethod barrier
+# UniversityOfFlorida = SuiteSparse CHOLMOD factorization with AMD ordering
+barrier_univ|-cholesky Uni -lpMethod barrier

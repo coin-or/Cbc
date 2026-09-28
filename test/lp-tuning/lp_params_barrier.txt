@@ -1,0 +1,13 @@
+# LP relaxation — barrier method parameter settings
+# Kept separately because barrier uses too much memory for large-scale experiments.
+# Re-integrate into lp_params.txt when memory is not a concern.
+#
+# Format: tag|cbc_params
+
+# ── Defaults (no tuning) ──────────────────────────────────────────────
+barrier_default|-lpMethod barrier
+
+# ── Barrier variants (from guess_option.tex) ─────────────────────────
+barrier_native|-cholesky native -lpMethod barrier
+barrier_dense|-cholesky dense -lpMethod barrier
+barrier_univ|-cholesky univ -lpMethod barrier

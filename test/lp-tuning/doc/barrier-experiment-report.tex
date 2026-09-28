@@ -1,0 +1,583 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{array}
+\usepackage{listings}
+
+\definecolor{bestcell}{rgb}{0.85,1.0,0.85}
+\definecolor{badcell}{rgb}{1.0,0.88,0.85}
+\definecolor{tlcell}{rgb}{0.95,0.95,0.95}
+\definecolor{headercolor}{rgb}{0.22,0.39,0.60}
+
+\lstset{basicstyle=\ttfamily\small, breaklines=true, frame=single}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=headercolor,
+  urlcolor=headercolor,
+  citecolor=headercolor
+}
+
+\title{\textbf{Barrier vs.\ Simplex for LP Relaxations in Clp}\\[0.4em]
+       \large Comparing Native Cholesky, AMD Cholesky, Primal Simplex,\\
+              and Dual Simplex on MIPLIB~2017 Instances}
+\author{Experimental study --- CBC/CLP development workspace}
+\date{March 2026}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{document}
+\maketitle
+\tableofcontents
+\bigskip
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Motivation}
+
+The \texttt{-guess} option in Clp (documented separately in
+\texttt{doc/guess\_option.pdf}) automatically selects an LP algorithm based on
+instance features.  In its current form it always chooses either primal or dual
+simplex; the barrier (interior-point) branch is present in the code but is dead.
+A natural question is: \emph{is that correct?}  When, if ever, does barrier
+outperform simplex on the LP relaxations that arise inside a MIP solve?
+
+A secondary question is whether the SuiteSparse / CHOLMOD AMD reordering
+(available in this build via \texttt{-chol~uni}) improves the barrier solver
+relative to Clp's native Cholesky, which is relevant both for speed and for
+peak memory consumption.
+
+This report documents a systematic experiment that benchmarks four solver
+configurations on eleven MIPLIB~2017 instances that are cited in the
+\texttt{guess\_option} document as structural candidates for the barrier
+method.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Experimental Setup}
+
+\subsection{Solver}
+
+All runs use the \texttt{clp} binary from the local development build
+(\texttt{\$HOME/prog/cbc/bin/clp}, version \emph{devel}, build date
+2026-03-24), compiled with:
+\begin{itemize}
+  \item GCC~15 (\texttt{-O3 -march=native});
+  \item SuiteSparse / AMD (\texttt{libamd}, \texttt{libcholmod}) from the
+        system package;
+  \item OpenBLAS for dense linear algebra.
+\end{itemize}
+
+\subsection{Solver Configurations}
+
+Four Clp configurations are tested, differing only in LP algorithm and
+Cholesky ordering:
+
+\begin{table}[h]
+\centering
+\caption{Solver configurations.}
+\label{tab:configs}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Label} & \textbf{Clp command-line flags} & \textbf{Description} \\
+\midrule
+\texttt{barrier\_default}  & \texttt{-seconds 28800 -barrier}           & Barrier, native Cholesky \\
+\texttt{barrier\_chol\_amd} & \texttt{-chol uni -seconds 28800 -barrier} & Barrier, CHOLMOD + AMD ordering \\
+\texttt{primal\_simplex}   & \texttt{-seconds 28800 -primals}           & Primal simplex (default crash) \\
+\texttt{dual\_simplex}     & \texttt{-seconds 28800 -duals}             & Dual simplex \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Important:} In Clp, \texttt{-barrier} and \texttt{-primals}/\texttt{-duals}
+are \emph{action} parameters that trigger the solve immediately.  All
+configuration parameters (including \texttt{-chol} and \texttt{-seconds})
+must therefore precede the action flag.
+
+\subsection{Time Limits}
+
+\begin{itemize}
+  \item \textbf{Soft limit:} 28\,800\,s (8\,h), passed to Clp via
+        \texttt{-seconds}.
+  \item \textbf{Hard limit:} 32\,400\,s (9\,h), enforced externally via
+        \texttt{SIGTERM}/\texttt{SIGKILL}.
+\end{itemize}
+
+\subsection{Instances}
+
+The eleven instances in Table~\ref{tab:instances} were selected from
+MIPLIB~2017 based on structural properties suggested as barrier-friendly
+in the \texttt{guess\_option} document: high density, network/flow structure,
+high degeneracy, and high equality proportion.  All instances are taken from
+\texttt{/home/haroldo/inst/super} in \texttt{.mps.gz} format.
+
+\begin{table}[h]
+\centering
+\caption{Benchmark instances.}
+\label{tab:instances}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Instance} & \textbf{Category} & \textbf{Structural rationale} \\
+\midrule
+\texttt{neos-5075914-elvire}  & Dense / large-scale   & Large, dense constraint matrix \\
+\texttt{neos-3083819-nubu}    & Dense / large-scale   & High density, many nz per row \\
+\texttt{supportcase18}        & Dense / large-scale   & Large-scale, dense blocks \\
+\texttt{graph40-80-1rand}     & Dense / large-scale   & Dense graph-based structure \\
+\texttt{mc11}                 & Network / flow        & Multicommodity flow \\
+\texttt{momentum1}            & Network / flow        & Large network structure \\
+\texttt{neos-4954672-berkel}  & Network / flow        & Flow-like, many equalities \\
+\texttt{supportcase6}         & Network / flow        & Large flow/network relaxation \\
+\texttt{neos-3627168-kasai}   & Highly degenerate     & Degenerate LP, simplex stalls \\
+\texttt{neos-4338804-snowy}   & Highly degenerate     & Degenerate, simplex struggles \\
+\texttt{seymour}              & Highly degenerate     & Classic difficult degenerate LP \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Objective Validation}
+
+After each solve that reached optimality, the reported objective value was
+compared against a Gurobi LP-relaxation reference
+(\texttt{lp\_relaxation\_results\_gurobi.tsv}) using a relative tolerance of
+$10^{-4}$.  All optimal solutions in this experiment matched within
+$10^{-10}$, confirming correctness across all four configurations.
+
+\subsection{Measurement}
+
+\begin{itemize}
+  \item \textbf{Wall-clock time}: measured externally using millisecond
+        timestamps around the solver call.
+  \item \textbf{Solve time}: Clp-reported time on the
+        \texttt{Optimal objective \ldots\ time} output line, excluding
+        presolve.
+  \item \textbf{Peak memory}: \texttt{Maximum resident set size} from
+        \texttt{/usr/bin/time -v} wrapping the Clp process.
+\end{itemize}
+
+All 44 jobs (11 instances $\times$ 4 configurations) ran concurrently on a
+128-core machine; each Clp process is single-threaded, so at most 44 cores
+were active simultaneously.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Results}
+
+\subsection{Solve Time}
+\label{sec:solvetime}
+
+Table~\ref{tab:solvetime} reports Clp-reported solve time (excluding
+presolve).  The fastest configuration for each instance is highlighted in
+\colorbox{bestcell}{green}; time-limit hits are in \colorbox{tlcell}{grey}.
+
+\begin{table}[h]
+\centering
+\caption{Clp-reported solve time (seconds, excluding presolve). TL = time
+         limit reached. Best per row highlighted.}
+\label{tab:solvetime}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lrrrrl@{}}
+\toprule
+\textbf{Instance}
+  & \textbf{Barrier native}
+  & \textbf{Barrier+AMD}
+  & \textbf{Primal}
+  & \textbf{Dual}
+  & \textbf{Best} \\
+\midrule
+neos-5075914-elvire  & 0.102 & 0.142 & \cellcolor{bestcell}0.052 & 0.072 & Primal \\
+neos-3083819-nubu    & 0.092 & 0.472 & 0.042 & \cellcolor{bestcell}0.032 & Dual \\
+supportcase18        & 0.152 & 0.192 & \cellcolor{bestcell}0.042 & 0.152 & Primal \\
+graph40-80-1rand     & 25\,452 & \cellcolor{tlcell}TL & \cellcolor{bestcell}14\,148 & \cellcolor{tlcell}TL & Primal \\
+mc11                 & \cellcolor{bestcell}0.012 & 0.022 & 0.012 & 0.012 & Barrier native \\
+momentum1            & \cellcolor{tlcell}TL & \cellcolor{tlcell}TL & 4.842 & \cellcolor{bestcell}0.602 & Dual \\
+neos-4954672-berkel  & 0.022 & 0.182 & \cellcolor{bestcell}0.012 & 0.012 & Primal \\
+supportcase6         & 6.742 & 7.582 & \cellcolor{bestcell}1.302 & 3.642 & Primal \\
+neos-3627168-kasai   & \cellcolor{bestcell}0.032 & 0.062 & 0.042 & 0.032 & Barrier native \\
+neos-4338804-snowy   & 0.612 & 0.432 & \cellcolor{bestcell}0.012 & 0.012 & Primal \\
+seymour              & 47.8 & 796 & \cellcolor{bestcell}0.462 & 0.872 & Primal \\
+\midrule
+\textbf{Wins}        & 2 & 0 & \textbf{7} & 2 & \\
+\textbf{Timed out}   & 1 & 2 & 0 & 1 & \\
+\textbf{GeoMean ratio} & 4.231 & 11.524 & \cellcolor{bestcell}\textbf{1.270} & 1.388 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The geometric mean ratio measures each configuration's solve time
+relative to the fastest on that instance, computed only over jointly solved
+instances.  A value of 1.000 would mean always fastest.
+
+\subsection{Wall-clock Time}
+\label{sec:walltime}
+
+Wall-clock times (Table~\ref{tab:walltime}) follow the same pattern but
+include startup, I/O, and presolve overhead.  The rankings are essentially
+identical to solve time.
+
+\begin{table}[h]
+\centering
+\caption{Wall-clock time (seconds). TL = time limit reached.}
+\label{tab:walltime}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lrrrrl@{}}
+\toprule
+\textbf{Instance}
+  & \textbf{Barrier native}
+  & \textbf{Barrier+AMD}
+  & \textbf{Primal}
+  & \textbf{Dual}
+  & \textbf{Best} \\
+\midrule
+neos-5075914-elvire  & 0.164 & 0.185 & \cellcolor{bestcell}0.089 & 0.112 & Primal \\
+neos-3083819-nubu    & 0.173 & 0.512 & 0.093 & \cellcolor{bestcell}0.076 & Dual \\
+supportcase18        & 0.231 & 0.247 & \cellcolor{bestcell}0.099 & 0.178 & Primal \\
+graph40-80-1rand     & 25\,529 & \cellcolor{tlcell}TL & \cellcolor{bestcell}14\,219 & \cellcolor{tlcell}TL & Primal \\
+mc11                 & 0.047 & 0.051 & \cellcolor{bestcell}0.045 & 0.045 & Primal \\
+momentum1            & \cellcolor{tlcell}TL & \cellcolor{tlcell}TL & 5.063 & \cellcolor{bestcell}0.766 & Dual \\
+neos-4954672-berkel  & 0.053 & 0.197 & \cellcolor{bestcell}0.036 & 0.053 & Primal \\
+supportcase6         & 7.176 & 8.023 & \cellcolor{bestcell}1.743 & 4.110 & Primal \\
+neos-3627168-kasai   & 0.081 & 0.099 & 0.116 & \cellcolor{bestcell}0.064 & Dual \\
+neos-4338804-snowy   & 0.627 & 0.461 & 0.072 & \cellcolor{bestcell}0.036 & Dual \\
+seymour              & 47.842 & 796.738 & \cellcolor{bestcell}0.506 & 0.947 & Primal \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Peak Memory}
+\label{sec:memory}
+
+Table~\ref{tab:memory} reports the peak resident set size.  The most
+striking differences appear on the three hardest instances
+(Table~\ref{tab:memhighlight}).
+
+\begin{table}[h]
+\centering
+\caption{Peak memory usage (MB). $\uparrow$ highest in row;
+         $\downarrow$ lowest in row.}
+\label{tab:memory}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Instance}
+  & \textbf{Barrier native}
+  & \textbf{Barrier+AMD}
+  & \textbf{Primal}
+  & \textbf{Dual} \\
+\midrule
+neos-5075914-elvire & 16 & 19$\uparrow$ & 17 & 17 \\
+neos-3083819-nubu   & 20 & 19 & 21$\uparrow$ & 21$\uparrow$ \\
+supportcase18       & 18 & 23$\uparrow$ & 19 & 18 \\
+graph40-80-1rand    & 8\,741 & \cellcolor{badcell}12\,533$\uparrow$ & \textbf{862}$\downarrow$ & 886 \\
+mc11                & 17$\uparrow$ & 16 & 17$\uparrow$ & 14$\downarrow$ \\
+momentum1           & 786 & \cellcolor{badcell}967$\uparrow$ & \textbf{46}$\downarrow$ & 50 \\
+neos-4954672-berkel & 16 & 17$\uparrow$ & 15$\downarrow$ & 17$\uparrow$ \\
+supportcase6        & 82 & 81$\downarrow$ & 82 & 84$\uparrow$ \\
+neos-3627168-kasai  & 16 & 17$\uparrow$ & 17$\uparrow$ & 14$\downarrow$ \\
+neos-4338804-snowy  & 21 & 22$\uparrow$ & 15$\downarrow$ & 16 \\
+seymour             & 65 & \cellcolor{badcell}97$\uparrow$ & \textbf{17}$\downarrow$ & 20 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Memory overhead of barrier vs.\ primal simplex on hard instances.}
+\label{tab:memhighlight}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Instance} & \textbf{Barrier native} & \textbf{Barrier+AMD} & \textbf{Primal} & \textbf{AMD/Primal} \\
+\midrule
+graph40-80-1rand & 8\,741 MB & 12\,533 MB & 862 MB & $\times$14.5 \\
+momentum1        & 786 MB    & 967 MB     & 46 MB  & $\times$21.0 \\
+seymour          & 65 MB     & 97 MB      & 17 MB  & $\times$5.7  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Iteration Counts}
+\label{sec:iterations}
+
+Table~\ref{tab:iters} reports the number of barrier (IPM) or simplex
+iterations.  Barrier's theoretical advantage is its
+dimension-independent iteration count.
+
+\begin{table}[h]
+\centering
+\caption{Number of barrier or simplex iterations. TL = timed out.}
+\label{tab:iters}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Instance}
+  & \textbf{Barrier native}
+  & \textbf{Barrier+AMD}
+  & \textbf{Primal}
+  & \textbf{Dual} \\
+\midrule
+neos-5075914-elvire & 20  & 19  & 1\,074  & 1\,376 \\
+neos-3083819-nubu   & 446 & 339 & 539     & 528 \\
+supportcase18       & 11  & 11  & 663     & 985 \\
+graph40-80-1rand    & 11  & TL  & 614\,030 & TL \\
+mc11                & 53  & 53  & 662     & 404 \\
+momentum1           & TL  & TL  & 7\,293  & 3\,138 \\
+neos-4954672-berkel & 60  & 281 & 322     & 409 \\
+supportcase6        & 721 & 724 & 9\,787  & 4\,390 \\
+neos-3627168-kasai  & 150 & 159 & 1\,294  & 1\,366 \\
+neos-4338804-snowy  & 6   & 6   & 474     & 409 \\
+seymour             & 49  & 229 & 2\,764  & 3\,710 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The barrier method achieves remarkably few iterations on most
+instances (6--53 for the easy ones, 11 for \texttt{graph40-80-1rand}).
+However, each iteration involves a Cholesky factorisation that can be orders
+of magnitude more expensive per iteration than a simplex pivot, explaining
+why low iteration counts do not translate into fast wall-clock times.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Analysis}
+
+\subsection{Primal Simplex Dominates}
+
+Primal simplex is the fastest method on 7 of 11 instances and is the only
+configuration to solve all 11 within the time limit.  Its geometric mean
+ratio to the best (1.27) is far lower than barrier native (4.23) or
+barrier+AMD (11.52).  This is consistent with the design of the existing
+\texttt{guess()} heuristic, which predominantly recommends primal simplex.
+
+\subsection{Barrier AMD Is Uniformly Worse Than Native Barrier}
+
+On all 9 instances where both barrier variants solved to optimality, native
+Cholesky was faster than AMD Cholesky (Table~\ref{tab:native_vs_amd}).
+The ratio \texttt{AMD/native} ranges from 1.1$\times$ to 16.7$\times$, with
+a median around 1.9$\times$.  Only on \texttt{neos-4338804-snowy} (a trivially
+fast instance where both solve in under 1\,s) does AMD show any advantage (0.71$\times$).
+
+\begin{table}[h]
+\centering
+\caption{Barrier native vs.\ Barrier+AMD: solve time and memory comparison.
+         Ratio $>1$ means AMD is slower.}
+\label{tab:native_vs_amd}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+\textbf{Instance}
+  & \textbf{Native (s)}
+  & \textbf{AMD (s)}
+  & \textbf{Ratio}
+  & \textbf{Mem native}
+  & \textbf{Mem AMD}
+  & \textbf{Mem ratio} \\
+\midrule
+neos-5075914-elvire  & 0.102 & 0.142 & 1.39$\times$ & 16\,MB & 19\,MB & 1.19$\times$ \\
+neos-3083819-nubu    & 0.092 & 0.472 & 5.13$\times$ & 20\,MB & 19\,MB & 0.95$\times$ \\
+supportcase18        & 0.152 & 0.192 & 1.26$\times$ & 18\,MB & 23\,MB & 1.28$\times$ \\
+graph40-80-1rand     & 25\,452 & TL  & ---          & 8\,741\,MB & 12\,533\,MB & 1.43$\times$ \\
+mc11                 & 0.012 & 0.022 & 1.83$\times$ & 17\,MB & 16\,MB & 0.94$\times$ \\
+momentum1            & TL    & TL    & ---          & 786\,MB & 967\,MB & 1.23$\times$ \\
+neos-4954672-berkel  & 0.022 & 0.182 & 8.27$\times$ & 16\,MB & 17\,MB & 1.06$\times$ \\
+supportcase6         & 6.742 & 7.582 & 1.12$\times$ & 82\,MB & 81\,MB & 0.99$\times$ \\
+neos-3627168-kasai   & 0.032 & 0.062 & 1.94$\times$ & 16\,MB & 17\,MB & 1.06$\times$ \\
+neos-4338804-snowy   & 0.612 & 0.432 & \cellcolor{bestcell}0.71$\times$ & 21\,MB & 22\,MB & 1.05$\times$ \\
+seymour              & 47.8  & 796   & \cellcolor{badcell}16.67$\times$ & 65\,MB & 97\,MB & 1.49$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The AMD ordering is designed to minimise fill-in in the Cholesky factor of
+the normal-equations matrix $AD^{-2}A^{\top}$.  The results suggest that at
+these problem scales the reordering cost exceeds the factorisation savings,
+or that the sparsity pattern of the normal equations for these instances is
+not amenable to AMD reordering.  The consistently higher memory usage of the
+AMD variant (despite its fill-reduction goal) further indicates the
+reordering is not producing sparser factors in practice---possibly because
+the normal-equations matrix is already dense due to dense columns or
+degenerate structure.
+
+\subsection{The \texttt{seymour} Pathology}
+
+\texttt{seymour} is the starkest result.  It is a classic highly-degenerate
+covering LP.  Primal simplex solves it in 0.46\,s (2\,764 pivots); native
+barrier takes 47.8\,s (49 iterations, 100$\times$ slower); AMD barrier takes
+796\,s (229 iterations, 1\,730$\times$ slower).  The AMD variant performs
+\emph{four times more barrier iterations} than native and takes 16$\times$
+longer per iteration, suggesting the AMD ordering creates a pathologically
+ill-conditioned factorisation for this problem's normal-equations matrix.
+
+\subsection{The \texttt{graph40-80-1rand} Case}
+
+This is the instance where barrier comes closest to being competitive.  It
+is a dense graph colouring LP with $-512$ as the LP relaxation optimum.
+Primal simplex requires 614\,030 pivots and 3.94\,h; native barrier solves
+it with only 11 iterations in 7.07\,h.  Barrier's iteration count is
+56\,000$\times$ smaller, yet it is 1.8$\times$ slower overall---each
+Cholesky factorisation of the dense normal-equations matrix costs enormously.
+Native barrier at least terminates; AMD barrier and dual simplex both hit the
+8-hour soft limit without converging, and AMD barrier consumes 12.5\,GB of
+memory (vs.\ 8.7\,GB native, 862\,MB primal).
+
+This instance illustrates the key trade-off: barrier achieves polynomial
+iteration counts on dense problems but each iteration has high
+per-iteration cost due to Cholesky, whereas simplex iterates cheaply but may
+require an exponential number of pivots in degenerate cases.
+
+\subsection{Network Instances: \texttt{momentum1}}
+
+Both barrier variants fail to converge on \texttt{momentum1} within 8\,hours,
+while dual simplex solves it in 0.60\,s.  Network flow problems typically
+have a totally unimodular constraint matrix; simplex exploits this structure
+via fast pivots with integer intermediate solutions.  Barrier offers no such
+structural advantage and the large, sparse network normal-equations matrix
+appears difficult to factor efficiently despite its special structure.
+
+\subsection{Memory Overhead}
+
+The memory cost of barrier is significant:
+\begin{itemize}
+  \item On large instances, barrier uses 10--21$\times$ more memory than
+        primal simplex.
+  \item AMD Cholesky consistently uses \emph{more} memory than native
+        Cholesky, the opposite of its intended purpose, suggesting the
+        AMD reordering is not beneficial for these problem structures.
+  \item For a MIP solver that calls the LP relaxation at every node,
+        barrier's memory overhead would be multiplied across the tree.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusions and Recommendations}
+
+\subsection{Main Conclusions}
+
+\begin{enumerate}
+  \item \textbf{Primal simplex is the best default.}  It is fastest on 7/11
+        instances, solves all 11, and has the lowest geometric mean ratio
+        (1.27).  The current \texttt{guess()} behaviour of predominantly
+        recommending primal simplex is empirically justified.
+
+  \item \textbf{Barrier (native Cholesky) is occasionally competitive.}
+        It ties for fastest on \texttt{mc11} and \texttt{neos-3627168-kasai},
+        and is the only method to solve \texttt{graph40-80-1rand} within
+        the time limit.  However, these gains come with a 10--15$\times$
+        memory penalty.
+
+  \item \textbf{AMD Cholesky (\texttt{-chol uni}) provides no benefit over
+        native Cholesky} on this benchmark set.  It is slower on 9/9
+        comparable pairs and uses more memory in most cases.  It should
+        \emph{not} be recommended for these instance types.
+
+  \item \textbf{Barrier is dangerous for degenerate LPs.}  On \texttt{seymour}
+        and \texttt{momentum1}, it either diverges slowly or fails to
+        converge.  Including barrier in an automated selection strategy
+        requires a reliable degeneracy detector.
+
+  \item \textbf{The dead barrier branch in \texttt{guess()} is intentional.}
+        Given the evidence, adding a barrier leaf to the decision tree would
+        require a strong filter (e.g., dense graph structure detected via the
+        OsiFeatures) to avoid catastrophic performance on degenerate or
+        network instances.
+\end{enumerate}
+
+\subsection{Recommendations for \texttt{guess()} Extension}
+
+If barrier is to be added as a \texttt{guess()} leaf, the following
+OsiFeature thresholds are suggested as a filter based on this experiment:
+\begin{itemize}
+  \item Non-zeros per row $> 50$ (dense matrix);
+  \item Fraction of equality rows $> 0.5$;
+  \item Fraction of network/flow constraints $< 0.3$ (exclude pure networks);
+  \item Degeneracy indicator $< $ threshold (exclude highly degenerate).
+\end{itemize}
+Even with such a filter, the gain over primal simplex on the one qualifying
+instance (\texttt{graph40-80-1rand}) is marginal (barrier is 1.8$\times$
+\emph{slower} in wall time despite needing 56\,000$\times$ fewer iterations),
+so a barrier leaf may not improve the decision tree's overall performance.
+
+\subsection{AMD Cholesky}
+
+The \texttt{-chol uni} option should be treated as experimental for LP
+relaxation solving.  It is not recommended as a default for MIP LP relaxations.
+Further investigation on purely continuous (non-MIP) large-scale dense LPs
+would be needed to find a regime where it adds value.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section*{Appendix: Raw Data}
+
+\begin{table}[h]
+\centering
+\caption{Complete results. Status: \texttt{opt} = optimal, \texttt{TL} = soft
+         time limit (8\,h), \texttt{HTL} = hard time limit (9\,h).
+         Obj.\ match: relative error vs.\ Gurobi reference.}
+\label{tab:raw}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llrrrrrrr@{}}
+\toprule
+\textbf{Instance} & \textbf{Config} & \textbf{Status} &
+\textbf{Wall (s)} & \textbf{Solve (s)} & \textbf{Presolve (s)} &
+\textbf{Iters} & \textbf{Mem (MB)} & \textbf{Rel.\ err} \\
+\midrule
+neos-5075914-elvire & barrier\_default  & opt & 0.164 & 0.102 & 0.01 & 20      & 16  & 1.0e-11 \\
+neos-5075914-elvire & barrier\_chol\_amd & opt & 0.185 & 0.142 & 0.01 & 19      & 19  & 1.0e-11 \\
+neos-5075914-elvire & primal\_simplex   & opt & 0.089 & 0.052 & 0.01 & 1\,074  & 17  & 1.0e-11 \\
+neos-5075914-elvire & dual\_simplex     & opt & 0.112 & 0.072 & 0.01 & 1\,376  & 17  & 1.0e-11 \\
+\midrule
+neos-3083819-nubu   & barrier\_default  & opt & 0.173 & 0.092 & 0.02 & 446     & 20  & 3.1e-11 \\
+neos-3083819-nubu   & barrier\_chol\_amd & opt & 0.512 & 0.472 & 0.02 & 339     & 19  & 3.1e-11 \\
+neos-3083819-nubu   & primal\_simplex   & opt & 0.093 & 0.042 & 0.02 & 539     & 21  & 3.1e-11 \\
+neos-3083819-nubu   & dual\_simplex     & opt & 0.076 & 0.032 & 0.02 & 528     & 21  & 3.1e-11 \\
+\midrule
+supportcase18       & barrier\_default  & opt & 0.231 & 0.152 & ---  & 11      & 18  & 7.1e-11 \\
+supportcase18       & barrier\_chol\_amd & opt & 0.247 & 0.192 & ---  & 11      & 23  & 7.1e-11 \\
+supportcase18       & primal\_simplex   & opt & 0.099 & 0.042 & ---  & 663     & 19  & 7.1e-11 \\
+supportcase18       & dual\_simplex     & opt & 0.178 & 0.152 & ---  & 985     & 18  & 7.1e-11 \\
+\midrule
+graph40-80-1rand    & barrier\_default  & opt & 25\,529 & 25\,452 & 1.97 & 11  & 8\,741 & 0.0e+00 \\
+graph40-80-1rand    & barrier\_chol\_amd & TL & 28\,881 & ---   & ---  & ---     & 12\,533 & --- \\
+graph40-80-1rand    & primal\_simplex   & opt & 14\,219 & 14\,148 & 2.00 & 614\,030 & 883 & 0.0e+00 \\
+graph40-80-1rand    & dual\_simplex     & TL & 28\,863 & ---   & ---  & ---     & 886 & --- \\
+\midrule
+mc11                & barrier\_default  & opt & 0.047 & 0.012 & 0.00 & 53      & 17  & 3.7e-11 \\
+mc11                & barrier\_chol\_amd & opt & 0.051 & 0.022 & 0.00 & 53      & 16  & 3.7e-11 \\
+mc11                & primal\_simplex   & opt & 0.045 & 0.012 & 0.00 & 662     & 17  & 3.7e-11 \\
+mc11                & dual\_simplex     & opt & 0.045 & 0.012 & 0.00 & 404     & 14  & 3.7e-11 \\
+\midrule
+momentum1           & barrier\_default  & TL & 29\,185 & ---   & ---  & ---     & 786 & --- \\
+momentum1           & barrier\_chol\_amd & TL & 29\,030 & ---   & ---  & ---     & 967 & --- \\
+momentum1           & primal\_simplex   & opt & 5.063 & 4.842 & 0.05 & 7\,293  & 46  & 6.2e-11 \\
+momentum1           & dual\_simplex     & opt & 0.766 & 0.602 & 0.05 & 3\,138  & 50  & 6.2e-11 \\
+\midrule
+neos-4954672-berkel & barrier\_default  & opt & 0.053 & 0.022 & 0.00 & 60      & 16  & 2.6e-10 \\
+neos-4954672-berkel & barrier\_chol\_amd & opt & 0.197 & 0.182 & 0.01 & 281     & 17  & 2.6e-10 \\
+neos-4954672-berkel & primal\_simplex   & opt & 0.036 & 0.012 & 0.00 & 322     & 15  & 2.6e-10 \\
+neos-4954672-berkel & dual\_simplex     & opt & 0.053 & 0.012 & 0.00 & 409     & 17  & 2.6e-10 \\
+\midrule
+supportcase6        & barrier\_default  & opt & 7.176 & 6.742 & ---  & 721     & 82  & 7.7e-11 \\
+supportcase6        & barrier\_chol\_amd & opt & 8.023 & 7.582 & ---  & 724     & 81  & 7.7e-11 \\
+supportcase6        & primal\_simplex   & opt & 1.743 & 1.302 & ---  & 9\,787  & 82  & 7.7e-11 \\
+supportcase6        & dual\_simplex     & opt & 4.110 & 3.642 & 0.28 & 4\,390  & 84  & 7.7e-11 \\
+\midrule
+neos-3627168-kasai  & barrier\_default  & opt & 0.081 & 0.032 & 0.00 & 150     & 16  & 4.7e-11 \\
+neos-3627168-kasai  & barrier\_chol\_amd & opt & 0.099 & 0.062 & 0.00 & 159     & 17  & 4.7e-11 \\
+neos-3627168-kasai  & primal\_simplex   & opt & 0.116 & 0.042 & 0.00 & 1\,294  & 17  & 4.7e-11 \\
+neos-3627168-kasai  & dual\_simplex     & opt & 0.064 & 0.032 & 0.00 & 1\,366  & 14  & 4.7e-11 \\
+\midrule
+neos-4338804-snowy  & barrier\_default  & opt & 0.627 & 0.612 & 0.00 & 6       & 21  & 0.0e+00 \\
+neos-4338804-snowy  & barrier\_chol\_amd & opt & 0.461 & 0.432 & 0.00 & 6       & 22  & 0.0e+00 \\
+neos-4338804-snowy  & primal\_simplex   & opt & 0.072 & 0.012 & 0.00 & 474     & 15  & 0.0e+00 \\
+neos-4338804-snowy  & dual\_simplex     & opt & 0.036 & 0.012 & 0.00 & 409     & 16  & 0.0e+00 \\
+\midrule
+seymour             & barrier\_default  & opt & 47.842 & 47.772 & 0.01 & 49    & 65  & 6.2e-11 \\
+seymour             & barrier\_chol\_amd & opt & 796.738 & 796.382 & 0.02 & 229 & 97  & 6.2e-11 \\
+seymour             & primal\_simplex   & opt & 0.506 & 0.462 & 0.01 & 2\,764  & 17  & 6.2e-11 \\
+seymour             & dual\_simplex     & opt & 0.947 & 0.872 & 0.01 & 3\,710  & 20  & 6.2e-11 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

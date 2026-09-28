@@ -1,0 +1,150 @@
+# LP relaxation parameter settings — extended set
+# Format: tag|cbc_params
+#
+# Sources:
+#   - lp_params.txt (original 24 configs — all retained here)
+#   - New additions targeting hard/unsolved instances:
+#       [2] Partial pricing:      cheaper pivot for very wide problems (many columns)
+#       [3] Higher idiot crash:   200–500 iterations for very large set-packing/covering
+#       [4] Scaling variants:     equilibrium / geometric / off, combined with best pivots
+#       [5] Row perturbation:     pertValue 70–91 also perturbs row costs (never tried)
+#              pertValue 55 = maximumFraction 1e-6  (moderate; gap between 52 and 61)
+#              pertValue 58 = maximumFraction 1e-3  (aggressive but below pertv61=1.0)
+#              pertValue 72 = row costs + 1e-9      (like pertv52 but adds rows)
+#              pertValue 75 = row costs + 1e-6      (row + moderate)
+#              pertValue 81 = row costs + 1.0       (row + maximum)
+#       [6] PE Dantzig / PE Steepest for both primal and dual sides
+#
+# NOTE: tags introduced here that use new pivot/scaling suffixes require extending
+# parseLpParamTag() in CbcSolver.cpp before they can be used in -lpMethod=auto.
+# The model should be retrained after selecting the best new configs from experiments.
+#
+# CBC default behavior: fastPreProcess milpbt (on), timeMode elapsed
+# The script adds: -randomSeed, -sec, -initialSolve, output actions
+
+# ════════════════════════════════════════════════════════════════════
+#  ORIGINAL 24 CONFIGS (unchanged)
+# ════════════════════════════════════════════════════════════════════
+
+# ── Defaults (no tuning) ──────────────────────────────────────────────
+dual_default|-lpMethod dual
+primal_default|-lpMethod primal
+
+# ── Dual simplex variants (from fbps paper) ──────────────────────────
+dual_pesteep|-dualPivot pesteep -lpMethod dual
+dual_pesteep_psi1|-dualPivot pesteep -psi 1.0 -lpMethod dual
+dual_pesteep_psi1_pertv61|-dualPivot pesteep -psi 1.0 -pertValue 61 -lpMethod dual
+dual_pesteep_psineg1_pertv61|-dualPivot pesteep -psi -1.0 -pertValue 61 -lpMethod dual
+dual_pertv61|-pertValue 61 -lpMethod dual
+dual_pertv52|-pertValue 52 -lpMethod dual
+dual_pertv50|-pertValue 50 -lpMethod dual
+dual_pesteep_psineg1|-dualPivot pesteep -psi -1.0 -lpMethod dual
+
+# ── Primal simplex + idiot crash variants (from fbps paper) ──────────
+primal_idiot10|-idiot 10 -lpMethod primal
+primal_idiot30|-idiot 30 -lpMethod primal
+primal_idiot40|-idiot 40 -lpMethod primal
+primal_idiot50|-idiot 50 -lpMethod primal
+primal_idiot60|-idiot 60 -lpMethod primal
+primal_idiot80|-idiot 80 -lpMethod primal
+primal_idiot100|-idiot 100 -lpMethod primal
+primal_idiot125|-idiot 125 -lpMethod primal
+
+# ── Primal + idiot + perturbation (from fbps paper) ──────────────────
+primal_idiot7_pertv61|-idiot 7 -pertValue 61 -lpMethod primal
+primal_idiot11_pertvm1483|-idiot 11 -pertValue -1483 -lpMethod primal
+primal_idiot30_pertvm1483|-idiot 30 -pertValue -1483 -lpMethod primal
+primal_idiot40_pertvm1483|-idiot 40 -pertValue -1483 -lpMethod primal
+
+# ── Primal + sprint (from fbps paper) ────────────────────────────────
+primal_sprint|-sprint -1 -lpMethod primal
+
+# ── initialSolve default (CBC's own default path) ────────────────────
+cbc_default|
+
+# ════════════════════════════════════════════════════════════════════
+#  [2] PARTIAL PRICING — cheaper pivot init for wide problems
+#      Partial steepest edge: weights initialized lazily (not all at once).
+#      Benefits instances with many columns (supportcase19: 1.4M cols).
+#      ClpDualRowSteepest mode=2: uninitialized partial.
+# ════════════════════════════════════════════════════════════════════
+dual_partial|-dualPivot partial -lpMethod dual
+dual_partial_pertv61|-dualPivot partial -pertValue 61 -lpMethod dual
+dual_partial_pertv52|-dualPivot partial -pertValue 52 -lpMethod dual
+dual_partial_psineg1|-dualPivot partial -psi -1.0 -lpMethod dual
+dual_PEdantzig|-dualPivot PEdantzig -lpMethod dual
+dual_PEdantzig_pertv61|-dualPivot PEdantzig -pertValue 61 -lpMethod dual
+primal_partial|-primalPivot partial -lpMethod primal
+primal_partial_idiot50|-primalPivot partial -idiot 50 -lpMethod primal
+primal_partial_idiot100|-primalPivot partial -idiot 100 -lpMethod primal
+
+# ════════════════════════════════════════════════════════════════════
+#  [3] HIGHER IDIOT CRASH — more passes for very large set-packing
+#      a2864-99blp (200K cols) and similar: idiot 125 not enough.
+#      Also add idiot+perturbation combos for the worst degenerate cases.
+# ════════════════════════════════════════════════════════════════════
+primal_idiot200|-idiot 200 -lpMethod primal
+primal_idiot300|-idiot 300 -lpMethod primal
+primal_idiot500|-idiot 500 -lpMethod primal
+primal_idiot200_pertvm1483|-idiot 200 -pertValue -1483 -lpMethod primal
+primal_idiot300_pertvm1483|-idiot 300 -pertValue -1483 -lpMethod primal
+primal_idiot200_pertv61|-idiot 200 -pertValue 61 -lpMethod primal
+primal_idiot500_pertv61|-idiot 500 -pertValue 61 -lpMethod primal
+
+# ════════════════════════════════════════════════════════════════════
+#  [4] SCALING VARIANTS — target ill-conditioned / degenerate instances
+#      Default is 'automatic' (skips scaling when range is small).
+#      Equilibrium uses largest element; geometric uses sqrt(max*min).
+#      Combined with best dual and primal configs.
+# ════════════════════════════════════════════════════════════════════
+dual_pesteep_scaling_equi|-dualPivot pesteep -scaling equi -lpMethod dual
+dual_pesteep_scaling_geo|-dualPivot pesteep -scaling geo -lpMethod dual
+dual_pesteep_scaling_off|-dualPivot pesteep -scaling off -lpMethod dual
+dual_pesteep_psineg1_scaling_equi|-dualPivot pesteep -psi -1.0 -scaling equi -lpMethod dual
+dual_partial_scaling_equi|-dualPivot partial -scaling equi -lpMethod dual
+dual_partial_scaling_geo|-dualPivot partial -scaling geo -lpMethod dual
+primal_idiot50_scaling_equi|-idiot 50 -scaling equi -lpMethod primal
+primal_idiot100_scaling_equi|-idiot 100 -scaling equi -lpMethod primal
+primal_idiot200_scaling_equi|-idiot 200 -scaling equi -lpMethod primal
+primal_idiot50_scaling_geo|-idiot 50 -scaling geo -lpMethod primal
+
+# ════════════════════════════════════════════════════════════════════
+#  [5] ROW PERTURBATION & INTERMEDIATE PERTURBATION LEVELS
+#      pertValue 50–61: column costs only  (maximumFraction 0 .. 1.0)
+#      pertValue 70–91: column + row costs (subtract 20 for effective level)
+#        pertv55  = maximumFraction 1e-6  (moderate, currently missing)
+#        pertv58  = maximumFraction 1e-3  (strong but below pertv61)
+#        pertv72  = row costs + 1e-9      (mild row perturbation)
+#        pertv75  = row costs + 1e-6      (moderate row perturbation)
+#        pertv81  = row costs + 1.0       (aggressive row perturbation)
+#      Row perturbation is entirely unexplored and may help degenerate
+#      LPs where the dual objective barely changes across many pivots.
+# ════════════════════════════════════════════════════════════════════
+dual_pertv55|-pertValue 55 -lpMethod dual
+dual_pertv58|-pertValue 58 -lpMethod dual
+dual_pesteep_pertv55|-dualPivot pesteep -pertValue 55 -lpMethod dual
+dual_pesteep_pertv58|-dualPivot pesteep -pertValue 58 -lpMethod dual
+dual_pesteep_psineg1_pertv58|-dualPivot pesteep -psi -1.0 -pertValue 58 -lpMethod dual
+dual_pertv72|-pertValue 72 -lpMethod dual
+dual_pertv75|-pertValue 75 -lpMethod dual
+dual_pertv81|-pertValue 81 -lpMethod dual
+dual_pesteep_pertv72|-dualPivot pesteep -pertValue 72 -lpMethod dual
+dual_pesteep_pertv75|-dualPivot pesteep -pertValue 75 -lpMethod dual
+dual_pesteep_pertv81|-dualPivot pesteep -pertValue 81 -lpMethod dual
+dual_pesteep_psineg1_pertv75|-dualPivot pesteep -psi -1.0 -pertValue 75 -lpMethod dual
+dual_pesteep_psineg1_pertv81|-dualPivot pesteep -psi -1.0 -pertValue 81 -lpMethod dual
+
+# ════════════════════════════════════════════════════════════════════
+#  [6] PE DANTZIG / PE STEEPEST — positive edge criterion
+#      Positive edge avoids moving toward dual-infeasible directions.
+#      PEsteepest is more expensive per iteration but fewer pivots.
+#      PEdantzig is the cheapest PE variant — good when steepest is overkill.
+#      Also try on the primal side (unexplored in current set).
+# ════════════════════════════════════════════════════════════════════
+primal_PEsteep|-primalPivot PEsteepest -lpMethod primal
+primal_PEdantzig|-primalPivot PEdantzig -lpMethod primal
+primal_PEsteep_idiot50|-primalPivot PEsteepest -idiot 50 -lpMethod primal
+primal_PEsteep_idiot100|-primalPivot PEsteepest -idiot 100 -lpMethod primal
+dual_pesteep_psi1_pertv55|-dualPivot pesteep -psi 1.0 -pertValue 55 -lpMethod dual
+dual_pesteep_psi1_pertv58|-dualPivot pesteep -psi 1.0 -pertValue 58 -lpMethod dual
+dual_pesteep_psi1_pertv75|-dualPivot pesteep -psi 1.0 -pertValue 75 -lpMethod dual

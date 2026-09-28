@@ -327,7 +327,7 @@ Range: -1 to INT_MAX (default: -1)
 .BI \-passTreeCuts
 Number of rounds that cut generators are applied in the tree
 .br
-Range: \-INT_MAX to INT_MAX (default: 10)
+Range: \-INT_MAX to INT_MAX (default: 4)
 .TP
 .BI \-slowcutpasses
 Maximum number of rounds for slower cut generators
@@ -352,7 +352,7 @@ Range: -1 to INT_MAX (default: 8000)
 .BI \-passCuts
 Number of cut passes at root node
 .br
-Range: \-INT_MAX to INT_MAX (default: 100)
+Range: \-INT_MAX to INT_MAX (default: auto)
 .SH HEURISTICS
 .TP
 .BI \-combineSolutions
@@ -1145,6 +1145,9 @@ Stops cbc execution
 .BI \-version
 Print version
 .TP
+.BI \-cutSwitchOff
+When a cut generator is switched off for the whole solve
+.TP
 .BI \-pumpRootPlaces
 Root moments at which Feasibility Pump is allowed to run
 .TP
@@ -1160,6 +1163,21 @@ Values: off, on (default: off)
 Formula for combining directional conflict degrees into a single score.
 .br
 Values: min, sum, product
+.TP
+.BI \-cutPassSmall
+Root cut passes for a small problem when passCuts is auto
+.br
+Range: \-INT_MAX to INT_MAX (default: -100)
+.TP
+.BI \-cutPassMedium
+Root cut passes for a medium problem when passCuts is auto
+.br
+Range: \-INT_MAX to INT_MAX (default: 100)
+.TP
+.BI \-cutPassLarge
+Root cut passes for a large problem when passCuts is auto
+.br
+Range: \-INT_MAX to INT_MAX (default: 50)
 .TP
 .BI \-extra1
 Extra integer parameter 1
@@ -1225,6 +1243,26 @@ Range: 0 to 2 (default: 2)
 Enable two\-phase parallel root heuristic schedule
 .br
 Range: 0 to 1 (default: 0)
+.TP
+.BI \-sizeSmallRows
+Row count below which a problem is small
+.br
+Range: 0 to INT_MAX (default: 500)
+.TP
+.BI \-sizeSmallCols
+Column count below which a problem is small
+.br
+Range: 0 to INT_MAX (default: 500)
+.TP
+.BI \-sizeLargeCols
+Column count from which a problem is large
+.br
+Range: 0 to INT_MAX (default: 5000)
+.TP
+.BI \-minDrop
+Minimum objective improvement for a root cut pass to count
+.br
+Range: 0 to inf (default: auto)
 .TP
 .BI \-rankConflict
 Weight for conflict\-graph degree in strong branching sort\-key (0 = disabled).

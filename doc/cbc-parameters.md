@@ -28,7 +28,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [Output](#output) (23 parameters)
 - [I/O](#i/o) (36 parameters)
 - [Parallelism](#parallelism) (1 parameters)
-- [General](#general) (42 parameters)
+- [General](#general) (50 parameters)
 
 ---
 
@@ -507,9 +507,9 @@ At present this only applies to Gomory cuts. -1 (default) leaves as is. Any valu
 
 Number of rounds that cut generators are applied in the tree
 
-The default is to do one pass. A negative value -n means that n passes are also applied if the objective does not drop.
+The default is 4 passes at each node, stopping early once the objective stops dropping. A negative value -n means that n passes are also applied if the objective does not drop.
 
-**Range:** -INT_MAX to INT_MAX (default: 10)
+**Range:** -INT_MAX to INT_MAX (default: 4)
 
 ### `-slowcutpasses`
 
@@ -547,9 +547,9 @@ If positive, ZeroHalf will use the sparse separation-graph implementation when t
 
 Number of cut passes at root node
 
-The default is 100 passes if less than 500 columns, 100 passes (but stop if the drop is small) if less than 5000 columns, 20 otherwise.
+A positive value n means up to n passes, stopping once a pass improves the objective by less than minDrop; a negative value -n means up to n passes, ignoring minDrop. The default, auto, chooses by problem size: cutPassSmall if the problem has fewer rows than sizeSmallRows or fewer columns than sizeSmallCols, otherwise cutPassMedium if it has fewer columns than sizeLargeCols, otherwise cutPassLarge. The choice is logged.
 
-**Range:** -INT_MAX to INT_MAX (default: 100)
+**Range:** -INT_MAX to INT_MAX (default: auto)
 
 ## Heuristics
 
@@ -1970,6 +1970,12 @@ This stops the execution of Cbc, end, exit, quit and stop are synonyms
 
 Print version
 
+### `-cutSwitchOff`
+
+When a cut generator is switched off for the whole solve
+
+A generator in ifmove or root mode (or with a limited number of tries) is given a threshold N. If N > 0, it is switched off for the rest of the solve when its first root call adds fewer than N cuts; an ifmove generator with N > 0 is also switched off after the root cut loop if the root objective moved by less than 0.5%. N = 0 never switches it off this way, and -1 or -2 give its cut count a weight of 2 or 5 when the root decides whether to keep it. Generators in on or forceOn mode are not affected, and other rules can still switch a generator off (e.g. an ifmove generator none of whose root cuts is short). The value is a comma-separated list: an item VALUE applies to every generator, and NAME:VALUE to one, where NAME is the generator's cut option without "Cuts" (probing, gomory, lagomory, knapsack, reduceAndSplit, reduce2AndSplit, GMI, clique, oddWheel, impliedClique, mixedIntegerRounding, flowCover, twoMir, latwomir, liftAndProject, residualCapacity, zeroHalf). VALUE is an integer >= -2 or auto. NAME:VALUE items take precedence over a VALUE item. The default, auto, keeps each generator's built-in value: 1 for twoMir, latwomir, reduceAndSplit, reduce2AndSplit, liftAndProject and residualCapacity, 2 for zeroHalf, -2 for knapsack and 0 for the rest. Examples: 'twoMir:0', '0' (never), '0,zeroHalf:2'. The values in effect are logged.
+
 ### `-pumpRootPlaces`
 
 Root moments at which Feasibility Pump is allowed to run
@@ -2000,6 +2006,30 @@ Controls how d0 (conflicts when x=0) and d1 (conflicts when x=1) are combined:
 	 product: sqrt(d0*d1) — product score analog, rewards balance.
 
 **Values:** `min`, `sum`, `product`
+
+### `-cutPassSmall`
+
+Root cut passes for a small problem when passCuts is auto
+
+Used when passCuts is auto and the problem has fewer rows than sizeSmallRows or fewer columns than sizeSmallCols. The default -100 means up to 100 passes, ignoring minDrop.
+
+**Range:** -INT_MAX to INT_MAX (default: -100)
+
+### `-cutPassMedium`
+
+Root cut passes for a medium problem when passCuts is auto
+
+Used when passCuts is auto and the problem is neither small nor has at least sizeLargeCols columns. The default 100 means up to 100 passes, stopping once a pass improves the objective by less than minDrop.
+
+**Range:** -INT_MAX to INT_MAX (default: 100)
+
+### `-cutPassLarge`
+
+Root cut passes for a large problem when passCuts is auto
+
+Used when passCuts is auto and the problem is not small and has at least sizeLargeCols columns. The default 50 means up to 50 passes, stopping once a pass improves the objective by less than minDrop.
+
+**Range:** -INT_MAX to INT_MAX (default: 50)
 
 ### `-extra1`
 
@@ -2096,6 +2126,38 @@ Enable two-phase parallel root heuristic schedule
 When set to 1, replaces the default root heuristic execution with a two-phase parallel schedule. Phase 1 runs optimized diving configurations in parallel (stops on first feasible solution). Phase 2 runs improvement heuristics (RINS, etc.) on the found solution. Use with -threads to set the number of parallel threads.
 
 **Range:** 0 to 1 (default: 0)
+
+### `-sizeSmallRows`
+
+Row count below which a problem is small
+
+A problem with fewer rows than this, or fewer columns than sizeSmallCols, is small for the settings that are auto (at present passCuts).
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-sizeSmallCols`
+
+Column count below which a problem is small
+
+A problem with fewer columns than this, or fewer rows than sizeSmallRows, is small for the settings that are auto (at present passCuts).
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-sizeLargeCols`
+
+Column count from which a problem is large
+
+A problem that is not small and has at least this many columns is large for the settings that are auto (at present passCuts).
+
+**Range:** 0 to INT_MAX (default: 5000)
+
+### `-minDrop`
+
+Minimum objective improvement for a root cut pass to count
+
+Root cut generation stops once a pass improves the objective by less than this, unless passCuts (or the cutPassSmall/cutPassMedium/cutPassLarge value it resolves to) is negative. The default, auto, is min(0.05, 1e-5*|objective| + 1e-5), using the LP objective when branch-and-bound is set up. The choice is logged.
+
+**Range:** 0 to inf (default: auto)
 
 ### `-rankConflict`
 

@@ -266,39 +266,43 @@
     <div class="search-hint">Press <kbd>/</kbd> to focus &nbsp;&middot;&nbsp; <kbd>Esc</kbd> to clear</div>
     <div id="match-count"></div>
     <nav id="sidebar-nav">
-<a href="#stopping" class="sb-link">Stopping<span class="sb-count">9</span></a>
-<a href="#mip-preprocessing" class="sb-link">MIP Preprocessing<span class="sb-count">9</span></a>
-<a href="#mip-preprocessing-bound-propagation" class="sb-link">MIP Preprocessing — Bound Propagation<span class="sb-count">8</span></a>
+<a href="#stopping" class="sb-link">Stopping<span class="sb-count">10</span></a>
+<a href="#mip-preprocessing" class="sb-link">MIP Preprocessing<span class="sb-count">12</span></a>
+<a href="#mip-preprocessing-bound-propagation" class="sb-link">MIP Preprocessing — Bound Propagation<span class="sb-count">9</span></a>
 <a href="#lp-presolve" class="sb-link">LP Presolve<span class="sb-count">3</span></a>
-<a href="#cuts" class="sb-link">Cuts<span class="sb-count">26</span></a>
-<a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">34</span></a>
+<a href="#cuts" class="sb-link">Cuts<span class="sb-count">27</span></a>
+<a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">35</span></a>
 <a href="#branching" class="sb-link">Branching<span class="sb-count">6</span></a>
 <a href="#tolerances" class="sb-link">Tolerances<span class="sb-count">6</span></a>
 <a href="#conflict-graph" class="sb-link">Conflict Graph<span class="sb-count">5</span></a>
 <a href="#strategy" class="sb-link">Strategy<span class="sb-count">9</span></a>
-<a href="#solving" class="sb-link">Solving<span class="sb-count">26</span></a>
+<a href="#solving" class="sb-link">Solving<span class="sb-count">25</span></a>
 <a href="#simplex" class="sb-link">Simplex<span class="sb-count">19</span></a>
 <a href="#barrier" class="sb-link">Barrier<span class="sb-count">3</span></a>
 <a href="#scaling" class="sb-link">Scaling<span class="sb-count">4</span></a>
 <a href="#output" class="sb-link">Output<span class="sb-count">23</span></a>
-<a href="#i-o" class="sb-link">I/O<span class="sb-count">35</span></a>
+<a href="#i-o" class="sb-link">I/O<span class="sb-count">36</span></a>
 <a href="#parallelism" class="sb-link">Parallelism<span class="sb-count">1</span></a>
-<a href="#general" class="sb-link">General<span class="sb-count">32</span></a>
+<a href="#general" class="sb-link">General<span class="sb-count">42</span></a>
     </nav>
   </aside>
 
   <div class="main-content">
     <header class="page-header">
       <h1>Parameter Reference</h1>
-      <p>CBC devel &mdash; July 2026 &mdash; 259 parameters across 18 sections</p>
+      <p>CBC v2.933-90-ge60549a4-dirty &mdash; September 2026 &mdash; 275 parameters across 18 sections</p>
     </header>
 
 <section id="stopping" class="topic-section">
   <h2>Stopping</h2>
+<details class="param" data-search="maxmemory maximum amount of memory to use during branch and bound">
+  <summary><span class="pname"><code>-maxMemory</code></span><span class="badge badge-str">String</span><span class="pshort">Maximum amount of memory to use during branch and bound</span></summary>
+  <div class="pbody"><p class="plong">This limits the resident memory this process may use once branch and bound has started; the search is stopped (much like hitting the node or time limit) if it is exceeded. It is not checked outside of branch and bound (e.g. during preprocessing or the initial LP solve). Accepts a plain number of bytes, or a number followed by a unit suffix: b (bytes, the default), k or kb (KiB), m or mb (MiB), g or gb (GiB), t or tb (TiB) -- e.g. &#x27;10gb&#x27; or &#x27;500m&#x27;. The keywords &#x27;unlimited&#x27;, &#x27;off&#x27; and &#x27;none&#x27; disable the check, and &#x27;all&#x27; explicitly requests the default of using all installed physical memory as the limit. By default, the limit is the total physical memory installed on the machine (i.e. &#x27;all the memory&#x27;), if it can be determined; otherwise the check is disabled by default.</p></div>
+</details>
 <details class="param" data-search="allowablegap stop when gap between best possible and incumbent is less than this">
-  <summary><span class="pname"><code>-allowableGap</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Stop when gap between best possible and incumbent is less than this</span><span class="pmeta">default:&nbsp;<code>1e-12</code></span></summary>
-  <div class="pbody"><p class="plong">If the gap between best solution and best possible solution is less than this then the search will be terminated. Also see ratioGap.</p>
-<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;∞&ensp;<span class="pmeta">(default:&nbsp;1e-12)</span></div></div>
+  <summary><span class="pname"><code>-allowableGap</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Stop when gap between best possible and incumbent is less than this</span><span class="pmeta">default:&nbsp;<code>1e-06</code></span></summary>
+  <div class="pbody"><p class="plong">If the gap between best solution and best possible solution is less than this then the search will be terminated. Default is 1.0e-6, matching HiGHS&#x27; mip_abs_gap default. Also see ratioGap.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;∞&ensp;<span class="pmeta">(default:&nbsp;1e-06)</span></div></div>
 </details>
 <details class="param" data-search="cutoff all solutions must be better than this">
   <summary><span class="pname"><code>-cutoff</code></span><span class="badge badge-dbl">Double</span><span class="pshort">All solutions must be better than this</span><span class="pmeta">default:&nbsp;<code>1e+50</code></span></summary>
@@ -306,9 +310,9 @@
 <div class="pextra"><strong>Range:</strong> −∞&thinsp;&ndash;&thinsp;∞&ensp;<span class="pmeta">(default:&nbsp;1e+50)</span></div></div>
 </details>
 <details class="param" data-search="ratiogap stop when the gap between the best possible solution and the incumbent is less than this fraction of the larger of the two">
-  <summary><span class="pname"><code>-ratioGap</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Stop when the gap between the best possible solution and the incumbent is less than this fraction of the larger of the two</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
-  <div class="pbody"><p class="plong">If the gap between the best solution and the best possible solution is less than this fraction of the objective value at the root node then the search will terminate.  See &#x27;allowableGap&#x27; for a way of using absolute value rather than fraction.</p>
-<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;∞&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
+  <summary><span class="pname"><code>-ratioGap</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Stop when the gap between the best possible solution and the incumbent is less than this fraction of the larger of the two</span><span class="pmeta">default:&nbsp;<code>0.0001</code></span></summary>
+  <div class="pbody"><p class="plong">If the gap between the best solution and the best possible solution is less than this fraction of the objective value at the root node then the search will terminate. Default is 1.0e-4 (0.01%), matching HiGHS&#x27; mip_rel_gap default.  See &#x27;allowableGap&#x27; for a way of using absolute value rather than fraction.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;∞&ensp;<span class="pmeta">(default:&nbsp;0.0001)</span></div></div>
 </details>
 <details class="param" data-search="maxnodes maximum number of nodes to evaluate">
   <summary><span class="pname"><code>-maxNodes</code></span><span class="badge badge-int">Integer</span><span class="pshort">Maximum number of nodes to evaluate</span><span class="pmeta">default:&nbsp;<code>2147483647</code></span></summary>
@@ -344,10 +348,24 @@
 
 <section id="mip-preprocessing" class="topic-section">
   <h2>MIP Preprocessing</h2>
+<details class="param" data-search="docliquestrengthening run clique strengthening on the loaded model">
+  <summary><span class="pname"><code>-doCliqueStrengthening</code></span><span class="badge badge-act">Action</span><span class="pshort">Run clique strengthening on the loaded model</span></summary>
+  <div class="pbody"><p class="plong">Immediately builds the conflict graph of the currently loaded model and strengthens set-packing/partitioning cliques against it (extending/dominating constraints) in place, without resolving the LP afterwards. Previously only reachable indirectly through -solve&#x27;s automatic preRootLPStrenghtening phase; exposed here so it can be triggered manually, mirroring doBoundPropagation. After running, use writeModel to save the strengthened problem.</p></div>
+</details>
+<details class="param" data-search="coefstrengthening whether to tighten oversized integer coefficients before the root lp">
+  <summary><span class="pname"><code>-coefStrengthening</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to tighten oversized integer coefficients before the root LP</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
+  <div class="pbody"><p class="plong">When on (the default), the last step of the pre-root-LP strengthening phase shrinks integer coefficients that are larger than their row&#x27;s slack, adjusting the right-hand side to compensate. This is the classic &quot;big-M&quot; strengthening: the LP relaxation gets tighter while the integer-feasible set is unchanged. It needs no LP information and removes no variable, so it runs before the first relaxation is solved and leaves the model callbacks see intact. Requires -preRootLPStrenghtening to be on (or one of the LP-only commands, which run the phase unconditionally).</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>on</code>)</span></div></div>
+</details>
 <details class="param" data-search="prepnames if column names will be kept in pre-processed model">
   <summary><span class="pname"><code>-PrepNames</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">If column names will be kept in pre-processed model</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
   <div class="pbody"><p class="plong">Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>on</code>)</span></div></div>
+</details>
+<details class="param" data-search="rowreductions whether to remove redundant rows before the root lp">
+  <summary><span class="pname"><code>-rowReductions</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to remove redundant rows before the root LP</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
+  <div class="pbody"><p class="plong">When on (the default), the pre-root-LP strengthening phase removes rows that cannot constrain the problem: rows all of whose columns are fixed, and rows that are duplicates or scalar multiples of another row (the survivor inherits the intersection of the two rows&#x27; bounds). Candidates are found with a scale-invariant row hash, so the cost is one pass over the nonzeros plus one sort of the rows, and every candidate pair is verified coefficient by coefficient before anything is deleted. The smaller model is then seen by the root LP, the conflict graph and every cut round. Unlike the phase&#x27;s other steps this one applies to MIPs only: it deletes rows, a deleted row has no dual value, and there is no postsolve at this point to recover one. Cbc reports no duals for a MIP, so this is free on the branch-and-bound path, but it is skipped for the LP-only commands (-solveContinuous, -dualSimplex, -primalSimplex, -barrier) unless this parameter is set to force. force: like on, but also removes rows on the LP-only commands, so that e.g. -initialSolve solves exactly the LP the branch-and-bound root sees (useful for benchmarking root LP methods); dual values are then not available for removed rows. Requires -preRootLPStrenghtening to be on for -solve.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">force</code>&ensp;<span class="pmeta">(default: <code>on</code>)</span></div></div>
 </details>
 <details class="param" data-search="sosoptions whether to use sos from ampl">
   <summary><span class="pname"><code>-sosOptions</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use SOS from AMPL</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
@@ -411,6 +429,11 @@
   <summary><span class="pname"><code>-doBoundPropagation</code></span><span class="badge badge-act">Action</span><span class="pshort">Run bound propagation on the loaded model</span></summary>
   <div class="pbody"><p class="plong">Immediately runs bound propagation on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by boundPropLevel. After running, use writeModel to save the tightened problem.</p></div>
 </details>
+<details class="param" data-search="prerootlpstrenghtening whether to run the pre-root-lp strengthening phase before -solve">
+  <summary><span class="pname"><code>-preRootLPStrenghtening</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to run the pre-root-LP strengthening phase before -solve</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
+  <div class="pbody"><p class="plong">When on (the default), the first step of -solve/BAB runs bound propagation and, if configured, clique strengthening &quot;before&quot; on the model, ahead of the root LP relaxation solve. Turning this off skips the whole phase in one shot -- the individual sub-steps can still be controlled independently via -boundPropLevel/-singletonBounds and -clqStrengthening.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>on</code>)</span></div></div>
+</details>
 <details class="param" data-search="singletonbounds whether to tighten variable bounds from singleton rows before solve">
   <summary><span class="pname"><code>-singletonBounds</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to tighten variable bounds from singleton rows before solve</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
   <div class="pbody"><p class="plong">When on, singleton rows (rows with a single nonzero) are used to tighten variable bounds before the initial LP solve and conflict graph construction. This is a cheap preprocessing step that can fix variables and reduce the problem size.</p>
@@ -426,9 +449,9 @@
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">singletons</code> <code class="kw">milpbt</code> <code class="kw">fixpoint</code>&ensp;<span class="pmeta">(default: <code>milpbt</code>)</span></div></div>
 </details>
 <details class="param" data-search="nodeboundprop run bound propagation at b&amp;b nodes">
-  <summary><span class="pname"><code>-nodeBoundProp</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Run bound propagation at B&amp;B nodes</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
+  <summary><span class="pname"><code>-nodeBoundProp</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Run bound propagation at B&amp;B nodes</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
   <div class="pbody"><p class="plong">When enabled, runs knapsack-based bound propagation after branching decisions are applied at each node (subject to depth constraints), before the LP is solved. Can detect infeasibility earlier and fix additional variables. Controlled by nodeBoundPropMaxDepth and nodeBoundPropDepthInterval.</p>
-<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>on</code>)</span></div></div>
 </details>
 <details class="param" data-search="boundpropmaxrounds maximum number of bound propagation rounds">
   <summary><span class="pname"><code>-boundPropMaxRounds</code></span><span class="badge badge-int">Integer</span><span class="pshort">Maximum number of bound propagation rounds</span><span class="pmeta">default:&nbsp;<code>100</code></span></summary>
@@ -446,9 +469,9 @@
 <div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;5)</span></div></div>
 </details>
 <details class="param" data-search="nodeboundpropdepthinterval depth interval for node bound propagation">
-  <summary><span class="pname"><code>-nodeBoundPropDepthInterval</code></span><span class="badge badge-int">Integer</span><span class="pshort">Depth interval for node bound propagation</span><span class="pmeta">default:&nbsp;<code>5</code></span></summary>
+  <summary><span class="pname"><code>-nodeBoundPropDepthInterval</code></span><span class="badge badge-int">Integer</span><span class="pshort">Depth interval for node bound propagation</span><span class="pmeta">default:&nbsp;<code>6</code></span></summary>
   <div class="pbody"><p class="plong">Node bound propagation is applied at depths that are multiples of this interval (0, interval, 2*interval, ...). For example, with interval 3 bound propagation runs at depths 0, 3, 6, 9, etc.</p>
-<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;5)</span></div></div>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;6)</span></div></div>
 </details>
 </section>
 
@@ -490,16 +513,21 @@
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
 <details class="param" data-search="gmicuts whether to use alternative gomory cuts">
-  <summary><span class="pname"><code>-GMICuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use alternative Gomory cuts</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
+  <summary><span class="pname"><code>-GMICuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use alternative Gomory cuts</span><span class="pmeta">default:&nbsp;<code>root</code></span></summary>
   <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
  This version is by Giacomo Nannicini and may be more robust than gomoryCuts.</p>
-<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">endonly</code> <code class="kw">long</code> <code class="kw">longroot</code> <code class="kw">longifmove</code> <code class="kw">forcelongon</code> <code class="kw">longendonly</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">endonly</code> <code class="kw">long</code> <code class="kw">longroot</code> <code class="kw">longifmove</code> <code class="kw">forcelongon</code> <code class="kw">longendonly</code>&ensp;<span class="pmeta">(default: <code>root</code>)</span></div></div>
 </details>
 <details class="param" data-search="gomorycuts whether to use gomory cuts">
   <summary><span class="pname"><code>-gomoryCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Gomory cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
   <div class="pbody"><p class="plong">The original cuts - beware of imitations!  Having gone out of favor, they are now more fashionable as LP solvers are more robust and they interact well with other cuts.  They will almost always give cuts (although in this executable they are limited as to number of variables in cut).  However the cuts may be dense so it is worth experimenting (Long allows any length). Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
  Reference: https://github.com/coin-or/Cgl/wiki/CglGomory</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">forceandglobal</code> <code class="kw">forcelongon</code> <code class="kw">onglobal</code> <code class="kw">longer</code> <code class="kw">shorter</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
+</details>
+<details class="param" data-search="impliedcliquecuts whether to use implied-clique cuts">
+  <summary><span class="pname"><code>-impliedCliqueCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use implied-clique cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
+  <div class="pbody"><p class="plong">Strengthens rows shaped like x1 + x2 + ... + xk &lt;= M*y (all binary; typically modelling &#x27;x1 OR x2 OR ... -&gt; y&#x27;) by rooting a clique search at the complement of every binary variable y in the conflict graph and greedily growing it with conflicting literals (including complemented ones, e.g. (1-xj) &lt;= y), producing a disaggregated cut that dominates the original row. Distinct from cliqueCuts (CglBKClique): that runs a general Bron-Kerbosch search over the whole fractional-vertex induced subgraph, while this generator does one cheap hub-rooted greedy extension per binary variable using the same conflict graph, no row parsing required. Benchmarking found most of the same cliques are eventually rediscovered by cliqueCuts given enough rounds, but a few instances show a large, durable bound improvement that cliqueCuts does not reach, and several more reach the same final bound strictly sooner when both run together -- useful since CBC&#x27;s cut loop and node budget both reward faster bound convergence. Requires the conflict graph (see cgraph).</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
 <details class="param" data-search="knapsackcuts whether to use knapsack cuts">
   <summary><span class="pname"><code>-knapsackCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Knapsack cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
@@ -513,10 +541,10 @@
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">root</code> <code class="kw">endonly</code> <code class="kw">endonlyroot</code> <code class="kw">endclean</code> <code class="kw">endcleanroot</code> <code class="kw">endboth</code> <code class="kw">onlyaswell</code> <code class="kw">onlyaswellroot</code> <code class="kw">cleanaswell</code> <code class="kw">cleanaswellroot</code> <code class="kw">bothaswell</code> <code class="kw">bothaswellroot</code> <code class="kw">onlyinstead</code> <code class="kw">cleaninstead</code> <code class="kw">bothinstead</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
 </details>
 <details class="param" data-search="liftandprojectcuts whether to use lift-and-project cuts">
-  <summary><span class="pname"><code>-liftAndProjectCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use lift-and-project cuts</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
+  <summary><span class="pname"><code>-liftAndProjectCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use lift-and-project cuts</span><span class="pmeta">default:&nbsp;<code>root</code></span></summary>
   <div class="pbody"><p class="plong">These cuts may be expensive to compute. Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
  Reference: https://github.com/coin-or/Cgl/wiki/CglLandP</p>
-<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">iflongon</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">iflongon</code>&ensp;<span class="pmeta">(default: <code>root</code>)</span></div></div>
 </details>
 <details class="param" data-search="latwomircuts whether to use lagrangean twomir cuts">
   <summary><span class="pname"><code>-latwomirCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Lagrangean Twomir cuts</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
@@ -530,9 +558,9 @@
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
 <details class="param" data-search="oddwheelcuts whether to use odd wheel cuts">
-  <summary><span class="pname"><code>-oddwheelCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use odd wheel cuts</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
+  <summary><span class="pname"><code>-oddwheelCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use odd wheel cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
   <div class="pbody"><p class="plong">This switches on odd-wheel inequalities (either at root or in entire tree).</p>
-<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
 <details class="param" data-search="probingcuts whether to use probing cuts">
   <summary><span class="pname"><code>-probingCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Probing cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
@@ -546,9 +574,9 @@
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
 </details>
 <details class="param" data-search="reduce2andsplitcuts whether to use reduce-and-split cuts - style 2">
-  <summary><span class="pname"><code>-reduce2AndSplitCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Reduce-and-Split cuts - style 2</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
+  <summary><span class="pname"><code>-reduce2AndSplitCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Reduce-and-Split cuts - style 2</span><span class="pmeta">default:&nbsp;<code>root</code></span></summary>
   <div class="pbody"><p class="plong">This switches on reduce and split cuts (either at root or in entire tree). This version is by Giacomo Nannicini based on Francois Margot&#x27;s version. Standard setting only uses rows in tableau &lt;= 256, long uses all. These cuts may be expensive to generate. See option cuts for more information on the possible values.</p>
-<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">longon</code> <code class="kw">longroot</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">longon</code> <code class="kw">longroot</code>&ensp;<span class="pmeta">(default: <code>root</code>)</span></div></div>
 </details>
 <details class="param" data-search="residualcapacitycuts whether to use residual capacity cuts">
   <summary><span class="pname"><code>-residualCapacityCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Residual Capacity cuts</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
@@ -721,9 +749,9 @@
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">both</code> <code class="kw">before</code> <code class="kw">often</code>&ensp;<span class="pmeta">(default: <code>on</code>)</span></div></div>
 </details>
 <details class="param" data-search="vndvariableneighborhoodsearch whether to try variable neighborhood search">
-  <summary><span class="pname"><code>-VndVariableNeighborhoodSearch</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to try Variable Neighborhood Search</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
+  <summary><span class="pname"><code>-VndVariableNeighborhoodSearch</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to try Variable Neighborhood Search</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
   <div class="pbody"><p class="plong">Value &#x27;on&#x27; means to use the heuristic in each node of the tree, i.e. after preprocessing. Value &#x27;before&#x27; means use the heuristic only if option doHeuristics is used. Value &#x27;both&#x27; means to use the heuristic if option doHeuristics is used and during solve.</p>
-<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">both</code> <code class="kw">before</code> <code class="kw">intree</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">both</code> <code class="kw">before</code> <code class="kw">intree</code>&ensp;<span class="pmeta">(default: <code>on</code>)</span></div></div>
 </details>
 </div>
 <div class="subsection">
@@ -742,6 +770,11 @@
 </div>
 <div class="subsection">
 <h3>General Heuristic Settings</h3>
+<details class="param" data-search="feasibilityjump whether to use the feasibility jump heuristic">
+  <summary><span class="pname"><code>-feasibilityJump</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use the Feasibility Jump heuristic</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
+  <div class="pbody"><p class="plong">Feasibility Jump is a primal heuristic that searches for integer-feasible solutions without LP solves. It maintains a weighted score over constraints and iteratively flips integer variables toward feasibility. Effective especially early in the search, when no incumbent solution exists yet -- getting *some* feasible solution as early as possible matters on its own, since without one no primal bound (and hence no gap, no objective-based fixing) is available at all. Value &#x27;on&#x27; means to use the heuristic in each node of the tree, i.e. after preprocessing. Value &#x27;before&#x27; means use the heuristic only if option doHeuristics is used. Value &#x27;both&#x27; means to use the heuristic if option doHeuristics is used and during solve.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">both</code> <code class="kw">before</code>&ensp;<span class="pmeta">(default: <code>on</code>)</span></div></div>
+</details>
 <details class="param" data-search="heuristicsonoff switches most heuristics on or off">
   <summary><span class="pname"><code>-heuristicsOnOff</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Switches most heuristics on or off</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
   <div class="pbody"><p class="plong">This can be used to switch on or off all heuristics.  Then you can set individual ones off or on.  CbcTreeLocal is not included as it dramatically alters search.</p>
@@ -983,10 +1016,6 @@
   <summary><span class="pname"><code>-initialSolve</code></span><span class="badge badge-act">Action</span><span class="pshort">Solve to continuous optimum</span></summary>
   <div class="pbody"><p class="plong">This just solves the problem to the continuous optimum, without adding any cuts.</p></div>
 </details>
-<details class="param" data-search="strengthen create strengthened problem">
-  <summary><span class="pname"><code>-strengthen</code></span><span class="badge badge-act">Action</span><span class="pshort">Create strengthened problem</span></summary>
-  <div class="pbody"><p class="plong">This creates a new problem by applying the root node cuts. All tight constraints will be in resulting problem.</p></div>
-</details>
 <details class="param" data-search="constraintfromcutoff whether to use cutoff as constraint">
   <summary><span class="pname"><code>-constraintfromCutoff</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use cutoff as constraint</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
   <div class="pbody"><p class="plong">For some problems, cut generators and general branching work better if the problem would be infeasible if the cost is too high. If this option is enabled, the objective function is added as a constraint which right hand side is set to the current cutoff value (objective value of best known solution)</p>
@@ -1000,7 +1029,7 @@
   barrier:   interior-point (barrier) method.
   racing:    opportunistic parallel LP racing -- multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) are run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (-threads).
   recommend: ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features (see CbcLpParamScorer) to pick the settings expected to solve fastest. Runs sequentially.
-  auto:      picks racing when running in parallel (threads >= 2) or recommend when running sequentially (threads == 1). (default)</p>
+  auto:      picks racing when running in parallel (threads &gt;= 2) or recommend when running sequentially (threads == 1). (default)</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">dual</code> <code class="kw">primal</code> <code class="kw">barrier</code> <code class="kw">auto</code> <code class="kw">racing</code> <code class="kw">recommend</code>&ensp;<span class="pmeta">(default: <code>auto</code>)</span></div></div>
 </details>
 <details class="param" data-search="maxsavedsolutions maximum number of solutions to save">
@@ -1078,10 +1107,10 @@ This should only be necessary if you have previously set maximization. A synonym
  You can also use the parameters &#x27;maximize&#x27; or &#x27;minimize&#x27;.</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">min!imize</code> <code class="kw">max!imize</code> <code class="kw">zero</code>&ensp;<span class="pmeta">(default: <code>min(imize)</code>)</span></div></div>
 </details>
-<details class="param" data-search="vector try and use vector instructions in simplex">
-  <summary><span class="pname"><code>-vector</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Try and use vector instructions in simplex</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
-  <div class="pbody"><p class="plong">At present only for Intel architectures - but could be extended. Uses avx2 or avx512 instructions. Uses different storage for matrix - can be of benefit without instruction set on some problems. I may add pool to switch on a pool matrix</p>
-<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">ones</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+<details class="param" data-search="vector whether to use vector? form of matrix in simplex">
+  <summary><span class="pname"><code>-vector</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use vector? Form of matrix in simplex</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
+  <div class="pbody"><p class="plong">If this is on ClpPackedMatrix uses extra column copy in odd format.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
 </details>
 <details class="param" data-search="decompose whether to try decomposition">
   <summary><span class="pname"><code>-decompose</code></span><span class="badge badge-int">Integer</span><span class="pshort">Whether to try decomposition</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
@@ -1448,14 +1477,14 @@ normal - nonzero column variables
 </details>
 <details class="param" data-search="writefeatures writes instance features to csv file">
   <summary><span class="pname"><code>-writeFeatures</code></span><span class="badge badge-act">Action</span><span class="pshort">writes instance features to CSV file</span></summary>
-  <div class="pbody"><p class="plong">This extracts all OsiFeatures from the current MIP instance and appends them as a single row to the file designated by csvFeatures (default &#x27;features.csv&#x27;). If no file name is supplied the previous value is used. The header row is written automatically when the file is new or empty. A total of 207 numeric features are extracted, covering:
+  <div class="pbody"><p class="plong">This extracts all OsiFeatures from the current MIP instance and appends them as a single row to the file designated by csvFeatures (default &#x27;features.csv&#x27;). If no file name is supplied the previous value is used. The header row is written automatically when the file is new or empty. A total of 211 numeric features are extracted, covering:
   - Problem size: number of columns (variables) and rows (constraints),
     non-zeros, matrix density, columns-per-row ratio.
   - Variable types: counts and percentages of binary, general integer
     and continuous variables; unbounded variables.
   - Constraint classes: partitioning, packing, covering, cardinality,
     knapsack, integer knapsack, invariant knapsack, singleton, aggregation,
-    precedence, variable-bound and bin-packing rows.
+    precedence, variable-bound, bin-packing and hub-implication rows.
   - Objective and matrix statistics: min/max/mean/std-dev of non-zero
     coefficients, objective coefficients and right-hand-side values;
     column non-zero distribution (fraction of columns with &gt;= k non-zeros
@@ -1468,7 +1497,7 @@ All features are computed in O(nz) time.</p></div>
 </details>
 <details class="param" data-search="csvfeatures sets file name for writing out instance features">
   <summary><span class="pname"><code>-csvFeatures</code></span><span class="badge badge-file">File</span><span class="pshort">sets file name for writing out instance features</span></summary>
-  <div class="pbody"><p class="plong">Sets the file name used by writeFeatures. If name is not specified the previous value is used. Initialized to &#x27;features.csv&#x27;. The header row listing all 207 feature names is written automatically when the file is new or empty; subsequent calls append a new row.</p></div>
+  <div class="pbody"><p class="plong">Sets the file name used by writeFeatures. If name is not specified the previous value is used. Initialized to &#x27;features.csv&#x27;. The header row listing all 211 feature names is written automatically when the file is new or empty; subsequent calls append a new row.</p></div>
 </details>
 <details class="param" data-search="csvstatistics sets file name for writing out statistics">
   <summary><span class="pname"><code>-csvStatistics</code></span><span class="badge badge-file">File</span><span class="pshort">sets file name for writing out statistics</span></summary>
@@ -1522,6 +1551,14 @@ All features are computed in O(nz) time.</p></div>
   <summary><span class="pname"><code>-errorsAllowed</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to allow import errors</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
   <div class="pbody"><p class="plong">The default is not to use any model which had errors when reading the mps file.  Setting this to &#x27;on&#x27; will allow all errors from which the code can recover simply by ignoring the error.  There are some errors from which the code can not recover, e.g., no ENDATA.  This has to be set before import, i.e., -errorsAllowed on -import xxxxxx.mps.</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+</details>
+<details class="param" data-search="mipstartfix which columns a mip start fixes before its lp is re-solved">
+  <summary><span class="pname"><code>-mipStartFix</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Which columns a mip start fixes before its LP is re-solved</span><span class="pmeta">default:&nbsp;<code>integerZero</code></span></summary>
+  <div class="pbody"><p class="plong">A mip start normally names the integer variables and leaves the continuous ones to be recovered by solving the LP with those fixed.
+  integerZero: fix integers only, and take every integer the start does not mention to be zero -- which is what a start listing just the nonzero integers means.
+  integer:     fix integers only, leaving unmentioned ones free between their own bounds.
+  all:         fix supplied continuous values too. This pins down more of the solution, but a rounding error in a supplied value can make the LP infeasible; when that happens the continuous columns are released and the LP is retried with just the integers fixed.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">integerZero</code> <code class="kw">integer</code> <code class="kw">all</code>&ensp;<span class="pmeta">(default: <code>integerZero</code>)</span></div></div>
 </details>
 <details class="param" data-search="basisin import basis from bas file">
   <summary><span class="pname"><code>-basisIn</code></span><span class="badge badge-act">Action</span><span class="pshort">Import basis from bas file</span></summary>
@@ -1585,6 +1622,14 @@ All features are computed in O(nz) time.</p></div>
 <div class="param param-flat" data-search="version print version">
   <span class="pname"><code>-version</code></span><span class="badge badge-act">Action</span><span class="pshort">Print version</span>
 </div>
+<details class="param" data-search="pumprootplaces root moments at which feasibility pump is allowed to run">
+  <summary><span class="pname"><code>-pumpRootPlaces</code></span><span class="badge badge-str">String</span><span class="pshort">Root moments at which Feasibility Pump is allowed to run</span></summary>
+  <div class="pbody"><p class="plong">A string of single-letter codes for which root-processing moments Feasibility Pump may run at: &#x27;L&#x27; pre-processed LP solution, before any cuts (the historical default); &#x27;C&#x27; after root cut generation is finished; &#x27;c&#x27; an intermediate round of cut generation. Combine letters to allow more than one, e.g. &#x27;LC&#x27; to try both before and after cuts. Default is &#x27;&#x27; (unset), which reproduces the classic behavior controlled by pumpTune/moreTune&#x27;s cryptic numeric encoding (root-before-cuts only, unless moreTune&#x27;s &#x27;/1000&#x27; digit says otherwise). Setting this option takes over that decision entirely, in an intuitive way, instead of pumpTune/moreTune.</p></div>
+</details>
+<details class="param" data-search="jumprootplaces root moments at which feasibility jump is allowed to run">
+  <summary><span class="pname"><code>-jumpRootPlaces</code></span><span class="badge badge-str">String</span><span class="pshort">Root moments at which Feasibility Jump is allowed to run</span></summary>
+  <div class="pbody"><p class="plong">A string of single-letter codes for which root-processing moments Feasibility Jump may run at: &#x27;L&#x27; pre-processed LP solution, before any cuts; &#x27;C&#x27; after root cut generation is finished (the historical default for standalone FJ). Combine letters to allow more than one, e.g. &#x27;LC&#x27;. Default is &#x27;&#x27; (unset), which reproduces the classic behavior. Does not affect FJ&#x27;s tree-node execution (feasibilityJumpDepth) or its use as Feasibility Pump&#x27;s failure-recovery fallback (feasibilityJumpAfterFPump).</p></div>
+</details>
 <details class="param" data-search="cplexuse whether to use cplex!">
   <summary><span class="pname"><code>-cplexUse</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Cplex!</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
   <div class="pbody"><p class="plong">If the user has Cplex, but wants to use some of Cbc&#x27;s heuristics then you can!  If this is on, then Cbc will get to the root node and then hand over to Cplex.  If heuristics find a solution this can be significantly quicker.  You will probably want to switch off Cbc&#x27;s cuts as Cplex thinks they are genuine constraints.  It is also probable that you want to switch off preprocessing, although for difficult problems it is worth trying both.</p>
@@ -1613,6 +1658,46 @@ All features are computed in O(nz) time.</p></div>
 <details class="param" data-search="extra4 extra integer parameter 4">
   <summary><span class="pname"><code>-extra4</code></span><span class="badge badge-int">Integer</span><span class="pshort">Extra integer parameter 4</span><span class="pmeta">default:&nbsp;<code>-1</code></span></summary>
   <div class="pbody"><div class="pextra"><strong>Range:</strong> −INT_MAX&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;-1)</span></div></div>
+</details>
+<details class="param" data-search="feasibilityjumpeffort fixed iteration budget for feasibility jump (0 = use nnz-scaled)">
+  <summary><span class="pname"><code>-feasibilityJumpEffort</code></span><span class="badge badge-int">Integer</span><span class="pshort">Fixed iteration budget for Feasibility Jump (0 = use NNZ-scaled)</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
+  <div class="pbody"><p class="plong">Fixed effort budget (deterministic iteration units) for a single Feasibility Jump call. When set to 0 (default), the budget is computed as NNZ * feasibilityJumpEffortMult, scaling with problem size. Set to a positive value to use a fixed budget (useful for benchmarks comparing fewer/longer calls against more/shorter ones).</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
+</details>
+<details class="param" data-search="feasibilityjumpeffortmult nnz multiplier for feasibility jump effort budget">
+  <summary><span class="pname"><code>-feasibilityJumpEffortMult</code></span><span class="badge badge-int">Integer</span><span class="pshort">NNZ multiplier for Feasibility Jump effort budget</span><span class="pmeta">default:&nbsp;<code>1024</code></span></summary>
+  <div class="pbody"><p class="plong">When feasibilityJumpEffort is 0, the effort budget is computed as NNZ * this multiplier. Default: 1024 (same as HiGHS). Larger values give FJ more iterations per call on harder instances.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;100000&ensp;<span class="pmeta">(default:&nbsp;1024)</span></div></div>
+</details>
+<details class="param" data-search="feasibilityjumpmaxsol stop feasibility jump after finding this many solutions in one call">
+  <summary><span class="pname"><code>-feasibilityJumpMaxSol</code></span><span class="badge badge-int">Integer</span><span class="pshort">Stop Feasibility Jump after finding this many solutions in one call</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
+  <div class="pbody"><p class="plong">The Feasibility Jump heuristic stops as soon as it has found this many integer-feasible solutions in a single call. Default: 1 (stop after the first solution).</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;1)</span></div></div>
+</details>
+<details class="param" data-search="feasibilityjumpstall nnz multiplier for stall-based early termination (0 = disable)">
+  <summary><span class="pname"><code>-feasibilityJumpStall</code></span><span class="badge badge-int">Integer</span><span class="pshort">NNZ multiplier for stall-based early termination (0 = disable)</span><span class="pmeta">default:&nbsp;<code>256</code></span></summary>
+  <div class="pbody"><p class="plong">Terminate Feasibility Jump when effort since last improvement exceeds NNZ * this multiplier. Default: 256 (same as HiGHS). Prevents wasting time when FJ is stuck in a local minimum. Set to 0 to disable stall-based termination.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;100000&ensp;<span class="pmeta">(default:&nbsp;256)</span></div></div>
+</details>
+<details class="param" data-search="feasibilityjumpdepth run fj every n levels in the tree (0 = root only)">
+  <summary><span class="pname"><code>-feasibilityJumpDepth</code></span><span class="badge badge-int">Integer</span><span class="pshort">Run FJ every N levels in the tree (0 = root only)</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
+  <div class="pbody"><p class="plong">Controls how often FJ runs during branch-and-bound. Default: 0 (root only). When set to N &gt; 0, FJ also runs at tree nodes whose depth is a multiple of N (e.g. 6 means depth 6, 12, 18...), each time seeded from that node&#x27;s own fractional LP solution -- a genuinely different point from any earlier call, which is what makes repeated FJ calls worthwhile. Uses 1/4 of the root effort budget per tree node call.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1000&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
+</details>
+<details class="param" data-search="feasibilityjumponlynosol only run fj while cbc has no incumbent solution yet (0/1)">
+  <summary><span class="pname"><code>-feasibilityJumpOnlyNoSol</code></span><span class="badge badge-int">Integer</span><span class="pshort">Only run FJ while CBC has no incumbent solution yet (0/1)</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
+  <div class="pbody"><p class="plong">When 1 (default), Feasibility Jump is skipped entirely once CBC already has at least one incumbent (from any source: another heuristic, a MIP start, or branch-and-bound). Repeated FJ calls are most valuable for producing the very first incumbent; once one exists they mostly add overhead relative to other cut/heuristic work. Set to 0 to also let FJ try to improve on an existing incumbent, e.g. to test whether that is worthwhile.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;1)</span></div></div>
+</details>
+<details class="param" data-search="feasibilityjumpmaxcalls cap on the total number of separate fj calls for the whole solve (0 = unlimited)">
+  <summary><span class="pname"><code>-feasibilityJumpMaxCalls</code></span><span class="badge badge-int">Integer</span><span class="pshort">Cap on the total number of separate FJ calls for the whole solve (0 = unlimited)</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
+  <div class="pbody"><p class="plong">Caps how many times Feasibility Jump is invoked in total, across the root-after-cuts and tree trigger points (plus the FPump-failure fallback, see feasibilityJumpAfterFPump). Each invocation is always seeded from a genuinely new fractional solution (a different cut round or tree node), never a repeat on an unchanged point. Default: 0 (unlimited). Combine with feasibilityJumpEffort/feasibilityJumpEffortMult to explore the tradeoff between calling FJ fewer times with a bigger budget each vs. more times with a smaller budget each.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
+</details>
+<details class="param" data-search="feasibilityjumpafterfpump fall back to feasibility jump when fpump fails to find a solution (0/1/2)">
+  <summary><span class="pname"><code>-feasibilityJumpAfterFPump</code></span><span class="badge badge-int">Integer</span><span class="pshort">Fall back to Feasibility Jump when FPump fails to find a solution (0/1/2)</span><span class="pmeta">default:&nbsp;<code>2</code></span></summary>
+  <div class="pbody"><p class="plong">0: Feasibility Jump never runs as a fallback for FPump (it may still run standalone per feasibilityJump). 1: Feasibility Jump still runs standalone per feasibilityJump *and* is automatically tried right after Feasibility Pump fails to find any feasible solution (only while CBC still has no incumbent at all). 2 (default): Feasibility Jump is *not* registered as a standalone heuristic at all -- it only ever runs as this FPump-failure fallback, i.e. &#x27;run FJ only if FPump fails&#x27;. This ordering (FPump first, FJ only as rescue) was found to find a feasible solution on more root-node instances than running FJ standalone first (as mode 1 does), at the cost of a somewhat worse average gap on instances both approaches solve -- see ROOT-FIXTURES.md. Use 1 to restore the older FJ-runs-first behavior, e.g. to isolate FPump&#x27;s own behavior or when FJ&#x27;s cheap, eager first attempt is specifically wanted regardless of FPump&#x27;s outcome.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;2&ensp;<span class="pmeta">(default:&nbsp;2)</span></div></div>
 </details>
 <details class="param" data-search="rootheurschedule enable two-phase parallel root heuristic schedule">
   <summary><span class="pname"><code>-rootHeurSchedule</code></span><span class="badge badge-int">Integer</span><span class="pshort">Enable two-phase parallel root heuristic schedule</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>

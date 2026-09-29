@@ -28,7 +28,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [Output](#output) (23 parameters)
 - [I/O](#i/o) (36 parameters)
 - [Parallelism](#parallelism) (1 parameters)
-- [General](#general) (50 parameters)
+- [General](#general) (51 parameters)
 
 ---
 
@@ -787,9 +787,9 @@ If on then tries to branch to solution given by AMPL or priorities file.
 
 Depth at which to try mini branch-and-bound
 
-Rather a complicated parameter but can be useful. -1 means off for large problems but on as if -12 for problems where rows+columns<500, -2 means use Cplex if it is linked in.  Otherwise if negative then go into depth first complete search fast branch and bound when depth>= -value-2 (so -3 will use this at depth>=1).  This mode is only switched on after 500 nodes.  If you really want to switch it off for small problems then set this to -999.  If >=0 the value doesn't matter very much.  The code will do approximately 100 nodes of fast branch and bound every now and then at depth>=5. The actual logic is too twisted to describe here. The default has been changed from -1 to +1.  This uses Clp and saves factorizations etc to be faster.
+Rather a complicated parameter but can be useful. If >=0 the code does approximately 100 nodes of fast branch and bound (using Clp, saving factorizations etc.) every now and then at depth>=value. If negative, -2 means use Cplex if it is linked in; otherwise go into depth first complete search fast branch and bound when depth>= -value-2 (so -3 will use this at depth>=1), switched on only after 500 nodes. -1 means off, except for a small problem (see sizeMiniBab) where it acts as -12. -999 means off for every problem. The default, auto, uses 5 for a small problem and 8 otherwise (1 with strategy easy). The actual logic is too twisted to describe here. The value chosen for auto or -1 is logged.
 
-**Range:** -INT_MAX to INT_MAX (default: 1)
+**Range:** -INT_MAX to INT_MAX (default: auto)
 
 #### `-diveOpt`
 
@@ -2158,6 +2158,14 @@ Column count from which a problem is large
 A problem that is not small and has at least this many columns is large for the settings that are auto (at present passCuts).
 
 **Range:** 0 to INT_MAX (default: 5000)
+
+### `-sizeMiniBab`
+
+Rows plus columns below which depthMiniBab treats a problem as small
+
+Used when depthMiniBab is auto or -1: a problem whose row and column counts add up to less than this is small.
+
+**Range:** 0 to INT_MAX (default: 500)
 
 ### `-minDrop`
 

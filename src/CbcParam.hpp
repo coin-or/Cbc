@@ -289,6 +289,7 @@ public:
       SIZESMALLROWS,
       SIZESMALLCOLS,
       SIZELARGECOLS,
+      SIZEMINIBAB,
       LASTINTPARAM,
 
       // Double Parameters

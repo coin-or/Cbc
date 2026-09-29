@@ -493,7 +493,7 @@ Values: off, on (default: off)
 .BI \-depthMiniBab
 Depth at which to try mini branch\-and\-bound
 .br
-Range: \-INT_MAX to INT_MAX (default: 1)
+Range: \-INT_MAX to INT_MAX (default: auto)
 .TP
 .BI \-diveOpt
 Diving options
@@ -1263,6 +1263,11 @@ Range: 0 to INT_MAX (default: 500)
 Column count from which a problem is large
 .br
 Range: 0 to INT_MAX (default: 5000)
+.TP
+.BI \-sizeMiniBab
+Rows plus columns below which depthMiniBab treats a problem as small
+.br
+Range: 0 to INT_MAX (default: 500)
 .TP
 .BI \-minDrop
 Minimum objective improvement for a root cut pass to count

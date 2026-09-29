@@ -862,7 +862,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::SIZESMALLCOLS]->setDefault(500);
      parameters_[CbcParam::SIZELARGECOLS]->setDefault(5000);
      parameters_[CbcParam::MINIMUMDROP]->setDefault(CoinParam::autoDblValue());
-     parameters_[CbcParam::DEPTHMINIBAB]->setDefault(1);
+     parameters_[CbcParam::SIZEMINIBAB]->setDefault(500);
+     parameters_[CbcParam::DEPTHMINIBAB]->setDefault(CoinParam::autoIntValue());
      parameters_[CbcParam::DIVEOPT]->setDefault(-1);
      parameters_[CbcParam::DIVEOPTSOLVES]->setDefault(100);
      parameters_[CbcParam::DUMMY]->setDefault(0);
@@ -2442,20 +2443,27 @@ void CbcParameters::addCbcSolverIntParams() {
       "A problem that is not small and has at least this many columns is "
       "large for the settings that are auto (at present passCuts).");
 
+  parameters_[CbcParam::SIZEMINIBAB]->setup(
+      "sizeMiniBab", "Rows plus columns below which depthMiniBab treats a problem as small",
+      0, COIN_INT_MAX,
+      "Used when depthMiniBab is auto or -1: a problem whose row and column "
+      "counts add up to less than this is small.");
+
   parameters_[CbcParam::DEPTHMINIBAB]->setup(
       "depth!MiniBab", "Depth at which to try mini branch-and-bound",
       -COIN_INT_MAX, COIN_INT_MAX,
-      "Rather a complicated parameter but can be useful. -1 means off for "
-      "large problems but on as if -12 for problems where rows+columns<500, -2 "
-      "means use Cplex if it is linked in.  Otherwise if negative then go into "
-      "depth first complete search fast branch and bound when depth>= -value-2 "
-      "(so -3 will use this at depth>=1).  This mode is only switched on after "
-      "500 nodes.  If you really want to switch it off for small problems then "
-      "set this to -999.  If >=0 the value doesn't matter very much.  The code "
-      "will do approximately 100 nodes of fast branch and bound every now and "
-      "then at depth>=5. The actual logic is too twisted to describe here. "
-      "The default has been changed from -1 to +1.  This uses Clp and saves "
-       "factorizations etc to be faster.");
+      "Rather a complicated parameter but can be useful. If >=0 the code "
+      "does approximately 100 nodes of fast branch and bound (using Clp, "
+      "saving factorizations etc.) every now and then at depth>=value. "
+      "If negative, -2 means use Cplex if it is linked in; otherwise go into "
+      "depth first complete search fast branch and bound when depth>= "
+      "-value-2 (so -3 will use this at depth>=1), switched on only after "
+      "500 nodes. -1 means off, except for a small problem (see sizeMiniBab) "
+      "where it acts as -12. -999 means off for every problem. The default, "
+      "auto, uses 5 for a small problem and 8 otherwise (1 with strategy "
+      "easy). The actual logic is too twisted to describe here. The value "
+      "chosen for auto or -1 is logged.");
+  parameters_[CbcParam::DEPTHMINIBAB]->setAutoAllowed();
 
   parameters_[CbcParam::DIVEOPT]->setup(
       "diveO!pt", "Diving options", -1, 20,

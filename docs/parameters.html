@@ -283,7 +283,7 @@
 <a href="#output" class="sb-link">Output<span class="sb-count">23</span></a>
 <a href="#i-o" class="sb-link">I/O<span class="sb-count">36</span></a>
 <a href="#parallelism" class="sb-link">Parallelism<span class="sb-count">1</span></a>
-<a href="#general" class="sb-link">General<span class="sb-count">50</span></a>
+<a href="#general" class="sb-link">General<span class="sb-count">51</span></a>
     </nav>
   </aside>
 
@@ -796,9 +796,9 @@
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
 </details>
 <details class="param" data-search="depthminibab depth at which to try mini branch-and-bound">
-  <summary><span class="pname"><code>-depthMiniBab</code></span><span class="badge badge-int">Integer</span><span class="pshort">Depth at which to try mini branch-and-bound</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
-  <div class="pbody"><p class="plong">Rather a complicated parameter but can be useful. -1 means off for large problems but on as if -12 for problems where rows+columns&lt;500, -2 means use Cplex if it is linked in.  Otherwise if negative then go into depth first complete search fast branch and bound when depth&gt;= -value-2 (so -3 will use this at depth&gt;=1).  This mode is only switched on after 500 nodes.  If you really want to switch it off for small problems then set this to -999.  If &gt;=0 the value doesn&#x27;t matter very much.  The code will do approximately 100 nodes of fast branch and bound every now and then at depth&gt;=5. The actual logic is too twisted to describe here. The default has been changed from -1 to +1.  This uses Clp and saves factorizations etc to be faster.</p>
-<div class="pextra"><strong>Range:</strong> −INT_MAX&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;1)</span></div></div>
+  <summary><span class="pname"><code>-depthMiniBab</code></span><span class="badge badge-int">Integer</span><span class="pshort">Depth at which to try mini branch-and-bound</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Rather a complicated parameter but can be useful. If &gt;=0 the code does approximately 100 nodes of fast branch and bound (using Clp, saving factorizations etc.) every now and then at depth&gt;=value. If negative, -2 means use Cplex if it is linked in; otherwise go into depth first complete search fast branch and bound when depth&gt;= -value-2 (so -3 will use this at depth&gt;=1), switched on only after 500 nodes. -1 means off, except for a small problem (see sizeMiniBab) where it acts as -12. -999 means off for every problem. The default, auto, uses 5 for a small problem and 8 otherwise (1 with strategy easy). The actual logic is too twisted to describe here. The value chosen for auto or -1 is logged.</p>
+<div class="pextra"><strong>Range:</strong> −INT_MAX&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
 </details>
 <details class="param" data-search="diveopt diving options">
   <summary><span class="pname"><code>-diveOpt</code></span><span class="badge badge-int">Integer</span><span class="pshort">Diving options</span><span class="pmeta">default:&nbsp;<code>2</code></span></summary>
@@ -1742,6 +1742,11 @@ All features are computed in O(nz) time.</p></div>
   <summary><span class="pname"><code>-sizeLargeCols</code></span><span class="badge badge-int">Integer</span><span class="pshort">Column count from which a problem is large</span><span class="pmeta">default:&nbsp;<code>5000</code></span></summary>
   <div class="pbody"><p class="plong">A problem that is not small and has at least this many columns is large for the settings that are auto (at present passCuts).</p>
 <div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;5000)</span></div></div>
+</details>
+<details class="param" data-search="sizeminibab rows plus columns below which depthminibab treats a problem as small">
+  <summary><span class="pname"><code>-sizeMiniBab</code></span><span class="badge badge-int">Integer</span><span class="pshort">Rows plus columns below which depthMiniBab treats a problem as small</span><span class="pmeta">default:&nbsp;<code>500</code></span></summary>
+  <div class="pbody"><p class="plong">Used when depthMiniBab is auto or -1: a problem whose row and column counts add up to less than this is small.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;500)</span></div></div>
 </details>
 <details class="param" data-search="mindrop minimum objective improvement for a root cut pass to count">
   <summary><span class="pname"><code>-minDrop</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Minimum objective improvement for a root cut pass to count</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>

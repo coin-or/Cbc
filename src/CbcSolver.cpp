@@ -8739,9 +8739,15 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
       }
     }
     {
-      int depthMiniBab = parameters[CbcParam::DEPTHMINIBAB]->intVal();
-      if (depthMiniBab != -1)
-        babModel_->setFastNodeDepth(depthMiniBab);
+      // auto is resolved from the problem size further down (see
+      // sizeMiniBab); until then it is carried as fastNodeDepth 1.
+      if (parameters[CbcParam::DEPTHMINIBAB]->isAuto()) {
+        babModel_->setFastNodeDepth(1);
+      } else {
+        int depthMiniBab = parameters[CbcParam::DEPTHMINIBAB]->intVal();
+        if (depthMiniBab != -1)
+          babModel_->setFastNodeDepth(depthMiniBab);
+      }
     }
     babModel_->setNodeBoundProp(
       parameters[CbcParam::NODEBOUNDPROP]->modeVal());
@@ -10085,11 +10091,16 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
     }
 #elif CBC_OTHER_SOLVER == 1
 #endif
-    if ((experimentFlag >= 1 || strategyFlag >= 1) && abs(babModel_->fastNodeDepth()) == 1) {
+    // depthMiniBab auto (carried as 1) and -1 depend on the problem size.
+    // An explicit 1 is used as given.
+    bool miniBabAuto = parameters[CbcParam::DEPTHMINIBAB]->isAuto();
+    if ((experimentFlag >= 1 || strategyFlag >= 1) &&
+        babModel_->fastNodeDepth() == (miniBabAuto ? 1 : -1)) {
       int iType = babModel_->fastNodeDepth();
       int iDepth = iType < 0 ? -12 : 5;
-      int iSize = 500; // think harder iType <0 ? 10000 : 500;
-      if (babModel_->solver()->getNumCols() + babModel_->solver()->getNumRows() < iSize) {
+      int iSize = parameters[CbcParam::SIZEMINIBAB]->intVal();
+      int size = babModel_->solver()->getNumCols() + babModel_->solver()->getNumRows();
+      if (size < iSize) {
         babModel_->setFastNodeDepth(iDepth);
       } else {
         if (iDepth == -12)
@@ -10097,6 +10108,11 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
         else
           babModel_->setFastNodeDepth(8);
       }
+      std::ostringstream choice;
+      choice << "depthMiniBab " << (miniBabAuto ? "auto" : "-1") << " -> "
+             << babModel_->fastNodeDepth() << " (rows+cols " << size
+             << (size < iSize ? " < " : " >= ") << "sizeMiniBab " << iSize << ")";
+      printGeneralMessage(model_, choice.str());
     } else if (babModel_->fastNodeDepth() == -999) {
       babModel_->setFastNodeDepth(-1);
     }

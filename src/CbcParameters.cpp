@@ -1714,9 +1714,9 @@ void CbcParameters::addCbcSolverStrParams() {
       "liftAndProject, residualCapacity, zeroHalf). VALUE is an integer "
       ">= -2 or auto. NAME:VALUE items take precedence over a VALUE item. "
       "The default, auto, keeps each generator's built-in value: 1 for "
-      "twoMir, latwomir, reduceAndSplit, reduce2AndSplit, liftAndProject "
-      "and residualCapacity, 2 for zeroHalf, -2 for knapsack and 0 for the "
-      "rest. Examples: 'twoMir:0', '0' (never), '0,zeroHalf:2'. The values "
+      "latwomir, reduceAndSplit, reduce2AndSplit, liftAndProject and "
+      "residualCapacity, 2 for zeroHalf, -2 for knapsack and 0 for the "
+      "rest. Examples: 'twoMir:1', '0' (never), '0,zeroHalf:2'. The values "
       "in effect are logged.");
 
   parameters_[CbcParam::PRINTMASK]->setup(

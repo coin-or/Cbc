@@ -664,7 +664,7 @@ void installCutGenerators(
     if (!laTwomir) {
       babModel.addCutGenerator(&twomirGen, translate[twomirMode], "TwoMirCuts");
       accuracyFlag[numberGenerators] = 4;
-      switches[numberGenerators++] = 1 | lagrangeanFlag;
+      switches[numberGenerators++] = 0 | lagrangeanFlag;
     } else {
       laTwomir = laTranslate[laTwomir] - 1;
       int type = (laTwomir % 3) + 1;
@@ -674,7 +674,7 @@ void installCutGenerators(
       if (when < 3) {
         babModel.addCutGenerator(&twomirGen, translate[twomirMode], "TwoMirCuts");
         accuracyFlag[numberGenerators] = 4;
-        switches[numberGenerators++] = 1;
+        switches[numberGenerators++] = 0;
         if (when == 2)
           twomirTypeMajor = 10;
       } else {

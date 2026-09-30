@@ -3758,9 +3758,18 @@ int CbcSolver::preprocess(
         bestSolution[i] = oldBestSolution[jColumn];
     }
     double obj = model_.getObjValue();
-    double newCutoff = std::min(model_.getCutoff(), obj + 1.0e-4);
+    double newCutoff = model_.getCutoff();
     babModel_->setBestSolution(bestSolution, numberColumns, 1.0e10, false);
+    double obj2;
+    if (babModel_->getObjSense()!=-1.0) {
+      newCutoff = std::min(newCutoff, obj+1.0e-4);
+      obj2 = obj;
+    } else {
+      obj2 = -obj;
+      newCutoff = std::min(newCutoff, obj2+1.0e-4);
+    }
     babModel_->setCutoff(newCutoff);
+    babModel_->setMinimizationObjValue(obj2);
     delete[] bestSolution;
 #endif
   }
@@ -9684,6 +9693,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               preProcess = 0;
           }
           if (mipStartBefore.size()) {
+	    // make sure model knows min/max
+	    babModel_->setObjSense(babModel_->solver()->getObjSense());
+	    model_.setObjSense(model_.solver()->getObjSense());
             CbcModel tempModel = *babModel_;
             assert(babModel_->getNumCols() == model_.getNumCols());
             std::vector< std::string > colNames;
@@ -9697,14 +9709,24 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               tempModel.messagesPointer());
             // set cutoff ( a trifle high)
             if (!status) {
-              double newCutoff = std::min(babModel_->getCutoff(), obj + 1.0e-4);
+	      double newCutoff = babModel_->getCutoff();
               babModel_->setBestSolution(&x[0], static_cast< int >(x.size()),
                 obj, false);
+	      double obj2;
+	      if (babModel_->getObjSense()!=-1.0) {
+		newCutoff = std::min(newCutoff, obj+1.0e-4);
+		obj2 = obj;
+	      } else {
+		obj2 = -obj;
+		newCutoff = std::min(newCutoff, obj2+1.0e-4);
+	      }
               babModel_->setCutoff(newCutoff);
+	      babModel_->setMinimizationObjValue(obj2);
               babModel_->setSolutionCount(1);
               model_.setBestSolution(&x[0], static_cast< int >(x.size()), obj,
                 false);
               model_.setCutoff(newCutoff);
+	      model_.setMinimizationObjValue(obj2);
               model_.setSolutionCount(1);
             }
           }

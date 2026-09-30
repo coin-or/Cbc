@@ -499,8 +499,8 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
         lp->initialSolve();
     }
   }
-
-  if (!lp->isProvenOptimal()) {
+  // seem to be problems when maximizing
+  if (!lp->isProvenOptimal()||lp->getObjSense()<0) {
     messHandler->message(CBC_GENERAL, messages)
       << "Warning: mipstart values could not be used to build a solution." << CoinMessageEol;
     status = 1;

@@ -16,7 +16,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (9 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
 - [Cuts](#cuts) (28 parameters)
-- [Heuristics](#heuristics) (35 parameters)
+- [Heuristics](#heuristics) (37 parameters)
 - [Branching](#branching) (6 parameters)
 - [Tolerances](#tolerances) (6 parameters)
 - [Conflict Graph](#conflict-graph) (5 parameters)
@@ -850,6 +850,22 @@ Value 1 stops heuristics immediately if the allowable gap has been reached. Othe
 Print feasibility pump progress every N passes (0 = disabled).
 
 **Range:** 0 to 1000000 (default: 0)
+
+#### `-diveMaxIterTree`
+
+Simplex iteration limit for a dive in the tree
+
+Each diving heuristic stops a dive in the tree after this many simplex iterations. The default, auto, uses max(10000, 2*rows+columns) of the preprocessed problem. Not applied with rootHeurSchedule. The value used is logged.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-diveMaxIterRoot`
+
+Simplex iteration limit for a dive at the root
+
+Each diving heuristic stops a dive at the root after this many simplex iterations. The default, auto, uses max(40000, 8*rows+4*columns) of the preprocessed problem. Not applied with rootHeurSchedule. The value used is logged.
+
+**Range:** 0 to INT_MAX (default: auto)
 
 #### `-artificialCost`
 

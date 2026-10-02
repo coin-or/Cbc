@@ -693,7 +693,8 @@ void CbcParameters::addCbcParams() {
                     CbcParam::FPUMPITS, CbcParam::FPUMPTUNE,
                     CbcParam::FPUMPTUNE2, CbcParam::HEUROPTIONS,
                     CbcParam::FPUMPPASSFREQ, CbcParam::DEPTHMINIBAB,
-                    CbcParam::VUBTRY})
+                    CbcParam::VUBTRY, CbcParam::DIVEMAXITERTREE,
+                    CbcParam::DIVEMAXITERROOT})
     parameters_[code]->setTopic("Heuristics");
 
   // Integer params — Output
@@ -866,6 +867,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::DEPTHMINIBAB]->setDefault(CoinParam::autoIntValue());
      parameters_[CbcParam::DIVEOPT]->setDefault(-1);
      parameters_[CbcParam::DIVEOPTSOLVES]->setDefault(100);
+     parameters_[CbcParam::DIVEMAXITERTREE]->setDefault(CoinParam::autoIntValue());
+     parameters_[CbcParam::DIVEMAXITERROOT]->setDefault(CoinParam::autoIntValue());
      parameters_[CbcParam::DUMMY]->setDefault(0);
      parameters_[CbcParam::EXPERIMENT]->setDefault(0);
      parameters_[CbcParam::EXTRA1]->setDefault(-1);
@@ -2476,6 +2479,26 @@ void CbcParameters::addCbcSolverIntParams() {
       "\n\t>10 All only at root (DivingC normal as "
       "value-10),	 \n\t>20 All with value-20).",
       CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::DIVEMAXITERTREE]->setup(
+      "diveMaxIterT!ree", "Simplex iteration limit for a dive in the tree",
+      0, COIN_INT_MAX,
+      "Each diving heuristic stops a dive in the tree after this many simplex "
+      "iterations. The default, auto, uses max(10000, 2*rows+columns) of the "
+      "preprocessed problem. Not applied with rootHeurSchedule. The value "
+      "used is logged.",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIVEMAXITERTREE]->setAutoAllowed();
+
+  parameters_[CbcParam::DIVEMAXITERROOT]->setup(
+      "diveMaxIterR!oot", "Simplex iteration limit for a dive at the root",
+      0, COIN_INT_MAX,
+      "Each diving heuristic stops a dive at the root after this many simplex "
+      "iterations. The default, auto, uses max(40000, 8*rows+4*columns) of "
+      "the preprocessed problem. Not applied with rootHeurSchedule. The value "
+      "used is logged.",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIVEMAXITERROOT]->setAutoAllowed();
 
   parameters_[CbcParam::DIVEOPTSOLVES]->setup(
                                               "diveS!olves", "Diving solve option", -1, 200000,

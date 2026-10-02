@@ -6731,6 +6731,8 @@ CbcModel::CbcModel()
   , nodeBoundPropMaxDepth_(50)
   , nodeBoundPropMinDepth_(5)
   , nodeBoundPropDepthInterval_(5)
+  , diveMaxIterTree_(-1)
+  , diveMaxIterRoot_(-1)
   , eventHandler_(nullptr)
 #ifdef CBC_HAS_NAUTY
   , symmetryInfo_(nullptr)
@@ -7071,6 +7073,8 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , nodeBoundPropMaxDepth_(rhs.nodeBoundPropMaxDepth_)
   , nodeBoundPropMinDepth_(rhs.nodeBoundPropMinDepth_)
   , nodeBoundPropDepthInterval_(rhs.nodeBoundPropDepthInterval_)
+  , diveMaxIterTree_(rhs.diveMaxIterTree_)
+  , diveMaxIterRoot_(rhs.diveMaxIterRoot_)
   , howOftenGlobalScan_(rhs.howOftenGlobalScan_)
   , numberGlobalViolations_(rhs.numberGlobalViolations_)
   , numberExtraIterations_(rhs.numberExtraIterations_)
@@ -7591,6 +7595,8 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     nodeBoundPropMaxDepth_ = rhs.nodeBoundPropMaxDepth_;
     nodeBoundPropMinDepth_ = rhs.nodeBoundPropMinDepth_;
     nodeBoundPropDepthInterval_ = rhs.nodeBoundPropDepthInterval_;
+    diveMaxIterTree_ = rhs.diveMaxIterTree_;
+    diveMaxIterRoot_ = rhs.diveMaxIterRoot_;
     if (ownObjects_) {
       for (i = 0; i < numberObjects_; i++)
         delete object_[i];
@@ -7982,6 +7988,8 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   nodeBoundPropMaxDepth_ = rhs.nodeBoundPropMaxDepth_;
   nodeBoundPropMinDepth_ = rhs.nodeBoundPropMinDepth_;
   nodeBoundPropDepthInterval_ = rhs.nodeBoundPropDepthInterval_;
+  diveMaxIterTree_ = rhs.diveMaxIterTree_;
+  diveMaxIterRoot_ = rhs.diveMaxIterRoot_;
   howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
   maximumCutPasses_ = rhs.maximumCutPasses_;
@@ -19953,14 +19961,28 @@ void CbcModel::adjustHeuristics()
 {
   int numberRows = solver_->getNumRows();
   int numberColumns = solver_->getNumCols();
-  int nTree = std::max(10000, 2 * numberRows + numberColumns);
-  int nRoot = std::max(40000, 8 * numberRows + 4 * numberColumns);
+  // -1 (auto) scales with the problem; anything else is used as given.
+  int nTree = diveMaxIterTree_ >= 0 ? diveMaxIterTree_ : std::max(10000, 2 * numberRows + numberColumns);
+  int nRoot = diveMaxIterRoot_ >= 0 ? diveMaxIterRoot_ : std::max(40000, 8 * numberRows + 4 * numberColumns);
+  // Dives set up with COIN_INT_MAX (the diveOpt > 99 active-set modes,
+  // which encode options in the root limit) are left alone.
+  int numberAdjusted = 0;
   for (int i = 0; i < numberHeuristics_; i++) {
     CbcHeuristicDive *heuristic = dynamic_cast< CbcHeuristicDive * >(heuristic_[i]);
     if (heuristic && heuristic->maxSimplexIterations() != COIN_INT_MAX) {
       heuristic->setMaxSimplexIterations(nTree);
       heuristic->setMaxSimplexIterationsAtRoot(nRoot);
+      numberAdjusted++;
     }
+  }
+  if (numberAdjusted && !parentModel_) {
+    char general[200];
+    sprintf(general,
+      "dive iteration limits: tree %d (%s), root %d (%s) for %d dive heuristic(s)",
+      nTree, diveMaxIterTree_ >= 0 ? "diveMaxIterTree" : "auto",
+      nRoot, diveMaxIterRoot_ >= 0 ? "diveMaxIterRoot" : "auto", numberAdjusted);
+    messageHandler()->message(CBC_GENERAL, messages())
+      << general << CoinMessageEol;
   }
 }
 // Number of saved solutions (including best)

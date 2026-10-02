@@ -290,6 +290,8 @@ public:
       SIZESMALLCOLS,
       SIZELARGECOLS,
       SIZEMINIBAB,
+      DIVEMAXITERTREE,
+      DIVEMAXITERROOT,
       LASTINTPARAM,
 
       // Double Parameters

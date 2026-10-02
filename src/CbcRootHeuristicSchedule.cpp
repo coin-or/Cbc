@@ -45,7 +45,8 @@ void CbcRootHeuristicSchedule::addDefaultDivingConfigs()
     h->setTargetFractionality(0.5);
     h->setMaxIterations(500);
     // 100K simplex iters covers P99+ of successful dives in experiments
-    // COIN_INT_MAX bypasses adjustHeuristics() override
+    // adjustHeuristics() (and so diveMaxIterTree/Root) is not run when this
+    // schedule is in use, so these limits stand as set.
     h->setMaxSimplexIterations(100000);
     h->setMaxSimplexIterationsAtRoot(100000);
     h->setSeed(seed);

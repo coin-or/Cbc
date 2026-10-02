@@ -2972,6 +2972,28 @@ public:
   {
     return nodeBoundPropDepthInterval_;
   }
+  /** Simplex iteration limit adjustHeuristics() gives each dive heuristic
+      in the tree; -1 (the default) means max(10000, 2*rows+columns). */
+  inline void setDiveMaxIterTree(int value)
+  {
+    diveMaxIterTree_ = value;
+  }
+  /// Get the dive iteration limit in the tree (-1 is auto)
+  inline int diveMaxIterTree() const
+  {
+    return diveMaxIterTree_;
+  }
+  /** Simplex iteration limit adjustHeuristics() gives each dive heuristic
+      at the root; -1 (the default) means max(40000, 8*rows+4*columns). */
+  inline void setDiveMaxIterRoot(int value)
+  {
+    diveMaxIterRoot_ = value;
+  }
+  /// Get the dive iteration limit at the root (-1 is auto)
+  inline int diveMaxIterRoot() const
+  {
+    return diveMaxIterRoot_;
+  }
   /// Get anything with priority >= this can be treated as continuous
   inline int continuousPriority() const
   {
@@ -3487,6 +3509,10 @@ private:
   int nodeBoundPropMinDepth_;
   /// Depth interval for node bound propagation (apply at depth 0, interval, 2*interval, ...)
   int nodeBoundPropDepthInterval_;
+  /// Dive simplex iteration limit in the tree (-1 is auto)
+  int diveMaxIterTree_;
+  /// Dive simplex iteration limit at the root (-1 is auto)
+  int diveMaxIterRoot_;
   /*! Pointer to the event handler */
 #ifdef CBC_ONLY_CLP
   ClpEventHandler *eventHandler_;

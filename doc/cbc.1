@@ -525,6 +525,16 @@ Print feasibility pump progress every N passes (0 = disabled).
 .br
 Range: 0 to 1000000 (default: 0)
 .TP
+.BI \-diveMaxIterTree
+Simplex iteration limit for a dive in the tree
+.br
+Range: 0 to INT_MAX (default: auto)
+.TP
+.BI \-diveMaxIterRoot
+Simplex iteration limit for a dive at the root
+.br
+Range: 0 to INT_MAX (default: auto)
+.TP
 .BI \-artificialCost
 Costs >= this treated as artificials in feasibility pump
 .br

@@ -961,6 +961,24 @@ Print feasibility pump progress every N passes (0 = disabled).
 
 \textbf{Range:} 0 to 1000000 (default: 0)
 
+\subsubsection*{\texttt{-diveMaxIterTree} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-diveMaxIterTree} \ptag{blue!60!black}{INT}}
+
+Simplex iteration limit for a dive in the tree
+
+Each diving heuristic stops a dive in the tree after this many simplex iterations. The default, auto, uses max(10000, 2*rows+columns) of the preprocessed problem. Not applied with rootHeurSchedule. The value used is logged.
+
+\textbf{Range:} 0 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-diveMaxIterRoot} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-diveMaxIterRoot} \ptag{blue!60!black}{INT}}
+
+Simplex iteration limit for a dive at the root
+
+Each diving heuristic stops a dive at the root after this many simplex iterations. The default, auto, uses max(40000, 8*rows+4*columns) of the preprocessed problem. Not applied with rootHeurSchedule. The value used is logged.
+
+\textbf{Range:} 0 to INT\_MAX (default: auto)
+
 \subsubsection*{\texttt{-artificialCost} \ptag{violet!65!black}{DBL}}
 \addcontentsline{toc}{subsubsection}{\texttt{-artificialCost} \ptag{violet!65!black}{DBL}}
 

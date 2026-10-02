@@ -8749,6 +8749,11 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
           babModel_->setFastNodeDepth(depthMiniBab);
       }
     }
+    // auto is -1, resolved from the problem size in adjustHeuristics().
+    babModel_->setDiveMaxIterTree(parameters[CbcParam::DIVEMAXITERTREE]->isAuto()
+        ? -1 : parameters[CbcParam::DIVEMAXITERTREE]->intVal());
+    babModel_->setDiveMaxIterRoot(parameters[CbcParam::DIVEMAXITERROOT]->isAuto()
+        ? -1 : parameters[CbcParam::DIVEMAXITERROOT]->intVal());
     babModel_->setNodeBoundProp(
       parameters[CbcParam::NODEBOUNDPROP]->modeVal());
     babModel_->setNodeBoundPropMaxDepth(

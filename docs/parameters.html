@@ -271,7 +271,7 @@
 <a href="#mip-preprocessing-bound-propagation" class="sb-link">MIP Preprocessing — Bound Propagation<span class="sb-count">9</span></a>
 <a href="#lp-presolve" class="sb-link">LP Presolve<span class="sb-count">3</span></a>
 <a href="#cuts" class="sb-link">Cuts<span class="sb-count">28</span></a>
-<a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">35</span></a>
+<a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">37</span></a>
 <a href="#branching" class="sb-link">Branching<span class="sb-count">6</span></a>
 <a href="#tolerances" class="sb-link">Tolerances<span class="sb-count">6</span></a>
 <a href="#conflict-graph" class="sb-link">Conflict Graph<span class="sb-count">5</span></a>
@@ -842,6 +842,16 @@
 <details class="param" data-search="fpumppassfreq print feasibility pump progress every n passes (0 = disabled).">
   <summary><span class="pname"><code>-fpumpPassFreq</code></span><span class="badge badge-int">Integer</span><span class="pshort">Print feasibility pump progress every N passes (0 = disabled).</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
   <div class="pbody"><div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1000000&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
+</details>
+<details class="param" data-search="divemaxitertree simplex iteration limit for a dive in the tree">
+  <summary><span class="pname"><code>-diveMaxIterTree</code></span><span class="badge badge-int">Integer</span><span class="pshort">Simplex iteration limit for a dive in the tree</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Each diving heuristic stops a dive in the tree after this many simplex iterations. The default, auto, uses max(10000, 2*rows+columns) of the preprocessed problem. Not applied with rootHeurSchedule. The value used is logged.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="divemaxiterroot simplex iteration limit for a dive at the root">
+  <summary><span class="pname"><code>-diveMaxIterRoot</code></span><span class="badge badge-int">Integer</span><span class="pshort">Simplex iteration limit for a dive at the root</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Each diving heuristic stops a dive at the root after this many simplex iterations. The default, auto, uses max(40000, 8*rows+4*columns) of the preprocessed problem. Not applied with rootHeurSchedule. The value used is logged.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
 </details>
 <details class="param" data-search="artificialcost costs &gt;= this treated as artificials in feasibility pump">
   <summary><span class="pname"><code>-artificialCost</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Costs &gt;= this treated as artificials in feasibility pump</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>

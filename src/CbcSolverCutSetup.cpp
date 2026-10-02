@@ -41,12 +41,6 @@
 #include <sstream>
 
 namespace {
-int envInt(const char *name, int def)
-{
-  const char *v = getenv(name);
-  return v ? atoi(v) : def;
-}
-
 // -cutSwitchOff key for each name a generator is registered under below.
 // The key is the option that enables it, minus "Cuts", in lower case.
 struct SwitchOffKey {
@@ -117,11 +111,6 @@ bool parseSwitchOffValue(const std::string &text, int &value)
     return false;
   value = static_cast< int >(number);
   return true;
-}
-double envDouble(const char *name, double def)
-{
-  const char *v = getenv(name);
-  return v ? atof(v) : def;
 }
 } // namespace
 
@@ -230,15 +219,9 @@ void installCutGenerators(
   // wants a generator regardless of size can still force it on explicitly
   // (e.g. -redsplit2Cuts=on/ifmove).
   const int numberColumnsForGate = babModel.getNumCols();
-  // Window bounds are env-var overridable (no rebuild) purely to speed up
-  // experimentation/tuning sweeps; the defaults below (500/50000) are the
-  // ones actually shipped.
-  int gateMinCols = 500;
-  int gateMaxCols = 50000;
-  if (const char *s = getenv("CBC_CUT_ROOT_GATE_MIN_COLS"))
-    gateMinCols = atoi(s);
-  if (const char *s = getenv("CBC_CUT_ROOT_GATE_MAX_COLS"))
-    gateMaxCols = atoi(s);
+  // Window bounds: -cutGateMinCols / -cutGateMaxCols (500 / 50000).
+  const int gateMinCols = parameters[CbcParam::CUTGATEMINCOLS]->intVal();
+  const int gateMaxCols = parameters[CbcParam::CUTGATEMAXCOLS]->intVal();
   // Row-count companion to the column gate above. Found 2026-09 while
   // investigating an OOM crash: CglRedSplit2::generateCuts() allocates a
   // "bufflambda" work array sized maxNumComputedCuts*nrow ints whenever
@@ -255,9 +238,11 @@ void installCutGenerators(
   // per-cut work arrays are only O(nrow) (no maxNumComputedCuts-like
   // multiplier), so they don't share this specific failure mode and are
   // deliberately not gated on rows here -- only RedSplit2 needs it.
-  int gateMaxRowsRedsplit2 = 200000;
-  if (const char *s = getenv("CBC_CUT_ROOT_GATE_MAX_ROWS_REDSPLIT2"))
-    gateMaxRowsRedsplit2 = atoi(s);
+  //
+  // Unlike the column window, this gate applies to every RedSplit2 mode,
+  // including an explicit -reduce2AndSplitCuts on/ifmove (-reduce2MaxRows,
+  // default 200000).
+  const int gateMaxRowsRedsplit2 = parameters[CbcParam::REDSPLIT2MAXROWS]->intVal();
   auto gateRootDefault = [numberColumnsForGate, gateMinCols, gateMaxCols](int mode) {
     if (mode == CbcParameters::CGRoot
       && (numberColumnsForGate < gateMinCols || numberColumnsForGate >= gateMaxCols))
@@ -273,10 +258,9 @@ void installCutGenerators(
   // Per-round/per-lifetime cost caps for RedSplit2/GMI/LandP -- see the
   // comments at each generator's setup below for the exact semantics
   // (RedSplit2's timeLimit is per-call, LandP's is a cumulative
-  // whole-solve budget). Env-var overridable, no rebuild, purely to let a
-  // sweep A/B these against their un-throttled CglXxxParam defaults
-  // without needing two binaries -- same pattern as
-  // CBC_CUT_ROOT_GATE_MIN_COLS/MAX_COLS above and CBC_CUTPOOL_FILTER_*.
+  // whole-solve budget). Each is a parameter (-reduce2TimeLimit,
+  // -reduce2MaxCuts, -reduce2MaxComputed, -reduce2MaxBuffer, -GMIHowOften,
+  // -liftTimeLimit, -liftCutTimeLimit, -liftMaxCutsPerRound).
   // Defaults match the "old-unthrottled" config from the cutgen-throttle-sweep
   // experiment (348 root-fixture instances, 128 nodes, 2h cap): it edged out
   // the tighter-throttle variants on both dual gap (30.66% vs 30.76%/31.20%)
@@ -285,24 +269,22 @@ void installCutGenerators(
   // RedSplit2 memory-safety fixes (row-gate, dynamic buffer cap on
   // maxNumComputedCuts*nrow, and the mTab*card_contNonBasicVar tableau-size
   // guard in CglRedSplit2.cpp) remain in effect regardless of these values.
-  const double redsplit2TimeLimit = envDouble("CBC_REDSPLIT2_TIME_LIMIT", 60.0);
-  const int redsplit2MaxNumCuts = envInt("CBC_REDSPLIT2_MAX_NUM_CUTS", 10000);
-  const int redsplit2MaxNumComputedCuts = envInt("CBC_REDSPLIT2_MAX_NUM_COMPUTED_CUTS", 10000);
-  // Defense-in-depth for the bufflambda blowup described above: even if a
-  // user forces RedSplit2 on explicitly (-redsplit2Cuts=on/ifmove, which
-  // bypasses gateRootDefaultRedsplit2 -- that gate only narrows the
-  // "root" default) or the row count sits just under
-  // gateMaxRowsRedsplit2, cap maxNumComputedCuts so the
+  const double redsplit2TimeLimit = parameters[CbcParam::REDSPLIT2TIMELIMIT]->dblVal();
+  const int redsplit2MaxNumCuts = parameters[CbcParam::REDSPLIT2MAXCUTS]->intVal();
+  const int redsplit2MaxNumComputedCuts = parameters[CbcParam::REDSPLIT2MAXCOMPUTED]->intVal();
+  // Defense-in-depth for the bufflambda blowup described above: when the
+  // row count sits just under gateMaxRowsRedsplit2, cap
+  // maxNumComputedCuts so the
   // maxNumComputedCuts*nrow allocation can never exceed a fixed memory
   // budget, shrinking gracefully as nrow grows instead of either being
   // unbounded or an all-or-nothing gate. 50,000,000 ints (~200MB) is
   // generous next to Gomory's near-instant footprint while making even a
   // million-plus-row instance's worst case a bounded, known quantity.
-  const long redsplit2MaxBufferInts = envInt("CBC_REDSPLIT2_MAX_BUFFER_INTS", 50000000);
-  const int gmiHowOften = envInt("CBC_GMI_HOW_OFTEN", 1);
-  const double landpTimeLimit = envDouble("CBC_LANDP_TIME_LIMIT", 1e30);
-  const double landpSingleCutTimeLimit = envDouble("CBC_LANDP_SINGLE_CUT_TIME_LIMIT", 1e30);
-  const int landpMaxCutPerRound = envInt("CBC_LANDP_MAX_CUT_PER_ROUND", 5000);
+  const long redsplit2MaxBufferInts = parameters[CbcParam::REDSPLIT2MAXBUFFER]->intVal();
+  const int gmiHowOften = parameters[CbcParam::GMIHOWOFTEN]->intVal();
+  const double landpTimeLimit = parameters[CbcParam::LANDPTIMELIMIT]->dblVal();
+  const double landpSingleCutTimeLimit = parameters[CbcParam::LANDPCUTTIMELIMIT]->dblVal();
+  const int landpMaxCutPerRound = parameters[CbcParam::LANDPMAXCUTSPERROUND]->intVal();
 
   // --- Probing ---
   int probingMode = parameters[CbcParam::PROBINGCUTS]->modeVal();
@@ -505,12 +487,9 @@ void installCutGenerators(
     // maxNumCuts<maxNumComputedCuts (see CglRedSplit2.cpp), where nrow is
     // this model's actual row count -- unrelated to maxNumComputedCuts
     // itself. gateRootDefaultRedsplit2 above already turns this generator
-    // off outright for its "root" default once rows get extreme, but that
-    // only applies to the default mode; also shrink maxNumComputedCuts/
-    // maxNumCuts here so the product with this model's real row count
-    // never exceeds redsplit2MaxBufferInts, regardless of how the
-    // generator was enabled (including -redsplit2Cuts=on/ifmove, or
-    // "root" instances just under the row gate's threshold).
+    // off outright, in every mode, once rows reach -reduce2MaxRows; below
+    // that, shrink maxNumComputedCuts/maxNumCuts here so the product with
+    // this model's real row count never exceeds redsplit2MaxBufferInts.
     const int numberRows = babModel.getNumRows();
     int cappedMaxNumComputedCuts = redsplit2MaxNumComputedCuts;
     if (numberRows > 0) {
@@ -720,10 +699,9 @@ void installCutGenerators(
     // total; once it goes negative, pivotLimit is forced to 0 and the
     // generator effectively self-disables for the rest of the solve --
     // see CglLandP.cpp ~L1047/1221/904). So this value should be sized as
-    // a total time budget for the whole B&B, not a per-call one; 30s is
-    // generous next to Gomory's near-instant per-round cost while still
-    // capping the worst case where LandP's pivot search fails to converge
-    // repeatedly. singleCutTimeLimit additionally caps any single cut
+    // a total time budget for the whole B&B, not a per-call one. The
+    // shipped default (-liftTimeLimit) is 1e30, i.e. unbounded: a 30s budget
+    // was tried and reverted on 2026-09-24 (see above). singleCutTimeLimit additionally caps any single cut
     // attempt's own pivot search (used via
     // std::min(timeLimit, singleCutTimeLimit) in CglLandPSimplex.cpp), so
     // one degenerate candidate can't consume the whole remaining budget.

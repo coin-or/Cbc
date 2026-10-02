@@ -1,12 +1,13 @@
 # cutgen-throttle-sweep configs: name<TAB>comma-separated overrides ("-" = none)
 # Each override is KEY=VAL (env var, exported before mip-root-replay runs)
-# or CLI:<arg> (extra mip-root-replay CLI argument).
+# or CLI:<arg> (extra mip-root-replay CLI argument; CLI:--param=NAME=VALUE
+# sets any CbcParameters entry).
 #
 # baseline: current shipped defaults -- GMI/LandP/RedSplit2 = root (per
 # CbcSolver.cpp), filter extended to all three (CbcCutGenerator.cpp).
 # As of 2026-09-24 the shipped per-round/per-lifetime cost-cap *values*
 # were reverted to match this sweep's own "old-unthrottled" config below
-# (CBC_REDSPLIT2_TIME_LIMIT=60, CBC_GMI_HOW_OFTEN=1, CBC_LANDP_TIME_LIMIT=1e30,
+# (reduce2TimeLimit=60, GMIHowOften=1, liftTimeLimit=1e30,
 # etc -- see CbcSolverCutSetup.cpp) after this sweep showed old-unthrottled
 # beating the originally-shipped tighter caps on both dual gap (30.66% vs
 # 30.76%) and primal gap (12.85% vs 13.11%) at 128 nodes/2h, with no
@@ -28,8 +29,8 @@ no-new-cuts	CLI:--gmi=off,CLI:--landp=off,CLI:--redsplit2=off
 # in the sweep so future re-runs still have an explicit, self-documenting
 # override set that doesn't silently drift if the shipped defaults change
 # again.
-old-unthrottled	CBC_REDSPLIT2_TIME_LIMIT=60,CBC_REDSPLIT2_MAX_NUM_CUTS=10000,CBC_REDSPLIT2_MAX_NUM_COMPUTED_CUTS=10000,CBC_GMI_HOW_OFTEN=1,CBC_LANDP_TIME_LIMIT=1e30,CBC_LANDP_SINGLE_CUT_TIME_LIMIT=1e30,CBC_LANDP_MAX_CUT_PER_ROUND=5000
+old-unthrottled	CLI:--param=reduce2TimeLimit=60,CLI:--param=reduce2MaxCuts=10000,CLI:--param=reduce2MaxComputed=10000,CLI:--param=GMIHowOften=1,CLI:--param=liftTimeLimit=1e30,CLI:--param=liftCutTimeLimit=1e30,CLI:--param=liftMaxCutsPerRound=5000
 # Tighter throttles than the shipped defaults, to see if squeezing further
 # still helps (or starts costing too much bound value). This sweep found
 # it does not -- worst primal gap (13.58%) of all seven configs.
-tighter-throttles	CBC_REDSPLIT2_TIME_LIMIT=2,CBC_REDSPLIT2_MAX_NUM_CUTS=300,CBC_REDSPLIT2_MAX_NUM_COMPUTED_CUTS=600,CBC_GMI_HOW_OFTEN=10,CBC_LANDP_TIME_LIMIT=10,CBC_LANDP_SINGLE_CUT_TIME_LIMIT=1,CBC_LANDP_MAX_CUT_PER_ROUND=300
+tighter-throttles	CLI:--param=reduce2TimeLimit=2,CLI:--param=reduce2MaxCuts=300,CLI:--param=reduce2MaxComputed=600,CLI:--param=GMIHowOften=10,CLI:--param=liftTimeLimit=10,CLI:--param=liftCutTimeLimit=1,CLI:--param=liftMaxCutsPerRound=300

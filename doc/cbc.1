@@ -354,6 +354,61 @@ Active\-node threshold for sparse ZeroHalf separation graph
 .br
 Range: -1 to INT_MAX (default: 8000)
 .TP
+.BI \-cutGateMinCols
+Fewest columns for which GMI, lift\-and\-project and reduce2 run by default
+.br
+Range: 0 to INT_MAX (default: 500)
+.TP
+.BI \-cutGateMaxCols
+Column count from which GMI, lift\-and\-project and reduce2 are off by default
+.br
+Range: 0 to INT_MAX (default: 50000)
+.TP
+.BI \-reduce2MaxRows
+Row count from which reduce2 cuts are not used
+.br
+Range: 0 to INT_MAX (default: 200000)
+.TP
+.BI \-reduce2MaxCuts
+Most reduce2 cuts kept per round
+.br
+Range: 1 to INT_MAX (default: 10000)
+.TP
+.BI \-reduce2MaxComputed
+Most reduce2 cuts computed per round
+.br
+Range: 1 to INT_MAX (default: 10000)
+.TP
+.BI \-reduce2MaxBuffer
+Memory cap for reduce2, in integers (computed cuts times rows)
+.br
+Range: 1 to INT_MAX (default: 50000000)
+.TP
+.BI \-GMIHowOften
+How often GMI cuts are tried in the tree
+.br
+Range: -100 to INT_MAX (default: 1)
+.TP
+.BI \-liftMaxCutsPerRound
+Most lift\-and\-project cuts per round
+.br
+Range: 1 to INT_MAX (default: 5000)
+.TP
+.BI \-reduce2TimeLimit
+Time limit for one reduce2 call, in seconds
+.br
+Range: 0 to inf (default: 60)
+.TP
+.BI \-liftTimeLimit
+Total time budget for lift\-and\-project cuts, in seconds
+.br
+Range: 0 to inf (default: 1e+30)
+.TP
+.BI \-liftCutTimeLimit
+Time limit for one lift\-and\-project cut, in seconds
+.br
+Range: 0 to inf (default: 1e+30)
+.TP
 .BI \-passCuts
 Number of cut passes at root node
 .br

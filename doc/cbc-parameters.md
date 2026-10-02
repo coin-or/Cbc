@@ -15,7 +15,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [MIP Preprocessing](#mip-preprocessing) (12 parameters)
 - [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (9 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
-- [Cuts](#cuts) (28 parameters)
+- [Cuts](#cuts) (39 parameters)
 - [Heuristics](#heuristics) (37 parameters)
 - [Branching](#branching) (8 parameters)
 - [Tolerances](#tolerances) (6 parameters)
@@ -550,6 +550,94 @@ Active-node threshold for sparse ZeroHalf separation graph
 If positive, ZeroHalf will use the sparse separation-graph implementation when the number of active separator nodes exceeds this threshold. A value of 0 forces sparse mode for testing. Negative values disable threshold-based switching, but sparse mode is still used automatically when the dense graph would be unsafe.
 
 **Range:** -1 to INT_MAX (default: 8000)
+
+### `-cutGateMinCols`
+
+Fewest columns for which GMI, lift-and-project and reduce2 run by default
+
+GMICuts, liftAndProjectCuts and reduce2AndSplitCuts default to root. That default is turned off when the preprocessed problem has fewer than this many columns, or at least cutGateMaxCols columns. Setting one of those generators explicitly (for example on or ifmove) is not affected.
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-cutGateMaxCols`
+
+Column count from which GMI, lift-and-project and reduce2 are off by default
+
+See cutGateMinCols: the root default of GMICuts, liftAndProjectCuts and reduce2AndSplitCuts is turned off when the preprocessed problem has at least this many columns.
+
+**Range:** 0 to INT_MAX (default: 50000)
+
+### `-reduce2MaxRows`
+
+Row count from which reduce2 cuts are not used
+
+reduce2AndSplitCuts is turned off, whatever its setting, when the preprocessed problem has at least this many rows. Its work array grows with the number of rows; see also reduce2MaxBuffer.
+
+**Range:** 0 to INT_MAX (default: 200000)
+
+### `-reduce2MaxCuts`
+
+Most reduce2 cuts kept per round
+
+The number of cuts reduce2AndSplitCuts may return from one call. Never more than the number computed (reduce2MaxComputed, after the reduce2MaxBuffer cap).
+
+**Range:** 1 to INT_MAX (default: 10000)
+
+### `-reduce2MaxComputed`
+
+Most reduce2 cuts computed per round
+
+The number of candidate cuts reduce2AndSplitCuts computes in one call, before choosing which to keep. Lowered further when needed so that this times the number of rows stays within reduce2MaxBuffer.
+
+**Range:** 1 to INT_MAX (default: 10000)
+
+### `-reduce2MaxBuffer`
+
+Memory cap for reduce2, in integers (computed cuts times rows)
+
+reduce2AndSplitCuts allocates a work array of (cuts computed) times (rows) integers. The number computed is lowered so that this product stays within this value, whatever the generator's setting. The default is about 200 MB.
+
+**Range:** 1 to INT_MAX (default: 50000000)
+
+### `-GMIHowOften`
+
+How often GMI cuts are tried in the tree
+
+The node interval given to GMICuts unless it is set to on or global. k > 0 tries every k-th node; a negative k starts at every |k|-th node and lets Cbc adjust it; -99 is root only and -100 is off. The number of tries is also limited by slowcutpasses.
+
+**Range:** -100 to INT_MAX (default: 1)
+
+### `-liftMaxCutsPerRound`
+
+Most lift-and-project cuts per round
+
+The number of cuts liftAndProjectCuts may generate in one call.
+
+**Range:** 1 to INT_MAX (default: 5000)
+
+### `-reduce2TimeLimit`
+
+Time limit for one reduce2 call, in seconds
+
+Each call of reduce2AndSplitCuts stops after this much CPU time. The limit restarts on every call.
+
+**Range:** 0 to inf (default: 60)
+
+### `-liftTimeLimit`
+
+Total time budget for lift-and-project cuts, in seconds
+
+A cumulative CPU-time budget for liftAndProjectCuts over the whole solve, not per call. Once it is spent the generator stops pivoting for the rest of the solve. The default, 1e30, is unlimited.
+
+**Range:** 0 to inf (default: 1e+30)
+
+### `-liftCutTimeLimit`
+
+Time limit for one lift-and-project cut, in seconds
+
+Caps the pivot search for a single liftAndProjectCuts cut, so that one candidate cannot use the whole of liftTimeLimit. The default, 1e30, is unlimited.
+
+**Range:** 0 to inf (default: 1e+30)
 
 ### `-passCuts`
 

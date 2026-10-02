@@ -731,6 +731,13 @@ void CbcParameters::addCbcParams() {
                     CbcParam::ZEROHALFSPARSETHRESH})
     parameters_[code]->setTopic("Cuts");
   parameters_[CbcParam::TWOMIRLENGTH]->setTopic("Cuts");
+  for (int code : {CbcParam::CUTGATEMINCOLS, CbcParam::CUTGATEMAXCOLS,
+                    CbcParam::REDSPLIT2MAXROWS, CbcParam::REDSPLIT2MAXCUTS,
+                    CbcParam::REDSPLIT2MAXCOMPUTED, CbcParam::REDSPLIT2MAXBUFFER,
+                    CbcParam::REDSPLIT2TIMELIMIT, CbcParam::GMIHOWOFTEN,
+                    CbcParam::LANDPTIMELIMIT, CbcParam::LANDPCUTTIMELIMIT,
+                    CbcParam::LANDPMAXCUTSPERROUND})
+    parameters_[code]->setTopic("Cuts");
 
   // Bool params
   parameters_[CbcParam::SOS]->setTopic("MIP Preprocessing");
@@ -926,6 +933,17 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::VERBOSE]->setDefault(verbose_);
      parameters_[CbcParam::VUBTRY]->setDefault(-1);
      parameters_[CbcParam::TWOMIRLENGTH]->setDefault(500);
+     parameters_[CbcParam::CUTGATEMINCOLS]->setDefault(500);
+     parameters_[CbcParam::CUTGATEMAXCOLS]->setDefault(50000);
+     parameters_[CbcParam::REDSPLIT2MAXROWS]->setDefault(200000);
+     parameters_[CbcParam::REDSPLIT2MAXCUTS]->setDefault(10000);
+     parameters_[CbcParam::REDSPLIT2MAXCOMPUTED]->setDefault(10000);
+     parameters_[CbcParam::REDSPLIT2MAXBUFFER]->setDefault(50000000);
+     parameters_[CbcParam::REDSPLIT2TIMELIMIT]->setDefault(60.0);
+     parameters_[CbcParam::GMIHOWOFTEN]->setDefault(1);
+     parameters_[CbcParam::LANDPTIMELIMIT]->setDefault(1.0e30);
+     parameters_[CbcParam::LANDPCUTTIMELIMIT]->setDefault(1.0e30);
+     parameters_[CbcParam::LANDPMAXCUTSPERROUND]->setDefault(5000);
      parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setDefault(-1);
      parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
@@ -2943,6 +2961,100 @@ void CbcParameters::addCbcSolverIntParams() {
       "those are normally tighter (250), so in practice this caps root cuts. "
       "On the first root pass the limit is also bounded by the number of "
       "columns. The default, 500, is the value CglTwomir has always used.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CUTGATEMINCOLS]->setup(
+      "cutGateMi!nCols",
+      "Fewest columns for which GMI, lift-and-project and reduce2 run by default",
+      0, COIN_INT_MAX,
+      "GMICuts, liftAndProjectCuts and reduce2AndSplitCuts default to root. "
+      "That default is turned off when the preprocessed problem has fewer "
+      "than this many columns, or at least cutGateMaxCols columns. Setting "
+      "one of those generators explicitly (for example on or ifmove) is not "
+      "affected.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CUTGATEMAXCOLS]->setup(
+      "cutGateMa!xCols",
+      "Column count from which GMI, lift-and-project and reduce2 are off by default",
+      0, COIN_INT_MAX,
+      "See cutGateMinCols: the root default of GMICuts, liftAndProjectCuts "
+      "and reduce2AndSplitCuts is turned off when the preprocessed problem "
+      "has at least this many columns.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::REDSPLIT2MAXROWS]->setup(
+      "reduce2MaxR!ows", "Row count from which reduce2 cuts are not used",
+      0, COIN_INT_MAX,
+      "reduce2AndSplitCuts is turned off, whatever its setting, when the "
+      "preprocessed problem has at least this many rows. Its work array grows "
+      "with the number of rows; see also reduce2MaxBuffer.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::REDSPLIT2MAXCUTS]->setup(
+      "reduce2MaxCu!ts", "Most reduce2 cuts kept per round", 1,
+      COIN_INT_MAX,
+      "The number of cuts reduce2AndSplitCuts may return from one call. Never "
+      "more than the number computed (reduce2MaxComputed, after the "
+      "reduce2MaxBuffer cap).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::REDSPLIT2MAXCOMPUTED]->setup(
+      "reduce2MaxCo!mputed", "Most reduce2 cuts computed per round", 1,
+      COIN_INT_MAX,
+      "The number of candidate cuts reduce2AndSplitCuts computes in one call, "
+      "before choosing which to keep. Lowered further when needed so that "
+      "this times the number of rows stays within reduce2MaxBuffer.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::REDSPLIT2MAXBUFFER]->setup(
+      "reduce2MaxB!uffer",
+      "Memory cap for reduce2, in integers (computed cuts times rows)", 1,
+      COIN_INT_MAX,
+      "reduce2AndSplitCuts allocates a work array of (cuts computed) times "
+      "(rows) integers. The number computed is lowered so that this product "
+      "stays within this value, whatever the generator's setting. The default "
+      "is about 200 MB.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::REDSPLIT2TIMELIMIT]->setup(
+      "reduce2T!imeLimit", "Time limit for one reduce2 call, in seconds", 0.0,
+      COIN_DBL_MAX,
+      "Each call of reduce2AndSplitCuts stops after this much CPU time. The "
+      "limit restarts on every call.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::GMIHOWOFTEN]->setup(
+      "GMIH!owOften", "How often GMI cuts are tried in the tree", -100,
+      COIN_INT_MAX,
+      "The node interval given to GMICuts unless it is set to on or global. "
+      "k > 0 tries every k-th node; a negative k starts at every |k|-th node "
+      "and lets Cbc adjust it; -99 is root only and -100 is off. The number "
+      "of tries is also limited by slowcutpasses.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::LANDPTIMELIMIT]->setup(
+      "liftT!imeLimit",
+      "Total time budget for lift-and-project cuts, in seconds", 0.0,
+      COIN_DBL_MAX,
+      "A cumulative CPU-time budget for liftAndProjectCuts over the whole "
+      "solve, not per call. Once it is spent the generator stops pivoting "
+      "for the rest of the solve. The default, 1e30, is unlimited.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::LANDPCUTTIMELIMIT]->setup(
+      "liftC!utTimeLimit",
+      "Time limit for one lift-and-project cut, in seconds", 0.0,
+      COIN_DBL_MAX,
+      "Caps the pivot search for a single liftAndProjectCuts cut, so that one "
+      "candidate cannot use the whole of liftTimeLimit. The default, 1e30, is "
+      "unlimited.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::LANDPMAXCUTSPERROUND]->setup(
+      "liftM!axCutsPerRound", "Most lift-and-project cuts per round", 1,
+      COIN_INT_MAX,
+      "The number of cuts liftAndProjectCuts may generate in one call.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setup(

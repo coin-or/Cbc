@@ -2,9 +2,9 @@
 # cutgen-throttle-sweep — root-fixture replay (mip-root-replay: root LP +
 # basis already captured, no full preprocessing/root-LP re-solve cost per
 # run) sweep to benchmark the RedSplit2/GMI/LandP per-round/per-lifetime
-# cost throttles added in CbcSolverCutSetup.cpp (CBC_REDSPLIT2_TIME_LIMIT/
-# MAX_NUM_CUTS/MAX_NUM_COMPUTED_CUTS, CBC_GMI_HOW_OFTEN,
-# CBC_LANDP_TIME_LIMIT/SINGLE_CUT_TIME_LIMIT/MAX_CUT_PER_ROUND) and the
+# cost throttles in CbcSolverCutSetup.cpp (parameters reduce2TimeLimit/
+# reduce2MaxCuts/reduce2MaxComputed, GMIHowOften,
+# liftTimeLimit/liftCutTimeLimit/liftMaxCutsPerRound) and the
 # CoinCutPool filter extension to these three generators
 # (CbcCutGenerator.cpp's dynamic_cast list), against turning any of the
 # three off entirely.
@@ -23,8 +23,9 @@
 # configs.tsv format: one config per line, tab-separated
 #   <name>\t<comma-separated overrides, or - for none>
 # Each override token is either KEY=VAL (exported as an env var, e.g.
-# CBC_LANDP_TIME_LIMIT=1e30) or CLI:<arg> (appended as an extra
-# mip-root-replay argument, e.g. CLI:--landp=off).
+# CBC_CUTPOOL_FILTER_MIN_COLS=0) or CLI:<arg> (appended as an extra
+# mip-root-replay argument, e.g. CLI:--landp=off or
+# CLI:--param=liftTimeLimit=10 for any CbcParameters entry).
 #
 # Output layout under --out (default: sanity-results/cutgen-throttle-sweep):
 #   <name>.tsv     instance rows cols nodes optimal infeasible bound best gap bbTime
@@ -55,11 +56,7 @@ if [[ "${1:-}" == --worker=* ]]; then
   # Reset every throttle env var this sweep knows about so a stale export
   # from a previous worker invocation (same parallel pool, reused shell)
   # can never leak into this one.
-  unset CBC_REDSPLIT2_TIME_LIMIT CBC_REDSPLIT2_MAX_NUM_CUTS \
-    CBC_REDSPLIT2_MAX_NUM_COMPUTED_CUTS CBC_GMI_HOW_OFTEN \
-    CBC_LANDP_TIME_LIMIT CBC_LANDP_SINGLE_CUT_TIME_LIMIT \
-    CBC_LANDP_MAX_CUT_PER_ROUND CBC_CUT_ROOT_GATE_MIN_COLS \
-    CBC_CUT_ROOT_GATE_MAX_COLS CBC_CUTPOOL_FILTER_MIN_COLS \
+  unset CBC_CUTPOOL_FILTER_MIN_COLS \
     CBC_CUTPOOL_FILTER_MIN_CANDIDATES CBC_CUTPOOL_FILTER_ALWAYS \
     CBC_CUTPOOL_FILTER_MAX_PARALLELISM CBC_CUTPOOL_FILTER_MIN_ELEMENTS
   EXTRA_ARGS=()

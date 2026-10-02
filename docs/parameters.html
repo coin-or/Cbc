@@ -270,7 +270,7 @@
 <a href="#mip-preprocessing" class="sb-link">MIP Preprocessing<span class="sb-count">12</span></a>
 <a href="#mip-preprocessing-bound-propagation" class="sb-link">MIP Preprocessing — Bound Propagation<span class="sb-count">9</span></a>
 <a href="#lp-presolve" class="sb-link">LP Presolve<span class="sb-count">3</span></a>
-<a href="#cuts" class="sb-link">Cuts<span class="sb-count">28</span></a>
+<a href="#cuts" class="sb-link">Cuts<span class="sb-count">39</span></a>
 <a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">37</span></a>
 <a href="#branching" class="sb-link">Branching<span class="sb-count">8</span></a>
 <a href="#tolerances" class="sb-link">Tolerances<span class="sb-count">6</span></a>
@@ -640,6 +640,61 @@
   <summary><span class="pname"><code>-zeroHalfSparseThreshold</code></span><span class="badge badge-int">Integer</span><span class="pshort">Active-node threshold for sparse ZeroHalf separation graph</span><span class="pmeta">default:&nbsp;<code>8000</code></span></summary>
   <div class="pbody"><p class="plong">If positive, ZeroHalf will use the sparse separation-graph implementation when the number of active separator nodes exceeds this threshold. A value of 0 forces sparse mode for testing. Negative values disable threshold-based switching, but sparse mode is still used automatically when the dense graph would be unsafe.</p>
 <div class="pextra"><strong>Range:</strong> -1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;8000)</span></div></div>
+</details>
+<details class="param" data-search="cutgatemincols fewest columns for which gmi, lift-and-project and reduce2 run by default">
+  <summary><span class="pname"><code>-cutGateMinCols</code></span><span class="badge badge-int">Integer</span><span class="pshort">Fewest columns for which GMI, lift-and-project and reduce2 run by default</span><span class="pmeta">default:&nbsp;<code>500</code></span></summary>
+  <div class="pbody"><p class="plong">GMICuts, liftAndProjectCuts and reduce2AndSplitCuts default to root. That default is turned off when the preprocessed problem has fewer than this many columns, or at least cutGateMaxCols columns. Setting one of those generators explicitly (for example on or ifmove) is not affected.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;500)</span></div></div>
+</details>
+<details class="param" data-search="cutgatemaxcols column count from which gmi, lift-and-project and reduce2 are off by default">
+  <summary><span class="pname"><code>-cutGateMaxCols</code></span><span class="badge badge-int">Integer</span><span class="pshort">Column count from which GMI, lift-and-project and reduce2 are off by default</span><span class="pmeta">default:&nbsp;<code>50000</code></span></summary>
+  <div class="pbody"><p class="plong">See cutGateMinCols: the root default of GMICuts, liftAndProjectCuts and reduce2AndSplitCuts is turned off when the preprocessed problem has at least this many columns.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;50000)</span></div></div>
+</details>
+<details class="param" data-search="reduce2maxrows row count from which reduce2 cuts are not used">
+  <summary><span class="pname"><code>-reduce2MaxRows</code></span><span class="badge badge-int">Integer</span><span class="pshort">Row count from which reduce2 cuts are not used</span><span class="pmeta">default:&nbsp;<code>200000</code></span></summary>
+  <div class="pbody"><p class="plong">reduce2AndSplitCuts is turned off, whatever its setting, when the preprocessed problem has at least this many rows. Its work array grows with the number of rows; see also reduce2MaxBuffer.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;200000)</span></div></div>
+</details>
+<details class="param" data-search="reduce2maxcuts most reduce2 cuts kept per round">
+  <summary><span class="pname"><code>-reduce2MaxCuts</code></span><span class="badge badge-int">Integer</span><span class="pshort">Most reduce2 cuts kept per round</span><span class="pmeta">default:&nbsp;<code>10000</code></span></summary>
+  <div class="pbody"><p class="plong">The number of cuts reduce2AndSplitCuts may return from one call. Never more than the number computed (reduce2MaxComputed, after the reduce2MaxBuffer cap).</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;10000)</span></div></div>
+</details>
+<details class="param" data-search="reduce2maxcomputed most reduce2 cuts computed per round">
+  <summary><span class="pname"><code>-reduce2MaxComputed</code></span><span class="badge badge-int">Integer</span><span class="pshort">Most reduce2 cuts computed per round</span><span class="pmeta">default:&nbsp;<code>10000</code></span></summary>
+  <div class="pbody"><p class="plong">The number of candidate cuts reduce2AndSplitCuts computes in one call, before choosing which to keep. Lowered further when needed so that this times the number of rows stays within reduce2MaxBuffer.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;10000)</span></div></div>
+</details>
+<details class="param" data-search="reduce2maxbuffer memory cap for reduce2, in integers (computed cuts times rows)">
+  <summary><span class="pname"><code>-reduce2MaxBuffer</code></span><span class="badge badge-int">Integer</span><span class="pshort">Memory cap for reduce2, in integers (computed cuts times rows)</span><span class="pmeta">default:&nbsp;<code>50000000</code></span></summary>
+  <div class="pbody"><p class="plong">reduce2AndSplitCuts allocates a work array of (cuts computed) times (rows) integers. The number computed is lowered so that this product stays within this value, whatever the generator&#x27;s setting. The default is about 200 MB.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;50000000)</span></div></div>
+</details>
+<details class="param" data-search="gmihowoften how often gmi cuts are tried in the tree">
+  <summary><span class="pname"><code>-GMIHowOften</code></span><span class="badge badge-int">Integer</span><span class="pshort">How often GMI cuts are tried in the tree</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
+  <div class="pbody"><p class="plong">The node interval given to GMICuts unless it is set to on or global. k &gt; 0 tries every k-th node; a negative k starts at every |k|-th node and lets Cbc adjust it; -99 is root only and -100 is off. The number of tries is also limited by slowcutpasses.</p>
+<div class="pextra"><strong>Range:</strong> -100&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;1)</span></div></div>
+</details>
+<details class="param" data-search="liftmaxcutsperround most lift-and-project cuts per round">
+  <summary><span class="pname"><code>-liftMaxCutsPerRound</code></span><span class="badge badge-int">Integer</span><span class="pshort">Most lift-and-project cuts per round</span><span class="pmeta">default:&nbsp;<code>5000</code></span></summary>
+  <div class="pbody"><p class="plong">The number of cuts liftAndProjectCuts may generate in one call.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;5000)</span></div></div>
+</details>
+<details class="param" data-search="reduce2timelimit time limit for one reduce2 call, in seconds">
+  <summary><span class="pname"><code>-reduce2TimeLimit</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Time limit for one reduce2 call, in seconds</span><span class="pmeta">default:&nbsp;<code>60</code></span></summary>
+  <div class="pbody"><p class="plong">Each call of reduce2AndSplitCuts stops after this much CPU time. The limit restarts on every call.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;inf&ensp;<span class="pmeta">(default:&nbsp;60)</span></div></div>
+</details>
+<details class="param" data-search="lifttimelimit total time budget for lift-and-project cuts, in seconds">
+  <summary><span class="pname"><code>-liftTimeLimit</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Total time budget for lift-and-project cuts, in seconds</span><span class="pmeta">default:&nbsp;<code>1e+30</code></span></summary>
+  <div class="pbody"><p class="plong">A cumulative CPU-time budget for liftAndProjectCuts over the whole solve, not per call. Once it is spent the generator stops pivoting for the rest of the solve. The default, 1e30, is unlimited.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;inf&ensp;<span class="pmeta">(default:&nbsp;1e+30)</span></div></div>
+</details>
+<details class="param" data-search="liftcuttimelimit time limit for one lift-and-project cut, in seconds">
+  <summary><span class="pname"><code>-liftCutTimeLimit</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Time limit for one lift-and-project cut, in seconds</span><span class="pmeta">default:&nbsp;<code>1e+30</code></span></summary>
+  <div class="pbody"><p class="plong">Caps the pivot search for a single liftAndProjectCuts cut, so that one candidate cannot use the whole of liftTimeLimit. The default, 1e30, is unlimited.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;inf&ensp;<span class="pmeta">(default:&nbsp;1e+30)</span></div></div>
 </details>
 <details class="param" data-search="passcuts number of cut passes at root node">
   <summary><span class="pname"><code>-passCuts</code></span><span class="badge badge-int">Integer</span><span class="pshort">Number of cut passes at root node</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>

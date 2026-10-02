@@ -516,6 +516,9 @@ static void usage(const char *prog)
     "                       (setMaxIterations) for every enabled Dive variant\n"
     "                       (default: -1, i.e. unset/leave CbcParameters default,\n"
     "                       which is 100)\n"
+    "  --param=NAME=VALUE   set any CbcParameters entry by its cbc CLI name\n"
+    "                       (e.g. --param=cutGateMinCols=0); repeatable, applied\n"
+    "                       after every dedicated flag, so it wins over them\n"
     "\n"
     "Invalid-cut / debug-cuts reproduction:\n"
     "  If <stem>.debugsol exists (written by CbcRootFixtureDump.hpp when the\n"
@@ -576,6 +579,7 @@ int main(int argc, char **argv)
   int diveScheduleK = 1, diveOnlyNoSol = -1; // -1 = unset (leave each dive's own default)
   std::string divingC, divingF, divingG, divingL, divingP, divingV; // empty = leave CbcParameters default
   int diveOpt = -1, diveOptSolves = -1; // -1 = unset
+  std::vector<std::string> paramOverrides; // --param=NAME=VALUE, applied last
 
   for (int i = 1; i < argc; ++i) {
     const std::string a = argv[i];
@@ -659,6 +663,8 @@ int main(int argc, char **argv)
       diveOpt = atoi(a.c_str() + 10);
     else if (a.rfind("--diveoptsolves=", 0) == 0)
       diveOptSolves = atoi(a.c_str() + 16);
+    else if (a.rfind("--param=", 0) == 0)
+      paramOverrides.push_back(a.substr(8));
     else if (a.rfind("--log=", 0) == 0)
       logLevel = atoi(a.c_str() + 6);
     else if (a.rfind("--data-dir=", 0) == 0)
@@ -827,6 +833,45 @@ int main(int argc, char **argv)
   params[CbcParam::GMICUTS]->setVal(gmiMode);
   params[CbcParam::LANDPCUTS]->setVal(landpMode);
   params[CbcParam::REDSPLIT2CUTS]->setVal(redsplit2Mode);
+  // Generic escape hatch, applied after every dedicated flag above so it
+  // wins: any CbcParameters entry by its CLI name (same matching rules as
+  // the cbc command line).
+  for (size_t k = 0; k < paramOverrides.size(); ++k) {
+    const std::string &ov = paramOverrides[k];
+    const size_t eq = ov.find('=');
+    if (eq == std::string::npos || eq == 0) {
+      fprintf(stderr, "ERROR: --param needs NAME=VALUE, got \"%s\"\n", ov.c_str());
+      return 2;
+    }
+    const std::string pname = ov.substr(0, eq), pval = ov.substr(eq + 1);
+    // The counters must be passed: lookupParam() writes through them
+    // unconditionally despite their NULL defaults.
+    int matchCnt = 0, shortCnt = 0, queryCnt = 0;
+    const int idx = CoinParamUtils::lookupParam(pname, params.paramVec(),
+      &matchCnt, &shortCnt, &queryCnt);
+    if (idx < 0) {
+      fprintf(stderr, "ERROR: --param: no unique parameter matches \"%s\"\n", pname.c_str());
+      return 2;
+    }
+    CoinParam *param = params.paramVec()[idx];
+    std::string message;
+    int rc;
+    char *end = NULL;
+    if (param->type() == CoinParam::paramInt) {
+      const long v = strtol(pval.c_str(), &end, 10);
+      rc = (end == pval.c_str() || *end) ? 1 : param->setVal(static_cast< int >(v), &message);
+    } else if (param->type() == CoinParam::paramDbl) {
+      const double v = strtod(pval.c_str(), &end);
+      rc = (end == pval.c_str() || *end) ? 1 : param->setVal(v, &message);
+    } else {
+      rc = param->setVal(pval, &message);
+    }
+    if (rc) {
+      fprintf(stderr, "ERROR: --param: bad value \"%s\" for %s %s\n", pval.c_str(),
+        param->name().c_str(), message.c_str());
+      return 2;
+    }
+  }
 
   // Same recipe the normal `cbc` command line uses for its default cut
   // generators (see CbcSolver.cpp's babExecuteSearchAndPostprocess,

@@ -1,0 +1,53 @@
+# LP relaxation parameter settings — recommended portfolio, racing, and barrier methods
+# Format: tag|cbc_params
+#
+# Contains:
+#   1) Portfolio recommendation classes (-lpMethod recommend / CbcLpParamScorer):
+#      - dual_default: baseline dual simplex
+#      - dual_pertv58: dual simplex + column perturbation 58
+#      - dual_pertv72: dual simplex + column and row perturbation 72
+#      - dual_pesteep_pertv58: dual positive-edge steepest + perturbation 58
+#      - dual_pesteep_psi1_pertv61: dual positive-edge steepest + psi 1.0 + perturbation 61
+#      - dual_pesteep_psineg1_pertv61: dual positive-edge steepest + psi -1.0 + perturbation 61
+#      - dual_pesteep_scaling_off: dual positive-edge steepest + scaling off
+#      - primal_idiot10: primal simplex + 10 idiot-crash passes
+#      - primal_idiot30: primal simplex + 30 idiot-crash passes
+#      - primal_idiot50: primal simplex + 50 idiot-crash passes
+#      - primal_idiot60: primal simplex + 60 idiot-crash passes
+#      - primal_idiot500: primal simplex + 500 idiot-crash passes
+#      - primal_sprint: primal simplex + sprint crash
+#   2) Baseline primal simplex:
+#      - primal_default: baseline primal simplex
+#   3) Racing portfolio (-lpMethod racing / ClpRacingSolver):
+#      - dual_pertv72, primal_idiot50, primal_sprint (included in recommendation classes above)
+#   4) Barrier methods (-lpMethod barrier):
+#      - barrier_native: native Cholesky factorization
+#      - barrier_dense: dense Cholesky factorization
+#      - barrier_univ: UniversityOfFlorida (CHOLMOD + AMD + Woodbury dense-column update)
+
+# ── Baselines ──────────────────────────────────────────────────────────
+dual_default|-lpMethod dual
+primal_default|-lpMethod primal
+
+# ── Dual simplex portfolio variants (from CbcLpParamScorer) ───────────
+dual_pertv58|-pertValue 58 -lpMethod dual
+dual_pertv72|-pertValue 72 -lpMethod dual
+dual_pesteep_pertv58|-dualPivot pesteep -pertValue 58 -lpMethod dual
+dual_pesteep_psi1_pertv61|-dualPivot pesteep -psi 1.0 -pertValue 61 -lpMethod dual
+dual_pesteep_psineg1_pertv61|-dualPivot pesteep -psi -1.0 -pertValue 61 -lpMethod dual
+dual_pesteep_scaling_off|-dualPivot pesteep -scaling off -lpMethod dual
+
+# ── Primal simplex + idiot crash variants (from CbcLpParamScorer) ─────
+primal_idiot10|-idiot 10 -lpMethod primal
+primal_idiot30|-idiot 30 -lpMethod primal
+primal_idiot50|-idiot 50 -lpMethod primal
+primal_idiot60|-idiot 60 -lpMethod primal
+primal_idiot500|-idiot 500 -lpMethod primal
+
+# ── Primal + sprint (from CbcLpParamScorer) ───────────────────────────
+primal_sprint|-sprint -1 -lpMethod primal
+
+# ── Barrier methods (with OpenBLAS, LAPACK, SuiteSparse AMD/CHOLMOD) ──
+barrier_native|-cholesky native -lpMethod barrier
+barrier_dense|-cholesky dense -lpMethod barrier
+barrier_univ|-cholesky Uni -lpMethod barrier

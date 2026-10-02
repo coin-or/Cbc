@@ -1483,11 +1483,16 @@ void CbcParameters::addCbcSolverActionParams() {
   parameters_[CbcParam::CHECKSOLUTION]->setup(
       "checkSol!ution",
       "Check LP/MIP solution feasibility and write validation report",
-      "Recomputes constraint and bound violations from scratch and writes "
+      "Recomputes, on the unscaled model and without modifying the solver, "
+      "row activities, row/column bound violations and (for continuous "
+      "solutions) reduced-cost sign/complementarity violations, and writes "
       "a machine-readable report to the specified file (default "
-      "'sol_validation.txt'). Reports feasibility status, largest primal "
-      "and dual errors, and identifies the constraint/variable with the "
-      "largest violation.",
+      "'sol_validation.txt'). Violations are judged relative to the "
+      "magnitude of the bounds/terms they are computed from, so rounding "
+      "noise on badly scaled models is not reported. Reports lp_feasible, "
+      "lp_optimal (continuous only), largest (relative and absolute)/sum/"
+      "count of primal and dual violations, the recomputed objective vs the "
+      "solver's, and the constraints/variables with the largest violations.",
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::DUMPPARAMS]->setup(

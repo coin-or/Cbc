@@ -17,7 +17,9 @@ Error categories:
   CRASH_SIGABRT      Solver received SIGABRT — log contains "Signal SIGABRT caught".
   CRASH_OTHER        Non-zero exit code with no check_result and no recognised signal.
   WRONG_RESULT       STATUS=OPTIMAL but objective value exceeds the best known LP
-                     relaxation value by more than --wrong-tol (relative).
+                     relaxation value by more than --wrong-tol (relative), or
+                     -checkSolution found the solution infeasible / not optimal
+                     (check_result not "yes" or containing "optimal=no").
 
 Usage:
     python3 analyze_lp_params.py --dir <experiment_dir> [OPTIONS]
@@ -168,7 +170,8 @@ def main():
     #   CRASH_SIGSEGV      — "Signal SIGSEGV caught" in log
     #   CRASH_SIGABRT      — "Signal SIGABRT caught" in log
     #   CRASH_OTHER        — non-zero exit, no check_result, no recognised signal
-    #   WRONG_RESULT       — STATUS=OPTIMAL but obj > best-known by > wrong_tol
+    #   WRONG_RESULT       — STATUS=OPTIMAL but obj > best-known by > wrong_tol, or
+    #                        -checkSolution found it infeasible / not optimal
 
     print("Classifying errors (reading log files for crash cases)...",
           file=sys.stderr, flush=True)
@@ -179,7 +182,7 @@ def main():
         if row["status"] != "OPTIMAL":
             continue
         chk = row.get("check_result", "")
-        if not chk.startswith("yes"):
+        if not chk.startswith("yes") or "optimal=no" in chk:
             continue
         try:
             obj = float(row["obj_from_check"])
@@ -205,6 +208,10 @@ def main():
             exit_code = 0
 
         if status == "OPTIMAL":
+            # -checkSolution found the claimed optimum primal or dual infeasible
+            if chk and chk != "NA" and (not chk.startswith("yes") or "optimal=no" in chk):
+                error_class[key] = "WRONG_RESULT(check_failed)"
+                continue
             # Check for wrong result
             try:
                 obj = float(row["obj_from_check"])
@@ -656,7 +663,8 @@ def main():
     rpt.raw("    CRASH_SIGABRT     — solver received SIGABRT (assertion failure / abort)")
     rpt.raw("    CRASH_OTHER       — non-zero exit, no recognised signal")
     rpt.raw("    WRONG_RESULT      — OPTIMAL reported but obj > best-known by "
-            f">{args.wrong_tol:.0e} rel")
+            f">{args.wrong_tol:.0e} rel, or -checkSolution")
+    rpt.raw("                        found it infeasible/not optimal (check_failed)")
     rpt.raw("    TIMEOUT(_KILLED)  — hit time limit")
     rpt.raw("")
     rpt.table(["Category", "Count", "%Total"],
@@ -715,7 +723,8 @@ def main():
         rpt.raw("  (none)")
 
     # ── WRONG RESULTS ─────────────────────────────────────────────────────────
-    rpt.h2(f"Wrong results — OPTIMAL reported but obj > best-known by >{args.wrong_tol:.0e}")
+    rpt.h2(f"Wrong results — OPTIMAL reported but obj > best-known by >{args.wrong_tol:.0e}"
+           " or check failed")
     rpt.raw("")
     if wrong_detail:
         # Summarise by instance: how many runs wrong, what is the deviation?

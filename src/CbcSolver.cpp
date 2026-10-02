@@ -217,39 +217,170 @@ static void printStoppedOnTimeResult(CbcModel &model)
   printGeneralMessage(model, buffer.str());
 }
 
+/* Result of writeCheckSolution(), also used for the one-line log summary. */
+struct CbcCheckSolutionSummary {
+  bool hasIntSol = false;
+  bool lpFeasible = false;
+  bool lpOptimal = false;
+  double largestPrimalRel = 0.0;
+  double largestDualRel = 0.0;
+  double objective = 0.0;
+  double solverObjective = 0.0;
+};
+
+/* Running maximum/sum/count of violations. Decisions use the relative
+   violation (absolute violation divided by the magnitude of the quantities
+   it was computed from), so floating-point noise on badly scaled models
+   (costs ~1e11, coefficients ~1e7) is not reported as a violation, while
+   e.g. a 1e-3 violation of a 0/1 bound always is. */
+struct CbcViolationStats {
+  int worst = -1;
+  double worstAbs = 0.0;
+  double worstRel = 0.0;
+  int count = 0;
+  double sumAbs = 0.0;
+  void add(int index, double absViol, double scale, double tol)
+  {
+    if (absViol <= 0.0)
+      return;
+    double rel = absViol / std::max(1.0, scale);
+    if (rel > tol) {
+      count++;
+      sumAbs += absViol;
+    }
+    if (rel > worstRel) {
+      worstRel = rel;
+      worstAbs = absViol;
+      worst = index;
+    }
+  }
+};
+
+/* Violation of a dual value d (minimization sense) of a variable with value
+   v in [lo, up]: at the lower bound d must be >= 0, at the upper bound
+   d <= 0, strictly in between (or free) d == 0, and fixed variables have no
+   sign restriction. Value based rather than status based, so a basis status
+   that disagrees with the primal values cannot hide a violation. */
+static double dualViolation(double d, double v, double lo, double up, double primalTol)
+{
+  if (lo == up)
+    return 0.0;
+  bool atLower = (lo > -COIN_DBL_MAX && v <= lo + primalTol * std::max(1.0, fabs(lo)));
+  bool atUpper = (up < COIN_DBL_MAX && v >= up - primalTol * std::max(1.0, fabs(up)));
+  if (atLower && atUpper)
+    return 0.0;
+  if (atLower)
+    return std::max(0.0, -d);
+  if (atUpper)
+    return std::max(0.0, d);
+  return fabs(d);
+}
+
+/* Bound violation of value v in [lo, up]; *scale is set to |violated bound|. */
+static double boundViolation(double v, double lo, double up, double *scale)
+{
+  if (v < lo) {
+    *scale = fabs(lo);
+    return lo - v;
+  }
+  if (v > up) {
+    *scale = fabs(up);
+    return v - up;
+  }
+  *scale = 0.0;
+  return 0.0;
+}
+
 /** Write a solution validation report to a file.
- *  Calls ClpSimplex::checkSolution() to recompute violations, then writes
- *  a tab-separated report with feasibility status, error metrics, and
- *  the worst-violating row/column. */
-static bool writeCheckSolution(CbcModel &model, const std::string &fileName)
+ *  Every metric is recomputed from scratch on the unscaled model, without
+ *  modifying the solver: row activities as A*x, primal violations of row
+ *  and column bounds, and (for continuous solutions) reduced costs c - A'y
+ *  checked for sign/complementarity against the primal values. Clp's own
+ *  checkSolution() is deliberately not used: it checks in scaled space (so
+ *  unscaled bound violations of 1e-3 can pass) and its largestPrimalError()/
+ *  largestDualError() are stale factorization residuals, not violations.
+ *  The objective is recomputed as c'x and compared with the solver's.
+ *
+ *  Violations are judged relative to the magnitude of what they were
+ *  computed from (see CbcViolationStats):
+ *    row bound:   max(1, |bound|, max_j |a_ij x_j|)
+ *    column bound: max(1, |bound|)
+ *    column dual: max(1, |c_j|, max_i |a_ij y_i|)   (terms of c_j - a_j'y)
+ *    row dual:    max(1, max_j max(|c_j|, max_k |a_kj y_k|) / |a_ij|) */
+static bool writeCheckSolution(CbcModel &model, const std::string &fileName,
+  CbcCheckSolutionSummary *summary = nullptr)
 {
   OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model.solver());
   if (!clpSolver)
     return false;
   ClpSimplex *lp = clpSolver->getModelPtr();
-  lp->checkSolution();
 
   double primalTol = 0, dualTol = 0;
   clpSolver->getDblParam(OsiPrimalTolerance, primalTol);
   clpSolver->getDblParam(OsiDualTolerance, dualTol);
 
-  bool lpFeasible = (lp->largestPrimalError() < primalTol
-    && lp->numberPrimalInfeasibilities() == 0);
+  const int nRows = lp->numberRows(), nCols = lp->numberColumns();
+  const bool hasIntSol = (model.bestSolution() != nullptr);
+  std::vector< double > zeroCols, zeroRows;
+  const double *colSol = hasIntSol ? model.bestSolution() : lp->primalColumnSolution();
+  const double *rowDual = lp->dualRowSolution();
+  if (!colSol) {
+    zeroCols.assign(nCols, 0.0);
+    colSol = zeroCols.data();
+  }
+  if (!rowDual) {
+    zeroRows.assign(nRows, 0.0);
+    rowDual = zeroRows.data();
+  }
+  const double *colLo = lp->columnLower();
+  const double *colUp = lp->columnUpper();
+  const double *rowLo = lp->rowLower();
+  const double *rowUp = lp->rowUpper();
+  const double *cost = lp->objective();
+  const double dir = lp->optimizationDirection();
 
-  // Check integrality only if an integer solution exists
+  /* Column-wise passes over A: row activities, the largest term of each
+     row, A'y with its largest term per column, then the magnitude a row dual
+     y_i can carry, max_j max(|c_j|, max_k |a_kj y_k|) / |a_ij|. */
+  CoinPackedMatrix colMatrix(*lp->matrix());
+  if (!colMatrix.isColOrdered())
+    colMatrix.reverseOrdering();
+  const double *element = colMatrix.getElements();
+  const int *rowIndex = colMatrix.getIndices();
+  const CoinBigIndex *colStart = colMatrix.getVectorStarts();
+  const int *colLength = colMatrix.getVectorLengths();
+  std::vector< double > rowAct(nRows, 0.0), rowTermMax(nRows, 0.0), rowDualScale(nRows, 0.0);
+  std::vector< double > aty(nCols, 0.0), colDualTermMax(nCols, 0.0);
+  for (int j = 0; j < nCols; j++) {
+    const double x = colSol[j];
+    double sumAty = 0.0, termMax = 0.0;
+    for (CoinBigIndex k = colStart[j]; k < colStart[j] + colLength[j]; k++) {
+      const int i = rowIndex[k];
+      const double a = element[k];
+      rowAct[i] += a * x;
+      rowTermMax[i] = std::max(rowTermMax[i], fabs(a * x));
+      sumAty += a * rowDual[i];
+      termMax = std::max(termMax, fabs(a * rowDual[i]));
+    }
+    aty[j] = sumAty;
+    colDualTermMax[j] = termMax;
+  }
+  for (int j = 0; j < nCols; j++) {
+    const double colScale = std::max(fabs(cost[j]), colDualTermMax[j]);
+    for (CoinBigIndex k = colStart[j]; k < colStart[j] + colLength[j]; k++)
+      if (element[k] != 0.0)
+        rowDualScale[rowIndex[k]] = std::max(rowDualScale[rowIndex[k]], colScale / fabs(element[k]));
+  }
+
+  // Integrality (only meaningful for an integer solution)
   double intTol = clpSolver->getIntegerTolerance();
-  bool hasIntSol = (model.bestSolution() != nullptr);
   int numIntViol = 0;
   double worstIntViol = 0.0;
   int worstIntCol = -1;
   if (hasIntSol) {
-    const double *sol = model.bestSolution();
-    int nCols = clpSolver->getNumCols();
     for (int j = 0; j < nCols; j++) {
       if (clpSolver->isInteger(j)) {
-        double val = sol[j];
-        double frac = val - floor(val + 0.5);
-        double viol = fabs(frac);
+        double viol = fabs(colSol[j] - floor(colSol[j] + 0.5));
         if (viol > intTol)
           numIntViol++;
         if (viol > worstIntViol) {
@@ -260,63 +391,110 @@ static bool writeCheckSolution(CbcModel &model, const std::string &fileName)
     }
   }
 
-  // Find row/col with largest LP violation
-  int worstRow = -1, worstCol = -1;
-  double worstRowViol = 0.0, worstColViol = 0.0;
-  int nRows = lp->numberRows(), nCols = lp->numberColumns();
-  const double *rowAct = lp->primalRowSolution();
-  const double *rowLo = lp->rowLower();
-  const double *rowUp = lp->rowUpper();
+  // Primal violations and objective
+  CbcViolationStats rowPrimal, colPrimal;
   for (int i = 0; i < nRows; i++) {
-    double viol = std::max(rowLo[i] - rowAct[i], rowAct[i] - rowUp[i]);
-    if (viol > worstRowViol) {
-      worstRowViol = viol;
-      worstRow = i;
-    }
+    double scale;
+    double viol = boundViolation(rowAct[i], rowLo[i], rowUp[i], &scale);
+    rowPrimal.add(i, viol, std::max(scale, rowTermMax[i]), primalTol);
   }
-  const double *colSol = lp->primalColumnSolution();
-  const double *colLo = lp->columnLower();
-  const double *colUp = lp->columnUpper();
+  double objective = -lp->objectiveOffset();
   for (int j = 0; j < nCols; j++) {
-    double viol = std::max(colLo[j] - colSol[j], colSol[j] - colUp[j]);
-    if (viol > worstColViol) {
-      worstColViol = viol;
-      worstCol = j;
+    objective += cost[j] * colSol[j];
+    double scale;
+    double viol = boundViolation(colSol[j], colLo[j], colUp[j], &scale);
+    colPrimal.add(j, viol, scale, primalTol);
+  }
+
+  /* Dual violations (continuous solutions only), in minimization sense:
+     reduced costs dir*(c - A'y) and row duals dir*y. Clp exports both in the
+     user's optimization sense. */
+  CbcViolationStats rowDualStats, colDualStats;
+  if (!hasIntSol) {
+    for (int j = 0; j < nCols; j++) {
+      double d = dir * (cost[j] - aty[j]);
+      double viol = dualViolation(d, colSol[j], colLo[j], colUp[j], primalTol);
+      colDualStats.add(j, viol, std::max(fabs(cost[j]), colDualTermMax[j]), dualTol);
+    }
+    for (int i = 0; i < nRows; i++) {
+      double viol = dualViolation(dir * rowDual[i], rowAct[i], rowLo[i], rowUp[i], primalTol);
+      rowDualStats.add(i, viol, rowDualScale[i], dualTol);
     }
   }
+
+  const double largestPrimalRel = std::max(rowPrimal.worstRel, colPrimal.worstRel);
+  const double largestPrimalAbs = std::max(rowPrimal.worstAbs, colPrimal.worstAbs);
+  const double largestDualRel = std::max(rowDualStats.worstRel, colDualStats.worstRel);
+  const double largestDualAbs = std::max(rowDualStats.worstAbs, colDualStats.worstAbs);
+  const bool lpFeasible = (largestPrimalRel <= primalTol);
+  const bool lpOptimal = lpFeasible && !hasIntSol && largestDualRel <= dualTol;
+  const double solverObjective = hasIntSol ? model.getObjValue() : lp->objectiveValue();
+  const double objRelDiff = fabs(objective - solverObjective) / std::max(1.0, fabs(objective));
 
   FILE *fp = fopen(fileName.c_str(), "w");
   if (!fp)
     return false;
   fprintf(fp, "solution_type\t%s\n", hasIntSol ? "integer" : "continuous");
   fprintf(fp, "lp_feasible\t%s\n", lpFeasible ? "yes" : "no");
+  if (!hasIntSol)
+    fprintf(fp, "lp_optimal\t%s\n", lpOptimal ? "yes" : "no");
   if (hasIntSol)
     fprintf(fp, "integer_feasible\t%s\n", (numIntViol == 0) ? "yes" : "no");
   fprintf(fp, "primal_tolerance\t%.2e\n", primalTol);
   fprintf(fp, "dual_tolerance\t%.2e\n", dualTol);
   if (hasIntSol)
     fprintf(fp, "integer_tolerance\t%.2e\n", intTol);
-  fprintf(fp, "largest_primal_error\t%.2e\n", lp->largestPrimalError());
-  fprintf(fp, "largest_dual_error\t%.2e\n", lp->largestDualError());
-  fprintf(fp, "sum_primal_infeasibilities\t%.2e\n", lp->sumPrimalInfeasibilities());
-  fprintf(fp, "sum_dual_infeasibilities\t%.2e\n", lp->sumDualInfeasibilities());
-  fprintf(fp, "num_primal_infeasibilities\t%d\n", lp->numberPrimalInfeasibilities());
-  fprintf(fp, "num_dual_infeasibilities\t%d\n", lp->numberDualInfeasibilities());
+  fprintf(fp, "largest_primal_error\t%.2e\n", largestPrimalRel);
+  fprintf(fp, "largest_primal_error_abs\t%.2e\n", largestPrimalAbs);
+  if (!hasIntSol) {
+    fprintf(fp, "largest_dual_error\t%.2e\n", largestDualRel);
+    fprintf(fp, "largest_dual_error_abs\t%.2e\n", largestDualAbs);
+  }
+  fprintf(fp, "sum_primal_infeasibilities\t%.2e\n", rowPrimal.sumAbs + colPrimal.sumAbs);
+  if (!hasIntSol)
+    fprintf(fp, "sum_dual_infeasibilities\t%.2e\n", rowDualStats.sumAbs + colDualStats.sumAbs);
+  fprintf(fp, "num_primal_infeasibilities\t%d\n", rowPrimal.count + colPrimal.count);
+  if (!hasIntSol)
+    fprintf(fp, "num_dual_infeasibilities\t%d\n", rowDualStats.count + colDualStats.count);
   if (hasIntSol) {
     fprintf(fp, "num_integrality_violations\t%d\n", numIntViol);
     fprintf(fp, "largest_integrality_violation\t%.2e\n", worstIntViol);
   }
-  fprintf(fp, "objective\t%.15g\n", hasIntSol ? model.getObjValue() : lp->objectiveValue());
-  if (worstRow >= 0)
-    fprintf(fp, "worst_row\t%d\t%s\t%.2e\n", worstRow,
-      lp->rowName(worstRow).c_str(), worstRowViol);
-  if (worstCol >= 0)
-    fprintf(fp, "worst_col\t%d\t%s\t%.2e\n", worstCol,
-      lp->columnName(worstCol).c_str(), worstColViol);
+  fprintf(fp, "objective\t%.15g\n", objective);
+  fprintf(fp, "solver_objective\t%.15g\n", solverObjective);
+  fprintf(fp, "objective_rel_diff\t%.2e\n", objRelDiff);
+  // worst_* lines: index, name, absolute violation, relative violation
+  const struct {
+    const char *label;
+    const CbcViolationStats &stats;
+    bool isRow;
+  } worstList[] = {
+    { "worst_row", rowPrimal, true },
+    { "worst_col", colPrimal, false },
+    { "worst_dual_row", rowDualStats, true },
+    { "worst_dual_col", colDualStats, false },
+  };
+  for (const auto &w : worstList) {
+    if (w.stats.worst < 0)
+      continue;
+    fprintf(fp, "%s\t%d\t%s\t%.2e\t%.2e\n", w.label, w.stats.worst,
+      (w.isRow ? lp->rowName(w.stats.worst) : lp->columnName(w.stats.worst)).c_str(),
+      w.stats.worstAbs, w.stats.worstRel);
+  }
   if (hasIntSol && worstIntCol >= 0)
     fprintf(fp, "worst_int_col\t%d\t%s\t%.2e\n", worstIntCol,
       lp->columnName(worstIntCol).c_str(), worstIntViol);
   fclose(fp);
+
+  if (summary) {
+    summary->hasIntSol = hasIntSol;
+    summary->lpFeasible = lpFeasible;
+    summary->lpOptimal = lpOptimal;
+    summary->largestPrimalRel = largestPrimalRel;
+    summary->largestDualRel = largestDualRel;
+    summary->objective = objective;
+    summary->solverObjective = solverObjective;
+  }
   return true;
 }
 
@@ -7291,19 +7469,22 @@ int CbcSolver::runCheckSolution(CbcParam *cbcParam, std::deque< std::string > &i
     printGeneralWarning(model_, "** Current model not valid\n");
     return 1;
   }
-  if (!writeCheckSolution(model_, fileName)) {
+  CbcCheckSolutionSummary summary;
+  if (!writeCheckSolution(model_, fileName, &summary)) {
     buffer << "Unable to open file " << fileName;
     printGeneralMessage(model_, buffer.str());
     return 1;
   }
-  OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
-  ClpSimplex *lp = clpSolver->getModelPtr();
-  bool hasIntSol = (model_.bestSolution() != nullptr);
   buffer.str("");
   buffer << "Solution validation written to " << fileName
-         << " (" << (hasIntSol ? "integer" : "continuous")
-         << ", largest_primal=" << lp->largestPrimalError()
-         << ", largest_dual=" << lp->largestDualError() << ")";
+         << " (" << (summary.hasIntSol ? "integer" : "continuous")
+         << ", feasible=" << (summary.lpFeasible ? "yes" : "no");
+  if (!summary.hasIntSol)
+    buffer << ", optimal=" << (summary.lpOptimal ? "yes" : "no");
+  buffer << ", largest_primal=" << summary.largestPrimalRel;
+  if (!summary.hasIntSol)
+    buffer << ", largest_dual=" << summary.largestDualRel;
+  buffer << ", obj=" << summary.objective << ")";
   printGeneralMessage(model_, buffer.str());
   return 0;
 }

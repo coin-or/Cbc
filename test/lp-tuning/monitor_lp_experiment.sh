@@ -24,7 +24,9 @@ snapshot() {
   echo "Progress: $done_n / $total jobs    parallel_jobs=$(cat "$EXP_DIR/parallel_jobs" 2>/dev/null || echo ?)"
   echo
   echo "Status counts (by tag):"
-  awk -F, 'NR>1 {c[$2" "$4]++} END {for (k in c) print c[k], k}' "$csv" \
+  # OPTIMAL claims that -checkSolution found infeasible/non-optimal count as WRONG
+  awk -F, 'NR>1 {s = $4; if (s == "OPTIMAL" && ($8 ~ /^no/ || $8 ~ /optimal=no/)) s = "WRONG"; c[$2" "s]++}
+           END {for (k in c) print c[k], k}' "$csv" \
     | sort -k2,2 -k1,1nr | awk '{printf "  %-22s %-16s %6d\n", $2, $3, $1}'
   echo
   echo "Peak RSS of finished jobs (MB):"

@@ -164,7 +164,8 @@ if [[ -f "$CHK_FILE" ]]; then
   CHK_PRIMAL=$(awk -F'\t' '$1=="largest_primal_error"{print $2}' "$CHK_FILE" || true)
   CHK_DUAL=$(awk -F'\t' '$1=="largest_dual_error"{print $2}' "$CHK_FILE" || true)
   CHK_OBJ=$(awk -F'\t' '$1=="objective"{print $2}' "$CHK_FILE" || true)
-  CHK_RESULT="${CHK_FEASIBLE:-NA};primal=${CHK_PRIMAL:-NA};dual=${CHK_DUAL:-NA}"
+  CHK_OPTIMAL=$(awk -F'\t' '$1=="lp_optimal"{print $2}' "$CHK_FILE" || true)
+  CHK_RESULT="${CHK_FEASIBLE:-NA};primal=${CHK_PRIMAL:-NA};dual=${CHK_DUAL:-NA};optimal=${CHK_OPTIMAL:-NA}"
 fi
 
 # Clean up empty output files

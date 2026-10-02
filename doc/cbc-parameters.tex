@@ -2011,7 +2011,7 @@ All features are computed in O(nz) time.
 
 Check LP/MIP solution feasibility and write validation report
 
-Recomputes constraint and bound violations from scratch and writes a machine-readable report to the specified file (default 'sol\_validation.txt'). Reports feasibility status, largest primal and dual errors, and identifies the constraint/variable with the largest violation.
+Recomputes, on the unscaled model and without modifying the solver, row activities, row/column bound violations and (for continuous solutions) reduced-cost sign/complementarity violations, and writes a machine-readable report to the specified file (default 'sol\_validation.txt'). Violations are judged relative to the magnitude of the bounds/terms they are computed from, so rounding noise on badly scaled models is not reported. Reports lp\_feasible, lp\_optimal (continuous only), largest (relative and absolute)/sum/count of primal and dual violations, the recomputed objective vs the solver's, and the constraints/variables with the largest violations.
 
 \subsection*{\texttt{-csvFeatures} \ptag{gray!60!black}{FILE}}
 \addcontentsline{toc}{subsection}{\texttt{-csvFeatures} \ptag{gray!60!black}{FILE}}

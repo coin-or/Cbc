@@ -44,6 +44,22 @@ def parse_check_result(check_str):
     return feasible, primal_err, dual_err
 
 
+def check_optimal(check_str):
+    """Value of the 'optimal=' field ('yes'/'no'), None if absent/NA (older CSVs)."""
+    for p in (check_str or "").split(";"):
+        p = p.strip()
+        if p.startswith("optimal="):
+            v = p.split("=", 1)[1]
+            return None if v == "NA" else v
+    return None
+
+
+def check_valid(check_str):
+    """Solution passed -checkSolution: primal feasible and not flagged non-optimal."""
+    return (parse_check_result(check_str)[0] == "yes"
+            and check_optimal(check_str) != "no")
+
+
 def parse_obj(val):
     """Parse objective value, return float or None."""
     if not val or val == "NA":
@@ -87,17 +103,17 @@ def main():
         by_instance[row["instance"]].append(row)
 
     # For each instance, find the best feasible objective
-    # "Feasible" = check_result starts with "yes" AND status is OPTIMAL
+    # "Valid" = check_result starts with "yes", optimal!=no, AND status is OPTIMAL
     # Best = lowest obj (CBC minimizes internally)
     instance_best = {}  # instance -> best_obj (float)
     for inst, inst_rows in by_instance.items():
         best = None
         for r in inst_rows:
-            feasible, _, _ = parse_check_result(r.get("check_result", ""))
+            valid = check_valid(r.get("check_result", ""))
             obj = parse_obj(r.get("obj_from_check"))
             if obj is None:
                 obj = parse_obj(r.get("obj_from_log"))
-            if feasible == "yes" and obj is not None:
+            if valid and obj is not None:
                 if best is None or obj < best:
                     best = obj
         instance_best[inst] = best
@@ -119,6 +135,9 @@ def main():
             total_optimal += 1
             if feasible != "yes":
                 tag = "FAKE_OPTIMAL(infeasible)"
+                fake_count += 1
+            elif check_optimal(row.get("check_result", "")) == "no":
+                tag = "FAKE_OPTIMAL(dual_infeasible)"
                 fake_count += 1
             elif best is not None and obj is not None:
                 # Check if this obj is worse than best known
@@ -188,7 +207,7 @@ def main():
         n = len(inst_rows)
         n_opt = sum(1 for r in inst_rows if r.get("status") == "OPTIMAL")
         n_feas = sum(1 for r in inst_rows
-                     if parse_check_result(r.get("check_result", ""))[0] == "yes")
+                     if check_valid(r.get("check_result", "")))
         inst_fakes = sum(1 for a in annotated
                          if a["instance"] == inst and "FAKE" in a["validation"])
         best = instance_best.get(inst)

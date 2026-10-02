@@ -1493,7 +1493,7 @@ All features are computed in O(nz) time.</p></div>
 </details>
 <details class="param" data-search="checksolution check lp/mip solution feasibility and write validation report">
   <summary><span class="pname"><code>-checkSolution</code></span><span class="badge badge-act">Action</span><span class="pshort">Check LP/MIP solution feasibility and write validation report</span></summary>
-  <div class="pbody"><p class="plong">Recomputes constraint and bound violations from scratch and writes a machine-readable report to the specified file (default &#x27;sol_validation.txt&#x27;). Reports feasibility status, largest primal and dual errors, and identifies the constraint/variable with the largest violation.</p></div>
+  <div class="pbody"><p class="plong">Recomputes, on the unscaled model and without modifying the solver, row activities, row/column bound violations and (for continuous solutions) reduced-cost sign/complementarity violations, and writes a machine-readable report to the specified file (default &#x27;sol_validation.txt&#x27;). Violations are judged relative to the magnitude of the bounds/terms they are computed from, so rounding noise on badly scaled models is not reported. Reports lp_feasible, lp_optimal (continuous only), largest (relative and absolute)/sum/count of primal and dual violations, the recomputed objective vs the solver&#x27;s, and the constraints/variables with the largest violations.</p></div>
 </details>
 <details class="param" data-search="csvfeatures sets file name for writing out instance features">
   <summary><span class="pname"><code>-csvFeatures</code></span><span class="badge badge-file">File</span><span class="pshort">sets file name for writing out instance features</span></summary>

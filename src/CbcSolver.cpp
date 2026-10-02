@@ -1934,6 +1934,12 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
       applyVectorMode(clp);
   }
 #endif
+  if (clp && model_.getMaximumSeconds() < 1.0e8) {
+    if (!model_.getDblParam(CbcModel::CbcStartSeconds))
+      model_.setDblParam(CbcModel::CbcStartSeconds,
+        model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
+    applyClpTimeLimit(model_, clp);
+  }
 #ifndef CLP_OLD_STYLE
   // ─── 3. LP racing ───────────────────────────────────────────────────────
   // Races multiple LP strategies in parallel threads.  Thread configs are
@@ -1953,6 +1959,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
     if (racer.winnerIndex() >= 0) {
       clp->setNumberIterations(racer.winnerIterations());
       cleanupUnscaledRootLp(clp);
+      clearClpTimeLimits(clp);
       // Which config won (and its time/iterations) is now reported as part
       // of the unified LP progress table's closing summary line (see
       // ClpLpPhaseState::racingWinner / ClpLpTable::printFinalStatus() in
@@ -2130,16 +2137,13 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
     solveOptions.setSpecialOption(4, barrierOptions);
   }
 
-  if (model_.getMaximumSeconds() < 1.0e8) {
-    if (!model_.getDblParam(CbcModel::CbcStartSeconds))
-      model_.setDblParam(CbcModel::CbcStartSeconds,
-        model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
+  if (model2 != clp && model_.getMaximumSeconds() < 1.0e8)
     applyClpTimeLimit(model_, model2);
-  }
   // say in Cbc
   model2->setSpecialOptions(model2->specialOptions() | COIN_CBC_USING_CLP);
   model2->initialSolve(solveOptions);
-  clearClpTimeLimits(model2);
+  if (model2 != clp)
+    clearClpTimeLimits(model2);
 
   // Undo autoLpMode's one-shot pivot/scaling/perturbation overrides now that
   // the root solve is done -- see the matching capture in step 2 above.
@@ -2164,6 +2168,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   }
 
   cleanupUnscaledRootLp(clp);
+  clearClpTimeLimits(clp);
 
   if (lpMethod == CbcParameters::LPBarrier)
     si->setWarmStart(nullptr);
@@ -2191,6 +2196,14 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   returnCode = 0;
   OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
   ClpSimplex *lpSolver = clpSolver ? clpSolver->getModelPtr() : nullptr;
+
+#ifdef CBC_CLUMSY_CODING
+  // Match -solve: numerical parameters are stored until synchronized.
+  parameters_.setModel(&model_);
+  parameters_.setGoodModel(true);
+  parameters_.clpParameters().setModel(lpSolver);
+  parameters_.synchronizeModel();
+#endif
 
   // Bound propagation + clique merging "before": previously the first two
   // steps of applyLpMethod(), run unconditionally on every call including

@@ -1473,6 +1473,25 @@ restoreProtectedLpSettings(ClpSimplex *clp, ClpProtectedLpSettings &saved)
   clp->setPerturbation(saved.perturbation);
 }
 
+// Clp solves the scaled model, so an "optimal" root LP can still violate
+// bounds/rows (secondaryStatus 2) or reduced-cost signs (3) by more than the
+// tolerances once unscaled - e.g. 4e-4 column bound violations on
+// roi5alpha10n8.  Re-solve such a root LP without scaling (dual for primal
+// infeasibilities, primal for dual ones); this normally takes only a few
+// iterations from the optimal basis.
+static void
+cleanupUnscaledRootLp(ClpSimplex *clp)
+{
+  if (!clp || clp->status())
+    return;
+  const int secondary = clp->secondaryStatus();
+  if (secondary < 2 || secondary > 4)
+    return;
+  const int saveIterations = clp->numberIterations();
+  clp->cleanup(secondary == 3 ? 12 : 1);
+  clp->setNumberIterations(saveIterations + clp->numberIterations());
+}
+
 // Parse a parameter tag (from CbcLpParamScorer) into a LpAutoSettings struct.
 // Tag format examples:
 //   dual_pesteep_psineg1   primal_idiot30_pertvm1483   primal_sprint
@@ -1933,6 +1952,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
     racer.solve();
     if (racer.winnerIndex() >= 0) {
       clp->setNumberIterations(racer.winnerIterations());
+      cleanupUnscaledRootLp(clp);
       // Which config won (and its time/iterations) is now reported as part
       // of the unified LP progress table's closing summary line (see
       // ClpLpPhaseState::racingWinner / ClpLpTable::printFinalStatus() in
@@ -2142,6 +2162,8 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
     if (rc && dualize != 2)
       clp->primal(1);
   }
+
+  cleanupUnscaledRootLp(clp);
 
   if (lpMethod == CbcParameters::LPBarrier)
     si->setWarmStart(nullptr);

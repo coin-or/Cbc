@@ -3276,7 +3276,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         if (searchStrategy != 2) {
           int numberRows = solver->getNumRows();
           // whether to do this or not is important - think
-          if (numberRows < 300 || numberRows + numberColumns < 2500) {
+          if (numberRows < model->strongBoostRows() || numberRows + numberColumns < model->strongBoostSize()) {
             if (depth_ < 7)
               numberStrong = std::min(3 * numberStrong, numberToDo);
             if (!depth_) {

@@ -566,6 +566,16 @@ How to deal with SOS priorities
 .br
 Values: off, high, low, orderhigh, orderlow (default: off)
 .TP
+.BI \-strongBoostRows
+Row count below which strong branching is boosted
+.br
+Range: 0 to INT_MAX (default: 300)
+.TP
+.BI \-strongBoostSize
+Rows plus columns below which strong branching is boosted
+.br
+Range: 0 to INT_MAX (default: 2500)
+.TP
 .BI \-trustPseudocosts
 Number of branches before we trust pseudocosts
 .br

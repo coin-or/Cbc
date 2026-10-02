@@ -2994,6 +2994,28 @@ public:
   {
     return diveMaxIterRoot_;
   }
+  /** Strong branching in the top levels of the tree is boosted (3x the
+      candidates, 18x at the root) when rows < strongBoostRows or
+      rows+columns < strongBoostSize.  0 for both disables the boost. */
+  inline void setStrongBoostRows(int value)
+  {
+    strongBoostRows_ = value;
+  }
+  /// Get the row threshold for the strong branching boost
+  inline int strongBoostRows() const
+  {
+    return strongBoostRows_;
+  }
+  /// Set the rows+columns threshold for the strong branching boost
+  inline void setStrongBoostSize(int value)
+  {
+    strongBoostSize_ = value;
+  }
+  /// Get the rows+columns threshold for the strong branching boost
+  inline int strongBoostSize() const
+  {
+    return strongBoostSize_;
+  }
   /// Get anything with priority >= this can be treated as continuous
   inline int continuousPriority() const
   {
@@ -3513,6 +3535,10 @@ private:
   int diveMaxIterTree_;
   /// Dive simplex iteration limit at the root (-1 is auto)
   int diveMaxIterRoot_;
+  /// Strong branching boost applies below this many rows
+  int strongBoostRows_;
+  /// Strong branching boost applies below this many rows+columns
+  int strongBoostSize_;
   /*! Pointer to the event handler */
 #ifdef CBC_ONLY_CLP
   ClpEventHandler *eventHandler_;

@@ -272,7 +272,7 @@
 <a href="#lp-presolve" class="sb-link">LP Presolve<span class="sb-count">3</span></a>
 <a href="#cuts" class="sb-link">Cuts<span class="sb-count">28</span></a>
 <a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">37</span></a>
-<a href="#branching" class="sb-link">Branching<span class="sb-count">6</span></a>
+<a href="#branching" class="sb-link">Branching<span class="sb-count">8</span></a>
 <a href="#tolerances" class="sb-link">Tolerances<span class="sb-count">6</span></a>
 <a href="#conflict-graph" class="sb-link">Conflict Graph<span class="sb-count">5</span></a>
 <a href="#strategy" class="sb-link">Strategy<span class="sb-count">9</span></a>
@@ -891,6 +891,16 @@
   <summary><span class="pname"><code>-sosPrioritize</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">How to deal with SOS priorities</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
   <div class="pbody"><p class="plong">This sets priorities for SOS.  Values &#x27;high&#x27; and &#x27;low&#x27; just set a priority relative to the for integer variables.  Value &#x27;orderhigh&#x27; gives first highest priority to the first SOS and integer variables a low priority.  Value &#x27;orderlow&#x27; gives integer variables a high priority then SOS in order.</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">high</code> <code class="kw">low</code> <code class="kw">orderhigh</code> <code class="kw">orderlow</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+</details>
+<details class="param" data-search="strongboostrows row count below which strong branching is boosted">
+  <summary><span class="pname"><code>-strongBoostRows</code></span><span class="badge badge-int">Integer</span><span class="pshort">Row count below which strong branching is boosted</span><span class="pmeta">default:&nbsp;<code>300</code></span></summary>
+  <div class="pbody"><p class="plong">In the top few levels of the tree, strong branching looks at 3 times as many candidates, and at the root 18 times as many, when the problem has fewer than this many rows or fewer than strongBoostSize rows plus columns. 0 for both turns the boost off; a very large value applies it always.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;300)</span></div></div>
+</details>
+<details class="param" data-search="strongboostsize rows plus columns below which strong branching is boosted">
+  <summary><span class="pname"><code>-strongBoostSize</code></span><span class="badge badge-int">Integer</span><span class="pshort">Rows plus columns below which strong branching is boosted</span><span class="pmeta">default:&nbsp;<code>2500</code></span></summary>
+  <div class="pbody"><p class="plong">See strongBoostRows: the boost applies when rows &lt; strongBoostRows or rows+columns &lt; this value.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;2500)</span></div></div>
 </details>
 <details class="param" data-search="trustpseudocosts number of branches before we trust pseudocosts">
   <summary><span class="pname"><code>-trustPseudocosts</code></span><span class="badge badge-int">Integer</span><span class="pshort">Number of branches before we trust pseudocosts</span><span class="pmeta">default:&nbsp;<code>10</code></span></summary>

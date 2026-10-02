@@ -764,7 +764,8 @@ void CbcParameters::addCbcParams() {
 
   // Model params — Branching
   for (int code : {CbcParam::STRONGBRANCHING, CbcParam::NUMBERBEFORE,
-                    CbcParam::COSTSTRATEGY})
+                    CbcParam::COSTSTRATEGY, CbcParam::STRONGBOOSTROWS,
+                    CbcParam::STRONGBOOSTSIZE})
     parameters_[code]->setTopic("Branching");
 
   // Model params — Cuts
@@ -915,6 +916,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::ROOTHEURSCHED]->setDefault(0);
      parameters_[CbcParam::RANDOMSEED]->setDefault(42);
      parameters_[CbcParam::STRONGSTRATEGY]->setDefault(0);
+     parameters_[CbcParam::STRONGBOOSTROWS]->setDefault(300);
+     parameters_[CbcParam::STRONGBOOSTSIZE]->setDefault(2500);
      parameters_[CbcParam::TESTOSI]->setDefault(-1);
 #ifdef CBC_THREAD
      parameters_[CbcParam::THREADS]->setDefault(0);
@@ -2842,6 +2845,24 @@ void CbcParameters::addCbcSolverIntParams() {
       "in heuristics such as the Feasibility Pump to decide whether to round "
       "up or down. The special value of 0 lets Cbc use the time of the day for "
       "the initial seed.");
+
+  parameters_[CbcParam::STRONGBOOSTROWS]->setup(
+      "strongBoostR!ows", "Row count below which strong branching is boosted",
+      0, COIN_INT_MAX,
+      "In the top few levels of the tree, strong branching looks at 3 times "
+      "as many candidates, and at the root 18 times as many, when the problem "
+      "has fewer than this many rows or fewer than strongBoostSize rows plus "
+      "columns. 0 for both turns the boost off; a very large value applies it "
+      "always.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::STRONGBOOSTSIZE]->setup(
+      "strongBoostS!ize",
+      "Rows plus columns below which strong branching is boosted", 0,
+      COIN_INT_MAX,
+      "See strongBoostRows: the boost applies when rows < strongBoostRows or "
+      "rows+columns < this value.",
+      CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::STRONGSTRATEGY]->setup(
       "expensive!Strong", "Whether to do even more strong branching", 0,

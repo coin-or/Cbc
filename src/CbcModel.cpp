@@ -6733,6 +6733,8 @@ CbcModel::CbcModel()
   , nodeBoundPropDepthInterval_(5)
   , diveMaxIterTree_(-1)
   , diveMaxIterRoot_(-1)
+  , strongBoostRows_(300)
+  , strongBoostSize_(2500)
   , eventHandler_(nullptr)
 #ifdef CBC_HAS_NAUTY
   , symmetryInfo_(nullptr)
@@ -7075,6 +7077,8 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , nodeBoundPropDepthInterval_(rhs.nodeBoundPropDepthInterval_)
   , diveMaxIterTree_(rhs.diveMaxIterTree_)
   , diveMaxIterRoot_(rhs.diveMaxIterRoot_)
+  , strongBoostRows_(rhs.strongBoostRows_)
+  , strongBoostSize_(rhs.strongBoostSize_)
   , howOftenGlobalScan_(rhs.howOftenGlobalScan_)
   , numberGlobalViolations_(rhs.numberGlobalViolations_)
   , numberExtraIterations_(rhs.numberExtraIterations_)
@@ -7597,6 +7601,8 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     nodeBoundPropDepthInterval_ = rhs.nodeBoundPropDepthInterval_;
     diveMaxIterTree_ = rhs.diveMaxIterTree_;
     diveMaxIterRoot_ = rhs.diveMaxIterRoot_;
+    strongBoostRows_ = rhs.strongBoostRows_;
+    strongBoostSize_ = rhs.strongBoostSize_;
     if (ownObjects_) {
       for (i = 0; i < numberObjects_; i++)
         delete object_[i];
@@ -7990,6 +7996,8 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   nodeBoundPropDepthInterval_ = rhs.nodeBoundPropDepthInterval_;
   diveMaxIterTree_ = rhs.diveMaxIterTree_;
   diveMaxIterRoot_ = rhs.diveMaxIterRoot_;
+  strongBoostRows_ = rhs.strongBoostRows_;
+  strongBoostSize_ = rhs.strongBoostSize_;
   howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
   maximumCutPasses_ = rhs.maximumCutPasses_;

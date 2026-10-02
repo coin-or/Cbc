@@ -292,6 +292,8 @@ public:
       SIZEMINIBAB,
       DIVEMAXITERTREE,
       DIVEMAXITERROOT,
+      STRONGBOOSTROWS,
+      STRONGBOOSTSIZE,
       LASTINTPARAM,
 
       // Double Parameters

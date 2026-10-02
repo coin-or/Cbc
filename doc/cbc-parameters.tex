@@ -1039,6 +1039,24 @@ This sets priorities for SOS.  Values 'high' and 'low' just set a priority relat
 
 \textbf{Values:} \texttt{off}, \texttt{high}, \texttt{low}, \texttt{orderhigh}, \texttt{orderlow} (default: \texttt{off})
 
+\subsection*{\texttt{-strongBoostRows} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-strongBoostRows} \ptag{blue!60!black}{INT}}
+
+Row count below which strong branching is boosted
+
+In the top few levels of the tree, strong branching looks at 3 times as many candidates, and at the root 18 times as many, when the problem has fewer than this many rows or fewer than strongBoostSize rows plus columns. 0 for both turns the boost off; a very large value applies it always.
+
+\textbf{Range:} 0 to INT\_MAX (default: 300)
+
+\subsection*{\texttt{-strongBoostSize} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-strongBoostSize} \ptag{blue!60!black}{INT}}
+
+Rows plus columns below which strong branching is boosted
+
+See strongBoostRows: the boost applies when rows < strongBoostRows or rows+columns < this value.
+
+\textbf{Range:} 0 to INT\_MAX (default: 2500)
+
 \subsection*{\texttt{-trustPseudocosts} \ptag{blue!60!black}{INT}}
 \addcontentsline{toc}{subsection}{\texttt{-trustPseudocosts} \ptag{blue!60!black}{INT}}
 

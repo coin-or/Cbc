@@ -8754,6 +8754,8 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
         ? -1 : parameters[CbcParam::DIVEMAXITERTREE]->intVal());
     babModel_->setDiveMaxIterRoot(parameters[CbcParam::DIVEMAXITERROOT]->isAuto()
         ? -1 : parameters[CbcParam::DIVEMAXITERROOT]->intVal());
+    babModel_->setStrongBoostRows(parameters[CbcParam::STRONGBOOSTROWS]->intVal());
+    babModel_->setStrongBoostSize(parameters[CbcParam::STRONGBOOSTSIZE]->intVal());
     babModel_->setNodeBoundProp(
       parameters[CbcParam::NODEBOUNDPROP]->modeVal());
     babModel_->setNodeBoundPropMaxDepth(

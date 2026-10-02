@@ -17,7 +17,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [LP Presolve](#lp-presolve) (3 parameters)
 - [Cuts](#cuts) (28 parameters)
 - [Heuristics](#heuristics) (37 parameters)
-- [Branching](#branching) (6 parameters)
+- [Branching](#branching) (8 parameters)
 - [Tolerances](#tolerances) (6 parameters)
 - [Conflict Graph](#conflict-graph) (5 parameters)
 - [Strategy](#strategy) (9 parameters)
@@ -920,6 +920,22 @@ How to deal with SOS priorities
 This sets priorities for SOS.  Values 'high' and 'low' just set a priority relative to the for integer variables.  Value 'orderhigh' gives first highest priority to the first SOS and integer variables a low priority.  Value 'orderlow' gives integer variables a high priority then SOS in order.
 
 **Values:** `off`, `high`, `low`, `orderhigh`, `orderlow` (default: `off`)
+
+### `-strongBoostRows`
+
+Row count below which strong branching is boosted
+
+In the top few levels of the tree, strong branching looks at 3 times as many candidates, and at the root 18 times as many, when the problem has fewer than this many rows or fewer than strongBoostSize rows plus columns. 0 for both turns the boost off; a very large value applies it always.
+
+**Range:** 0 to INT_MAX (default: 300)
+
+### `-strongBoostSize`
+
+Rows plus columns below which strong branching is boosted
+
+See strongBoostRows: the boost applies when rows < strongBoostRows or rows+columns < this value.
+
+**Range:** 0 to INT_MAX (default: 2500)
 
 ### `-trustPseudocosts`
 

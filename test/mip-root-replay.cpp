@@ -844,11 +844,7 @@ int main(int argc, char **argv)
       return 2;
     }
     const std::string pname = ov.substr(0, eq), pval = ov.substr(eq + 1);
-    // The counters must be passed: lookupParam() writes through them
-    // unconditionally despite their NULL defaults.
-    int matchCnt = 0, shortCnt = 0, queryCnt = 0;
-    const int idx = CoinParamUtils::lookupParam(pname, params.paramVec(),
-      &matchCnt, &shortCnt, &queryCnt);
+    const int idx = CoinParamUtils::lookupParam(pname, params.paramVec());
     if (idx < 0) {
       fprintf(stderr, "ERROR: --param: no unique parameter matches \"%s\"\n", pname.c_str());
       return 2;

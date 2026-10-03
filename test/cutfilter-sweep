@@ -4,7 +4,7 @@
 # configuration in a configs.tsv (see cutfilter-configs.tsv), to benchmark
 # the generalized CoinCutPool-based cut-pool filtering applied to
 # Gomory/MixedIntegerRounding2/Twomir/Probing cuts (CbcFilterGeneratedCuts()
-# / CBC_CUTPOOL_FILTER_* env vars -- see CbcCutPoolFilter.cpp and its call
+# / cutFilter* parameters -- see CbcCutPoolFilter.cpp and its call
 # site in CbcCutGenerator::generateCuts()).
 #
 # Forked from cutskip-sweep (same rationale: mip-root-replay's
@@ -72,12 +72,13 @@ if [[ "${1:-}" == --worker=* ]]; then
                  # independent B&B-path realizations to average over,
                  # separating real config-driven effects from branching
                  # tie-break sensitivity noise (see --repeats below).
-  # Reset every cut-pool-filter env var this sweep knows about so a stale
-  # export from a previous worker invocation (same parallel pool, reused
-  # shell) can never leak into this one.
-  unset CBC_CUTPOOL_FILTER_MIN_COLS CBC_CUTPOOL_FILTER_MIN_CANDIDATES \
-    CBC_CUTPOOL_FILTER_ALWAYS CBC_CUTPOOL_FILTER_MAX_PARALLELISM \
-    CBC_CUTPOOL_FILTER_MIN_ELEMENTS
+  # Reset every cut-pool env var still read by the code so a stale export
+  # from a previous worker invocation (same parallel pool, reused shell)
+  # can never leak into this one. The CbcCutPoolFilter thresholds are
+  # parameters now (CLI:-cutFilterMinCols=... etc.).
+  unset CBC_CLIQUE_POOL_MIN_COLS CBC_CLIQUE_POOL_MIN_CANDIDATES \
+    CBC_CLIQUE_POOL_ALWAYS_FILTER CBC_CLIQUE_POOL_MAX_PARALLELISM \
+    CBC_IMPLIEDCLIQUE_POOL_FILTER
   EXTRA_ARGS=()
   if [[ "$envspec" != "-" ]]; then
     IFS=',' read -r -a kvs <<< "$envspec"

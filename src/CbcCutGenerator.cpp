@@ -730,7 +730,8 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       || dynamic_cast< CglRedSplit2 * >(generator_)
       || generator) {
       cbcFilterGeneratedCuts(cs, numberRowCutsBefore, solver->getColSolution(),
-        solver->getNumCols(), solver->getNumElements(), generatorName_);
+        solver->getNumCols(), solver->getNumElements(), generatorName_,
+        model_->cutPoolFilterSettings());
     }
 #ifdef CGL_DEBUG
     if (debugger2) {

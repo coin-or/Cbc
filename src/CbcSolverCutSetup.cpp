@@ -207,6 +207,17 @@ void installCutGenerators(
   laTranslate[CbcParameters::CGCleanInstead] = 11;
   laTranslate[CbcParameters::CGBothInstead] = 12;
   int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
+  // Parallelism filter on each round of Gomory/MIR/TwoMir/GMI/LandP/
+  // RedSplit2/probing cuts (CbcCutGenerator -> cbcFilterGeneratedCuts).
+  {
+    CbcCutPoolFilterSettings filter;
+    filter.minCols = parameters[CbcParam::CUTFILTERMINCOLS]->intVal();
+    filter.minElements = parameters[CbcParam::CUTFILTERMINELEMENTS]->intVal();
+    filter.minCandidates = parameters[CbcParam::CUTFILTERMINCANDIDATES]->intVal();
+    filter.maxParallelism = parameters[CbcParam::CUTFILTERMAXPARALLELISM]->dblVal();
+    filter.always = parameters[CbcParam::CUTFILTERALWAYS]->modeVal() != 0;
+    babModel.setCutPoolFilterSettings(filter);
+  }
   // See CbcSolver.cpp's REDSPLIT2CUTS/GMICUTS/LANDPCUTS default ("root"): a
   // 2026-09 sanity-suite sweep found these only pay for themselves in
   // aggregate within a "sweet spot" instance-size window. Below it, the

@@ -7079,6 +7079,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , diveMaxIterRoot_(rhs.diveMaxIterRoot_)
   , strongBoostRows_(rhs.strongBoostRows_)
   , strongBoostSize_(rhs.strongBoostSize_)
+  , cutPoolFilterSettings_(rhs.cutPoolFilterSettings_)
   , howOftenGlobalScan_(rhs.howOftenGlobalScan_)
   , numberGlobalViolations_(rhs.numberGlobalViolations_)
   , numberExtraIterations_(rhs.numberExtraIterations_)
@@ -7603,6 +7604,7 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     diveMaxIterRoot_ = rhs.diveMaxIterRoot_;
     strongBoostRows_ = rhs.strongBoostRows_;
     strongBoostSize_ = rhs.strongBoostSize_;
+    cutPoolFilterSettings_ = rhs.cutPoolFilterSettings_;
     if (ownObjects_) {
       for (i = 0; i < numberObjects_; i++)
         delete object_[i];
@@ -7998,6 +8000,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   diveMaxIterRoot_ = rhs.diveMaxIterRoot_;
   strongBoostRows_ = rhs.strongBoostRows_;
   strongBoostSize_ = rhs.strongBoostSize_;
+  cutPoolFilterSettings_ = rhs.cutPoolFilterSettings_;
   howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
   maximumCutPasses_ = rhs.maximumCutPasses_;
@@ -10260,7 +10263,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         // an offline research signal, logged per round below when
         // requested, to correlate against static/pre-computable instance
         // features (rows, cols, nz, density, ...) for offline tuning of
-        // CBC_CUTPOOL_FILTER_* gates. Never read back to change behaviour
+        // the cutFilter* gates. Never read back to change behaviour
         // within the same run.
         double resolveStart = CoinCpuTime();
         feasible = (resolve(node ? node->nodeInfo() : nullptr, 2) != 0);

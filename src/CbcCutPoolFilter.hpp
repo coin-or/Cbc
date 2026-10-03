@@ -29,6 +29,28 @@
 
 class OsiCuts;
 
+/// Thresholds for cbcFilterGeneratedCuts(); the defaults are cbc's.
+struct CbcCutPoolFilterSettings {
+  /// Models with fewer columns are not filtered
+  int minCols;
+  /// Models with at most this many matrix nonzeroes are not filtered (0 = no test)
+  int minElements;
+  /// Rounds with fewer filterable candidates are not filtered
+  int minCandidates;
+  /// Parallelism above which the pool drops the weaker cut
+  double maxParallelism;
+  /// Filter regardless of minCols, minElements and minCandidates
+  bool always;
+  CbcCutPoolFilterSettings()
+    : minCols(500)
+    , minElements(0)
+    , minCandidates(10)
+    , maxParallelism(0.9)
+    , always(false)
+  {
+  }
+};
+
 /**
  * Filter row cuts appended to `cs` at index >= firstRowCut (i.e. the ones
  * just produced by one generateCuts() call) using a CoinCutPool, keeping
@@ -40,8 +62,9 @@ class OsiCuts;
  *
  * Gated off (a no-op) for small models and small candidate counts, mirroring
  * CglBKClique's precedent -- filtering only pays for itself when there are
- * many candidates to choose among. See CbcCutPoolFilter.cpp for the exact
- * thresholds and their CBC_CUTPOOL_FILTER_* env var overrides.
+ * many candidates to choose among. The thresholds come from `settings`
+ * (cbc parameters -cutFilterMinCols etc.); see CbcCutPoolFilter.cpp for
+ * how the defaults were chosen.
  *
  * @param cs cuts collection to filter in place.
  * @param firstRowCut first index (inclusive) of the row cuts to consider;
@@ -54,9 +77,11 @@ class OsiCuts;
  *        CbcCutPoolFilter.cpp's smallModel check for the rationale.
  * @param generatorTag short name of the calling generator (e.g. "Gomory"),
  *        used only for CBC_CLIQUE_POOL_DEBUG-style diagnostic output.
+ * @param settings gate thresholds and pool parallelism limit.
  * @return true if any cuts were removed.
  **/
 bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
-  int numCols, int numElements, const char *generatorTag);
+  int numCols, int numElements, const char *generatorTag,
+  const CbcCutPoolFilterSettings &settings);
 
 #endif //CBCCUTPOOLFILTER_HPP

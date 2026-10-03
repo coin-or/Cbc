@@ -15,7 +15,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [MIP Preprocessing](#mip-preprocessing) (12 parameters)
 - [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (9 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
-- [Cuts](#cuts) (39 parameters)
+- [Cuts](#cuts) (44 parameters)
 - [Heuristics](#heuristics) (37 parameters)
 - [Branching](#branching) (8 parameters)
 - [Tolerances](#tolerances) (6 parameters)
@@ -479,6 +479,14 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `onglobal` (default: `ifmove`)
 
+### `-cutFilterAlways`
+
+Whether to filter new cuts regardless of problem and round size
+
+When on, the cut parallelism filter ignores cutFilterMinCols, cutFilterMinElements and cutFilterMinCandidates and filters every round.
+
+**Values:** `off`, `on` (default: `off`)
+
 ### `-aggregatelevel`
 
 Level of aggregation used in CglMixedRounding
@@ -615,6 +623,30 @@ The number of cuts liftAndProjectCuts may generate in one call.
 
 **Range:** 1 to INT_MAX (default: 5000)
 
+### `-cutFilterMinCols`
+
+Fewest columns for which new cuts are filtered for parallelism
+
+Each round of Gomory, MIR, TwoMir, GMI, lift-and-project, reduce2 and probing cuts is passed through a cut pool that drops a cut too parallel to a stronger one (see cutFilterMaxParallelism). The filter is skipped on problems with fewer than this many columns, where the extra LP rows are cheap.
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-cutFilterMinElements`
+
+Most matrix nonzeroes for which new cuts are not filtered
+
+Like cutFilterMinCols, but by matrix size: the cut filter is skipped when the problem has at most this many nonzeroes. The default, 0, disables this test.
+
+**Range:** 0 to INT_MAX (default: 0)
+
+### `-cutFilterMinCandidates`
+
+Fewest new cuts in a round for which they are filtered
+
+A round of cuts from one generator is only filtered for parallelism if it produced at least this many cuts.
+
+**Range:** 0 to INT_MAX (default: 10)
+
 ### `-reduce2TimeLimit`
 
 Time limit for one reduce2 call, in seconds
@@ -638,6 +670,14 @@ Time limit for one lift-and-project cut, in seconds
 Caps the pivot search for a single liftAndProjectCuts cut, so that one candidate cannot use the whole of liftTimeLimit. The default, 1e30, is unlimited.
 
 **Range:** 0 to inf (default: 1e+30)
+
+### `-cutFilterMaxParallelism`
+
+Parallelism above which the cut filter drops the weaker cut
+
+Two cuts whose normalised coefficient vectors have a dot product above this value are treated as parallel, and only the one that is more violated by the LP solution is kept. 1 keeps everything but exact duplicates; lower values filter more aggressively.
+
+**Range:** 0 to 1 (default: 0.9)
 
 ### `-passCuts`
 

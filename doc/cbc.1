@@ -309,6 +309,11 @@ Whether to use zero half cuts
 .br
 Values: off, on, root, ifmove, forceon, onglobal (default: ifmove)
 .TP
+.BI \-cutFilterAlways
+Whether to filter new cuts regardless of problem and round size
+.br
+Values: off, on (default: off)
+.TP
 .BI \-aggregatelevel
 Level of aggregation used in CglMixedRounding
 .br
@@ -394,6 +399,21 @@ Most lift\-and\-project cuts per round
 .br
 Range: 1 to INT_MAX (default: 5000)
 .TP
+.BI \-cutFilterMinCols
+Fewest columns for which new cuts are filtered for parallelism
+.br
+Range: 0 to INT_MAX (default: 500)
+.TP
+.BI \-cutFilterMinElements
+Most matrix nonzeroes for which new cuts are not filtered
+.br
+Range: 0 to INT_MAX (default: 0)
+.TP
+.BI \-cutFilterMinCandidates
+Fewest new cuts in a round for which they are filtered
+.br
+Range: 0 to INT_MAX (default: 10)
+.TP
 .BI \-reduce2TimeLimit
 Time limit for one reduce2 call, in seconds
 .br
@@ -408,6 +428,11 @@ Range: 0 to inf (default: 1e+30)
 Time limit for one lift\-and\-project cut, in seconds
 .br
 Range: 0 to inf (default: 1e+30)
+.TP
+.BI \-cutFilterMaxParallelism
+Parallelism above which the cut filter drops the weaker cut
+.br
+Range: 0 to 1 (default: 0.9)
 .TP
 .BI \-passCuts
 Number of cut passes at root node

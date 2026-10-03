@@ -39,6 +39,7 @@
 #include "CbcMessage.hpp"
 #include "CbcOutput.hpp"
 #include "CbcEventHandler.hpp"
+#include "CbcCutPoolFilter.hpp"
 #include "ClpDualRowPivot.hpp"
 #ifndef CBC_OTHER_SOLVER
 #include "OsiClpSolverInterface.hpp"
@@ -3016,6 +3017,17 @@ public:
   {
     return strongBoostSize_;
   }
+  /** Thresholds for the parallelism filter applied to each round of
+      generated cuts (see cbcFilterGeneratedCuts) */
+  inline void setCutPoolFilterSettings(const CbcCutPoolFilterSettings &value)
+  {
+    cutPoolFilterSettings_ = value;
+  }
+  /// Get the cut parallelism filter thresholds
+  inline const CbcCutPoolFilterSettings &cutPoolFilterSettings() const
+  {
+    return cutPoolFilterSettings_;
+  }
   /// Get anything with priority >= this can be treated as continuous
   inline int continuousPriority() const
   {
@@ -3539,6 +3551,8 @@ private:
   int strongBoostRows_;
   /// Strong branching boost applies below this many rows+columns
   int strongBoostSize_;
+  /// Cut parallelism filter thresholds
+  CbcCutPoolFilterSettings cutPoolFilterSettings_;
   /*! Pointer to the event handler */
 #ifdef CBC_ONLY_CLP
   ClpEventHandler *eventHandler_;

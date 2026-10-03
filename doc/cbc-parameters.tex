@@ -546,6 +546,15 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 \textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{ifmove})
 
+\subsection*{\texttt{-cutFilterAlways} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-cutFilterAlways} \ptag{teal!70!black}{KW}}
+
+Whether to filter new cuts regardless of problem and round size
+
+When on, the cut parallelism filter ignores cutFilterMinCols, cutFilterMinElements and cutFilterMinCandidates and filters every round.
+
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
+
 \subsection*{\texttt{-aggregatelevel} \ptag{blue!60!black}{INT}}
 \addcontentsline{toc}{subsection}{\texttt{-aggregatelevel} \ptag{blue!60!black}{INT}}
 
@@ -699,6 +708,33 @@ The number of cuts liftAndProjectCuts may generate in one call.
 
 \textbf{Range:} 1 to INT\_MAX (default: 5000)
 
+\subsection*{\texttt{-cutFilterMinCols} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cutFilterMinCols} \ptag{blue!60!black}{INT}}
+
+Fewest columns for which new cuts are filtered for parallelism
+
+Each round of Gomory, MIR, TwoMir, GMI, lift-and-project, reduce2 and probing cuts is passed through a cut pool that drops a cut too parallel to a stronger one (see cutFilterMaxParallelism). The filter is skipped on problems with fewer than this many columns, where the extra LP rows are cheap.
+
+\textbf{Range:} 0 to INT\_MAX (default: 500)
+
+\subsection*{\texttt{-cutFilterMinElements} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cutFilterMinElements} \ptag{blue!60!black}{INT}}
+
+Most matrix nonzeroes for which new cuts are not filtered
+
+Like cutFilterMinCols, but by matrix size: the cut filter is skipped when the problem has at most this many nonzeroes. The default, 0, disables this test.
+
+\textbf{Range:} 0 to INT\_MAX (default: 0)
+
+\subsection*{\texttt{-cutFilterMinCandidates} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cutFilterMinCandidates} \ptag{blue!60!black}{INT}}
+
+Fewest new cuts in a round for which they are filtered
+
+A round of cuts from one generator is only filtered for parallelism if it produced at least this many cuts.
+
+\textbf{Range:} 0 to INT\_MAX (default: 10)
+
 \subsection*{\texttt{-reduce2TimeLimit} \ptag{violet!65!black}{DBL}}
 \addcontentsline{toc}{subsection}{\texttt{-reduce2TimeLimit} \ptag{violet!65!black}{DBL}}
 
@@ -725,6 +761,15 @@ Time limit for one lift-and-project cut, in seconds
 Caps the pivot search for a single liftAndProjectCuts cut, so that one candidate cannot use the whole of liftTimeLimit. The default, 1e30, is unlimited.
 
 \textbf{Range:} 0 to inf (default: 1e+30)
+
+\subsection*{\texttt{-cutFilterMaxParallelism} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-cutFilterMaxParallelism} \ptag{violet!65!black}{DBL}}
+
+Parallelism above which the cut filter drops the weaker cut
+
+Two cuts whose normalised coefficient vectors have a dot product above this value are treated as parallel, and only the one that is more violated by the LP solution is kept. 1 keeps everything but exact duplicates; lower values filter more aggressively.
+
+\textbf{Range:} 0 to 1 (default: 0.9)
 
 \subsection*{\texttt{-passCuts} \ptag{blue!60!black}{INT}}
 \addcontentsline{toc}{subsection}{\texttt{-passCuts} \ptag{blue!60!black}{INT}}

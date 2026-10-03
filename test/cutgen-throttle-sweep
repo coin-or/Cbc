@@ -23,7 +23,7 @@
 # configs.tsv format: one config per line, tab-separated
 #   <name>\t<comma-separated overrides, or - for none>
 # Each override token is either KEY=VAL (exported as an env var, e.g.
-# CBC_CUTPOOL_FILTER_MIN_COLS=0) or CLI:<arg> (appended as an extra
+# CBC_CLIQUE_POOL_MIN_COLS=0) or CLI:<arg> (appended as an extra
 # mip-root-replay argument, e.g. CLI:--landp=off or
 # CLI:--param=liftTimeLimit=10 for any CbcParameters entry).
 #
@@ -56,9 +56,9 @@ if [[ "${1:-}" == --worker=* ]]; then
   # Reset every throttle env var this sweep knows about so a stale export
   # from a previous worker invocation (same parallel pool, reused shell)
   # can never leak into this one.
-  unset CBC_CUTPOOL_FILTER_MIN_COLS \
-    CBC_CUTPOOL_FILTER_MIN_CANDIDATES CBC_CUTPOOL_FILTER_ALWAYS \
-    CBC_CUTPOOL_FILTER_MAX_PARALLELISM CBC_CUTPOOL_FILTER_MIN_ELEMENTS
+  unset CBC_CLIQUE_POOL_MIN_COLS CBC_CLIQUE_POOL_MIN_CANDIDATES \
+    CBC_CLIQUE_POOL_ALWAYS_FILTER CBC_CLIQUE_POOL_MAX_PARALLELISM \
+    CBC_IMPLIEDCLIQUE_POOL_FILTER
   EXTRA_ARGS=()
   if [[ "$envspec" != "-" ]]; then
     IFS=',' read -r -a kvs <<< "$envspec"

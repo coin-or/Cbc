@@ -270,7 +270,7 @@
 <a href="#mip-preprocessing" class="sb-link">MIP Preprocessing<span class="sb-count">12</span></a>
 <a href="#mip-preprocessing-bound-propagation" class="sb-link">MIP Preprocessing — Bound Propagation<span class="sb-count">9</span></a>
 <a href="#lp-presolve" class="sb-link">LP Presolve<span class="sb-count">3</span></a>
-<a href="#cuts" class="sb-link">Cuts<span class="sb-count">39</span></a>
+<a href="#cuts" class="sb-link">Cuts<span class="sb-count">44</span></a>
 <a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">37</span></a>
 <a href="#branching" class="sb-link">Branching<span class="sb-count">8</span></a>
 <a href="#tolerances" class="sb-link">Tolerances<span class="sb-count">6</span></a>
@@ -596,6 +596,11 @@
  This implementation was written by Alberto Caprara.</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
+<details class="param" data-search="cutfilteralways whether to filter new cuts regardless of problem and round size">
+  <summary><span class="pname"><code>-cutFilterAlways</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to filter new cuts regardless of problem and round size</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
+  <div class="pbody"><p class="plong">When on, the cut parallelism filter ignores cutFilterMinCols, cutFilterMinElements and cutFilterMinCandidates and filters every round.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+</details>
 <details class="param" data-search="aggregatelevel level of aggregation used in cglmixedrounding">
   <summary><span class="pname"><code>-aggregatelevel</code></span><span class="badge badge-int">Integer</span><span class="pshort">Level of aggregation used in CglMixedRounding</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
   <div class="pbody"><p class="plong">MixedIntegerRounding2 can work on constraints created by aggregating constraints in model.  Although the coding for this has been in for some time, it is being modified and the user may wish to play with this. -1 varies the level at various times.</p>
@@ -681,6 +686,21 @@
   <div class="pbody"><p class="plong">The number of cuts liftAndProjectCuts may generate in one call.</p>
 <div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;5000)</span></div></div>
 </details>
+<details class="param" data-search="cutfiltermincols fewest columns for which new cuts are filtered for parallelism">
+  <summary><span class="pname"><code>-cutFilterMinCols</code></span><span class="badge badge-int">Integer</span><span class="pshort">Fewest columns for which new cuts are filtered for parallelism</span><span class="pmeta">default:&nbsp;<code>500</code></span></summary>
+  <div class="pbody"><p class="plong">Each round of Gomory, MIR, TwoMir, GMI, lift-and-project, reduce2 and probing cuts is passed through a cut pool that drops a cut too parallel to a stronger one (see cutFilterMaxParallelism). The filter is skipped on problems with fewer than this many columns, where the extra LP rows are cheap.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;500)</span></div></div>
+</details>
+<details class="param" data-search="cutfilterminelements most matrix nonzeroes for which new cuts are not filtered">
+  <summary><span class="pname"><code>-cutFilterMinElements</code></span><span class="badge badge-int">Integer</span><span class="pshort">Most matrix nonzeroes for which new cuts are not filtered</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
+  <div class="pbody"><p class="plong">Like cutFilterMinCols, but by matrix size: the cut filter is skipped when the problem has at most this many nonzeroes. The default, 0, disables this test.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
+</details>
+<details class="param" data-search="cutfiltermincandidates fewest new cuts in a round for which they are filtered">
+  <summary><span class="pname"><code>-cutFilterMinCandidates</code></span><span class="badge badge-int">Integer</span><span class="pshort">Fewest new cuts in a round for which they are filtered</span><span class="pmeta">default:&nbsp;<code>10</code></span></summary>
+  <div class="pbody"><p class="plong">A round of cuts from one generator is only filtered for parallelism if it produced at least this many cuts.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;10)</span></div></div>
+</details>
 <details class="param" data-search="reduce2timelimit time limit for one reduce2 call, in seconds">
   <summary><span class="pname"><code>-reduce2TimeLimit</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Time limit for one reduce2 call, in seconds</span><span class="pmeta">default:&nbsp;<code>60</code></span></summary>
   <div class="pbody"><p class="plong">Each call of reduce2AndSplitCuts stops after this much CPU time. The limit restarts on every call.</p>
@@ -695,6 +715,11 @@
   <summary><span class="pname"><code>-liftCutTimeLimit</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Time limit for one lift-and-project cut, in seconds</span><span class="pmeta">default:&nbsp;<code>1e+30</code></span></summary>
   <div class="pbody"><p class="plong">Caps the pivot search for a single liftAndProjectCuts cut, so that one candidate cannot use the whole of liftTimeLimit. The default, 1e30, is unlimited.</p>
 <div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;inf&ensp;<span class="pmeta">(default:&nbsp;1e+30)</span></div></div>
+</details>
+<details class="param" data-search="cutfiltermaxparallelism parallelism above which the cut filter drops the weaker cut">
+  <summary><span class="pname"><code>-cutFilterMaxParallelism</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Parallelism above which the cut filter drops the weaker cut</span><span class="pmeta">default:&nbsp;<code>0.9</code></span></summary>
+  <div class="pbody"><p class="plong">Two cuts whose normalised coefficient vectors have a dot product above this value are treated as parallel, and only the one that is more violated by the LP solution is kept. 1 keeps everything but exact duplicates; lower values filter more aggressively.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;0.9)</span></div></div>
 </details>
 <details class="param" data-search="passcuts number of cut passes at root node">
   <summary><span class="pname"><code>-passCuts</code></span><span class="badge badge-int">Integer</span><span class="pshort">Number of cut passes at root node</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>

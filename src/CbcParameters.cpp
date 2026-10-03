@@ -736,7 +736,11 @@ void CbcParameters::addCbcParams() {
                     CbcParam::REDSPLIT2MAXCOMPUTED, CbcParam::REDSPLIT2MAXBUFFER,
                     CbcParam::REDSPLIT2TIMELIMIT, CbcParam::GMIHOWOFTEN,
                     CbcParam::LANDPTIMELIMIT, CbcParam::LANDPCUTTIMELIMIT,
-                    CbcParam::LANDPMAXCUTSPERROUND})
+                    CbcParam::LANDPMAXCUTSPERROUND,
+                    CbcParam::CUTFILTERMINCOLS, CbcParam::CUTFILTERMINELEMENTS,
+                    CbcParam::CUTFILTERMINCANDIDATES,
+                    CbcParam::CUTFILTERMAXPARALLELISM,
+                    CbcParam::CUTFILTERALWAYS})
     parameters_[code]->setTopic("Cuts");
 
   // Bool params
@@ -944,6 +948,11 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::LANDPTIMELIMIT]->setDefault(1.0e30);
      parameters_[CbcParam::LANDPCUTTIMELIMIT]->setDefault(1.0e30);
      parameters_[CbcParam::LANDPMAXCUTSPERROUND]->setDefault(5000);
+     parameters_[CbcParam::CUTFILTERMINCOLS]->setDefault(500);
+     parameters_[CbcParam::CUTFILTERMINELEMENTS]->setDefault(0);
+     parameters_[CbcParam::CUTFILTERMINCANDIDATES]->setDefault(10);
+     parameters_[CbcParam::CUTFILTERMAXPARALLELISM]->setDefault(0.9);
+     parameters_[CbcParam::CUTFILTERALWAYS]->setDefault("off");
      parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setDefault(-1);
      parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
@@ -3057,6 +3066,43 @@ void CbcParameters::addCbcSolverIntParams() {
       "The number of cuts liftAndProjectCuts may generate in one call.",
       CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::CUTFILTERMINCOLS]->setup(
+      "cutFilterMinCo!ls",
+      "Fewest columns for which new cuts are filtered for parallelism",
+      0, COIN_INT_MAX,
+      "Each round of Gomory, MIR, TwoMir, GMI, lift-and-project, reduce2 and "
+      "probing cuts is passed through a cut pool that drops a cut too "
+      "parallel to a stronger one (see cutFilterMaxParallelism). The filter "
+      "is skipped on problems with fewer than this many columns, where the "
+      "extra LP rows are cheap.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CUTFILTERMINELEMENTS]->setup(
+      "cutFilterMinE!lements",
+      "Most matrix nonzeroes for which new cuts are not filtered",
+      0, COIN_INT_MAX,
+      "Like cutFilterMinCols, but by matrix size: the cut filter is skipped "
+      "when the problem has at most this many nonzeroes. The default, 0, "
+      "disables this test.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CUTFILTERMINCANDIDATES]->setup(
+      "cutFilterMinCa!ndidates",
+      "Fewest new cuts in a round for which they are filtered",
+      0, COIN_INT_MAX,
+      "A round of cuts from one generator is only filtered for parallelism "
+      "if it produced at least this many cuts.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CUTFILTERMAXPARALLELISM]->setup(
+      "cutFilterMa!xParallelism",
+      "Parallelism above which the cut filter drops the weaker cut", 0.0, 1.0,
+      "Two cuts whose normalised coefficient vectors have a dot product above "
+      "this value are treated as parallel, and only the one that is more "
+      "violated by the LP solution is kept. 1 keeps everything but exact "
+      "duplicates; lower values filter more aggressively.",
+      CoinParam::displayPriorityLow);
+
   parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setup(
       "boundPropM!axRounds",
       "Maximum number of bound propagation rounds",
@@ -3157,6 +3203,14 @@ void CbcParameters::addCbcSolverBoolParams() {
       "tighten variable bounds before the initial LP solve and conflict "
       "graph construction. This is a cheap preprocessing step that can "
       "fix variables and reduce the problem size.");
+
+  parameters_[CbcParam::CUTFILTERALWAYS]->setup(
+      "cutFilterA!lways",
+      "Whether to filter new cuts regardless of problem and round size",
+      "When on, the cut parallelism filter ignores cutFilterMinCols, "
+      "cutFilterMinElements and cutFilterMinCandidates and filters every "
+      "round.",
+      CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setup(
       "preRootLPStr!enghtening",

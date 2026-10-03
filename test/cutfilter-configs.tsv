@@ -10,28 +10,28 @@
 # "today" must always be present -- it is the baseline every other config
 # is compared against (shipped defaults: this generic filter is compiled in
 # but effectively off for Gomory/MIR2/Twomir/Probing since
-# CBC_CUTPOOL_FILTER_MIN_CANDIDATES/MIN_COLS gates were chosen conservatively;
+# the cutFilterMinCandidates/cutFilterMinCols gates were chosen conservatively;
 # CglBKClique's own clique-cut filtering is unaffected either way).
 #
 # Stage 1 -- does turning the filter on at all help, and at what minimum
 # candidate-count gate? (mirrors CglBKClique's own MIN_CANDIDATES=20 default,
 # empirically the point below which filtering essentially never fires).
 today	-
-filter_always	CBC_CUTPOOL_FILTER_ALWAYS=1
-filter_min5	CBC_CUTPOOL_FILTER_MIN_CANDIDATES=5,CBC_CUTPOOL_FILTER_MIN_COLS=0
-filter_min20	CBC_CUTPOOL_FILTER_MIN_CANDIDATES=20,CBC_CUTPOOL_FILTER_MIN_COLS=0
-filter_min50	CBC_CUTPOOL_FILTER_MIN_CANDIDATES=50,CBC_CUTPOOL_FILTER_MIN_COLS=0
-filter_smallcols100	CBC_CUTPOOL_FILTER_MIN_COLS=100
+filter_always	CLI:-cutFilterAlways=on
+filter_min5	CLI:-cutFilterMinCandidates=5,CLI:-cutFilterMinCols=0
+filter_min20	CLI:-cutFilterMinCandidates=20,CLI:-cutFilterMinCols=0
+filter_min50	CLI:-cutFilterMinCandidates=50,CLI:-cutFilterMinCols=0
+filter_smallcols100	CLI:-cutFilterMinCols=100
 #
 # Stage 2 -- parallelism/orthogonality secondary filter on top of the
 # best-fitness-per-column contest (parity with CglBKClique's
 # CBC_CLIQUE_POOL_MAX_PARALLELISM sweep, which found no net win there --
 # checking whether the other 4 generators behave differently).
-filter_par09	CBC_CUTPOOL_FILTER_ALWAYS=1,CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.9
-filter_par07	CBC_CUTPOOL_FILTER_ALWAYS=1,CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.7
-filter_par05	CBC_CUTPOOL_FILTER_ALWAYS=1,CBC_CUTPOOL_FILTER_MAX_PARALLELISM=0.5
+filter_par09	CLI:-cutFilterAlways=on,CLI:-cutFilterMaxParallelism=0.9
+filter_par07	CLI:-cutFilterAlways=on,CLI:-cutFilterMaxParallelism=0.7
+filter_par05	CLI:-cutFilterAlways=on,CLI:-cutFilterMaxParallelism=0.5
 #
 # Stage 3 -- reinvest time saved by filtering into more cut-generation
 # rounds at root (default passCuts=100 for <5000 cols/20 otherwise --
 # see CbcParameters.cpp CUTPASS setup).
-filter_reinvest200	CBC_CUTPOOL_FILTER_ALWAYS=1,CLI:-passCuts=200
+filter_reinvest200	CLI:-cutFilterAlways=on,CLI:-passCuts=200

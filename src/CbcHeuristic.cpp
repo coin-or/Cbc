@@ -1302,6 +1302,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         model.setDblParam(CbcModel::CbcStartSeconds, startTime);
         // move seed across
         model.randomNumberGenerator()->setSeed(model_->randomNumberGenerator()->getSeed());
+        // the sub-model reuses our cut generators, so filter their cuts alike
+        model.setCutPoolFilterSettings(model_->cutPoolFilterSettings());
         // redo SOS
         OsiClpSolverInterface *clpSolver
           = getClpSolver(model.solver());

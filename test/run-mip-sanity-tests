@@ -58,6 +58,7 @@
 #   --no-mipstart-tests  Skip the MIP-start tests (see below)
 #   --no-coefstr-tests   Skip the coefficient-tightening tests (see below)
 #   --no-row-activity-tests  Skip the row activity/slack tests (see below)
+#   --no-final-bound-tests  Skip final search-bound tests (see below)
 #   --threads-pin        Invoke cbc WITH an explicit "-threads 1" (opt-in;
 #                        the suite's default is to NOT pass -threads at all,
 #                        matching how most users actually invoke cbc).
@@ -201,6 +202,11 @@
 # (INT_PARAM_MAX_SAVED_SOLS = 0). One fast in-process binary; pass
 # --no-row-activity-tests to skip it.
 #
+# Final search-bound tests (test/final-bound-test.cpp) verify interrupted-search
+# bounds against the live frontier and an enumerated binary optimum, covering
+# minimization/maximization, serial/parallel, node/time/event stops and root-only
+# limits. Pass --no-final-bound-tests to skip this self-contained binary.
+#
 # Positional arguments (optional): one or more glob patterns to select a
 # subset of instances by name (e.g. `./run-mip-sanity-tests 'jssp_*' 'cvrp_*'`).
 set -uo pipefail
@@ -229,6 +235,7 @@ NO_LAZY_TESTS=0
 NO_MIPSTART_TESTS=0
 NO_COEFSTR_TESTS=0
 NO_ROW_ACTIVITY_TESTS=0
+NO_FINAL_BOUND_TESTS=0
 THREADS_PIN=0
 CUT_STATS=0
 CUT_STATS_TSV=""
@@ -255,6 +262,7 @@ for arg in "$@"; do
     --no-mipstart-tests) NO_MIPSTART_TESTS=1 ;;
     --no-coefstr-tests) NO_COEFSTR_TESTS=1 ;;
     --no-row-activity-tests) NO_ROW_ACTIVITY_TESTS=1 ;;
+    --no-final-bound-tests) NO_FINAL_BOUND_TESTS=1 ;;
     --threads-pin) THREADS_PIN=1 ;;
     -h|--help)
       # Print the header comment block: everything from line 2 up to (but not
@@ -1216,10 +1224,34 @@ else
   fi
 fi
 
+final_bound_tests_failed=0
+if [[ $NO_FINAL_BOUND_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping final search-bound tests (--no-final-bound-tests).${RESET}"
+else
+  FINAL_BOUND_TEST="$SCRIPT_DIR/final-bound-test$EXEEXT"
+  if [[ ! -x "$FINAL_BOUND_TEST" ]]; then
+    make -C "$SCRIPT_DIR" "final-bound-test$EXEEXT" || {
+      echo "${RED}Error: failed to build final-bound-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+  echo
+  echo "${BOLD}=== Final search-bound tests ===${RESET}"
+  final_bound_log="$RESULTS_DIR/final-bound-test.log"
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$FINAL_BOUND_TEST" >"$final_bound_log" 2>&1; then
+    echo "  ${GREEN}✔ final search-bound tests passed${RESET}  ${DIM}($final_bound_log)${RESET}"
+  else
+    final_bound_tests_failed=1
+    echo "  ${RED}✗ final search-bound tests failed${RESET}" >&2
+    cat "$final_bound_log"
+  fi
+fi
+
 if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 \
       || ${#capi_fail_list[@]} -gt 0 || $lp_tests_failed -ne 0 \
       || $lazy_tests_failed -ne 0 || $mipstart_tests_failed -ne 0 \
-      || $coefstr_tests_failed -ne 0 || $row_activity_tests_failed -ne 0 ]]; then
+      || $coefstr_tests_failed -ne 0 || $row_activity_tests_failed -ne 0 \
+      || $final_bound_tests_failed -ne 0 ]]; then
   exit 1
 fi
 exit 0

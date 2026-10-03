@@ -5882,9 +5882,23 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     nDeleteNode = 0;
   }
+  double pendingThreadBound = COIN_DBL_MAX;
 #ifdef CBC_THREAD
   if (master_) {
     master_->stopThreads(-1);
+    // Finished workers can still own nodes not yet returned to the tree.
+    // Read them before shutdown discards them, after all workers are idle.
+    if (parallelMode() > 0) {
+      for (int i = 0; i < master_->numberThreads(); i++) {
+        CbcThread *child = master_->child(i);
+        if (child->returnCode() == 1) {
+          pendingThreadBound = std::min(pendingThreadBound, child->nodeObjectiveValue());
+          CbcNode *createdNode = child->createdNode();
+          if (createdNode)
+            pendingThreadBound = std::min(pendingThreadBound, createdNode->objectiveValue());
+        }
+      }
+    }
     master_->waitForThreadsInTree(2);
     // adjust time to allow for children on some systems
     // dblParam_[CbcStartSeconds] -= CoinCpuTimeJustChildren();
@@ -5898,6 +5912,14 @@ void CbcModel::branchAndBound(int doStatistics)
      case it'll be deleted in cleanTree. We need to check.
     */
   if (stoppingCriterionReached()) {
+    double finalBound = pendingThreadBound;
+    if (tree_->size())
+      finalBound = std::min(finalBound, tree_->getBestPossibleObjective());
+    // An empty frontier (or an abandoned subtree) cannot replace the last
+    // known bound. Otherwise report the frontier, not the last timed update.
+    // Retain a stronger cached bound if node LP roundoff slightly lowers it.
+    if (finalBound < COIN_DBL_MAX && !numberStoppedSubTrees_)
+      bestPossibleObjective_ = std::min(std::max(finalBound, bestPossibleObjective_), bestObjective_);
     if (tree_->size()) {
       double dummyBest;
       tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest);

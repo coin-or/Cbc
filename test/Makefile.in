@@ -100,11 +100,11 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	mip-debug-cuts$(EXEEXT) lp-relaxation-test$(EXEEXT) \
 	lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
 	coefstr-test$(EXEEXT) rowred-test$(EXEEXT) \
-	row-activity-test$(EXEEXT) bkclique-bench$(EXEEXT) \
-	clqext-bench$(EXEEXT) zerohalf-bench$(EXEEXT) \
-	probing-bench$(EXEEXT) gomory-bench$(EXEEXT) \
-	lagomory-bench$(EXEEXT) landp-bench$(EXEEXT) \
-	twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
+	row-activity-test$(EXEEXT) final-bound-test$(EXEEXT) \
+	bkclique-bench$(EXEEXT) clqext-bench$(EXEEXT) \
+	zerohalf-bench$(EXEEXT) probing-bench$(EXEEXT) \
+	gomory-bench$(EXEEXT) lagomory-bench$(EXEEXT) \
+	landp-bench$(EXEEXT) twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
 	impclique-explore$(EXEEXT) impclique-bench$(EXEEXT) \
 	impclique-vs-clique-bench$(EXEEXT) \
 	impclique-real-bench$(EXEEXT) mip-root-replay$(EXEEXT) \
@@ -138,6 +138,9 @@ clqext_bench_DEPENDENCIES = ../src/libCbc.la
 am_coefstr_test_OBJECTS = coefstr-test.$(OBJEXT)
 coefstr_test_OBJECTS = $(am_coefstr_test_OBJECTS)
 coefstr_test_DEPENDENCIES = ../src/libCbc.la
+am_final_bound_test_OBJECTS = final-bound-test.$(OBJEXT)
+final_bound_test_OBJECTS = $(am_final_bound_test_OBJECTS)
+final_bound_test_DEPENDENCIES = ../src/libCbc.la
 am_gomory_bench_OBJECTS = gomory-bench.$(OBJEXT)
 gomory_bench_OBJECTS = $(am_gomory_bench_OBJECTS)
 gomory_bench_DEPENDENCIES = ../src/libCbc.la
@@ -220,8 +223,8 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
 	./$(DEPDIR)/cbc_validate_sol.Po ./$(DEPDIR)/clqext-bench.Po \
-	./$(DEPDIR)/coefstr-test.Po ./$(DEPDIR)/gomory-bench.Po \
-	./$(DEPDIR)/impclique-bench.Po \
+	./$(DEPDIR)/coefstr-test.Po ./$(DEPDIR)/final-bound-test.Po \
+	./$(DEPDIR)/gomory-bench.Po ./$(DEPDIR)/impclique-bench.Po \
 	./$(DEPDIR)/impclique-explore.Po \
 	./$(DEPDIR)/impclique-real-bench.Po \
 	./$(DEPDIR)/impclique-vs-clique-bench.Po \
@@ -255,8 +258,9 @@ am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
 	$(clqext_bench_SOURCES) $(coefstr_test_SOURCES) \
-	$(gomory_bench_SOURCES) $(impclique_bench_SOURCES) \
-	$(impclique_explore_SOURCES) $(impclique_real_bench_SOURCES) \
+	$(final_bound_test_SOURCES) $(gomory_bench_SOURCES) \
+	$(impclique_bench_SOURCES) $(impclique_explore_SOURCES) \
+	$(impclique_real_bench_SOURCES) \
 	$(impclique_vs_clique_bench_SOURCES) $(lagomory_bench_SOURCES) \
 	$(landp_bench_SOURCES) $(lazy_constraint_test_SOURCES) \
 	$(lp_relaxation_test_SOURCES) $(mip_c_solve_SOURCES) \
@@ -459,6 +463,8 @@ cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 cbc_validate_sol_LDADD = ../src/libCbc.la
 mip_c_solve_SOURCES = mip-c-solve.cpp
 mip_c_solve_LDADD = ../src/libCbc.la
+final_bound_test_SOURCES = final-bound-test.cpp
+final_bound_test_LDADD = ../src/libCbc.la
 
 ########################################################################
 #           Row-cut-debugger diagnostic for wrong-answer bugs          #
@@ -1337,6 +1343,10 @@ coefstr-test$(EXEEXT): $(coefstr_test_OBJECTS) $(coefstr_test_DEPENDENCIES) $(EX
 	@rm -f coefstr-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(coefstr_test_OBJECTS) $(coefstr_test_LDADD) $(LIBS)
 
+final-bound-test$(EXEEXT): $(final_bound_test_OBJECTS) $(final_bound_test_DEPENDENCIES) $(EXTRA_final_bound_test_DEPENDENCIES)
+	@rm -f final-bound-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(final_bound_test_OBJECTS) $(final_bound_test_LDADD) $(LIBS)
+
 gomory-bench$(EXEEXT): $(gomory_bench_OBJECTS) $(gomory_bench_DEPENDENCIES) $(EXTRA_gomory_bench_DEPENDENCIES) 
 	@rm -f gomory-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(gomory_bench_OBJECTS) $(gomory_bench_LDADD) $(LIBS)
@@ -1431,6 +1441,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc_validate_sol.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clqext-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coefstr-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/final-bound-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gomory-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-explore.Po@am__quote@ # am--include-marker
@@ -1584,6 +1595,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
 	-rm -f ./$(DEPDIR)/clqext-bench.Po
 	-rm -f ./$(DEPDIR)/coefstr-test.Po
+	-rm -f ./$(DEPDIR)/final-bound-test.Po
 	-rm -f ./$(DEPDIR)/gomory-bench.Po
 	-rm -f ./$(DEPDIR)/impclique-bench.Po
 	-rm -f ./$(DEPDIR)/impclique-explore.Po
@@ -1654,6 +1666,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
 	-rm -f ./$(DEPDIR)/clqext-bench.Po
 	-rm -f ./$(DEPDIR)/coefstr-test.Po
+	-rm -f ./$(DEPDIR)/final-bound-test.Po
 	-rm -f ./$(DEPDIR)/gomory-bench.Po
 	-rm -f ./$(DEPDIR)/impclique-bench.Po
 	-rm -f ./$(DEPDIR)/impclique-explore.Po

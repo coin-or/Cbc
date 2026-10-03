@@ -901,6 +901,10 @@ void testStagedModelReachesSolve(const Tsp &t)
     Cbc_solve(m);
     checkEqInt(Cbc_getNumRows(m), rowsBefore + 1, "row added after a solve is in the model");
     check(Cbc_isProvenOptimal(m) != 0, "solve after adding the row: proven optimal");
+    check(Cbc_status(m) == 0 && Cbc_secondaryStatus(m) == 0,
+      "solve after adding the row: completed without a spurious limit");
+    checkClose(Cbc_getBestPossibleObjValue(m), Cbc_getObjValue(m), 1.0e-6,
+      "solve after adding the row: bound equals the optimum");
     check(Cbc_getObjValue(m) > hk + 1.0e-6,
       "the added row binds: second optimum " + std::to_string(Cbc_getObjValue(m))
         + " is strictly worse than " + std::to_string(hk));

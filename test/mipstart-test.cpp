@@ -484,6 +484,10 @@ void testShape(Shape shape, bool byIndex, bool preprocess)
 
   check(Cbc_getNumIntegers(model) == FixedCharge::n, std::string("model has 4 integers: ") + tag);
   check(Cbc_isProvenOptimal(model) != 0, std::string("proven optimal: ") + tag);
+  check(Cbc_status(model) == 0 && Cbc_secondaryStatus(model) == 0,
+    std::string("search completed without a spurious limit: ") + tag);
+  checkClose(Cbc_getBestPossibleObjValue(model), opt, 1e-6,
+    std::string("completed search bound equals the optimum: ") + tag);
 
   /* Without this the whole test would pass on a build that ignored MIP starts
      entirely: the model is small enough that Cbc reaches the same optimum

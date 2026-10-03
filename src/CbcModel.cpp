@@ -10683,6 +10683,10 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 void CbcModel::doRootHeuristicsAfterCuts(bool feasible, CbcNode *node,
   int numberColumns)
 {
+  // Removing slack rows invalidates the LP status; retain a completed
+  // infeasibility/cutoff proof (or an interrupted solve) when no heuristics run.
+  if (!feasible)
+    return;
   if (!numberNodes_ && !maximumSecondsReached()) {
     // First see if any cuts are slack
     int numberRows = solver_->getNumRows();

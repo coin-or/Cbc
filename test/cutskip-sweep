@@ -3,8 +3,8 @@
 # + cut generation + first N nodes) across mip-sanity-data, once per named
 # configuration in a configs.tsv (see cutskip-configs.tsv), to benchmark
 # the "adaptive root cut-generator skip" feature
-# (CbcModel::setCutGeneratorAdaptiveSkip() / CBC_CUT_ADAPTIVE_SKIP*
-# env vars -- see CbcModel.cpp's serialCuts()).
+# (CbcModel::setCutGeneratorAdaptiveSkip() / the -cutSkip* parameters --
+# see CbcModel.cpp's serialCuts()).
 #
 # Unlike the FJ/FPump sweep (fj-tune-sweep.sh), this drives the real `cbc`
 # binary end-to-end rather than mip-root-replay: mip-root-replay's
@@ -24,9 +24,8 @@
 # configs.tsv format: one config per line, tab-separated
 #   <name>\t<comma-separated overrides, or - for none>
 # Each override token is either KEY=VAL (exported as an env var) or
-# CLI:<arg> (appended as an extra cbc command-line argument, needed to
-# force a bit OFF -- env vars can only turn adaptive-skip on, never
-# override an already-on default -- e.g. CLI:-moreMoreMipOptions=0).
+# CLI:<arg> (appended as an extra cbc command-line argument, e.g.
+# CLI:-more2MipOptions=off or CLI:-cutSkipMissThreshold=4).
 #
 # One of the configs MUST be named "today" -- the baseline every other
 # config is compared against (current shipped defaults). Every other
@@ -60,12 +59,6 @@ if [[ "${1:-}" == --worker=* ]]; then
                # (extra cbc command-line argument) tokens, or "-" for none
   sec="$3"
   data_dir="$4"
-  # Reset every adaptive-skip env var this sweep knows about so a stale
-  # export from a previous worker invocation (same parallel pool, reused
-  # shell) can never leak into this one.
-  unset CBC_CUT_ADAPTIVE_SKIP CBC_CUT_ADAPTIVE_SKIP_MIN_TRIES \
-    CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD CBC_CUT_ADAPTIVE_SKIP_INITIAL_PERIOD \
-    CBC_CUT_ADAPTIVE_SKIP_MAX_PERIOD CBC_CUT_ADAPTIVE_SKIP_MIN_COLS
   EXTRA_ARGS=()
   if [[ "$envspec" != "-" ]]; then
     IFS=',' read -r -a kvs <<< "$envspec"

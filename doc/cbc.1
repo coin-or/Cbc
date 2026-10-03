@@ -399,6 +399,11 @@ Memory cap for reduce2, in integers (computed cuts times rows)
 .br
 Range: 1 to INT_MAX (default: 50000000)
 .TP
+.BI \-reduce2MaxTabElements
+Memory cap for reduce2, in tableau elements
+.br
+Range: 1 to INT_MAX (default: 25000000)
+.TP
 .BI \-GMIHowOften
 How often GMI cuts are tried in the tree
 .br
@@ -433,6 +438,31 @@ Range: 0 to INT_MAX (default: 500)
 Fewest clique cuts in a call for which they are filtered
 .br
 Range: 0 to INT_MAX (default: 20)
+.TP
+.BI \-cutSkipMinTries
+Root passes before an idle cut generator may be skipped
+.br
+Range: 1 to INT_MAX (default: 3)
+.TP
+.BI \-cutSkipMissThreshold
+Consecutive barren root passes before a cut generator is skipped
+.br
+Range: 1 to INT_MAX (default: 3)
+.TP
+.BI \-cutSkipInitialPeriod
+Root passes an idle cut generator is first skipped for
+.br
+Range: 1 to INT_MAX (default: 5)
+.TP
+.BI \-cutSkipMaxPeriod
+Most root passes an idle cut generator is skipped for
+.br
+Range: 1 to INT_MAX (default: 20)
+.TP
+.BI \-cutSkipMinCols
+Fewest columns for which idle cut generators are skipped
+.br
+Range: 0 to INT_MAX (default: 500)
 .TP
 .BI \-reduce2TimeLimit
 Time limit for one reduce2 call, in seconds

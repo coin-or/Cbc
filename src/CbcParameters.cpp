@@ -734,6 +734,7 @@ void CbcParameters::addCbcParams() {
   for (int code : {CbcParam::CUTGATEMINCOLS, CbcParam::CUTGATEMAXCOLS,
                     CbcParam::REDSPLIT2MAXROWS, CbcParam::REDSPLIT2MAXCUTS,
                     CbcParam::REDSPLIT2MAXCOMPUTED, CbcParam::REDSPLIT2MAXBUFFER,
+                    CbcParam::REDSPLIT2MAXTABELEMENTS,
                     CbcParam::REDSPLIT2TIMELIMIT, CbcParam::GMIHOWOFTEN,
                     CbcParam::LANDPTIMELIMIT, CbcParam::LANDPCUTTIMELIMIT,
                     CbcParam::LANDPMAXCUTSPERROUND,
@@ -745,7 +746,10 @@ void CbcParameters::addCbcParams() {
                     CbcParam::CLIQUEFILTERMINCANDIDATES,
                     CbcParam::CLIQUEFILTERMAXPARALLELISM,
                     CbcParam::CLIQUEFILTERALWAYS,
-                    CbcParam::IMPLIEDCLIQUEFILTER})
+                    CbcParam::IMPLIEDCLIQUEFILTER,
+                    CbcParam::CUTSKIPMINTRIES, CbcParam::CUTSKIPMISSTHRESHOLD,
+                    CbcParam::CUTSKIPINITIALPERIOD, CbcParam::CUTSKIPMAXPERIOD,
+                    CbcParam::CUTSKIPMINCOLS})
     parameters_[code]->setTopic("Cuts");
 
   // Bool params
@@ -948,6 +952,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::REDSPLIT2MAXCUTS]->setDefault(10000);
      parameters_[CbcParam::REDSPLIT2MAXCOMPUTED]->setDefault(10000);
      parameters_[CbcParam::REDSPLIT2MAXBUFFER]->setDefault(50000000);
+     parameters_[CbcParam::REDSPLIT2MAXTABELEMENTS]->setDefault(25000000);
      parameters_[CbcParam::REDSPLIT2TIMELIMIT]->setDefault(60.0);
      parameters_[CbcParam::GMIHOWOFTEN]->setDefault(1);
      parameters_[CbcParam::LANDPTIMELIMIT]->setDefault(1.0e30);
@@ -963,6 +968,11 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::CLIQUEFILTERMAXPARALLELISM]->setDefault(1.0);
      parameters_[CbcParam::CLIQUEFILTERALWAYS]->setDefault("off");
      parameters_[CbcParam::IMPLIEDCLIQUEFILTER]->setDefault("off");
+     parameters_[CbcParam::CUTSKIPMINTRIES]->setDefault(3);
+     parameters_[CbcParam::CUTSKIPMISSTHRESHOLD]->setDefault(3);
+     parameters_[CbcParam::CUTSKIPINITIALPERIOD]->setDefault(5);
+     parameters_[CbcParam::CUTSKIPMAXPERIOD]->setDefault(20);
+     parameters_[CbcParam::CUTSKIPMINCOLS]->setDefault(500);
      parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setDefault(-1);
      parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
@@ -3036,6 +3046,14 @@ void CbcParameters::addCbcSolverIntParams() {
       "is about 200 MB.",
       CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::REDSPLIT2MAXTABELEMENTS]->setup(
+      "reduce2MaxT!abElements",
+      "Memory cap for reduce2, in tableau elements", 1, COIN_INT_MAX,
+      "reduce2AndSplitCuts builds reduced tableaux of (basic integer "
+      "variables) times (nonbasic continuous variables) doubles. A call that would need a "
+      "larger one generates no cuts. The default is about 200 MB.",
+      CoinParam::displayPriorityLow);
+
   parameters_[CbcParam::REDSPLIT2TIMELIMIT]->setup(
       "reduce2T!imeLimit", "Time limit for one reduce2 call, in seconds", 0.0,
       COIN_DBL_MAX,
@@ -3145,6 +3163,49 @@ void CbcParameters::addCbcSolverIntParams() {
       "implied-clique cut generators. The default, 1, turns this filter "
       "off: a sweep of 0.1 to 0.9 found no value that paid off for these "
       "cuts.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CUTSKIPMINTRIES]->setup(
+      "cutSkipMinT!ries",
+      "Root passes before an idle cut generator may be skipped",
+      1, COIN_INT_MAX,
+      "With the adaptive root cut-generator skip on (more2MipOptions "
+      "keyword adaptiveCutSkip, the default), a generator that keeps "
+      "producing no cuts at the root is skipped for a while and then "
+      "retried. It is only considered for skipping from this root pass on.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CUTSKIPMISSTHRESHOLD]->setup(
+      "cutSkipMis!sThreshold",
+      "Consecutive barren root passes before a cut generator is skipped",
+      1, COIN_INT_MAX,
+      "See cutSkipMinTries: a generator is skipped once this many of its "
+      "consecutive root calls have produced no cut. Any cut resets the "
+      "count and the backoff.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CUTSKIPINITIALPERIOD]->setup(
+      "cutSkipI!nitialPeriod",
+      "Root passes an idle cut generator is first skipped for",
+      1, COIN_INT_MAX,
+      "See cutSkipMinTries: the first backoff lasts this many passes. Each "
+      "further barren retry doubles it, up to cutSkipMaxPeriod.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CUTSKIPMAXPERIOD]->setup(
+      "cutSkipMa!xPeriod",
+      "Most root passes an idle cut generator is skipped for",
+      1, COIN_INT_MAX,
+      "See cutSkipInitialPeriod.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CUTSKIPMINCOLS]->setup(
+      "cutSkipMinC!ols",
+      "Fewest columns for which idle cut generators are skipped",
+      0, COIN_INT_MAX,
+      "See cutSkipMinTries: on problems with fewer columns than this, every "
+      "generator is called on every root pass, since the extra LP solves "
+      "are cheap there.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setup(

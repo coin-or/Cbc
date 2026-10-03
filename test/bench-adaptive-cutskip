@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Benchmark the opt-in "adaptive root cut-generator skip" feature
-# (CbcModel::setCutGeneratorAdaptiveSkip() / CBC_CUT_ADAPTIVE_SKIP env var,
+# (CbcModel::setCutGeneratorAdaptiveSkip() / mip-root-replay --adaptive-skip,
 # see CbcModel.cpp's serialCuts()) across every mip-root-replay fixture in
 # ~/instances/mip-sanity-data/rootFixtures, running the "root + first N
 # nodes" replay both with the feature off (baseline) and on, in parallel.
@@ -35,13 +35,10 @@ if [[ "${1:-}" == --worker=* ]]; then
   variant="$2"   # "base" or "adaptive"
   nodes="$3"
   sec="$4"
-  if [[ "$variant" == adaptive ]]; then
-    export CBC_CUT_ADAPTIVE_SKIP=1
-  else
-    unset CBC_CUT_ADAPTIVE_SKIP
-  fi
+  EXTRA_ARGS=()
+  [[ "$variant" == adaptive ]] && EXTRA_ARGS=(--adaptive-skip)
   out="$(timeout -k 5 "$((sec + 15))s" "$REPLAY" "$inst" --fixture-dir="$FIXTURE_DIR" \
-         --nodes="$nodes" --sec="$sec" --quiet 2>&1)"
+         --nodes="$nodes" --sec="$sec" --quiet "${EXTRA_ARGS[@]}" 2>&1)"
   rc=$?
   line1="$(echo "$out" | grep -m1 '^\[replay\].*rows=')"
   line2="$(echo "$out" | grep -m1 '^\[replay\].*nodes=.*bound=')"

@@ -7080,6 +7080,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , strongBoostRows_(rhs.strongBoostRows_)
   , strongBoostSize_(rhs.strongBoostSize_)
   , cutPoolFilterSettings_(rhs.cutPoolFilterSettings_)
+  , cutAdaptiveSkipSettings_(rhs.cutAdaptiveSkipSettings_)
   , howOftenGlobalScan_(rhs.howOftenGlobalScan_)
   , numberGlobalViolations_(rhs.numberGlobalViolations_)
   , numberExtraIterations_(rhs.numberExtraIterations_)
@@ -7605,6 +7606,7 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     strongBoostRows_ = rhs.strongBoostRows_;
     strongBoostSize_ = rhs.strongBoostSize_;
     cutPoolFilterSettings_ = rhs.cutPoolFilterSettings_;
+    cutAdaptiveSkipSettings_ = rhs.cutAdaptiveSkipSettings_;
     if (ownObjects_) {
       for (i = 0; i < numberObjects_; i++)
         delete object_[i];
@@ -8001,6 +8003,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   strongBoostRows_ = rhs.strongBoostRows_;
   strongBoostSize_ = rhs.strongBoostSize_;
   cutPoolFilterSettings_ = rhs.cutPoolFilterSettings_;
+  cutAdaptiveSkipSettings_ = rhs.cutAdaptiveSkipSettings_;
   howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
   maximumCutPasses_ = rhs.maximumCutPasses_;
@@ -11396,11 +11399,12 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
   /*
       Adaptive root cut-generator skip (see setCutGeneratorAdaptiveSkip()):
       a generator that has been actually tried at least
-      ADAPTIVE_SKIP_MIN_TRIES times at the root and produced no cut at all
-      in the last ADAPTIVE_SKIP_MISS_THRESHOLD consecutive tries is put on
-      "backoff" -- skipped for ADAPTIVE_SKIP_INITIAL_PERIOD passes, then
+      skip.minTries times at the root and produced no cut at all
+      in the last skip.missThreshold consecutive tries is put on
+      "backoff" -- skipped for skip.initialPeriod passes, then
       retried once; every further miss doubles the backoff period up to
-      ADAPTIVE_SKIP_MAX_PERIOD. A single hit at any point resets the streak
+      skip.maxPeriod (see CbcCutAdaptiveSkipSettings; the cbc CLI sets
+      them from the cutSkip* parameters). A single hit at any point resets the streak
       and the backoff, so a generator that starts working again (e.g. once
       other cuts have tightened the relaxation) is never abandoned for
       good. Root-only, deterministic (based only on cut counts, never on
@@ -11409,25 +11413,7 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
       opt-in for direct CbcModel API/library use (see
       setCutGeneratorAdaptiveSkip()).
     */
-  // Each constant can be overridden via an env var (e.g. for a parameter
-  // sweep with bench-adaptive-cutskip-cli) without a rebuild; falls back
-  // to the tuned default when unset/unparseable.
-  auto envOrDefault = [](const char *name, int def) {
-    const char *v = getenv(name);
-    if (!v)
-      return def;
-    char *end = nullptr;
-    long parsed = strtol(v, &end, 10);
-    return (end != v && parsed > 0) ? static_cast<int>(parsed) : def;
-  };
-  const int ADAPTIVE_SKIP_MIN_TRIES =
-    envOrDefault("CBC_CUT_ADAPTIVE_SKIP_MIN_TRIES", 3);
-  const int ADAPTIVE_SKIP_MISS_THRESHOLD =
-    envOrDefault("CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD", 3);
-  const int ADAPTIVE_SKIP_INITIAL_PERIOD =
-    envOrDefault("CBC_CUT_ADAPTIVE_SKIP_INITIAL_PERIOD", 5);
-  const int ADAPTIVE_SKIP_MAX_PERIOD =
-    envOrDefault("CBC_CUT_ADAPTIVE_SKIP_MAX_PERIOD", 20);
+  const CbcCutAdaptiveSkipSettings &skip = cutAdaptiveSkipSettings_;
   // Never throttle on genuinely small problems: CbcSolver.cpp's own
   // configureCutGenerators() logic already treats getNumCols() below this
   // threshold as "cheap enough to always do up to 100 root passes"
@@ -11437,13 +11423,8 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
   // up/de-risk the *hard*, expensive instances -- small ones already get
   // the "throw lots of cuts, it's cheap" treatment and gain nothing (and
   // risk a worse bound) from adaptive skip, so exempt them outright.
-  const int ADAPTIVE_SKIP_MIN_COLS =
-    envOrDefault("CBC_CUT_ADAPTIVE_SKIP_MIN_COLS", 500);
-  // Also honour an environment variable so the setting can be flipped for
-  // quick experiments (e.g. via mip-root-replay) without a CbcModel API
-  // call or CLI flag.
-  const bool cutAdaptiveSkip = (cutGeneratorAdaptiveSkip() || (getenv("CBC_CUT_ADAPTIVE_SKIP") != nullptr))
-    && solver_->getNumCols() >= ADAPTIVE_SKIP_MIN_COLS;
+  const bool cutAdaptiveSkip = cutGeneratorAdaptiveSkip()
+    && solver_->getNumCols() >= skip.minCols;
   /*
       Is it time to scan the cuts in order to remove redundant cuts? If so, set
       up to do it.
@@ -11824,9 +11805,9 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
       } else {
         int misses = generator_[i]->numberConsecutiveMisses() + 1;
         generator_[i]->setNumberConsecutiveMisses(misses);
-        if (currentPassNumber_ >= ADAPTIVE_SKIP_MIN_TRIES && misses >= ADAPTIVE_SKIP_MISS_THRESHOLD) {
+        if (currentPassNumber_ >= skip.minTries && misses >= skip.missThreshold) {
           int period = generator_[i]->retryPeriod();
-          period = (period <= 0) ? ADAPTIVE_SKIP_INITIAL_PERIOD : CoinMin(period * 2, ADAPTIVE_SKIP_MAX_PERIOD);
+          period = (period <= 0) ? skip.initialPeriod : CoinMin(period * 2, skip.maxPeriod);
           generator_[i]->setRetryPeriod(period);
           generator_[i]->setNextRetryPass(currentPassNumber_ + period);
           if (getenv("CBC_CUT_ADAPTIVE_SKIP_DEBUG"))

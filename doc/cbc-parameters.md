@@ -15,7 +15,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [MIP Preprocessing](#mip-preprocessing) (12 parameters)
 - [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (9 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
-- [Cuts](#cuts) (49 parameters)
+- [Cuts](#cuts) (55 parameters)
 - [Heuristics](#heuristics) (37 parameters)
 - [Branching](#branching) (8 parameters)
 - [Tolerances](#tolerances) (6 parameters)
@@ -623,6 +623,14 @@ reduce2AndSplitCuts allocates a work array of (cuts computed) times (rows) integ
 
 **Range:** 1 to INT_MAX (default: 50000000)
 
+### `-reduce2MaxTabElements`
+
+Memory cap for reduce2, in tableau elements
+
+reduce2AndSplitCuts builds reduced tableaux of (basic integer variables) times (nonbasic continuous variables) doubles. A call that would need a larger one generates no cuts. The default is about 200 MB.
+
+**Range:** 1 to INT_MAX (default: 25000000)
+
 ### `-GMIHowOften`
 
 How often GMI cuts are tried in the tree
@@ -678,6 +686,46 @@ Fewest clique cuts in a call for which they are filtered
 A call of the clique or odd-wheel cut generator only filters its cuts if it found at least this many. With fewer, the filter almost never removes anything but still costs the scoring. Not used by impliedCliqueCuts, which does not know its cut count in advance.
 
 **Range:** 0 to INT_MAX (default: 20)
+
+### `-cutSkipMinTries`
+
+Root passes before an idle cut generator may be skipped
+
+With the adaptive root cut-generator skip on (more2MipOptions keyword adaptiveCutSkip, the default), a generator that keeps producing no cuts at the root is skipped for a while and then retried. It is only considered for skipping from this root pass on.
+
+**Range:** 1 to INT_MAX (default: 3)
+
+### `-cutSkipMissThreshold`
+
+Consecutive barren root passes before a cut generator is skipped
+
+See cutSkipMinTries: a generator is skipped once this many of its consecutive root calls have produced no cut. Any cut resets the count and the backoff.
+
+**Range:** 1 to INT_MAX (default: 3)
+
+### `-cutSkipInitialPeriod`
+
+Root passes an idle cut generator is first skipped for
+
+See cutSkipMinTries: the first backoff lasts this many passes. Each further barren retry doubles it, up to cutSkipMaxPeriod.
+
+**Range:** 1 to INT_MAX (default: 5)
+
+### `-cutSkipMaxPeriod`
+
+Most root passes an idle cut generator is skipped for
+
+See cutSkipInitialPeriod.
+
+**Range:** 1 to INT_MAX (default: 20)
+
+### `-cutSkipMinCols`
+
+Fewest columns for which idle cut generators are skipped
+
+See cutSkipMinTries: on problems with fewer columns than this, every generator is called on every root pass, since the extra LP solves are cheap there.
+
+**Range:** 0 to INT_MAX (default: 500)
 
 ### `-reduce2TimeLimit`
 

@@ -519,6 +519,9 @@ static void usage(const char *prog)
     "  --param=NAME=VALUE   set any CbcParameters entry by its cbc CLI name\n"
     "                       (e.g. --param=cutGateMinCols=0); repeatable, applied\n"
     "                       after every dedicated flag, so it wins over them\n"
+    "  --adaptive-skip      turn on the adaptive root cut-generator skip (on by\n"
+    "                       default in the cbc CLI, off in a bare CbcModel and\n"
+    "                       so here); tune it with --param=cutSkip...=N\n"
     "\n"
     "Invalid-cut / debug-cuts reproduction:\n"
     "  If <stem>.debugsol exists (written by CbcRootFixtureDump.hpp when the\n"
@@ -580,6 +583,7 @@ int main(int argc, char **argv)
   std::string divingC, divingF, divingG, divingL, divingP, divingV; // empty = leave CbcParameters default
   int diveOpt = -1, diveOptSolves = -1; // -1 = unset
   std::vector<std::string> paramOverrides; // --param=NAME=VALUE, applied last
+  bool adaptiveSkip = false;
 
   for (int i = 1; i < argc; ++i) {
     const std::string a = argv[i];
@@ -665,6 +669,8 @@ int main(int argc, char **argv)
       diveOptSolves = atoi(a.c_str() + 16);
     else if (a.rfind("--param=", 0) == 0)
       paramOverrides.push_back(a.substr(8));
+    else if (a == "--adaptive-skip")
+      adaptiveSkip = true;
     else if (a.rfind("--log=", 0) == 0)
       logLevel = atoi(a.c_str() + 6);
     else if (a.rfind("--data-dir=", 0) == 0)
@@ -885,6 +891,19 @@ int main(int argc, char **argv)
     rinsScheduleMode, rinsScheduleK, vndScheduleMode, vndScheduleK,
     diveScheduleMode, diveScheduleK, diveOnlyNoSol);
   model.setStrategy(strategy);
+  // As CbcSolver.cpp's babConfigureSearchModel(); the defaults equal
+  // CbcCutAdaptiveSkipSettings', so this only matters with --param.
+  if (adaptiveSkip)
+    model.setCutGeneratorAdaptiveSkip(true);
+  {
+    CbcCutAdaptiveSkipSettings skip;
+    skip.minTries = params[CbcParam::CUTSKIPMINTRIES]->intVal();
+    skip.missThreshold = params[CbcParam::CUTSKIPMISSTHRESHOLD]->intVal();
+    skip.initialPeriod = params[CbcParam::CUTSKIPINITIALPERIOD]->intVal();
+    skip.maxPeriod = params[CbcParam::CUTSKIPMAXPERIOD]->intVal();
+    skip.minCols = params[CbcParam::CUTSKIPMINCOLS]->intVal();
+    model.setCutAdaptiveSkipSettings(skip);
+  }
 
   const double t1 = wallClock();
   model.branchAndBound();

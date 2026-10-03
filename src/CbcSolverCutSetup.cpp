@@ -229,7 +229,7 @@ void installCutGenerators(
   // 2026-09 sanity-suite sweep found these only pay for themselves in
   // aggregate within a "sweet spot" instance-size window. Below it, the
   // adaptive root cut-generator skip's own size floor
-  // (ADAPTIVE_SKIP_MIN_COLS, default 500 -- see CbcModel::serialCuts())
+  // (-cutSkipMinCols, default 500 -- see CbcModel::serialCuts())
   // never engages, so the generator just burns time every pass with no
   // throttling; above it, even a single call can be expensive enough to
   // blow the node/time budget before enough misses accumulate for backoff
@@ -277,7 +277,8 @@ void installCutGenerators(
   // comments at each generator's setup below for the exact semantics
   // (RedSplit2's timeLimit is per-call, LandP's is a cumulative
   // whole-solve budget). Each is a parameter (-reduce2TimeLimit,
-  // -reduce2MaxCuts, -reduce2MaxComputed, -reduce2MaxBuffer, -GMIHowOften,
+  // -reduce2MaxCuts, -reduce2MaxComputed, -reduce2MaxBuffer,
+  // -reduce2MaxTabElements, -GMIHowOften,
   // -liftTimeLimit, -liftCutTimeLimit, -liftMaxCutsPerRound).
   // Defaults match the "old-unthrottled" config from the cutgen-throttle-sweep
   // experiment (348 root-fixture instances, 128 nodes, 2h cap): it edged out
@@ -519,6 +520,7 @@ void installCutGenerators(
     rs2params.setTimeLimit(redsplit2TimeLimit);
     rs2params.setMaxNumComputedCuts(cappedMaxNumComputedCuts);
     rs2params.setMaxNumCuts(cappedMaxNumCuts);
+    rs2params.setMaxTabElements(parameters[CbcParam::REDSPLIT2MAXTABELEMENTS]->intVal());
     babModel.addCutGenerator(&redsplit2Gen, translate[redsplit2Mode], "Reduce-and-split(2)");
     accuracyFlag[numberGenerators] = 5;
     if (redsplit2Mode != CbcParameters::CGOn) {

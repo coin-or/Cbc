@@ -708,6 +708,15 @@ reduce2AndSplitCuts allocates a work array of (cuts computed) times (rows) integ
 
 \textbf{Range:} 1 to INT\_MAX (default: 50000000)
 
+\subsection*{\texttt{-reduce2MaxTabElements} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-reduce2MaxTabElements} \ptag{blue!60!black}{INT}}
+
+Memory cap for reduce2, in tableau elements
+
+reduce2AndSplitCuts builds reduced tableaux of (basic integer variables) times (nonbasic continuous variables) doubles. A call that would need a larger one generates no cuts. The default is about 200 MB.
+
+\textbf{Range:} 1 to INT\_MAX (default: 25000000)
+
 \subsection*{\texttt{-GMIHowOften} \ptag{blue!60!black}{INT}}
 \addcontentsline{toc}{subsection}{\texttt{-GMIHowOften} \ptag{blue!60!black}{INT}}
 
@@ -770,6 +779,51 @@ Fewest clique cuts in a call for which they are filtered
 A call of the clique or odd-wheel cut generator only filters its cuts if it found at least this many. With fewer, the filter almost never removes anything but still costs the scoring. Not used by impliedCliqueCuts, which does not know its cut count in advance.
 
 \textbf{Range:} 0 to INT\_MAX (default: 20)
+
+\subsection*{\texttt{-cutSkipMinTries} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cutSkipMinTries} \ptag{blue!60!black}{INT}}
+
+Root passes before an idle cut generator may be skipped
+
+With the adaptive root cut-generator skip on (more2MipOptions keyword adaptiveCutSkip, the default), a generator that keeps producing no cuts at the root is skipped for a while and then retried. It is only considered for skipping from this root pass on.
+
+\textbf{Range:} 1 to INT\_MAX (default: 3)
+
+\subsection*{\texttt{-cutSkipMissThreshold} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cutSkipMissThreshold} \ptag{blue!60!black}{INT}}
+
+Consecutive barren root passes before a cut generator is skipped
+
+See cutSkipMinTries: a generator is skipped once this many of its consecutive root calls have produced no cut. Any cut resets the count and the backoff.
+
+\textbf{Range:} 1 to INT\_MAX (default: 3)
+
+\subsection*{\texttt{-cutSkipInitialPeriod} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cutSkipInitialPeriod} \ptag{blue!60!black}{INT}}
+
+Root passes an idle cut generator is first skipped for
+
+See cutSkipMinTries: the first backoff lasts this many passes. Each further barren retry doubles it, up to cutSkipMaxPeriod.
+
+\textbf{Range:} 1 to INT\_MAX (default: 5)
+
+\subsection*{\texttt{-cutSkipMaxPeriod} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cutSkipMaxPeriod} \ptag{blue!60!black}{INT}}
+
+Most root passes an idle cut generator is skipped for
+
+See cutSkipInitialPeriod.
+
+\textbf{Range:} 1 to INT\_MAX (default: 20)
+
+\subsection*{\texttt{-cutSkipMinCols} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cutSkipMinCols} \ptag{blue!60!black}{INT}}
+
+Fewest columns for which idle cut generators are skipped
+
+See cutSkipMinTries: on problems with fewer columns than this, every generator is called on every root pass, since the extra LP solves are cheap there.
+
+\textbf{Range:} 0 to INT\_MAX (default: 500)
 
 \subsection*{\texttt{-reduce2TimeLimit} \ptag{violet!65!black}{DBL}}
 \addcontentsline{toc}{subsection}{\texttt{-reduce2TimeLimit} \ptag{violet!65!black}{DBL}}

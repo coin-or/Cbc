@@ -270,7 +270,7 @@
 <a href="#mip-preprocessing" class="sb-link">MIP Preprocessing<span class="sb-count">12</span></a>
 <a href="#mip-preprocessing-bound-propagation" class="sb-link">MIP Preprocessing — Bound Propagation<span class="sb-count">9</span></a>
 <a href="#lp-presolve" class="sb-link">LP Presolve<span class="sb-count">3</span></a>
-<a href="#cuts" class="sb-link">Cuts<span class="sb-count">49</span></a>
+<a href="#cuts" class="sb-link">Cuts<span class="sb-count">55</span></a>
 <a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">37</span></a>
 <a href="#branching" class="sb-link">Branching<span class="sb-count">8</span></a>
 <a href="#tolerances" class="sb-link">Tolerances<span class="sb-count">6</span></a>
@@ -686,6 +686,11 @@
   <div class="pbody"><p class="plong">reduce2AndSplitCuts allocates a work array of (cuts computed) times (rows) integers. The number computed is lowered so that this product stays within this value, whatever the generator&#x27;s setting. The default is about 200 MB.</p>
 <div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;50000000)</span></div></div>
 </details>
+<details class="param" data-search="reduce2maxtabelements memory cap for reduce2, in tableau elements">
+  <summary><span class="pname"><code>-reduce2MaxTabElements</code></span><span class="badge badge-int">Integer</span><span class="pshort">Memory cap for reduce2, in tableau elements</span><span class="pmeta">default:&nbsp;<code>25000000</code></span></summary>
+  <div class="pbody"><p class="plong">reduce2AndSplitCuts builds reduced tableaux of (basic integer variables) times (nonbasic continuous variables) doubles. A call that would need a larger one generates no cuts. The default is about 200 MB.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;25000000)</span></div></div>
+</details>
 <details class="param" data-search="gmihowoften how often gmi cuts are tried in the tree">
   <summary><span class="pname"><code>-GMIHowOften</code></span><span class="badge badge-int">Integer</span><span class="pshort">How often GMI cuts are tried in the tree</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
   <div class="pbody"><p class="plong">The node interval given to GMICuts unless it is set to on or global. k &gt; 0 tries every k-th node; a negative k starts at every |k|-th node and lets Cbc adjust it; -99 is root only and -100 is off. The number of tries is also limited by slowcutpasses.</p>
@@ -720,6 +725,31 @@
   <summary><span class="pname"><code>-cliqueFilterMinCandidates</code></span><span class="badge badge-int">Integer</span><span class="pshort">Fewest clique cuts in a call for which they are filtered</span><span class="pmeta">default:&nbsp;<code>20</code></span></summary>
   <div class="pbody"><p class="plong">A call of the clique or odd-wheel cut generator only filters its cuts if it found at least this many. With fewer, the filter almost never removes anything but still costs the scoring. Not used by impliedCliqueCuts, which does not know its cut count in advance.</p>
 <div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;20)</span></div></div>
+</details>
+<details class="param" data-search="cutskipmintries root passes before an idle cut generator may be skipped">
+  <summary><span class="pname"><code>-cutSkipMinTries</code></span><span class="badge badge-int">Integer</span><span class="pshort">Root passes before an idle cut generator may be skipped</span><span class="pmeta">default:&nbsp;<code>3</code></span></summary>
+  <div class="pbody"><p class="plong">With the adaptive root cut-generator skip on (more2MipOptions keyword adaptiveCutSkip, the default), a generator that keeps producing no cuts at the root is skipped for a while and then retried. It is only considered for skipping from this root pass on.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;3)</span></div></div>
+</details>
+<details class="param" data-search="cutskipmissthreshold consecutive barren root passes before a cut generator is skipped">
+  <summary><span class="pname"><code>-cutSkipMissThreshold</code></span><span class="badge badge-int">Integer</span><span class="pshort">Consecutive barren root passes before a cut generator is skipped</span><span class="pmeta">default:&nbsp;<code>3</code></span></summary>
+  <div class="pbody"><p class="plong">See cutSkipMinTries: a generator is skipped once this many of its consecutive root calls have produced no cut. Any cut resets the count and the backoff.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;3)</span></div></div>
+</details>
+<details class="param" data-search="cutskipinitialperiod root passes an idle cut generator is first skipped for">
+  <summary><span class="pname"><code>-cutSkipInitialPeriod</code></span><span class="badge badge-int">Integer</span><span class="pshort">Root passes an idle cut generator is first skipped for</span><span class="pmeta">default:&nbsp;<code>5</code></span></summary>
+  <div class="pbody"><p class="plong">See cutSkipMinTries: the first backoff lasts this many passes. Each further barren retry doubles it, up to cutSkipMaxPeriod.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;5)</span></div></div>
+</details>
+<details class="param" data-search="cutskipmaxperiod most root passes an idle cut generator is skipped for">
+  <summary><span class="pname"><code>-cutSkipMaxPeriod</code></span><span class="badge badge-int">Integer</span><span class="pshort">Most root passes an idle cut generator is skipped for</span><span class="pmeta">default:&nbsp;<code>20</code></span></summary>
+  <div class="pbody"><p class="plong">See cutSkipInitialPeriod.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;20)</span></div></div>
+</details>
+<details class="param" data-search="cutskipmincols fewest columns for which idle cut generators are skipped">
+  <summary><span class="pname"><code>-cutSkipMinCols</code></span><span class="badge badge-int">Integer</span><span class="pshort">Fewest columns for which idle cut generators are skipped</span><span class="pmeta">default:&nbsp;<code>500</code></span></summary>
+  <div class="pbody"><p class="plong">See cutSkipMinTries: on problems with fewer columns than this, every generator is called on every root pass, since the extra LP solves are cheap there.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;500)</span></div></div>
 </details>
 <details class="param" data-search="reduce2timelimit time limit for one reduce2 call, in seconds">
   <summary><span class="pname"><code>-reduce2TimeLimit</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Time limit for one reduce2 call, in seconds</span><span class="pmeta">default:&nbsp;<code>60</code></span></summary>

@@ -126,6 +126,29 @@ class CbcRootHeuristicSchedule;
   management.
 */
 
+/** Thresholds of the adaptive root cut-generator skip (see
+    CbcModel::setCutGeneratorAdaptiveSkip()). */
+struct CbcCutAdaptiveSkipSettings {
+  /// A generator is only put on backoff after this many root tries
+  int minTries;
+  /// ... and this many consecutive tries without a cut
+  int missThreshold;
+  /// First backoff, in passes; each further miss doubles it
+  int initialPeriod;
+  /// Longest backoff, in passes
+  int maxPeriod;
+  /// Models with fewer columns are never throttled
+  int minCols;
+  CbcCutAdaptiveSkipSettings()
+    : minTries(3)
+    , missThreshold(3)
+    , initialPeriod(5)
+    , maxPeriod(20)
+    , minCols(500)
+  {
+  }
+};
+
 class CBCLIB_EXPORT CbcModel {
 
 public:
@@ -2400,6 +2423,7 @@ public:
       mip-sanity-data suite (test/cutskip-sweep, ROOT-FIXTURES.md).
       Library/API callers that build a CbcModel directly (not through
       CbcSolver.cpp's CLI parameter handling) must still opt in explicitly.
+      The thresholds are in cutAdaptiveSkipSettings().
     */
   inline bool cutGeneratorAdaptiveSkip() const
   {
@@ -3028,6 +3052,16 @@ public:
   {
     return cutPoolFilterSettings_;
   }
+  /// Set the adaptive root cut-generator skip thresholds
+  inline void setCutAdaptiveSkipSettings(const CbcCutAdaptiveSkipSettings &value)
+  {
+    cutAdaptiveSkipSettings_ = value;
+  }
+  /// Get the adaptive root cut-generator skip thresholds
+  inline const CbcCutAdaptiveSkipSettings &cutAdaptiveSkipSettings() const
+  {
+    return cutAdaptiveSkipSettings_;
+  }
   /// Get anything with priority >= this can be treated as continuous
   inline int continuousPriority() const
   {
@@ -3553,6 +3587,8 @@ private:
   int strongBoostSize_;
   /// Cut parallelism filter thresholds
   CbcCutPoolFilterSettings cutPoolFilterSettings_;
+  /// Adaptive root cut-generator skip thresholds
+  CbcCutAdaptiveSkipSettings cutAdaptiveSkipSettings_;
   /*! Pointer to the event handler */
 #ifdef CBC_ONLY_CLP
   ClpEventHandler *eventHandler_;

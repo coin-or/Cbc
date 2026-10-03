@@ -72,13 +72,8 @@ if [[ "${1:-}" == --worker=* ]]; then
                  # independent B&B-path realizations to average over,
                  # separating real config-driven effects from branching
                  # tie-break sensitivity noise (see --repeats below).
-  # Reset every cut-pool env var still read by the code so a stale export
-  # from a previous worker invocation (same parallel pool, reused shell)
-  # can never leak into this one. The cut-pool thresholds are parameters
-  # now (CLI:-cutFilterMinCols=..., CLI:-cliqueFilterMinCols=... etc.).
-  unset CBC_CUT_ADAPTIVE_SKIP CBC_CUT_ADAPTIVE_SKIP_MIN_COLS \
-    CBC_CUT_ADAPTIVE_SKIP_MIN_TRIES CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD \
-    CBC_CUT_ADAPTIVE_SKIP_INITIAL_PERIOD CBC_CUT_ADAPTIVE_SKIP_MAX_PERIOD
+  # The cut-pool thresholds are parameters (CLI:-cutFilterMinCols=...,
+  # CLI:-cliqueFilterMinCols=... etc.); no env var is read by the code.
   EXTRA_ARGS=()
   if [[ "$envspec" != "-" ]]; then
     IFS=',' read -r -a kvs <<< "$envspec"

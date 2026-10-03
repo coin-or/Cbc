@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Benchmark the adaptive root cut-generator skip feature
-# (CBC_CUT_ADAPTIVE_SKIP env var) using the REAL cbc CLI end-to-end
+# (-more2MipOptions adaptiveCutSkip, on by default) using the REAL cbc CLI end-to-end
 # (full preprocessing + root LP solve + cut generation + first 16 nodes),
 # not mip-root-replay's fixture path.
 #
@@ -32,14 +32,15 @@ if [[ "${1:-}" == --worker=* ]]; then
   variant="$2"
   sec="$3"
   # Variant names: "base" (feature off), "adaptive" (feature on, default
-  # MISS_THRESHOLD=3), or "adaptive-tN" (feature on, MISS_THRESHOLD=N) for
-  # sweeping the consecutive-miss trigger without touching other params.
-  unset CBC_CUT_ADAPTIVE_SKIP CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD
+  # -cutSkipMissThreshold 3), or "adaptive-tN" (feature on,
+  # -cutSkipMissThreshold N) for sweeping the consecutive-miss trigger
+  # without touching other params. The feature is the CLI default, so
+  # "base" has to switch it off explicitly.
+  EXTRA_ARGS=()
   if [[ "$variant" == adaptive-t* ]]; then
-    export CBC_CUT_ADAPTIVE_SKIP=1
-    export CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD="${variant#adaptive-t}"
-  elif [[ "$variant" == adaptive ]]; then
-    export CBC_CUT_ADAPTIVE_SKIP=1
+    EXTRA_ARGS=(-cutSkipMissThreshold "${variant#adaptive-t}")
+  elif [[ "$variant" == base ]]; then
+    EXTRA_ARGS=(-more2MipOptions=off)
   fi
   mps="$DATA_DIR/mips/$inst.mps.gz"
   if [[ ! -f "$mps" ]]; then
@@ -47,7 +48,7 @@ if [[ "${1:-}" == --worker=* ]]; then
     exit 0
   fi
   t0=$(date +%s.%N)
-  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 -sec "$sec" -solve 2>&1)"
+  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" "${EXTRA_ARGS[@]}" -threads 1 -maxNodes 16 -sec "$sec" -solve 2>&1)"
   rc=$?
   t1=$(date +%s.%N)
   elapsed=$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.4f", b-a}')

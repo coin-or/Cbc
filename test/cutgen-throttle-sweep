@@ -22,9 +22,9 @@
 #
 # configs.tsv format: one config per line, tab-separated
 #   <name>\t<comma-separated overrides, or - for none>
-# Each override token is either KEY=VAL (exported as an env var, e.g.
-# CBC_CUT_ADAPTIVE_SKIP=0) or CLI:<arg> (appended as an extra
-# mip-root-replay argument, e.g. CLI:--landp=off or
+# Each override token is either KEY=VAL (exported as an env var) or
+# CLI:<arg> (appended as an extra mip-root-replay argument, e.g.
+# CLI:--landp=off, CLI:--adaptive-skip, or
 # CLI:--param=cliqueFilterMinCols=0 for any CbcParameters entry).
 #
 # Output layout under --out (default: sanity-results/cutgen-throttle-sweep):
@@ -53,12 +53,6 @@ if [[ "${1:-}" == --worker=* ]]; then
   sec="$4"
   fixture_dir="$5"
   mem_limit_gb="${6:-16}"
-  # Reset every throttle env var this sweep knows about so a stale export
-  # from a previous worker invocation (same parallel pool, reused shell)
-  # can never leak into this one.
-  unset CBC_CUT_ADAPTIVE_SKIP CBC_CUT_ADAPTIVE_SKIP_MIN_COLS \
-    CBC_CUT_ADAPTIVE_SKIP_MIN_TRIES CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD \
-    CBC_CUT_ADAPTIVE_SKIP_INITIAL_PERIOD CBC_CUT_ADAPTIVE_SKIP_MAX_PERIOD
   EXTRA_ARGS=()
   if [[ "$envspec" != "-" ]]; then
     IFS=',' read -r -a kvs <<< "$envspec"

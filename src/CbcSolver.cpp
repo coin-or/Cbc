@@ -8756,6 +8756,15 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
         ? -1 : parameters[CbcParam::DIVEMAXITERROOT]->intVal());
     babModel_->setStrongBoostRows(parameters[CbcParam::STRONGBOOSTROWS]->intVal());
     babModel_->setStrongBoostSize(parameters[CbcParam::STRONGBOOSTSIZE]->intVal());
+    {
+      CbcCutAdaptiveSkipSettings skip;
+      skip.minTries = parameters[CbcParam::CUTSKIPMINTRIES]->intVal();
+      skip.missThreshold = parameters[CbcParam::CUTSKIPMISSTHRESHOLD]->intVal();
+      skip.initialPeriod = parameters[CbcParam::CUTSKIPINITIALPERIOD]->intVal();
+      skip.maxPeriod = parameters[CbcParam::CUTSKIPMAXPERIOD]->intVal();
+      skip.minCols = parameters[CbcParam::CUTSKIPMINCOLS]->intVal();
+      babModel_->setCutAdaptiveSkipSettings(skip);
+    }
     babModel_->setNodeBoundProp(
       parameters[CbcParam::NODEBOUNDPROP]->modeVal());
     babModel_->setNodeBoundPropMaxDepth(

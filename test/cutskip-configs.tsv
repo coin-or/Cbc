@@ -4,17 +4,16 @@
 # Format: one config per line, tab-separated
 #   <name>\t<comma-separated overrides, or - for none>
 # Each override token is either KEY=VAL (exported as an env var) or
-# CLI:<arg> (appended as an extra cbc command-line argument -- needed to
-# force a bit OFF, since env vars can only turn adaptive-skip on, never
-# override an already-on default).
+# CLI:<arg> (appended as an extra cbc command-line argument). The
+# thresholds are the -cutSkip* parameters.
 # Blank lines and lines starting with # are skipped.
 #
 # "today" must always be present -- it is the baseline every other config
 # is compared against.
 #
 # As of the 2026-09 sweep result below, adaptive-skip (default constants:
-# MIN_TRIES=3, MISS_THRESHOLD=3, INITIAL_PERIOD=5, MAX_PERIOD=20,
-# MIN_COLS=500) is now CBC's SHIPPED DEFAULT for the `cbc` CLI (see
+# -cutSkipMinTries 3, -cutSkipMissThreshold 3, -cutSkipInitialPeriod 5,
+# -cutSkipMaxPeriod 20, -cutSkipMinCols 500) is now CBC's SHIPPED DEFAULT for the `cbc` CLI (see
 # CbcParam::MOREMOREMIPOPTIONS's default in CbcParameters.cpp) -- it beat
 # every other miss-threshold tried (2/4/5) on every metric (dual/primal
 # gap closed, bbTime, dual/primal efficiency) on the full 442-instance
@@ -34,6 +33,6 @@ pre_flip	CLI:-more2MipOptions=off
 # the tuned default (3) on the 176-instance hard set -- kept here for
 # convenience if the binary/instance set changes enough to warrant a
 # re-check, not because they're expected to win.
-miss_threshold_2	CBC_CUT_ADAPTIVE_SKIP=1,CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD=2
-miss_threshold_4	CBC_CUT_ADAPTIVE_SKIP=1,CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD=4
-miss_threshold_5	CBC_CUT_ADAPTIVE_SKIP=1,CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD=5
+miss_threshold_2	CLI:-cutSkipMissThreshold=2
+miss_threshold_4	CLI:-cutSkipMissThreshold=4
+miss_threshold_5	CLI:-cutSkipMissThreshold=5

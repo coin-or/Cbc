@@ -555,6 +555,24 @@ When on, the cut parallelism filter ignores cutFilterMinCols, cutFilterMinElemen
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
+\subsection*{\texttt{-cliqueFilterAlways} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-cliqueFilterAlways} \ptag{teal!70!black}{KW}}
+
+Whether to filter clique cuts regardless of problem and cut count
+
+When on, the clique, odd-wheel and implied-clique cut generators ignore cliqueFilterMinCols and cliqueFilterMinCandidates and always filter their cuts.
+
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
+
+\subsection*{\texttt{-impliedCliqueFilter} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsection}{\texttt{-impliedCliqueFilter} \ptag{teal!70!black}{KW}}
+
+Whether the implied-clique cut generator filters its cuts
+
+The implied-clique cut generator normally only removes duplicate cuts, since the per-column filter used for clique cuts was measured to remove almost nothing here. When on, it applies that filter too. cliqueFilterAlways also turns it on.
+
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
+
 \subsection*{\texttt{-aggregatelevel} \ptag{blue!60!black}{INT}}
 \addcontentsline{toc}{subsection}{\texttt{-aggregatelevel} \ptag{blue!60!black}{INT}}
 
@@ -735,6 +753,24 @@ A round of cuts from one generator is only filtered for parallelism if it produc
 
 \textbf{Range:} 0 to INT\_MAX (default: 10)
 
+\subsection*{\texttt{-cliqueFilterMinCols} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cliqueFilterMinCols} \ptag{blue!60!black}{INT}}
+
+Fewest columns for which clique cuts are filtered
+
+The clique, odd-wheel and implied-clique cut generators pass their cuts through a cut pool that keeps, for each column, only the best-scoring cuts containing it (and, see cliqueFilterMaxParallelism, can also drop near-parallel cuts). Both filters are skipped on problems with fewer than this many columns, where the extra LP rows are cheap. Exact duplicates are always removed. This is separate from the cutFilter* parameters, which apply to the other generators.
+
+\textbf{Range:} 0 to INT\_MAX (default: 500)
+
+\subsection*{\texttt{-cliqueFilterMinCandidates} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-cliqueFilterMinCandidates} \ptag{blue!60!black}{INT}}
+
+Fewest clique cuts in a call for which they are filtered
+
+A call of the clique or odd-wheel cut generator only filters its cuts if it found at least this many. With fewer, the filter almost never removes anything but still costs the scoring. Not used by impliedCliqueCuts, which does not know its cut count in advance.
+
+\textbf{Range:} 0 to INT\_MAX (default: 20)
+
 \subsection*{\texttt{-reduce2TimeLimit} \ptag{violet!65!black}{DBL}}
 \addcontentsline{toc}{subsection}{\texttt{-reduce2TimeLimit} \ptag{violet!65!black}{DBL}}
 
@@ -770,6 +806,15 @@ Parallelism above which the cut filter drops the weaker cut
 Two cuts whose normalised coefficient vectors have a dot product above this value are treated as parallel, and only the one that is more violated by the LP solution is kept. 1 keeps everything but exact duplicates; lower values filter more aggressively.
 
 \textbf{Range:} 0 to 1 (default: 0.9)
+
+\subsection*{\texttt{-cliqueFilterMaxParallelism} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-cliqueFilterMaxParallelism} \ptag{violet!65!black}{DBL}}
+
+Parallelism above which the clique cut filter drops the weaker cut
+
+Like cutFilterMaxParallelism, for the clique, odd-wheel and implied-clique cut generators. The default, 1, turns this filter off: a sweep of 0.1 to 0.9 found no value that paid off for these cuts.
+
+\textbf{Range:} 0 to 1 (default: 1)
 
 \subsection*{\texttt{-passCuts} \ptag{blue!60!black}{INT}}
 \addcontentsline{toc}{subsection}{\texttt{-passCuts} \ptag{blue!60!black}{INT}}

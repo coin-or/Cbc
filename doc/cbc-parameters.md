@@ -15,7 +15,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [MIP Preprocessing](#mip-preprocessing) (12 parameters)
 - [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (9 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
-- [Cuts](#cuts) (44 parameters)
+- [Cuts](#cuts) (49 parameters)
 - [Heuristics](#heuristics) (37 parameters)
 - [Branching](#branching) (8 parameters)
 - [Tolerances](#tolerances) (6 parameters)
@@ -487,6 +487,22 @@ When on, the cut parallelism filter ignores cutFilterMinCols, cutFilterMinElemen
 
 **Values:** `off`, `on` (default: `off`)
 
+### `-cliqueFilterAlways`
+
+Whether to filter clique cuts regardless of problem and cut count
+
+When on, the clique, odd-wheel and implied-clique cut generators ignore cliqueFilterMinCols and cliqueFilterMinCandidates and always filter their cuts.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-impliedCliqueFilter`
+
+Whether the implied-clique cut generator filters its cuts
+
+The implied-clique cut generator normally only removes duplicate cuts, since the per-column filter used for clique cuts was measured to remove almost nothing here. When on, it applies that filter too. cliqueFilterAlways also turns it on.
+
+**Values:** `off`, `on` (default: `off`)
+
 ### `-aggregatelevel`
 
 Level of aggregation used in CglMixedRounding
@@ -647,6 +663,22 @@ A round of cuts from one generator is only filtered for parallelism if it produc
 
 **Range:** 0 to INT_MAX (default: 10)
 
+### `-cliqueFilterMinCols`
+
+Fewest columns for which clique cuts are filtered
+
+The clique, odd-wheel and implied-clique cut generators pass their cuts through a cut pool that keeps, for each column, only the best-scoring cuts containing it (and, see cliqueFilterMaxParallelism, can also drop near-parallel cuts). Both filters are skipped on problems with fewer than this many columns, where the extra LP rows are cheap. Exact duplicates are always removed. This is separate from the cutFilter* parameters, which apply to the other generators.
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-cliqueFilterMinCandidates`
+
+Fewest clique cuts in a call for which they are filtered
+
+A call of the clique or odd-wheel cut generator only filters its cuts if it found at least this many. With fewer, the filter almost never removes anything but still costs the scoring. Not used by impliedCliqueCuts, which does not know its cut count in advance.
+
+**Range:** 0 to INT_MAX (default: 20)
+
 ### `-reduce2TimeLimit`
 
 Time limit for one reduce2 call, in seconds
@@ -678,6 +710,14 @@ Parallelism above which the cut filter drops the weaker cut
 Two cuts whose normalised coefficient vectors have a dot product above this value are treated as parallel, and only the one that is more violated by the LP solution is kept. 1 keeps everything but exact duplicates; lower values filter more aggressively.
 
 **Range:** 0 to 1 (default: 0.9)
+
+### `-cliqueFilterMaxParallelism`
+
+Parallelism above which the clique cut filter drops the weaker cut
+
+Like cutFilterMaxParallelism, for the clique, odd-wheel and implied-clique cut generators. The default, 1, turns this filter off: a sweep of 0.1 to 0.9 found no value that paid off for these cuts.
+
+**Range:** 0 to 1 (default: 1)
 
 ### `-passCuts`
 

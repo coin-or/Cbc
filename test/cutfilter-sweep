@@ -74,11 +74,11 @@ if [[ "${1:-}" == --worker=* ]]; then
                  # tie-break sensitivity noise (see --repeats below).
   # Reset every cut-pool env var still read by the code so a stale export
   # from a previous worker invocation (same parallel pool, reused shell)
-  # can never leak into this one. The CbcCutPoolFilter thresholds are
-  # parameters now (CLI:-cutFilterMinCols=... etc.).
-  unset CBC_CLIQUE_POOL_MIN_COLS CBC_CLIQUE_POOL_MIN_CANDIDATES \
-    CBC_CLIQUE_POOL_ALWAYS_FILTER CBC_CLIQUE_POOL_MAX_PARALLELISM \
-    CBC_IMPLIEDCLIQUE_POOL_FILTER
+  # can never leak into this one. The cut-pool thresholds are parameters
+  # now (CLI:-cutFilterMinCols=..., CLI:-cliqueFilterMinCols=... etc.).
+  unset CBC_CUT_ADAPTIVE_SKIP CBC_CUT_ADAPTIVE_SKIP_MIN_COLS \
+    CBC_CUT_ADAPTIVE_SKIP_MIN_TRIES CBC_CUT_ADAPTIVE_SKIP_MISS_THRESHOLD \
+    CBC_CUT_ADAPTIVE_SKIP_INITIAL_PERIOD CBC_CUT_ADAPTIVE_SKIP_MAX_PERIOD
   EXTRA_ARGS=()
   if [[ "$envspec" != "-" ]]; then
     IFS=',' read -r -a kvs <<< "$envspec"

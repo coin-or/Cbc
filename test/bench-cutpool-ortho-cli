@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Benchmark the CoinCutPool orthogonality/parallelism filter
-# (CBC_CLIQUE_POOL_MAX_PARALLELISM env var) using the real cbc CLI.
+# for clique cuts (-cliqueFilterMaxParallelism) using the real cbc CLI.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,9 +12,9 @@ if [[ "${1:-}" == --worker=* ]]; then
   inst="${1#--worker=}"
   variant="$2"
   sec="$3"
-  unset CBC_CLIQUE_POOL_MAX_PARALLELISM
+  extra=()
   if [[ "$variant" != "off" ]]; then
-    export CBC_CLIQUE_POOL_MAX_PARALLELISM="$variant"
+    extra=(-cliqueFilterMaxParallelism "$variant")
   fi
   mps="$DATA_DIR/mips/$inst.mps.gz"
   if [[ ! -f "$mps" ]]; then
@@ -22,7 +22,7 @@ if [[ "${1:-}" == --worker=* ]]; then
     exit 0
   fi
   t0=$(date +%s.%N)
-  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 -sec "$sec" -solve 2>&1)"
+  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 -sec "$sec" "${extra[@]}" -solve 2>&1)"
   rc=$?
   t1=$(date +%s.%N)
   elapsed=$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.4f", b-a}')

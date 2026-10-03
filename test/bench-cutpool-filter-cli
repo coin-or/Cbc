@@ -6,10 +6,10 @@
 #
 # Variants:
 #   base       - force the ORIGINAL always-filter behaviour
-#                (CBC_CLIQUE_POOL_ALWAYS_FILTER=1), i.e. pre-change control.
+#                (-cliqueFilterAlways on), i.e. pre-change control.
 #   gated      - new default: threshold-gated filtering
-#                (CBC_CLIQUE_POOL_MIN_CANDIDATES=20, _MIN_COLS=500).
-#   gated-cN   - new behaviour with CBC_CLIQUE_POOL_MIN_CANDIDATES=N, for
+#                (-cliqueFilterMinCandidates 20, -cliqueFilterMinCols 500).
+#   gated-cN   - new behaviour with -cliqueFilterMinCandidates N, for
 #                sweeping the candidate-count threshold.
 #
 # Usage:
@@ -25,13 +25,13 @@ if [[ "${1:-}" == --worker=* ]]; then
   inst="${1#--worker=}"
   variant="$2"
   sec="$3"
-  unset CBC_CLIQUE_POOL_ALWAYS_FILTER CBC_CLIQUE_POOL_MIN_CANDIDATES CBC_CLIQUE_POOL_MIN_COLS
+  extra=()
   if [[ "$variant" == "base" ]]; then
-    export CBC_CLIQUE_POOL_ALWAYS_FILTER=1
+    extra=(-cliqueFilterAlways on)
   elif [[ "$variant" == gated-c* ]]; then
-    export CBC_CLIQUE_POOL_MIN_CANDIDATES="${variant#gated-c}"
+    extra=(-cliqueFilterMinCandidates "${variant#gated-c}")
   elif [[ "$variant" == "gated" ]]; then
-    : # new defaults, no env override needed
+    : # the defaults, no override needed
   fi
   mps="$DATA_DIR/mips/$inst.mps.gz"
   if [[ ! -f "$mps" ]]; then
@@ -39,7 +39,7 @@ if [[ "${1:-}" == --worker=* ]]; then
     exit 0
   fi
   t0=$(date +%s.%N)
-  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 -sec "$sec" -solve 2>&1)"
+  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 -sec "$sec" "${extra[@]}" -solve 2>&1)"
   rc=$?
   t1=$(date +%s.%N)
   elapsed=$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.4f", b-a}')

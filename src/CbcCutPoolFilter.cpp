@@ -32,7 +32,7 @@ bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
   if (nCandidates <= 0)
     return false;
 
-  // Same rationale as CglBKClique's CBC_CLIQUE_POOL_* precedent: small
+  // Same rationale as CglBKClique's cliqueFilter* precedent: small
   // models / small candidate counts are exempt, since filtering only pays
   // for itself when there are many candidates competing for a handful of
   // "best cut for this column" slots.

@@ -740,7 +740,12 @@ void CbcParameters::addCbcParams() {
                     CbcParam::CUTFILTERMINCOLS, CbcParam::CUTFILTERMINELEMENTS,
                     CbcParam::CUTFILTERMINCANDIDATES,
                     CbcParam::CUTFILTERMAXPARALLELISM,
-                    CbcParam::CUTFILTERALWAYS})
+                    CbcParam::CUTFILTERALWAYS,
+                    CbcParam::CLIQUEFILTERMINCOLS,
+                    CbcParam::CLIQUEFILTERMINCANDIDATES,
+                    CbcParam::CLIQUEFILTERMAXPARALLELISM,
+                    CbcParam::CLIQUEFILTERALWAYS,
+                    CbcParam::IMPLIEDCLIQUEFILTER})
     parameters_[code]->setTopic("Cuts");
 
   // Bool params
@@ -953,6 +958,11 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::CUTFILTERMINCANDIDATES]->setDefault(10);
      parameters_[CbcParam::CUTFILTERMAXPARALLELISM]->setDefault(0.9);
      parameters_[CbcParam::CUTFILTERALWAYS]->setDefault("off");
+     parameters_[CbcParam::CLIQUEFILTERMINCOLS]->setDefault(500);
+     parameters_[CbcParam::CLIQUEFILTERMINCANDIDATES]->setDefault(20);
+     parameters_[CbcParam::CLIQUEFILTERMAXPARALLELISM]->setDefault(1.0);
+     parameters_[CbcParam::CLIQUEFILTERALWAYS]->setDefault("off");
+     parameters_[CbcParam::IMPLIEDCLIQUEFILTER]->setDefault("off");
      parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setDefault(-1);
      parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
@@ -3103,6 +3113,40 @@ void CbcParameters::addCbcSolverIntParams() {
       "duplicates; lower values filter more aggressively.",
       CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::CLIQUEFILTERMINCOLS]->setup(
+      "cliqueFilterMinCo!ls",
+      "Fewest columns for which clique cuts are filtered",
+      0, COIN_INT_MAX,
+      "The clique, odd-wheel and implied-clique cut generators pass their "
+      "cuts through a cut pool that keeps, for each column, only the "
+      "best-scoring cuts containing it (and, see "
+      "cliqueFilterMaxParallelism, can also drop near-parallel cuts). Both "
+      "filters are skipped on problems with fewer than this many columns, "
+      "where the extra LP rows are cheap. Exact duplicates are always "
+      "removed. This is separate from the cutFilter* parameters, which "
+      "apply to the other generators.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CLIQUEFILTERMINCANDIDATES]->setup(
+      "cliqueFilterMinCa!ndidates",
+      "Fewest clique cuts in a call for which they are filtered",
+      0, COIN_INT_MAX,
+      "A call of the clique or odd-wheel cut generator only filters its "
+      "cuts if it found at least this many. With fewer, the filter almost "
+      "never removes anything but still costs the scoring. Not used by "
+      "impliedCliqueCuts, which does not know its cut count in advance.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CLIQUEFILTERMAXPARALLELISM]->setup(
+      "cliqueFilterMa!xParallelism",
+      "Parallelism above which the clique cut filter drops the weaker cut",
+      0.0, 1.0,
+      "Like cutFilterMaxParallelism, for the clique, odd-wheel and "
+      "implied-clique cut generators. The default, 1, turns this filter "
+      "off: a sweep of 0.1 to 0.9 found no value that paid off for these "
+      "cuts.",
+      CoinParam::displayPriorityLow);
+
   parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setup(
       "boundPropM!axRounds",
       "Maximum number of bound propagation rounds",
@@ -3210,6 +3254,23 @@ void CbcParameters::addCbcSolverBoolParams() {
       "When on, the cut parallelism filter ignores cutFilterMinCols, "
       "cutFilterMinElements and cutFilterMinCandidates and filters every "
       "round.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::CLIQUEFILTERALWAYS]->setup(
+      "cliqueFilterA!lways",
+      "Whether to filter clique cuts regardless of problem and cut count",
+      "When on, the clique, odd-wheel and implied-clique cut generators "
+      "ignore cliqueFilterMinCols and cliqueFilterMinCandidates and always "
+      "filter their cuts.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::IMPLIEDCLIQUEFILTER]->setup(
+      "impliedCliqueF!ilter",
+      "Whether the implied-clique cut generator filters its cuts",
+      "The implied-clique cut generator normally only removes duplicate "
+      "cuts, since the per-column filter used for clique cuts was measured "
+      "to remove almost nothing here. When on, it applies that filter too. "
+      "cliqueFilterAlways also turns it on.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setup(

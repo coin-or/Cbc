@@ -25,7 +25,7 @@ filter_smallcols100	CLI:-cutFilterMinCols=100
 #
 # Stage 2 -- parallelism/orthogonality secondary filter on top of the
 # best-fitness-per-column contest (parity with CglBKClique's
-# CBC_CLIQUE_POOL_MAX_PARALLELISM sweep, which found no net win there --
+# cliqueFilterMaxParallelism sweep, which found no net win there --
 # checking whether the other 4 generators behave differently).
 filter_par09	CLI:-cutFilterAlways=on,CLI:-cutFilterMaxParallelism=0.9
 filter_par07	CLI:-cutFilterAlways=on,CLI:-cutFilterMaxParallelism=0.7

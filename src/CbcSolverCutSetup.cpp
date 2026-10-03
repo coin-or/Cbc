@@ -218,6 +218,13 @@ void installCutGenerators(
     filter.always = parameters[CbcParam::CUTFILTERALWAYS]->modeVal() != 0;
     babModel.setCutPoolFilterSettings(filter);
   }
+  // The clique/odd-wheel/implied-clique generators filter in their own
+  // CoinCutPool, with these thresholds.
+  CoinCutPoolGate cliquePoolGate;
+  cliquePoolGate.minCols = parameters[CbcParam::CLIQUEFILTERMINCOLS]->intVal();
+  cliquePoolGate.minCandidates = parameters[CbcParam::CLIQUEFILTERMINCANDIDATES]->intVal();
+  cliquePoolGate.maxParallelism = parameters[CbcParam::CLIQUEFILTERMAXPARALLELISM]->dblVal();
+  cliquePoolGate.alwaysFilter = parameters[CbcParam::CLIQUEFILTERALWAYS]->modeVal() != 0;
   // See CbcSolver.cpp's REDSPLIT2CUTS/GMICUTS/LANDPCUTS default ("root"): a
   // 2026-09 sanity-suite sweep found these only pay for themselves in
   // aggregate within a "sweet spot" instance-size window. Below it, the
@@ -570,6 +577,7 @@ void installCutGenerators(
     bkCliqueGen.setMaxCallsBK(maxCallsBK);
     bkCliqueGen.setExtendingMethod(bkClqExtMethod);
     bkCliqueGen.setPivotingStrategy(bkPivotingStrategy);
+    bkCliqueGen.setPoolGate(cliquePoolGate);
     babModel.addCutGenerator(&bkCliqueGen, translate[cliqueMode], "Clique");
     accuracyFlag[numberGenerators] = 0;
     switches[numberGenerators++] = 0;
@@ -589,6 +597,7 @@ void installCutGenerators(
   if (oddWheelMode) {
     CglOddWheel oddWheelGen;
     oddWheelGen.setExtendingMethod(oddWExtMethod);
+    oddWheelGen.setPoolGate(cliquePoolGate);
     babModel.addCutGenerator(&oddWheelGen, translate[oddWheelMode], "OddWheel");
     accuracyFlag[numberGenerators] = 0;
     // Also expensive at root on dense/large conflict graphs; only count as
@@ -602,6 +611,8 @@ void installCutGenerators(
   int impliedCliqueMode = parameters[CbcParam::IMPLIEDCLIQUECUTS]->modeVal();
   if (impliedCliqueMode) {
     CglImpliedClique impliedCliqueGen;
+    impliedCliqueGen.setPoolGate(cliquePoolGate);
+    impliedCliqueGen.setPoolFilter(parameters[CbcParam::IMPLIEDCLIQUEFILTER]->modeVal() != 0);
     babModel.addCutGenerator(&impliedCliqueGen, translate[impliedCliqueMode], "ImpliedClique");
     accuracyFlag[numberGenerators] = 0;
     switches[numberGenerators++] = 0;

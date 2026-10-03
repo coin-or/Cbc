@@ -1130,6 +1130,11 @@ static void usage(const char *prog)
     "                      lifting loop when it is 0.\n"
     "  --max-seconds=F     separator wall-clock budget (default 0 = none; a\n"
     "                      nonzero value makes the run load-dependent)\n"
+    "  --pool-always-filter     filter the cut pool regardless of the two\n"
+    "                      thresholds below (cbc's -cliqueFilterAlways)\n"
+    "  --pool-min-cols=N   fewest columns for pool filtering (default 500)\n"
+    "  --pool-min-candidates=N  fewest cuts for pool filtering (default 20)\n"
+    "  --pool-max-parallelism=F pool parallelism filter (default 1 = off)\n"
     "  --rebuild-cgraph    rebuild the graph from the matrix instead of loading\n"
     "                      the captured one (not faithful; for comparison only)\n"
     "  --stage-times       also print a human-readable stage breakdown to stderr\n"
@@ -1406,6 +1411,7 @@ int main(int argc, char *argv[])
   int maxRounds = 4;
   size_t extMethod = 2;
   double maxSeconds = 0.0;
+  CoinCutPoolGate poolGate; // CBC's defaults
   const char *stemArg = NULL;
 
   for (int i = 1; i < argc; ++i) {
@@ -1440,6 +1446,14 @@ int main(int argc, char *argv[])
       }
     } else if (strncmp(a, "--max-seconds=", 14) == 0) {
       maxSeconds = atof(a + 14);
+    } else if (strcmp(a, "--pool-always-filter") == 0) {
+      poolGate.alwaysFilter = true;
+    } else if (strncmp(a, "--pool-min-cols=", 16) == 0) {
+      poolGate.minCols = (size_t)atol(a + 16);
+    } else if (strncmp(a, "--pool-min-candidates=", 22) == 0) {
+      poolGate.minCandidates = (size_t)atol(a + 22);
+    } else if (strncmp(a, "--pool-max-parallelism=", 23) == 0) {
+      poolGate.maxParallelism = atof(a + 23);
     } else if (a[0] == '-') {
       fprintf(stderr, "ERROR: unknown option %s\n", a);
       usage(argv[0]);
@@ -1519,6 +1533,7 @@ int main(int argc, char *argv[])
       oddWheel.setUseGate(false);
     if (checkValidity)
       oddWheel.setCheckValidity(true);
+    oddWheel.setPoolGate(poolGate);
 
     // The solution the cuts are generated against, kept for violation scoring:
     // getColSolution() moves under applyCuts/resolve.

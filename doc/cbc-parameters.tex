@@ -627,6 +627,15 @@ A hard ceiling on the number of nonzeros in a TwoMir cut (including the Lagrange
 
 \textbf{Range:} 1 to INT\_MAX (default: 500)
 
+\subsection*{\texttt{-gomoryLimitRoot} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsection}{\texttt{-gomoryLimitRoot} \ptag{blue!60!black}{INT}}
+
+Maximum length of a Gomory cut at the root
+
+The longest Gomory cut (including the Lagrangean variants) generated at the root node. 0 lets the generator choose a length from the problem. The default, auto, uses 1000, or 2000 when the preprocessed problem has more than 5000 columns. An explicit value is used as it is, and also replaces the root part of cutLength.
+
+\textbf{Range:} 0 to INT\_MAX (default: auto)
+
 \subsection*{\texttt{-zeroHalfRowMaxFractionalCount} \ptag{blue!60!black}{INT}}
 \addcontentsline{toc}{subsection}{\texttt{-zeroHalfRowMaxFractionalCount} \ptag{blue!60!black}{INT}}
 

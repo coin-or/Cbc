@@ -9707,8 +9707,17 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     // for what each of those turns off inside the generator -- notably doSorted,
     // whose falsity means the secondaryCuts flush never runs.
     if (currentPassNumber_ == 1 && !node && !parentModel_) {
+      int gomoryLimitAtRoot = 1000;
+      for (int i = 0; i < numberCutGenerators_; i++) {
+        const CglGomory *gomory
+          = dynamic_cast< const CglGomory * >(generator_[i]->generator());
+        if (gomory) {
+          gomoryLimitAtRoot = gomory->getLimitAtRoot();
+          break;
+        }
+      }
       cbcDumpGomoryFixture(solver_, "gomory", currentPassNumber_ - 1, 0, 0,
-        numberRowsAtContinuous_, getMaximumSeconds());
+        numberRowsAtContinuous_, getMaximumSeconds(), gomoryLimitAtRoot);
     }
 #endif
 #ifdef CBC_DUMP_TWOMIR_FIXTURE

@@ -91,10 +91,10 @@
  *     effective value is 0.005 -- a tenfold wider candidate window than the
  *     library default. This is the single biggest difference between CBC's
  *     configuration and CglGomory's, and it acts directly on the loop count.
- *   - `cbcLimitAtRoot` is 1000, or 2000 when the model has more than 5000
- *     columns (CbcSolverCutSetup.cpp:161-167). "The model" is the *preprocessed*
- *     one: configureCutGenerators runs from babConfigureSearchModel, which is
- *     after preprocess(), so babModel.getNumCols() is the count this dump sees.
+ *   - `cbcLimitAtRoot` is the generator's own getLimitAtRoot(), read by the
+ *     caller. With -gomoryLimitRoot auto that is 1000, or 2000 when the
+ *     *preprocessed* model has more than 5000 columns (configureCutGenerators
+ *     runs after preprocess()); an explicit value is recorded as given.
  *     Recorded as a resolved number rather than a rule, so the bench need not
  *     re-derive it.
  *   - `cbcLimit 50` is the in-tree cut-length limit. Irrelevant at the root but
@@ -589,9 +589,8 @@ static bool cbcGomoryFixtureWriteMeta(const OsiSolverInterface *si, const char *
   fprintf(fp, "cutoff %.15g\n", cutoff);
   // CBC's Gomory configuration (CbcSolverCutSetup.cpp:132-188), which differs from
   // CglGomory's constructor defaults most sharply on awayAtRoot: 0.005 against the
-  // library's 0.05, a tenfold wider candidate window. limitAtRoot is resolved here
-  // rather than left as a rule, because the >5000 test is on the *preprocessed*
-  // column count, which only this call site knows.
+  // library's 0.05, a tenfold wider candidate window. limitAtRoot is the value
+  // the installed generator holds, so an explicit -gomoryLimitRoot is recorded.
   fprintf(fp, "cbcLimitAtRoot %d\n", limitAtRoot);
   fprintf(fp, "cbcLimit 50\n");
   fprintf(fp, "cbcAwayAtRoot %.15g\n", awayAtRoot);
@@ -620,7 +619,7 @@ static bool cbcGomoryFixtureWriteMeta(const OsiSolverInterface *si, const char *
  */
 static bool cbcDumpGomoryFixture(OsiSolverInterface *si, const char *tag = "gomory",
   int pass = 0, int options = 0, int inTree = 0, int formulationRows = -1,
-  double maxSeconds = 0.0)
+  double maxSeconds = 0.0, int limitAtRoot = 1000)
 {
   if (!si)
     return false;
@@ -676,10 +675,6 @@ static bool cbcDumpGomoryFixture(OsiSolverInterface *si, const char *tag = "gomo
 
   double cutoff = COIN_DBL_MAX;
   si->getDblParam(OsiDualObjectiveLimit, cutoff);
-
-  // CbcSolverCutSetup.cpp:161-167, on the *preprocessed* column count -- which is
-  // what this solver holds, since configureCutGenerators runs after preprocess().
-  const int limitAtRoot = si->getNumCols() > 5000 ? 2000 : 1000;
 
   const std::string dir = cbcGomoryFixtureDir();
   cbcGomoryFixtureMkdirP(dir);

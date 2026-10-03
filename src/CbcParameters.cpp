@@ -731,6 +731,7 @@ void CbcParameters::addCbcParams() {
                     CbcParam::ZEROHALFSPARSETHRESH})
     parameters_[code]->setTopic("Cuts");
   parameters_[CbcParam::TWOMIRLENGTH]->setTopic("Cuts");
+  parameters_[CbcParam::GOMORYLIMITROOT]->setTopic("Cuts");
   for (int code : {CbcParam::CUTGATEMINCOLS, CbcParam::CUTGATEMAXCOLS,
                     CbcParam::REDSPLIT2MAXROWS, CbcParam::REDSPLIT2MAXCUTS,
                     CbcParam::REDSPLIT2MAXCOMPUTED, CbcParam::REDSPLIT2MAXBUFFER,
@@ -946,6 +947,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::VERBOSE]->setDefault(verbose_);
      parameters_[CbcParam::VUBTRY]->setDefault(-1);
      parameters_[CbcParam::TWOMIRLENGTH]->setDefault(500);
+     parameters_[CbcParam::GOMORYLIMITROOT]->setDefault(CoinParam::autoIntValue());
      parameters_[CbcParam::CUTGATEMINCOLS]->setDefault(500);
      parameters_[CbcParam::CUTGATEMAXCOLS]->setDefault(50000);
      parameters_[CbcParam::REDSPLIT2MAXROWS]->setDefault(200000);
@@ -2980,6 +2982,17 @@ void CbcParameters::addCbcSolverIntParams() {
       "threshold-based switching, but sparse mode is still used automatically "
       "when the dense graph would be unsafe.",
       CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::GOMORYLIMITROOT]->setup(
+      "gomoryLimitR!oot", "Maximum length of a Gomory cut at the root",
+      0, COIN_INT_MAX,
+      "The longest Gomory cut (including the Lagrangean variants) generated "
+      "at the root node. 0 lets the generator choose a length from the "
+      "problem. The default, auto, uses 1000, or 2000 when the preprocessed "
+      "problem has more than 5000 columns. An explicit value is used as it "
+      "is, and also replaces the root part of cutLength.",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::GOMORYLIMITROOT]->setAutoAllowed();
 
   parameters_[CbcParam::TWOMIRLENGTH]->setup(
       "twoMirL!ength", "Maximum length of a TwoMir cut", 1, COIN_INT_MAX,

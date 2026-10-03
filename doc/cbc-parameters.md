@@ -15,7 +15,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [MIP Preprocessing](#mip-preprocessing) (12 parameters)
 - [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (9 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
-- [Cuts](#cuts) (55 parameters)
+- [Cuts](#cuts) (56 parameters)
 - [Heuristics](#heuristics) (37 parameters)
 - [Branching](#branching) (8 parameters)
 - [Tolerances](#tolerances) (6 parameters)
@@ -550,6 +550,14 @@ Maximum length of a TwoMir cut
 A hard ceiling on the number of nonzeros in a TwoMir cut (including the Lagrangean variants). A tableau row longer than this is not used to derive cuts, and a longer cut is discarded. It applies at the root and in the tree, on top of the generator's own limits: in the tree those are normally tighter (250), so in practice this caps root cuts. On the first root pass the limit is also bounded by the number of columns. The default, 500, is the value CglTwomir has always used.
 
 **Range:** 1 to INT_MAX (default: 500)
+
+### `-gomoryLimitRoot`
+
+Maximum length of a Gomory cut at the root
+
+The longest Gomory cut (including the Lagrangean variants) generated at the root node. 0 lets the generator choose a length from the problem. The default, auto, uses 1000, or 2000 when the preprocessed problem has more than 5000 columns. An explicit value is used as it is, and also replaces the root part of cutLength.
+
+**Range:** 0 to INT_MAX (default: auto)
 
 ### `-zeroHalfRowMaxFractionalCount`
 

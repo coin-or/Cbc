@@ -270,7 +270,7 @@
 <a href="#mip-preprocessing" class="sb-link">MIP Preprocessing<span class="sb-count">12</span></a>
 <a href="#mip-preprocessing-bound-propagation" class="sb-link">MIP Preprocessing — Bound Propagation<span class="sb-count">9</span></a>
 <a href="#lp-presolve" class="sb-link">LP Presolve<span class="sb-count">3</span></a>
-<a href="#cuts" class="sb-link">Cuts<span class="sb-count">55</span></a>
+<a href="#cuts" class="sb-link">Cuts<span class="sb-count">56</span></a>
 <a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">37</span></a>
 <a href="#branching" class="sb-link">Branching<span class="sb-count">8</span></a>
 <a href="#tolerances" class="sb-link">Tolerances<span class="sb-count">6</span></a>
@@ -640,6 +640,11 @@
   <summary><span class="pname"><code>-twoMirLength</code></span><span class="badge badge-int">Integer</span><span class="pshort">Maximum length of a TwoMir cut</span><span class="pmeta">default:&nbsp;<code>500</code></span></summary>
   <div class="pbody"><p class="plong">A hard ceiling on the number of nonzeros in a TwoMir cut (including the Lagrangean variants). A tableau row longer than this is not used to derive cuts, and a longer cut is discarded. It applies at the root and in the tree, on top of the generator&#x27;s own limits: in the tree those are normally tighter (250), so in practice this caps root cuts. On the first root pass the limit is also bounded by the number of columns. The default, 500, is the value CglTwomir has always used.</p>
 <div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;500)</span></div></div>
+</details>
+<details class="param" data-search="gomorylimitroot maximum length of a gomory cut at the root">
+  <summary><span class="pname"><code>-gomoryLimitRoot</code></span><span class="badge badge-int">Integer</span><span class="pshort">Maximum length of a Gomory cut at the root</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The longest Gomory cut (including the Lagrangean variants) generated at the root node. 0 lets the generator choose a length from the problem. The default, auto, uses 1000, or 2000 when the preprocessed problem has more than 5000 columns. An explicit value is used as it is, and also replaces the root part of cutLength.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
 </details>
 <details class="param" data-search="zerohalfrowmaxfractionalcount skip zerohalf rows whose fractional count exceeds this threshold">
   <summary><span class="pname"><code>-zeroHalfRowMaxFractionalCount</code></span><span class="badge badge-int">Integer</span><span class="pshort">Skip ZeroHalf rows whose fractional count exceeds this threshold</span><span class="pmeta">default:&nbsp;<code>-1</code></span></summary>

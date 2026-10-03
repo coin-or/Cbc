@@ -401,6 +401,10 @@ void installCutGenerators(
         gomoryGen.setLimit(cutLength % 10000000);
       }
     }
+    // An explicit gomoryLimitRoot is the root limit, whatever the mode and
+    // cutLength; auto keeps the choice made above.
+    if (!parameters[CbcParam::GOMORYLIMITROOT]->isAuto())
+      gomoryGen.setLimitAtRoot(parameters[CbcParam::GOMORYLIMITROOT]->intVal());
     int laGomory = parameters[CbcParam::LAGOMORYCUTS]->modeVal();
     int gType = translate[gomoryMode];
     if (!laGomory) {

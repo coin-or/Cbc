@@ -3310,11 +3310,13 @@ void CbcSolver::initialize()
   int preSolve = 5;
   int doSprint = -1;
   int testOsiParameters = -1;
-  clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBound());
+  clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBoundIsDefault()
+      ? CoinParam::autoDblValue() : lpSolver->dualBound());
   clpParameters[ClpParam::DUALTOLERANCE]->setVal(lpSolver->dualTolerance());
   clpParameters[ClpParam::IDIOT]->setVal(doIdiot);
   clpParameters[ClpParam::PRESOLVETOLERANCE]->setVal(1.0e-8);
-  clpParameters[ClpParam::MAXFACTOR]->setVal(lpSolver->factorizationFrequency());
+  clpParameters[ClpParam::MAXFACTOR]->setVal(lpSolver->factorizationFrequencyIsDefault()
+      ? CoinParam::autoIntValue() : lpSolver->factorizationFrequency());
   clpParameters[ClpParam::MAXITERATION]->setVal(lpSolver->maximumIterations());
   clpParameters[ClpParam::PRESOLVEPASS]->setVal(preSolve);
   clpParameters[ClpParam::PERTVALUE]->setVal(lpSolver->perturbation());
@@ -6190,7 +6192,7 @@ int CbcSolver::solveInitialLp(
     statistics.result = "Linear relaxation infeasible";
     return 1;
   }
-  if (clpSolver->dualBound() == 1.0e10) {
+  if (clpSolver->dualBoundIsDefault()) {
     ClpSimplex temp = *clpSolver;
     temp.setLogLevel(0);
     // Cap this silent re-solve so it cannot consume a large portion
@@ -7210,11 +7212,13 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   int preSolve = 5;
   int doSprint = -1;
   int testOsiParameters = -1;
-  clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBound());
+  clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBoundIsDefault()
+      ? CoinParam::autoDblValue() : lpSolver->dualBound());
   clpParameters[ClpParam::DUALTOLERANCE]->setVal(lpSolver->dualTolerance());
   clpParameters[ClpParam::IDIOT]->setVal(doIdiot);
   clpParameters[ClpParam::PRESOLVETOLERANCE]->setVal(1.0e-8);
-  clpParameters[ClpParam::MAXFACTOR]->setVal(lpSolver->factorizationFrequency());
+  clpParameters[ClpParam::MAXFACTOR]->setVal(lpSolver->factorizationFrequencyIsDefault()
+      ? CoinParam::autoIntValue() : lpSolver->factorizationFrequency());
   clpParameters[ClpParam::MAXITERATION]->setVal(lpSolver->maximumIterations());
   clpParameters[ClpParam::PRESOLVEPASS]->setVal(preSolve);
   clpParameters[ClpParam::PERTVALUE]->setVal(lpSolver->perturbation());
@@ -8100,7 +8104,7 @@ int CbcSolver::babConfigureBabModel(int logLevel,
   if (logLevel > -1)
     clpSolver2->messageHandler()->setLogLevel(logLevel);
   lpSolver = clpSolver2->getModelPtr();
-  if (lpSolver->factorizationFrequency() == 200) {
+  if (lpSolver->factorizationFrequencyIsDefault()) {
     // User did not touch preset
     int numberRows = lpSolver->numberRows();
     const int cutoff1 = 10000;
@@ -9673,9 +9677,13 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
         OsiClpSolverInterface *osiclp = getClpSolver(babModel_->solver());
         // Make general so do factorization
         int factor = osiclp->getModelPtr()->factorizationFrequency();
+        bool exactFactor = osiclp->getModelPtr()->exactFactorizationFrequency();
         osiclp->getModelPtr()->setFactorizationFrequency(200);
         osiclp->generateCpp(fp);
-        osiclp->getModelPtr()->setFactorizationFrequency(factor);
+        if (exactFactor)
+          osiclp->getModelPtr()->setExactFactorizationFrequency(factor);
+        else
+          osiclp->getModelPtr()->setFactorizationFrequency(factor);
         // solveOptions.generateCpp(fp);
         fclose(fp);
         // now call generate code
@@ -12863,6 +12871,20 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           parameters.setModel(&model_);
           parameters.setGoodModel(true);
           parameters.synchronizeModel();
+#endif
+#ifndef CBC_OTHER_SOLVER
+          // synchronizeModel() gives the Clp values to the model it was set
+          // up with, not to the solver read since, so hand an explicit
+          // maxFactor / dualBound to the solver branch and bound clones
+          if (OsiClpSolverInterface *babClp = getClpSolver(model_.solver())) {
+            ClpSimplex *babLp = babClp->getModelPtr();
+            if (!clpParameters[ClpParam::MAXFACTOR]->isAuto())
+              babLp->setExactFactorizationFrequency(
+                clpParameters[ClpParam::MAXFACTOR]->intVal());
+            if (!clpParameters[ClpParam::DUALBOUND]->isAuto())
+              babLp->setExactDualBound(
+                clpParameters[ClpParam::DUALBOUND]->dblVal());
+          }
 #endif
           int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
           int cbcLogLevel = parameters[CbcParam::LOGLEVEL]->intVal();

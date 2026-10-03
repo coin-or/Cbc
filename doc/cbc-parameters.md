@@ -1584,9 +1584,9 @@ This is a type of 'crash' which works well on some homogeneous problems. It work
 
 Maximum number of iterations between refactorizations
 
-If this is left at its default value of 200 then CLP will guess a  value to use.  CLP may decide to re-factorize earlier for accuracy.
+The default, auto, lets CLP guess a value from the number of rows; a number, 200 included, is used as given.  CLP may decide to re-factorize earlier for accuracy.
 
-**Range:** 1 to INT_MAX (default: 200)
+**Range:** 1 to INT_MAX (default: auto)
 
 ### `-maxIterations`
 
@@ -1646,9 +1646,9 @@ Dubious options for Simplex - see ClpSimplex.hpp
 
 Initially algorithm acts as if no gap between bounds exceeds this value
 
-The dual algorithm in Clp is a single phase algorithm as opposed to a two phase algorithm where you first get feasible then optimal.  If a problem has both upper and lower bounds then it is trivial to get dual feasible by setting non basic variables to correct bound.  If the gap between the upper and lower bounds of a variable is more than the value of dualBound Clp introduces fake bounds so that it can make the problem dual feasible.  This has the same effect as a composite objective function in the primal algorithm.  Too high a value may mean more iterations, while too low a bound means the code may go all the way and then have to increase the bounds.  OSL had a heuristic to adjust bounds, maybe we need that here.
+The dual algorithm in Clp is a single phase algorithm as opposed to a two phase algorithm where you first get feasible then optimal.  If a problem has both upper and lower bounds then it is trivial to get dual feasible by setting non basic variables to correct bound.  If the gap between the upper and lower bounds of a variable is more than the value of dualBound Clp introduces fake bounds so that it can make the problem dual feasible.  This has the same effect as a composite objective function in the primal algorithm.  Too high a value may mean more iterations, while too low a bound means the code may go all the way and then have to increase the bounds.  OSL had a heuristic to adjust bounds, maybe we need that here.  The default, auto, starts from 1.0e10 and lets the code replace it from the problem's bounds (Cbc does so before branch and bound); a number, 1.0e10 included, is used as given.
 
-**Range:** 1e-20 to ∞ (default: 10000000000)
+**Range:** 1e-20 to ∞ (default: auto)
 
 ### `-primalWeight`
 

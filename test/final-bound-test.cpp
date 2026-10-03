@@ -21,6 +21,7 @@ struct Frontier {
   bool captured = false;
   double bound = 0.0;
   double endBound = COIN_DBL_MAX;
+  int endCalls = 0;
 };
 
 class RecordingTree : public CbcTree {
@@ -59,8 +60,10 @@ public:
   }
   CbcAction event(CbcEvent which) override
   {
-    if (which == endSearch)
+    if (which == endSearch) {
+      ++frontier_->endCalls;
       frontier_->endBound = model_->getBestPossibleObjValue() * model_->solver()->getObjSense();
+    }
     if (which == node && model_->getNodeCount() >= 12) {
       if (stopMode_ == 1)
         return stop;
@@ -75,7 +78,7 @@ private:
   int stopMode_;
 };
 
-int run(int threads, double sense, int limit, double frequency, int stopMode = 0)
+int run(int threads, double sense, int limit, double frequency, int stopMode = 0, int threadMode = 0)
 {
   const int columns = 18, rows = 6;
   CoinPackedMatrix matrix(false, 0, 0);
@@ -126,6 +129,7 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
   CbcModel model(solver);
   model.setLogLevel(0);
   model.setNumberThreads(threads);
+  model.setThreadMode(threadMode);
   model.setNumberStrong(0);
   model.setNumberBeforeTrust(0);
   CbcCompareObjective comparison;
@@ -138,7 +142,8 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
   model.passInTreeHandler(tree);
   StopHandler handler(frontier, stopMode);
   CbcBnBOutput output(stdout, false, 0);
-  handler.setOutputHandler(&output);
+  if (frequency == 0.0)
+    handler.setOutputHandler(&output);
   model.passInEventHandler(&handler);
   model.branchAndBound();
   const double bound = sense * model.getBestPossibleObjValue();
@@ -152,9 +157,9 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
   const bool callback = limit == 10000 && !stopMode ? true : fabs(bound - frontier->endBound) < 1.0e-7;
   const bool finished = limit == 10000 && !stopMode ? fabs(bound - optimum) < 1.0e-7 : true;
   const bool frontierPresent = limit == 30 ? frontier->captured : true;
-  const bool passed = valid && fresh && stopped && callback && finished && frontierPresent;
-  printf("  %s: threads=%d sense=%.0f limit=%d frequency=%.0f stopMode=%d nodes=%d bound=%.10g frontier=%.10g optimum=%.10g\n",
-    passed ? "ok" : "FAIL", threads, sense, limit, frequency, stopMode, model.getNodeCount(), bound, frontier->bound, optimum);
+  const bool passed = valid && fresh && stopped && callback && finished && frontierPresent && frontier->endCalls == 1;
+  printf("  %s: threads=%d threadMode=%d sense=%.0f limit=%d frequency=%.0f stopMode=%d nodes=%d bound=%.10g frontier=%.10g optimum=%.10g\n",
+    passed ? "ok" : "FAIL", threads, threadMode, sense, limit, frequency, stopMode, model.getNodeCount(), bound, frontier->bound, optimum);
   return !passed;
 }
 }
@@ -162,6 +167,12 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
 int main()
 {
   int failures = 0;
+  {
+    OsiClpSolverInterface solver;
+    CbcModel model(solver);
+    if (model.dealWithEventHandler(CbcEventHandler::endSearch, 0.0, NULL) != CbcEventHandler::noAction)
+      ++failures;
+  }
   for (double sense : { 1.0, -1.0 }) {
     for (int threads : { 0, 2 }) {
       if (threads && !CbcModel::haveMultiThreadSupport())
@@ -174,6 +185,11 @@ int main()
         failures += run(threads, sense, 10000, 1.0e9, 1);
         failures += run(threads, sense, 10000, 1.0e9, 2);
       }
+    }
+    if (CbcModel::haveMultiThreadSupport()) {
+      failures += run(1, sense, 30, 1.0e9);
+      failures += run(4, sense, 30, 1.0e9);
+      failures += run(2, sense, 30, 1.0e9, 0, 1);
     }
   }
   return failures ? 1 : 0;

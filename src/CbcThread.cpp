@@ -878,6 +878,7 @@ int CbcBaseModel::waitForThreadsInTree(int type)
       }
     }
     int i;
+    std::vector< CbcNode * > pendingNodes;
     // do statistics
     // Seems to be bug in CoinCpu on Linux - does threads as well despite documentation
     double time = 0.0;
@@ -895,6 +896,19 @@ int CbcBaseModel::waitForThreadsInTree(int type)
       threadModel_[i]->setNumberThreads(0); // say exit
       if (children_[i].deterministic() > 0)
         delete[] children_[i].delNode();
+      // Interrupted workers can have a created node that was never merged.
+      // Return both nodes for depth-ordered tree cleanup and cut accounting.
+      if (baseModel->parallelMode() > 0 && children_[i].returnCode() == 1
+        && baseModel->stoppingCriterionReached()) {
+        if (children_[i].node()) {
+          pendingNodes.push_back(children_[i].node());
+          children_[i].setNode(NULL);
+        }
+        if (children_[i].createdNode()) {
+          pendingNodes.push_back(children_[i].createdNode());
+          children_[i].setCreatedNode(NULL);
+        }
+      }
       if (children_[i].node()) {
         delete children_[i].node();
         children_[i].setNode(NULL);
@@ -921,6 +935,9 @@ int CbcBaseModel::waitForThreadsInTree(int type)
                                                   << children_[i].timeLocked() << children_[i].timeWaitingToLock()
                                                   << CoinMessageEol;
     }
+    // All workers have exited, so no worker can modify the shared heap.
+    for (CbcNode *node : pendingNodes)
+      baseModel->tree()->push(node);
     assert(children_[numberThreads_].numberTimesLocked() == children_[numberThreads_].numberTimesUnlocked());
     baseModel->messageHandler()->message(CBC_THREAD_STATS, baseModel->messages())
       << "Main thread";

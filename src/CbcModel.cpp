@@ -15562,15 +15562,16 @@ CbcModel::dealWithEventHandler(CbcEventHandler::CbcEvent event, double objValue,
     }
     return action;
   } else {
-    if (event==CbcEventHandler::endSearch) {
+    if (event == CbcEventHandler::endSearch && eventHandler) {
       // set useful information as normal output may
       // not appear (owing to timing)
-      CbcBnBOutput * handler = eventHandler->getOutputHandler();
-      handler->onStrongStats(strongInfo_[0],numberStrongIterations_,
-			     strongInfo_[2],strongInfo_[1]);
-      handler->onOtherStats2(maximumDepthActual_,numberDJFixed_,
-			     numberFathoms_, numberExtraNodes_,
-			     numberExtraIterations_);
+      CbcBnBOutput *handler = eventHandler->getOutputHandler();
+      if (handler) {
+        handler->onStrongStats(strongInfo_[0], numberStrongIterations_,
+          strongInfo_[2], strongInfo_[1]);
+        handler->onOtherStats2(maximumDepthActual_, numberDJFixed_,
+          numberFathoms_, numberExtraNodes_, numberExtraIterations_);
+      }
     }
     return CbcEventHandler::noAction;
   }

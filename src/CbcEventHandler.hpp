@@ -223,7 +223,7 @@ public:
     (*eaMap_)[event] = action;
   }
   
-  /*! \brief Set bnb output handler */
+  /*! \brief Set optional bnb output handler (NULL disables output statistics). */
 
   inline void setOutputHandler(CbcBnBOutput * outputHandler)
   {

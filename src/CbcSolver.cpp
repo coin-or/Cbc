@@ -1948,6 +1948,8 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   // clp model, so every cloned thread inherits PSI, objScale, and vector mode.
   if (canRace) {
     ClpRacingSolver racer(clp, racingThreads);
+    racer.addDefaultConfigs();
+    racer.setUnscaledPostsolve(true);
     // See the CbcStartSeconds guard at the top of solveInitialLp() -- by
     // this point the model's overall-search start time is guaranteed to
     // already be set, so getCurrentSeconds() is meaningful here. This makes
@@ -2141,6 +2143,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
     applyClpTimeLimit(model_, model2);
   // say in Cbc
   model2->setSpecialOptions(model2->specialOptions() | COIN_CBC_USING_CLP);
+  solveOptions.setUnscaledPostsolve(true);
   model2->initialSolve(solveOptions);
   if (model2 != clp)
     clearClpTimeLimits(model2);

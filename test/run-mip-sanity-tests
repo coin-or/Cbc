@@ -205,7 +205,9 @@
 # Final search-bound tests (test/final-bound-test.cpp) verify interrupted-search
 # bounds against the live frontier and an enumerated binary optimum, covering
 # minimization/maximization, serial/parallel, node/time/event stops and root-only
-# limits. Pass --no-final-bound-tests to skip this self-contained binary.
+# limits. When decomp2 is present, also require a proven optimum after root
+# cut purging (not a spurious time-limit stop). Pass --no-final-bound-tests
+# to skip this binary.
 #
 # Positional arguments (optional): one or more glob patterns to select a
 # subset of instances by name (e.g. `./run-mip-sanity-tests 'jssp_*' 'cvrp_*'`).
@@ -1238,7 +1240,13 @@ else
   echo
   echo "${BOLD}=== Final search-bound tests ===${RESET}"
   final_bound_log="$RESULTS_DIR/final-bound-test.log"
-  if ${ASLR_WRAP:+$ASLR_WRAP} "$FINAL_BOUND_TEST" >"$final_bound_log" 2>&1; then
+  final_bound_args=()
+  if [[ -f "$DATA_DIR/mips/decomp2.mps.gz" ]]; then
+    final_bound_args+=("$DATA_DIR/mips/decomp2.mps.gz")
+  else
+    echo "${DIM}Skipping decomp2 root cut-purge regression (fixture not present).${RESET}"
+  fi
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$FINAL_BOUND_TEST" "${final_bound_args[@]}" >"$final_bound_log" 2>&1; then
     echo "  ${GREEN}✔ final search-bound tests passed${RESET}  ${DIM}($final_bound_log)${RESET}"
   else
     final_bound_tests_failed=1

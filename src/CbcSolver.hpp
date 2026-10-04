@@ -811,6 +811,9 @@ private:
 
   /// Collected parameter-change messages (printed as a section before solve)
   std::vector< std::string > paramChanges_;
+  /// Clp parameters given on the command line (ClpParam codes), so branch
+  /// and bound can be handed exactly those and nothing else
+  std::vector< int > clpParamsSetByUser_;
   //@}
 
   ///@name Private helpers

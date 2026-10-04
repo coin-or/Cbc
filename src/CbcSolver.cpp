@@ -11925,6 +11925,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           printGeneralMessage(model_, message);
           continue;
         }
+        clpParamsSetByUser_.push_back(clpParamCode);
         if (clpParamCode == ClpParam::PROGRESS) {
           printFrequency = dValue;
         }
@@ -12136,6 +12137,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           if (!message.empty())
             paramChanges_.push_back(message);
         }
+        clpParamsSetByUser_.push_back(clpParamCode);
         if (clpParamCode == ClpParam::PRESOLVEPASS) {
           preSolve = iValue;
         } else if (clpParamCode == ClpParam::IDIOT) {
@@ -12875,7 +12877,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 #ifndef CBC_OTHER_SOLVER
           // synchronizeModel() gives the Clp values to the model it was set
           // up with, not to the solver read since, so hand an explicit
-          // maxFactor / dualBound to the solver branch and bound clones
+          // maxFactor / dualBound, and the Clp values given on the command
+          // line, to the solver branch and bound clones
           if (OsiClpSolverInterface *babClp = getClpSolver(model_.solver())) {
             ClpSimplex *babLp = babClp->getModelPtr();
             if (!clpParameters[ClpParam::MAXFACTOR]->isAuto())
@@ -12884,6 +12887,39 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             if (!clpParameters[ClpParam::DUALBOUND]->isAuto())
               babLp->setExactDualBound(
                 clpParameters[ClpParam::DUALBOUND]->dblVal());
+            // Not maxIterations or lpSeconds: a node LP stopped by either is
+            // read as the whole search running out. Not the special option
+            // masks either: they replace bits the code itself sets.
+            for (int code : clpParamsSetByUser_) {
+              switch (code) {
+              case ClpParam::DUALTOLERANCE:
+                babLp->setDualTolerance(clpParameters[code]->dblVal());
+                break;
+              case ClpParam::PRIMALTOLERANCE:
+                babLp->setPrimalTolerance(clpParameters[code]->dblVal());
+                break;
+              case ClpParam::ZEROTOLERANCE:
+                babLp->setSmallElementValue(clpParameters[code]->dblVal());
+                break;
+              case ClpParam::PRIMALWEIGHT:
+                babLp->setInfeasibilityCost(clpParameters[code]->dblVal());
+                break;
+              case ClpParam::OBJSCALE:
+                babLp->setObjectiveScale(clpParameters[code]->dblVal());
+                break;
+              case ClpParam::RHSSCALE:
+                babLp->setRhsScale(clpParameters[code]->dblVal());
+                break;
+              case ClpParam::RANDOMSEED:
+                // branchAndBound() seeds the solver itself, so give it this
+                // seed instead of 1234567
+                babLp->setRandomSeed(clpParameters[code]->intVal());
+                model_.setSolverRandomSeed(clpParameters[code]->intVal());
+                break;
+              default:
+                break;
+              }
+            }
           }
 #endif
           int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();

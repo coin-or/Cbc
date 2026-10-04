@@ -2310,6 +2310,16 @@ public:
   {
     return randomSeed_;
   }
+  /// Set the seed branchAndBound() gives a Clp solver (default 1234567)
+  inline void setSolverRandomSeed(int value)
+  {
+    solverRandomSeed_ = value;
+  }
+  /// Get the seed branchAndBound() gives a Clp solver
+  inline int getSolverRandomSeed() const
+  {
+    return solverRandomSeed_;
+  }
   /// Set multiple root tries
   inline void setMultipleRootTries(int value)
   {
@@ -3658,6 +3668,8 @@ private:
   int maximumRows_;
   /// Random seed
   unsigned int randomSeed_;
+  /// Seed branchAndBound() gives a Clp solver
+  int solverRandomSeed_ = 1234567;
   /// Multiple root tries
   int multipleRootTries_;
   /// Current depth

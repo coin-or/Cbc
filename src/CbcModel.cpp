@@ -2097,7 +2097,7 @@ void CbcModel::branchAndBound(int doStatistics)
       clpSolver->passInDisasterHandler(&handler);
       // Initialise solvers seed (unless users says not)
       if ((specialOptions_ & 4194304) == 0) 
-        clpSolver->getModelPtr()->setRandomSeed(1234567);
+        clpSolver->getModelPtr()->setRandomSeed(solverRandomSeed_);
 #if CLP_START_FINISH == 0
       if ((moreSpecialOptions2_ & 8388608) != 0) // no crunch
 #endif 
@@ -4362,8 +4362,12 @@ void CbcModel::branchAndBound(int doStatistics)
   }
   int numberIterationsAtContinuous = numberIterations_;
   // solverCharacteristics_->setSolver(solver_);
-  if (!feasible && (solver_->isAbandoned() || resolveHitTimeLimit(solver_)
-                     || maximumSecondsReached())) {
+  const OsiClpSolverInterface *rootClpSolver = dynamic_cast< const OsiClpSolverInterface * >(solver_);
+  // Purging basic-slack cuts without a resolve invalidates Clp's status (-1),
+  // even when the root was fathomed normally. This is not an abandoned solve.
+  const bool rootResolveAbandoned = solver_->isAbandoned()
+    && (!rootClpSolver || rootClpSolver->getModelPtr()->status() != -1);
+  if (!feasible && (rootResolveAbandoned || resolveHitTimeLimit(solver_) || maximumSecondsReached())) {
     // Root cut generation (solveWithCuts(), possibly several calls above)
     // concluded "infeasible" purely because some LP resolve along the way
     // was abandoned (numerical difficulties) or cut short by the remaining
@@ -7096,6 +7100,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , maximumWhich_(rhs.maximumWhich_)
   , maximumRows_(0)
   , randomSeed_(rhs.randomSeed_)
+  , solverRandomSeed_(rhs.solverRandomSeed_)
   , multipleRootTries_(rhs.multipleRootTries_)
   , currentDepth_(0)
   , whichGenerator_(nullptr)
@@ -7496,6 +7501,7 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
     maximumCutPasses_ = rhs.maximumCutPasses_;
     randomSeed_ = rhs.randomSeed_;
+    solverRandomSeed_ = rhs.solverRandomSeed_;
     multipleRootTries_ = rhs.multipleRootTries_;
     preferredWay_ = rhs.preferredWay_;
     currentPassNumber_ = rhs.currentPassNumber_;
@@ -8008,6 +8014,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
   maximumCutPasses_ = rhs.maximumCutPasses_;
   randomSeed_ = rhs.randomSeed_;
+  solverRandomSeed_ = rhs.solverRandomSeed_;
   multipleRootTries_ = rhs.multipleRootTries_;
   preferredWay_ = rhs.preferredWay_;
   resolveAfterTakeOffCuts_ = rhs.resolveAfterTakeOffCuts_;

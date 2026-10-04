@@ -6,6 +6,7 @@
 #include "CbcCompareObjective.hpp"
 #include "CbcEventHandler.hpp"
 #include "CbcTree.hpp"
+#include "Cbc_C_Interface.h"
 #include "CoinPackedMatrix.hpp"
 #include "CoinPackedVector.hpp"
 #include "OsiClpSolverInterface.hpp"
@@ -17,6 +18,26 @@
 #include <vector>
 
 namespace {
+int runRootCutPurge(const char *filename)
+{
+  Cbc_Model *model = Cbc_newModel();
+  Cbc_setLogLevel(model, 0);
+  if (Cbc_readMps(model, filename)) {
+    fprintf(stderr, "FAIL: could not load root cut-purge fixture %s\n", filename);
+    Cbc_deleteModel(model);
+    return 1;
+  }
+  Cbc_setMaximumSeconds(model, 18000.0);
+  Cbc_setParameter(model, "threads", "1");
+  Cbc_solve(model);
+  const bool passed = Cbc_isProvenOptimal(model) && !Cbc_isSecondsLimitReached(model)
+    && fabs(Cbc_getObjValue(model) + 160.0) < 1.0e-7;
+  printf("  %s: decomp2 root cut purge status=%d secondary=%d obj=%.10g\n",
+    passed ? "ok" : "FAIL", Cbc_status(model), Cbc_secondaryStatus(model), Cbc_getObjValue(model));
+  Cbc_deleteModel(model);
+  return !passed;
+}
+
 struct Frontier {
   bool captured = false;
   double bound = 0.0;
@@ -164,9 +185,13 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
 }
 }
 
-int main()
+int main(int argc, char **argv)
 {
-  int failures = 0;
+  if (argc > 2) {
+    fprintf(stderr, "Usage: %s [decomp2.mps.gz]\n", argv[0]);
+    return 1;
+  }
+  int failures = argc == 2 ? runRootCutPurge(argv[1]) : 0;
   {
     OsiClpSolverInterface solver;
     CbcModel model(solver);

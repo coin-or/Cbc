@@ -3311,12 +3311,14 @@ void CbcSolver::initialize()
   int doSprint = -1;
   int testOsiParameters = -1;
   clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBoundIsDefault()
-      ? CoinParam::autoDblValue() : lpSolver->dualBound());
+      ? CoinParam::autoDblValue()
+      : lpSolver->dualBound());
   clpParameters[ClpParam::DUALTOLERANCE]->setVal(lpSolver->dualTolerance());
   clpParameters[ClpParam::IDIOT]->setVal(doIdiot);
   clpParameters[ClpParam::PRESOLVETOLERANCE]->setVal(1.0e-8);
   clpParameters[ClpParam::MAXFACTOR]->setVal(lpSolver->factorizationFrequencyIsDefault()
-      ? CoinParam::autoIntValue() : lpSolver->factorizationFrequency());
+      ? CoinParam::autoIntValue()
+      : lpSolver->factorizationFrequency());
   clpParameters[ClpParam::MAXITERATION]->setVal(lpSolver->maximumIterations());
   clpParameters[ClpParam::PRESOLVEPASS]->setVal(preSolve);
   clpParameters[ClpParam::PERTVALUE]->setVal(lpSolver->perturbation());
@@ -4392,9 +4394,7 @@ int CbcSolver::preprocess(
     // infeasible (or stopped on time)
     info->problemStatus = preprocStoppedOnTime ? 3 : 1;
     info->objValue = 1.0e100;
-    sprintf(info->buffer, preprocStoppedOnTime
-        ? "stopped on time limit during pre-processing"
-        : "infeasible/unbounded by pre-processing");
+    sprintf(info->buffer, preprocStoppedOnTime ? "stopped on time limit during pre-processing" : "infeasible/unbounded by pre-processing");
     info->primalSolution = NULL;
     info->dualSolution = NULL;
     if (preprocHandler) {
@@ -7221,12 +7221,14 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   int doSprint = -1;
   int testOsiParameters = -1;
   clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBoundIsDefault()
-      ? CoinParam::autoDblValue() : lpSolver->dualBound());
+      ? CoinParam::autoDblValue()
+      : lpSolver->dualBound());
   clpParameters[ClpParam::DUALTOLERANCE]->setVal(lpSolver->dualTolerance());
   clpParameters[ClpParam::IDIOT]->setVal(doIdiot);
   clpParameters[ClpParam::PRESOLVETOLERANCE]->setVal(1.0e-8);
   clpParameters[ClpParam::MAXFACTOR]->setVal(lpSolver->factorizationFrequencyIsDefault()
-      ? CoinParam::autoIntValue() : lpSolver->factorizationFrequency());
+      ? CoinParam::autoIntValue()
+      : lpSolver->factorizationFrequency());
   clpParameters[ClpParam::MAXITERATION]->setVal(lpSolver->maximumIterations());
   clpParameters[ClpParam::PRESOLVEPASS]->setVal(preSolve);
   clpParameters[ClpParam::PERTVALUE]->setVal(lpSolver->perturbation());
@@ -8763,9 +8765,11 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
     }
     // auto is -1, resolved from the problem size in adjustHeuristics().
     babModel_->setDiveMaxIterTree(parameters[CbcParam::DIVEMAXITERTREE]->isAuto()
-        ? -1 : parameters[CbcParam::DIVEMAXITERTREE]->intVal());
+        ? -1
+        : parameters[CbcParam::DIVEMAXITERTREE]->intVal());
     babModel_->setDiveMaxIterRoot(parameters[CbcParam::DIVEMAXITERROOT]->isAuto()
-        ? -1 : parameters[CbcParam::DIVEMAXITERROOT]->intVal());
+        ? -1
+        : parameters[CbcParam::DIVEMAXITERROOT]->intVal());
     babModel_->setStrongBoostRows(parameters[CbcParam::STRONGBOOSTROWS]->intVal());
     babModel_->setStrongBoostSize(parameters[CbcParam::STRONGBOOSTSIZE]->intVal());
     {
@@ -10126,8 +10130,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
     // depthMiniBab auto (carried as 1) and -1 depend on the problem size.
     // An explicit 1 is used as given.
     bool miniBabAuto = parameters[CbcParam::DEPTHMINIBAB]->isAuto();
-    if ((experimentFlag >= 1 || strategyFlag >= 1) &&
-        babModel_->fastNodeDepth() == (miniBabAuto ? 1 : -1)) {
+    if ((experimentFlag >= 1 || strategyFlag >= 1) && babModel_->fastNodeDepth() == (miniBabAuto ? 1 : -1)) {
       int iType = babModel_->fastNodeDepth();
       int iDepth = iType < 0 ? -12 : 5;
       int iSize = parameters[CbcParam::SIZEMINIBAB]->intVal();

@@ -120,8 +120,15 @@ private:
   int madeInteger_ = 0; // from CGL_MADE_INTEGER (ext=11)
 
   // SOS sets found during preprocessing (from CGL_PROCESS_SOS1, ext=5)
-  struct SosInfo { int type; int count; int members; int integers; int overlaps; bool used; };
-  std::vector<SosInfo> sosInfo_; // collected from CGL_PROCESS_SOS1/2 messages
+  struct SosInfo {
+    int type;
+    int count;
+    int members;
+    int integers;
+    int overlaps;
+    bool used;
+  };
+  std::vector< SosInfo > sosInfo_; // collected from CGL_PROCESS_SOS1/2 messages
 };
 
 // ---------------------------------------------------------------------------
@@ -152,11 +159,11 @@ public:
 
   virtual int print() override;
 
-  const std::vector<std::string> &errors() const { return errors_; }
+  const std::vector< std::string > &errors() const { return errors_; }
   int totalErrors() const { return totalErrors_; }
 
 private:
-  std::vector<std::string> errors_;
+  std::vector< std::string > errors_;
   int totalErrors_ = 0;
 };
 
@@ -205,10 +212,10 @@ private:
     double startTime = 0.0;
     double lastPrintTime = 0.0;
     int lastPrintIter = 0;
-    int maxIterSeen = 0;   // tracks peak iteration count across all sub-solves
-    int lastAlgo = 0;      // algorithm of last printed row (for phase label)
+    int maxIterSeen = 0; // tracks peak iteration count across all sub-solves
+    int lastAlgo = 0; // algorithm of last printed row (for phase label)
   };
-  std::shared_ptr<SharedState> shared_;
+  std::shared_ptr< SharedState > shared_;
 
   CoinMessageHandler *msgHandler_;
   int logLevel_;
@@ -304,7 +311,7 @@ private:
   double searchElapsedAtStart_ = 0.0; // overall-search elapsed time at onStart()
   double lastPrintTime_ = 0.0;
   int lastPrintPass_ = 0;
-  int printedRows_ = 0;      ///< rows printed so far (first 10 are always shown)
+  int printedRows_ = 0; ///< rows printed so far (first 10 are always shown)
 
   // Convergence tracking (updated on each printed row)
   double prevSuminf_ = 1e30;
@@ -355,10 +362,10 @@ public:
   CbcCutGenOutput(FILE *fp, bool utf8, int logLevel);
 
   // Called by CbcOutputHandler for each relevant ext code
-  void onStart();                                                   // ext=51
+  void onStart(); // ext=51
   void onPass(int pass, int rows, int tight, int frac, double suminf, double obj, double t); // ext=46
   void onSummary(int ncuts, double fromObj, double toObj, int passes); // ext=13
-  void onGenerator(const GenInfo &g);                               // ext=14
+  void onGenerator(const GenInfo &g); // ext=14
 
   /** Flush pending generator table. Call after branchAndBound() returns.
    *  Idempotent — safe to call multiple times. */
@@ -369,12 +376,14 @@ public:
   void resetForRestart(const char *title = nullptr);
 
   bool isInPhase() const { return state_ >= State::Started && state_ < State::Closed; }
-  bool hasClosed()  const { return state_ == State::Closed; }
+  bool hasClosed() const { return state_ == State::Closed; }
   /** True when generators have been accumulated but the table hasn't been flushed yet. */
   bool hasPendingGenerators() const { return state_ == State::Started && haveSummary_ && !genInfos_.empty() && !genTablePrinted_; }
 
 private:
-  enum class State { Idle, Started, Closed };
+  enum class State { Idle,
+    Started,
+    Closed };
 
   void printProgressEnd();
   void printGeneratorTable();
@@ -400,7 +409,7 @@ private:
   bool haveSummary_ = false;
 
   // Accumulated generator infos from ext=14
-  std::vector<GenInfo> genInfos_;
+  std::vector< GenInfo > genInfos_;
   bool genTablePrinted_ = false;
 };
 
@@ -524,7 +533,11 @@ public:
   /** Notify the section that FPump (which has its own sub-section) found
    *  a solution with the given user-facing objective. Used to keep the
    *  outer section footer's best-solution accurate. */
-  void noteFPSolution(double userObj) { if (userObj < bestSol_) bestSol_ = userObj; }
+  void noteFPSolution(double userObj)
+  {
+    if (userObj < bestSol_)
+      bestSol_ = userObj;
+  }
 
   /** Print the ✔ Root node heuristics footer. Idempotent. */
   void onEnd();
@@ -537,11 +550,11 @@ private:
   bool compact_;
   int logLevel_;
 
-  double startTime_      = 0.0;
-  bool inPhase_          = false;
-  bool tableOpen_        = false;
-  bool ended_            = false;
-  double bestSol_        = 1e30;
+  double startTime_ = 0.0;
+  bool inPhase_ = false;
+  bool tableOpen_ = false;
+  bool ended_ = false;
+  double bestSol_ = 1e30;
 };
 
 // ---------------------------------------------------------------------------
@@ -565,12 +578,12 @@ public:
 
   // ext=4 (CBC_SOLUTION): incumbent found by B&B LP
   void onBnBIncumbent(double obj, long nodes, int depth, int ontree,
-		      double elapsed);
+    double elapsed);
 
   // ext=12 (CBC_ROUNDING): incumbent found by a named heuristic
   void onHeurIncumbent(double obj, const char *method,
-		       int ontree, int depth,
-		       long nodes, double elapsed);
+    int ontree, int depth,
+    long nodes, double elapsed);
 
   // Queue an incumbent found before B&B starts (e.g. during root cut gen).
   // It will be emitted as a ★ row at the top of the B&B table once the
@@ -586,11 +599,11 @@ public:
     long iters, long nodes, double elapsed);
 
   // Accumulated end stats (printed after ✔ line)
-  void onStrongStats(long calls, long iters, long fathomed, int fixed);      // ext=32
-  void onOtherStats(int maxDepth, double djFixed);                           // ext=35
-  void onOtherStats2(int maxDepth, double djFixed,                           // ext=41
+  void onStrongStats(long calls, long iters, long fathomed, int fixed); // ext=32
+  void onOtherStats(int maxDepth, double djFixed); // ext=35
+  void onOtherStats2(int maxDepth, double djFixed, // ext=41
     long fathomTimes, long fathomNodes, long fathomIters);
-  void onOrbitalStats(int successes, double avgExtra, int fixed,             // ext=45
+  void onOrbitalStats(int successes, double avgExtra, int fixed, // ext=45
     double avgFixed);
 
   // ext=44: reduced-cost fixing restart — show separator in B&B table
@@ -600,7 +613,7 @@ public:
 
 private:
   void startPhase();
-  void openContinuation();   ///< Re-open B&B table after a restart
+  void openContinuation(); ///< Re-open B&B table after a restart
   void printRow(bool isIncumbent, long nodes, int onTree, int depth,
     double bestSol, const char *method, double bestBound, double wallclock);
   void closeTable();
@@ -609,15 +622,15 @@ private:
   FILE *fp_;
   bool utf8_;
   bool compact_;
-  int  logLevel_;
+  int logLevel_;
 
-  bool inPhase_   = false;
+  bool inPhase_ = false;
   bool tableOpen_ = false;
-  int  restartCount_ = 0;  ///< Number of restarts seen (drives "continued" header)
+  int restartCount_ = 0; ///< Number of restarts seen (drives "continued" header)
 
   // State from last ext=37 for ext=4/12 rows (which lack onTree/bestBound)
-  int    lastOnTree_    = 0;
-  int    lastDepth_     = 0;
+  int lastOnTree_ = 0;
+  int lastDepth_ = 0;
   double lastBestBound_ = 1e50;
 
   // Incumbents found before the first onProgress() call (e.g. during root cut gen).
@@ -627,34 +640,34 @@ private:
     double obj;
     std::string method;
     long nodes;
-    double wallclock;   ///< solve-scoped elapsed time (model->getCurrentSeconds()) at time of queuing
+    double wallclock; ///< solve-scoped elapsed time (model->getCurrentSeconds()) at time of queuing
   };
-  std::vector<PendingHeurRow> preProgressIncumbents_;
+  std::vector< PendingHeurRow > preProgressIncumbents_;
 
   std::string stopReason_;
 
   // Strong-branching stats (ext=32)
-  bool hasStrong_   = false;
-  long sbCalls_     = 0;
-  long sbIters_     = 0;
-  long sbFathomed_  = 0;
-  int  sbFixed_     = 0;
+  bool hasStrong_ = false;
+  long sbCalls_ = 0;
+  long sbIters_ = 0;
+  long sbFathomed_ = 0;
+  int sbFixed_ = 0;
 
   // Depth / DJ stats (ext=35 / ext=41)
-  bool   hasDepth_    = false;
-  int    maxDepth_    = 0;
-  double djFixed_     = 0.0;
-  bool   hasFathom_   = false;
-  long   fathomTimes_ = 0;
-  long   fathomNodes_ = 0;
-  long   fathomIters_ = 0;
+  bool hasDepth_ = false;
+  int maxDepth_ = 0;
+  double djFixed_ = 0.0;
+  bool hasFathom_ = false;
+  long fathomTimes_ = 0;
+  long fathomNodes_ = 0;
+  long fathomIters_ = 0;
 
   // Orbital-branching stats (ext=45 "Orbital branching succeeded...")
-  bool   hasOrbital_   = false;
-  int    orbSuccesses_ = 0;
-  double orbAvgExtra_  = 0.0;
-  int    orbFixed_     = 0;
-  double orbAvgFixed_  = 0.0;
+  bool hasOrbital_ = false;
+  int orbSuccesses_ = 0;
+  double orbAvgExtra_ = 0.0;
+  int orbFixed_ = 0;
+  double orbAvgFixed_ = 0.0;
 };
 
 // ---------------------------------------------------------------------------
@@ -722,12 +735,12 @@ private:
   bool utf8_;
   bool compact_;
   bool sectionStarted_ = false;
-  bool restartMode_    = false; ///< True while intercepting a B&B restart sub-model
+  bool restartMode_ = false; ///< True while intercepting a B&B restart sub-model
   CoinMessageHandler *lpSilentHandler_ = nullptr; ///< Silent handler lent to LP solver
-  CbcFPumpOutput *fpumpOut_ = nullptr;      // for Cbc0012I FPump suppression
+  CbcFPumpOutput *fpumpOut_ = nullptr; // for Cbc0012I FPump suppression
   CbcRootHeurOutput *rootHeurOut_ = nullptr; // for root heuristics output
   CbcCutGenOutput *cutGenOut_ = nullptr; // for root cut generation output
-  CbcBnBOutput *bnbOut_ = nullptr;       // for B&B progress table
+  CbcBnBOutput *bnbOut_ = nullptr; // for B&B progress table
 
 #ifdef CBC_HAS_NAUTY
   void printSection();
@@ -746,4 +759,4 @@ private:
 #endif /* CbcOutput_H */
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

@@ -45,7 +45,8 @@ static int utf8VisLen(const std::string &s)
 {
   int n = 0;
   for (unsigned char c : s)
-    if ((c & 0xC0) != 0x80) ++n;
+    if ((c & 0xC0) != 0x80)
+      ++n;
   return n;
 }
 
@@ -81,10 +82,14 @@ static void printTableClose(FILE *fp, const CoinTable &tbl)
 static std::string fmtTime(double t)
 {
   char buf[32];
-  if (t < 1.0)        std::snprintf(buf, sizeof(buf), "%.3f", t);
-  else if (t < 10.0)  std::snprintf(buf, sizeof(buf), "%.2f", t);
-  else if (t < 100.0) std::snprintf(buf, sizeof(buf), "%.1f", t);
-  else                std::snprintf(buf, sizeof(buf), "%.0f", t);
+  if (t < 1.0)
+    std::snprintf(buf, sizeof(buf), "%.3f", t);
+  else if (t < 10.0)
+    std::snprintf(buf, sizeof(buf), "%.2f", t);
+  else if (t < 100.0)
+    std::snprintf(buf, sizeof(buf), "%.1f", t);
+  else
+    std::snprintf(buf, sizeof(buf), "%.0f", t);
   return buf;
 }
 
@@ -103,16 +108,19 @@ struct IncumbentMsg {
 static bool parseIncumbentMsg(const char *buf, IncumbentMsg &out)
 {
   const char *p = std::strstr(buf, "Integer solution of ");
-  if (!p) return false;
-  if (std::sscanf(p, "Integer solution of %lf", &out.obj) != 1) return false;
-  const char *byP  = std::strstr(p, " found by ");
+  if (!p)
+    return false;
+  if (std::sscanf(p, "Integer solution of %lf", &out.obj) != 1)
+    return false;
+  const char *byP = std::strstr(p, " found by ");
   const char *aftP = std::strstr(p, " after ");
   out.method = (byP && aftP && aftP > byP + 10) ? std::string(byP + 10, aftP) : "B&B";
-  if (!aftP) return false;
+  if (!aftP)
+    return false;
   long int iterations;
   int nGot = std::sscanf(aftP, " after %*ld iterations and %ld nodes %d depth %d ontree (%lf",
-			 &out.nodes, &out.depth, &out.ontree, &out.elapsed);
-  return (nGot==4);
+    &out.nodes, &out.depth, &out.ontree, &out.elapsed);
+  return (nGot == 4);
 }
 
 // ---------------------------------------------------------------------------
@@ -125,23 +133,24 @@ static bool parseIncumbentMsg(const char *buf, IncumbentMsg &out)
 //   ─────┼────────┼───────────┼──────────────┼────────┼──────
 //      1 │    480 │         0 │         7157 │     76 │ 0.12s
 //
-static const int PP_W_PASS  = 5;
+static const int PP_W_PASS = 5;
 static const int PP_W_FIXED = 7;
 static const int PP_W_TIGHT = 9;
-static const int PP_W_STR   = 12;
+static const int PP_W_STR = 12;
 static const int PP_W_SUBST = 6;
-static const int PP_W_TIME  = 7;
+static const int PP_W_TIME = 7;
 
 static CoinTable makePpTable(bool utf8, bool compact)
 {
   return CoinTable({
-    { "Pass",         PP_W_PASS  },
-    { "Fixed",        PP_W_FIXED },
-    { "Tightened",    PP_W_TIGHT },
-    { "Strengthened", PP_W_STR   },
-    { "Subst",        PP_W_SUBST },
-    { "Time(s)",         PP_W_TIME  },
-  }, utf8, /*indent=*/2, compact);
+                     { "Pass", PP_W_PASS },
+                     { "Fixed", PP_W_FIXED },
+                     { "Tightened", PP_W_TIGHT },
+                     { "Strengthened", PP_W_STR },
+                     { "Subst", PP_W_SUBST },
+                     { "Time(s)", PP_W_TIME },
+                   },
+    utf8, /*indent=*/2, compact);
 }
 
 CbcImportHandler::CbcImportHandler()
@@ -164,7 +173,7 @@ int CbcImportHandler::print()
   //   6003 COIN_MPS_BADFILE2    6004 COIN_MPS_EOF
   //   6005 COIN_MPS_RETURNING
   bool isParseDiag = (ext >= 3001 && ext <= 3006)
-                  || (ext >= 6001 && ext <= 6005);
+    || (ext >= 6001 && ext <= 6005);
   if (isParseDiag) {
     totalErrors_++;
     if ((int)errors_.size() < MAX_STORED) {
@@ -197,14 +206,16 @@ CbcPreprocHandler::~CbcPreprocHandler()
 
 void CbcPreprocHandler::printTableHeader()
 {
-  if (!fp_) return;
+  if (!fp_)
+    return;
   printTableOpen(fp_, makePpTable(utf8_, compact_));
 }
 
 void CbcPreprocHandler::printTableRow(int pass, int fixed, int tightened,
   int strengthened, int subst)
 {
-  if (!fp_) return;
+  if (!fp_)
+    return;
   const char *bar = tableBar(utf8_, compact_);
   // Preprocessing time column: elapsed time since the *overall search*
   // began (searchElapsedAtStart_, captured at construction, plus elapsed
@@ -214,12 +225,12 @@ void CbcPreprocHandler::printTableRow(int pass, int fixed, int tightened,
   const std::string timeStr = fmtTime(
     (CoinWallclockTime() - phaseStartTime_) + searchElapsedAtStart_);
   fprintf(fp_, "  %*d%s%*d%s%*d%s%*d%s%*d%s%*s\n",
-    PP_W_PASS,  pass,         bar,
-    PP_W_FIXED, fixed,        bar,
-    PP_W_TIGHT, tightened,    bar,
-    PP_W_STR,   strengthened, bar,
-    PP_W_SUBST, subst,        bar,
-    PP_W_TIME,  timeStr.c_str());
+    PP_W_PASS, pass, bar,
+    PP_W_FIXED, fixed, bar,
+    PP_W_TIGHT, tightened, bar,
+    PP_W_STR, strengthened, bar,
+    PP_W_SUBST, subst, bar,
+    PP_W_TIME, timeStr.c_str());
   fflush(fp_);
 }
 
@@ -244,9 +255,12 @@ int CbcPreprocHandler::print()
   // Buffer may have prefix "Cgl0011I N variables made integer"
   if (src == "Cgl" && ext == 11) {
     const char *p = std::strstr(buf, "variables made integer");
-    while (p && p > buf && *(p - 1) == ' ') --p;
-    while (p && p > buf && std::isdigit(static_cast<unsigned char>(*(p - 1)))) --p;
-    if (p) std::sscanf(p, "%d", &madeInteger_);
+    while (p && p > buf && *(p - 1) == ' ')
+      --p;
+    while (p && p > buf && std::isdigit(static_cast< unsigned char >(*(p - 1))))
+      --p;
+    if (p)
+      std::sscanf(p, "%d", &madeInteger_);
     return 0; // suppress; shown in printTableEnd()
   }
 
@@ -287,13 +301,20 @@ int CbcPreprocHandler::print()
     // Walk back from "SOS " to the number before it
     const char *p = std::strstr(buf, "SOS ");
     if (p) {
-      while (p > buf && *(p-1) == ' ') --p;
-      while (p > buf && std::isdigit(static_cast<unsigned char>(*(p-1)))) --p;
+      while (p > buf && *(p - 1) == ' ')
+        --p;
+      while (p > buf && std::isdigit(static_cast< unsigned char >(*(p - 1))))
+        --p;
       std::sscanf(p, "%d SOS with %d members", &count, &members);
     }
     if (count > 0) {
-      SosInfo si; si.type=1; si.count=count; si.members=members;
-      si.integers=0; si.overlaps=0; si.used=true;
+      SosInfo si;
+      si.type = 1;
+      si.count = count;
+      si.members = members;
+      si.integers = 0;
+      si.overlaps = 0;
+      si.used = true;
       sosInfo_.push_back(si);
     }
     return 0;
@@ -305,14 +326,21 @@ int CbcPreprocHandler::print()
     int count = 0, inSOS = 0, integers = 0, overlaps = 0;
     const char *p = std::strstr(buf, "SOS ");
     if (p) {
-      while (p > buf && *(p-1) == ' ') --p;
-      while (p > buf && std::isdigit(static_cast<unsigned char>(*(p-1)))) --p;
+      while (p > buf && *(p - 1) == ' ')
+        --p;
+      while (p > buf && std::isdigit(static_cast< unsigned char >(*(p - 1))))
+        --p;
       std::sscanf(p, "%d SOS (%d members out of %d) with %d overlaps",
         &count, &inSOS, &integers, &overlaps);
     }
     if (count > 0) {
-      SosInfo si; si.type=2; si.count=count; si.members=inSOS;
-      si.integers=integers; si.overlaps=overlaps; si.used=false;
+      SosInfo si;
+      si.type = 2;
+      si.count = count;
+      si.members = inSOS;
+      si.integers = integers;
+      si.overlaps = overlaps;
+      si.used = false;
       sosInfo_.push_back(si);
     }
     return 0;
@@ -324,9 +352,11 @@ int CbcPreprocHandler::print()
 
 void CbcPreprocHandler::printTableEnd()
 {
-  if (tableClosed_) return;
+  if (tableClosed_)
+    return;
   tableClosed_ = true;
-  if (!fp_) return;
+  if (!fp_)
+    return;
   if (headerPrinted_)
     printTableClose(fp_, makePpTable(utf8_, compact_));
   if (hasStats2_) {
@@ -348,13 +378,13 @@ void CbcPreprocHandler::printTableEnd()
   for (const auto &s : sosInfo_) {
     if (s.used) {
       // SOS1 sets that are active
-      double avg = s.count > 0 ? static_cast<double>(s.members) / s.count : 0.0;
+      double avg = s.count > 0 ? static_cast< double >(s.members) / s.count : 0.0;
       fprintf(fp_, "  SOS%d: %d sets, %d members (avg %.1f members/set)\n",
         s.type, s.count, s.members, avg);
     } else {
       // SOS sets found but not used due to overlap / integer ratio
       fprintf(fp_, "  SOS%d: %d sets found (%d members) — not used"
-        " (%d overlaps, %d integer vars; too much overlap)\n",
+                   " (%d overlaps, %d integer vars; too much overlap)\n",
         s.type, s.count, s.members, s.overlaps, s.integers);
     }
   }
@@ -365,7 +395,8 @@ void CbcPreprocHandler::printTableEnd()
 void CbcPreprocHandler::printCgraphSummary(bool cgraphBuilt, double cgraphTime,
   double cgraphDensity, bool clqRan, int clqExtended, int clqDominated)
 {
-  if (!fp_) return;
+  if (!fp_)
+    return;
   if (cgraphBuilt) {
     fprintf(fp_, "  Conflict graph: built in %.2fs, density %.3f%%\n",
       cgraphTime, cgraphDensity * 100.0);
@@ -385,10 +416,12 @@ void CbcPreprocHandler::markInfeasible(const std::string &reason)
 
 void CbcPreprocHandler::printPhaseEnd(double totalTime)
 {
-  if (phaseClosed_) return;
+  if (phaseClosed_)
+    return;
   phaseClosed_ = true;
   printTableEnd(); // idempotent — close table if not already done
-  if (!fp_) return;
+  if (!fp_)
+    return;
   if (totalTime < 0.0)
     totalTime = CoinWallclockTime() - phaseStartTime_;
   char summary[160];
@@ -466,28 +499,29 @@ bool CbcOutput::useUtf8()
 //   Dual     │     3123 │     3.709408e+01 │  1.7376e+02  │  2.8598e+14 │    5.0s
 //
 static const int LP_W_PHASE = 8;
-static const int LP_W_ITER  = 8;
-static const int LP_W_OBJ   = 15;
-static const int LP_W_PINF  = 12;
-static const int LP_W_DINF  = 12;
-static const int LP_W_TIME  = 8;
+static const int LP_W_ITER = 8;
+static const int LP_W_OBJ = 15;
+static const int LP_W_PINF = 12;
+static const int LP_W_DINF = 12;
+static const int LP_W_TIME = 8;
 
 static CoinTable makeLpTable(bool utf8, bool compact)
 {
   return CoinTable({
-    { "Phase",      LP_W_PHASE, /*leftAlign=*/true },
-    { "Iter",       LP_W_ITER  },
-    { "Objective",  LP_W_OBJ   },
-    { "Primal inf", LP_W_PINF  },
-    { "Dual inf",   LP_W_DINF  },
-    { "Time(s)",       LP_W_TIME  },
-  }, utf8, /*indent=*/2, compact);
+                     { "Phase", LP_W_PHASE, /*leftAlign=*/true },
+                     { "Iter", LP_W_ITER },
+                     { "Objective", LP_W_OBJ },
+                     { "Primal inf", LP_W_PINF },
+                     { "Dual inf", LP_W_DINF },
+                     { "Time(s)", LP_W_TIME },
+                   },
+    utf8, /*indent=*/2, compact);
 }
 
 CbcRootLpEventHandler::CbcRootLpEventHandler(CoinMessageHandler *msgHandler,
   int logLevel, int iterFreq, double timeFreq)
   : ClpEventHandler()
-  , shared_(std::make_shared<SharedState>())
+  , shared_(std::make_shared< SharedState >())
   , msgHandler_(msgHandler)
   , logLevel_(logLevel)
   , iterFreq_(iterFreq)
@@ -507,10 +541,14 @@ ClpEventHandler *CbcRootLpEventHandler::clone() const
 const char *CbcRootLpEventHandler::algoName(int algo)
 {
   switch (algo) {
-  case 1: return "primal simplex";
-  case -1: return "dual simplex";
-  case 2: return "barrier";
-  default: return "LP";
+  case 1:
+    return "primal simplex";
+  case -1:
+    return "dual simplex";
+  case 2:
+    return "barrier";
+  default:
+    return "LP";
   }
 }
 
@@ -545,10 +583,18 @@ void CbcRootLpEventHandler::printRow(int iter, double obj, double primalInf,
   const int algo = model_ ? model_->algorithm() : 0;
   const char *phase = nullptr;
   switch (algo) {
-  case -1: phase = "Dual";    break;
-  case  1: phase = "Primal";  break;
-  case  2: phase = "Barrier"; break;
-  default: phase = "LP";      break;
+  case -1:
+    phase = "Dual";
+    break;
+  case 1:
+    phase = "Primal";
+    break;
+  case 2:
+    phase = "Barrier";
+    break;
+  default:
+    phase = "LP";
+    break;
   }
   const std::string tbuf = fmtTime(elapsed);
   fprintf(fp, "  %-*s%s%*d%s%*.6e%s%*.4e%s%*.4e%s%*s\n",
@@ -728,7 +774,7 @@ static std::string rpad(const std::string &s, int w)
 // ---------------------------------------------------------------------------
 
 struct RangeStat {
-  double lo = std::numeric_limits<double>::max();
+  double lo = std::numeric_limits< double >::max();
   double hi = 0.0;
   bool valid = false;
 
@@ -917,7 +963,7 @@ void CbcOutput::printProblemSummary(CoinMessageHandler *handler,
   };
 
   // Pre-format all numbers so we can determine column widths for alignment
-  std::vector<std::string> sLo(4), sHi(4), sRatio(4);
+  std::vector< std::string > sLo(4), sHi(4), sRatio(4);
   int wLo = 1, wHi = 1, wRatio = 1;
   for (int r = 0; r < 4; r++) {
     if (rows[r].rs.valid) {
@@ -978,8 +1024,13 @@ void CbcOutput::printProblemSummary(CoinMessageHandler *handler,
         int nSOS1 = 0, nSOS2 = 0, mem1 = 0, mem2 = 0;
         for (int i = 0; i < nSOS; i++) {
           int n = sets[i].numberEntries();
-          if (sets[i].setType() == 1) { nSOS1++; mem1 += n; }
-          else                         { nSOS2++; mem2 += n; }
+          if (sets[i].setType() == 1) {
+            nSOS1++;
+            mem1 += n;
+          } else {
+            nSOS2++;
+            mem2 += n;
+          }
         }
         if (nSOS1 > 0) {
           std::ostringstream s;
@@ -1005,7 +1056,7 @@ void CbcOutput::printProblemSummary(CoinMessageHandler *handler,
     sendLine(handler, "  Coefficient ranges:");
 
     // UTF-8 symbols
-    const char *sym_in = u8 ? "\xe2\x88\x88" : "in";      // ∈
+    const char *sym_in = u8 ? "\xe2\x88\x88" : "in"; // ∈
     const char *sym_kap = u8 ? "\xce\xba \xe2\x89\x88" : "ratio ="; // κ ≈
 
     for (int r = 0; r < 4; r++) {
@@ -1174,7 +1225,8 @@ void CbcOutput::printNautySection(FILE *fp, bool utf8,
   int totalOrbits, int numGenerators, double groupSize,
   double nautyTime, int errorCode)
 {
-  if (!fp) fp = stdout;
+  if (!fp)
+    fp = stdout;
 
   fprintf(fp, "\n%s\n\n", CoinTable::phaseStart("Symmetry detection (nauty)", utf8).c_str());
 
@@ -1261,12 +1313,11 @@ CoinMessageHandler *CbcOutputHandler::getLpSilentHandler()
 int CbcOutputHandler::print()
 {
   const char *buf = messageBuffer();
-  const int ext   = currentMessage().externalNumber();
+  const int ext = currentMessage().externalNumber();
 
   if (currentSource() == "Cbc") {
     // Suppress internal priority/branching setup CBC_GENERAL messages.
-    if (ext == 45 && (std::strstr(buf, "have cost of") || std::strstr(buf, "branch on satisfied")
-          || std::strstr(buf, "have costs") || std::strstr(buf, "have cost")))
+    if (ext == 45 && (std::strstr(buf, "have cost of") || std::strstr(buf, "branch on satisfied") || std::strstr(buf, "have costs") || std::strstr(buf, "have cost")))
       return 0;
 
     // CBC_INFEAS (ext=6): "The LP relaxation is infeasible or too expensive"
@@ -1287,12 +1338,16 @@ int CbcOutputHandler::print()
         // Skip past any "CbcNNNNW " prefix
         const char *p = buf;
         if (std::strncmp(p, "Cbc", 3) == 0) {
-          while (*p && *p != ' ') ++p;
-          if (*p == ' ') ++p;
+          while (*p && *p != ' ')
+            ++p;
+          if (*p == ' ')
+            ++p;
           // Also skip a possible "ClpNNNNW " prefix that CBC may embed
           if (std::strncmp(p, "Clp", 3) == 0) {
-            while (*p && *p != ' ') ++p;
-            if (*p == ' ') ++p;
+            while (*p && *p != ' ')
+              ++p;
+            if (*p == ' ')
+              ++p;
           }
         }
         fprintf(fp, "  ⚠ %s\n", p);
@@ -1311,8 +1366,10 @@ int CbcOutputHandler::print()
     if (ext == 45 && std::strstr(buf, "Heuristic ") && std::strstr(buf, " took ")) {
       const char *p = buf;
       if (std::strncmp(p, "Cbc", 3) == 0) {
-        while (*p && *p != ' ') ++p;
-        if (*p == ' ') ++p;
+        while (*p && *p != ' ')
+          ++p;
+        if (*p == ' ')
+          ++p;
       }
       const char *hp = std::strstr(p, "Heuristic ");
       if (hp) {
@@ -1321,7 +1378,7 @@ int CbcOutputHandler::print()
           char name[64] = "";
           double t = 0.0;
           char result[32] = "no good";
-          int nameLen = static_cast<int>(tookPtr - hp - static_cast<int>(std::strlen("Heuristic ")));
+          int nameLen = static_cast< int >(tookPtr - hp - static_cast< int >(std::strlen("Heuristic ")));
           if (nameLen > 0 && nameLen < 63) {
             std::strncpy(name, hp + std::strlen("Heuristic "), nameLen);
             name[nameLen] = '\0';
@@ -1342,8 +1399,10 @@ int CbcOutputHandler::print()
     if (ext == 39) {
       const char *p = buf;
       if (std::strncmp(p, "Cbc", 3) == 0) {
-        while (*p && *p != ' ') ++p;
-        if (*p == ' ') ++p;
+        while (*p && *p != ' ')
+          ++p;
+        if (*p == ' ')
+          ++p;
       }
       FILE *fp = filePointer();
       if (fp && *p)
@@ -1374,9 +1433,12 @@ int CbcOutputHandler::print()
       // Note: messageBuffer() includes the "Cbc0037I " prefix; use %*s to skip it.
       if (ext == 37) {
         flushCutGen();
-        long nodes, iters; int onTree, depth, unsat; double bestSol, bestBound, value, elapsed;
+        long nodes, iters;
+        int onTree, depth, unsat;
+        double bestSol, bestBound, value, elapsed;
         if (std::sscanf(buf, "%*s %ld nodes, %d on tree, best %lf - possible %lf depth %d unsat %d value %lf its %ld (%lf",
-              &nodes, &onTree, &bestSol, &bestBound, &depth, &unsat, &value, &iters, &elapsed) == 9)
+              &nodes, &onTree, &bestSol, &bestBound, &depth, &unsat, &value, &iters, &elapsed)
+          == 9)
           bnbOut_->onProgress(nodes, onTree, depth, bestSol, bestBound, elapsed);
         return 0;
       }
@@ -1384,17 +1446,19 @@ int CbcOutputHandler::print()
       if (ext == 4) {
         // Root-node heuristics fire before/during cut gen. Only treat as a B&B
         // event once cut generation has fully completed.
-        if (cutGenOut_ && !cutGenOut_->hasClosed()) return 0;
+        if (cutGenOut_ && !cutGenOut_->hasClosed())
+          return 0;
         const char *p = std::strstr(buf, "Integer solution of ");
         if (p) {
-          double obj, elapsed; long nodes;
-	  int depth, ontree;
+          double obj, elapsed;
+          long nodes;
+          int depth, ontree;
           // Note: "%*ld" (iterations) is assignment-suppressed, so it has no
           // corresponding argument/pointer and does not count toward nGot.
           int nGot = std::sscanf(p, "Integer solution of %lf found after %*ld iterations and %ld nodes %d depth %d ontree (%lf",
-				 &obj, &nodes, &depth,
-				 &ontree, &elapsed);
-	  if (nGot == 5)
+            &obj, &nodes, &depth,
+            &ontree, &elapsed);
+          if (nGot == 5)
             bnbOut_->onBnBIncumbent(obj, nodes, depth, ontree, elapsed);
         }
         return 0;
@@ -1402,8 +1466,10 @@ int CbcOutputHandler::print()
       // ext=12: heuristic found a solution (suppress during FPump phase; show as ★ during B&B)
       // ext=16: strong branching found a solution (show as ★ during B&B)
       if (ext == 12 || ext == 16) {
-        if (ext == 12 && fpumpOut_ && fpumpOut_->isInPhase()) return 0;
-        if (ext == 12 && rootHeurOut_ && rootHeurOut_->isInPhase()) return 0;
+        if (ext == 12 && fpumpOut_ && fpumpOut_->isInPhase())
+          return 0;
+        if (ext == 12 && rootHeurOut_ && rootHeurOut_->isInPhase())
+          return 0;
         IncumbentMsg im;
         if (cutGenOut_ && !cutGenOut_->hasClosed()) {
           // Heuristic found before/during root cut gen — queue for the B&B table.
@@ -1420,18 +1486,22 @@ int CbcOutputHandler::print()
       if (ext == 1) {
         const char *p = std::strstr(buf, "Search completed");
         if (p) {
-          double bestSol, elapsed; long iters, nodes;
+          double bestSol, elapsed;
+          long iters, nodes;
           if (restartMode_) {
             // This is the sub-model's completion after a B&B restart.
             // Close cut-gen part 2 if still open; do NOT trigger onComplete().
-            if (cutGenOut_) cutGenOut_->close();
+            if (cutGenOut_)
+              cutGenOut_->close();
             restartMode_ = false;
             return 0;
           }
           if (std::sscanf(p, "Search completed - best objective %lf , took %ld iterations and %ld nodes (%lf",
-                &bestSol, &iters, &nodes, &elapsed) == 4 ||
-              std::sscanf(p, "Search completed - best objective %lf, took %ld iterations and %ld nodes (%lf",
-                &bestSol, &iters, &nodes, &elapsed) == 4)
+                &bestSol, &iters, &nodes, &elapsed)
+              == 4
+            || std::sscanf(p, "Search completed - best objective %lf, took %ld iterations and %ld nodes (%lf",
+                 &bestSol, &iters, &nodes, &elapsed)
+              == 4)
             bnbOut_->onComplete(true, bestSol, bestSol, iters, nodes, elapsed);
         }
         return 0;
@@ -1440,16 +1510,19 @@ int CbcOutputHandler::print()
       if (ext == 5) {
         const char *p = std::strstr(buf, "Partial search");
         if (p) {
-          double bestSol, bestBound, elapsed; long iters, nodes;
+          double bestSol, bestBound, elapsed;
+          long iters, nodes;
           if (restartMode_) {
             // Sub-model ended without finding optimal — still not full B&B done.
-            if (cutGenOut_) cutGenOut_->close();
+            if (cutGenOut_)
+              cutGenOut_->close();
             restartMode_ = false;
             return 0;
           }
           if (std::sscanf(p,
                 "Partial search - best objective %lf (best possible %lf), took %ld iterations and %ld nodes (%lf",
-                &bestSol, &bestBound, &iters, &nodes, &elapsed) == 5)
+                &bestSol, &bestBound, &iters, &nodes, &elapsed)
+            == 5)
             bnbOut_->onComplete(false, bestSol, bestBound, iters, nodes, elapsed);
           else
             bnbOut_->onComplete(false, 1e50, 1e50, 0, 0, 0.0);
@@ -1457,18 +1530,32 @@ int CbcOutputHandler::print()
         return 0;
       }
       // Stopping reasons
-      if (ext == 3)  { bnbOut_->onStopReason("node limit");      return 0; }
-      if (ext == 19) { bnbOut_->onStopReason("solution limit");  return 0; }
-      if (ext == 20) { bnbOut_->onStopReason("time limit");      return 0; }
-      if (ext == 50) { bnbOut_->onStopReason("iteration limit"); return 0; }
+      if (ext == 3) {
+        bnbOut_->onStopReason("node limit");
+        return 0;
+      }
+      if (ext == 19) {
+        bnbOut_->onStopReason("solution limit");
+        return 0;
+      }
+      if (ext == 20) {
+        bnbOut_->onStopReason("time limit");
+        return 0;
+      }
+      if (ext == 50) {
+        bnbOut_->onStopReason("iteration limit");
+        return 0;
+      }
       // ext=32: strong branching stats (CBC_STRONG_STATS)
       if (ext == 32) {
         const char *p = std::strstr(buf, "Strong branching done ");
         if (p) {
-          long calls, iters, fathomed; int fixed;
+          long calls, iters, fathomed;
+          int fixed;
           if (std::sscanf(p,
                 "Strong branching done %ld times (%ld iterations), fathomed %ld nodes and fixed %d variables",
-                &calls, &iters, &fathomed, &fixed) == 4)
+                &calls, &iters, &fathomed, &fixed)
+            == 4)
             bnbOut_->onStrongStats(calls, iters, fathomed, fixed);
         }
         return 0;
@@ -1477,9 +1564,11 @@ int CbcOutputHandler::print()
       if (ext == 35) {
         const char *p = std::strstr(buf, "Maximum depth ");
         if (p) {
-          int maxDepth; double djFixed;
+          int maxDepth;
+          double djFixed;
           if (std::sscanf(p, "Maximum depth %d, %lf variables fixed on reduced cost",
-                &maxDepth, &djFixed) == 2)
+                &maxDepth, &djFixed)
+            == 2)
             bnbOut_->onOtherStats(maxDepth, djFixed);
         }
         return 0;
@@ -1488,14 +1577,18 @@ int CbcOutputHandler::print()
       if (ext == 41) {
         const char *p = std::strstr(buf, "Maximum depth ");
         if (p) {
-          int maxDepth; double djFixed; long fTimes, fNodes, fIters;
+          int maxDepth;
+          double djFixed;
+          long fTimes, fNodes, fIters;
           if (std::sscanf(p,
                 "Maximum depth %d, %lf variables fixed on reduced cost (complete fathoming %ld times, %ld nodes taking %ld iterations)",
-                &maxDepth, &djFixed, &fTimes, &fNodes, &fIters) == 5)
+                &maxDepth, &djFixed, &fTimes, &fNodes, &fIters)
+            == 5)
             bnbOut_->onOtherStats2(maxDepth, djFixed, fTimes, fNodes, fIters);
           else {
             if (std::sscanf(p, "Maximum depth %d, %lf variables fixed on reduced cost",
-                  &maxDepth, &djFixed) == 2)
+                  &maxDepth, &djFixed)
+              == 2)
               bnbOut_->onOtherStats(maxDepth, djFixed);
           }
         }
@@ -1505,11 +1598,14 @@ int CbcOutputHandler::print()
       if (ext == 45 && std::strstr(buf, "Orbital branching succeeded")) {
         const char *p = std::strstr(buf, "Orbital branching succeeded");
         if (p) {
-          int successes, fixed; double avgExtra, avgFixed;
+          int successes, fixed;
+          double avgExtra, avgFixed;
           if (std::sscanf(p, "Orbital branching succeeded %d times - average extra %lf , fixing (%d, %lf)",
-                &successes, &avgExtra, &fixed, &avgFixed) == 4 ||
-              std::sscanf(p, "Orbital branching succeeded %d times - average extra %lf, fixing (%d, %lf)",
-                &successes, &avgExtra, &fixed, &avgFixed) == 4)
+                &successes, &avgExtra, &fixed, &avgFixed)
+              == 4
+            || std::sscanf(p, "Orbital branching succeeded %d times - average extra %lf, fixing (%d, %lf)",
+                 &successes, &avgExtra, &fixed, &avgFixed)
+              == 4)
             bnbOut_->onOrbitalStats(successes, avgExtra, fixed, avgFixed);
         }
         return 0;
@@ -1528,10 +1624,12 @@ int CbcOutputHandler::print()
 
     // ext=30 (CBC_THREAD_STATS): per-thread lock/wait stats at solve end.
     // Low-value diagnostic noise at log level 1; suppress.
-    if (ext == 30) return 0;
+    if (ext == 30)
+      return 0;
 
     // ext=12 without bnbOut_ but with fpumpOut_: suppress between phases
-    if (ext == 12 && fpumpOut_) return 0;
+    if (ext == 12 && fpumpOut_)
+      return 0;
   }
 
   // ── Cut generation at root node ─────────────────────────────────────────
@@ -1550,7 +1648,8 @@ int CbcOutputHandler::print()
         double suminf, obj, t;
         if (std::sscanf(p,
               "Root node pass %d, %d rows, %d tight cuts, %d frac, %lf suminf - objective %lf (%lf",
-              &pass, &rows, &tight, &frac, &suminf, &obj, &t) == 7)
+              &pass, &rows, &tight, &frac, &suminf, &obj, &t)
+          == 7)
           cutGenOut_->onPass(pass, rows, tight, frac, suminf, obj, t);
       }
       return 0;
@@ -1566,7 +1665,8 @@ int CbcOutputHandler::print()
         double fromObj, toObj;
         if (std::sscanf(p,
               "At root node, %d cuts changed objective from %lf to %lf in %d passes",
-              &ncuts, &fromObj, &toObj, &passes) == 4)
+              &ncuts, &fromObj, &toObj, &passes)
+          == 4)
           cutGenOut_->onSummary(ncuts, fromObj, toObj, passes);
       }
       return 0;
@@ -1579,11 +1679,12 @@ int CbcOutputHandler::print()
         char name[64] = "";
         if (std::sscanf(p,
               "Cut generator %d (%63[^)]) - %d row cuts average %lf elements, %d column cuts",
-              &g.idx, name, &g.rowCuts, &g.avgDensity, &g.colCuts) >= 5) {
+              &g.idx, name, &g.rowCuts, &g.avgDensity, &g.colCuts)
+          >= 5) {
           g.name = name;
           // Optional timing: "in %.3f seconds"
           const char *freqPtr = std::strstr(p, "new frequency is ");
-          const char *inPtr   = std::strstr(p, " in ");
+          const char *inPtr = std::strstr(p, " in ");
           g.hasTime = (inPtr && freqPtr && inPtr < freqPtr);
           g.time = 0.0;
           if (g.hasTime)
@@ -1606,14 +1707,17 @@ int CbcOutputHandler::print()
 
     // Find the actual "Nauty " start (skip any "CbcNNNNI " prefix)
     const char *p = std::strstr(buf, "Nauty");
-    if (!p) p = buf;
+    if (!p)
+      p = buf;
 
     // "Nauty: N orbits (U useful covering V variables), G generators, group size: S - sparse size X - took T seconds"
     if (std::sscanf(p,
           "Nauty: %d orbits (%d useful covering %d variables), %d generators, group size: %lf",
-          &totalOrbits_, &usefulOrbits_, &usefulVars_, &numGens_, &groupSize_) >= 5) {
+          &totalOrbits_, &usefulOrbits_, &usefulVars_, &numGens_, &groupSize_)
+      >= 5) {
       const char *tookPtr = std::strstr(p, "took ");
-      if (tookPtr) std::sscanf(tookPtr, "took %lf", &nautyTime_);
+      if (tookPtr)
+        std::sscanf(tookPtr, "took %lf", &nautyTime_);
       printSection();
       return 0;
     }
@@ -1621,7 +1725,8 @@ int CbcOutputHandler::print()
     // "Nauty did not find any useful orbits in time T"
     if (std::strstr(p, "did not find any useful orbits")) {
       const char *tp = std::strstr(p, "in time ");
-      if (tp) std::sscanf(tp, "in time %lf", &nautyTime_);
+      if (tp)
+        std::sscanf(tp, "in time %lf", &nautyTime_);
       printSection();
       return 0;
     }
@@ -1667,8 +1772,10 @@ int CbcOutputHandler::print()
     if (fp) {
       const char *p = buf;
       if (std::strncmp(p, "Cgl", 3) == 0) {
-        while (*p && *p != ' ') ++p;
-        if (*p == ' ') ++p;
+        while (*p && *p != ' ')
+          ++p;
+        if (*p == ' ')
+          ++p;
       }
       fprintf(fp, "  ⚠ %s\n", p);
       fflush(fp);
@@ -1683,8 +1790,10 @@ int CbcOutputHandler::print()
     if (fp) {
       const char *p = buf;
       if (std::strncmp(p, "Clp", 3) == 0) {
-        while (*p && *p != ' ') ++p;
-        if (*p == ' ') ++p;
+        while (*p && *p != ' ')
+          ++p;
+        if (*p == ' ')
+          ++p;
       }
       fprintf(fp, "  ⚠ %s\n", p);
       fflush(fp);
@@ -1702,13 +1811,14 @@ int CbcOutputHandler::print()
   // CBC_GENERAL (ext=45): "RankConflict: active ..." — configuration note,
   // only useful for diagnostics; suppress at logLevel < 2.
   if (currentSource() == "Cbc" && ext == 45
-      && std::strstr(buf, "RankConflict: active")) {
+    && std::strstr(buf, "RankConflict: active")) {
     if (logLevel() < 2)
       return 0;
     FILE *fp = filePointer();
     if (fp) {
       const char *p = std::strstr(buf, "RankConflict:");
-      if (!p) p = buf;
+      if (!p)
+        p = buf;
       fprintf(fp, "  ℹ %s\n", p);
       fflush(fp);
     }
@@ -1718,13 +1828,15 @@ int CbcOutputHandler::print()
   // CBC_GENERAL (ext=45): "Possible tolerance issue" — genuine numerical
   // warning not conveyed elsewhere; format as an indented ⚠ line.
   if (currentSource() == "Cbc" && ext == 45
-      && std::strstr(buf, "Possible tolerance issue")) {
+    && std::strstr(buf, "Possible tolerance issue")) {
     FILE *fp = filePointer();
     if (fp) {
       const char *p = buf;
       if (std::strncmp(p, "Cbc", 3) == 0) {
-        while (*p && *p != ' ') ++p;
-        if (*p == ' ') ++p;
+        while (*p && *p != ' ')
+          ++p;
+        if (*p == ' ')
+          ++p;
       }
       fprintf(fp, "  ⚠ %s\n", p);
       fflush(fp);
@@ -1737,18 +1849,20 @@ int CbcOutputHandler::print()
 
 void CbcOutputHandler::routeIncumbentMessage(const char *buf, int /*ext*/)
 {
-  if (!bnbOut_) return;
+  if (!bnbOut_)
+    return;
   IncumbentMsg im;
   if (parseIncumbentMsg(buf, im))
     bnbOut_->onHeurIncumbent(im.obj, im.method.c_str(), im.ontree, im.depth,
-			     im.nodes, im.elapsed);
+      im.nodes, im.elapsed);
 }
 
 void CbcOutputHandler::beginRestartMode()
 {
   // Reset cut-gen output for the part-2 run and flag that the next
   // ext==1 / ext==5 from a sub-model must not close the B&B section.
-  if (cutGenOut_) cutGenOut_->resetForRestart();
+  if (cutGenOut_)
+    cutGenOut_->resetForRestart();
   restartMode_ = true;
 }
 
@@ -1766,25 +1880,26 @@ void CbcOutputHandler::printSection()
 // CbcFPumpOutput — tabular output for the feasibility pump heuristic
 // ===========================================================================
 
-static const int FP_W_ROUND  = 5;
-static const int FP_W_PASS   = 6;
-static const int FP_W_FRAC   = 12;
+static const int FP_W_ROUND = 5;
+static const int FP_W_PASS = 6;
+static const int FP_W_FRAC = 12;
 static const int FP_W_SUMINF = 12;
 static const int FP_W_STATUS = 14;
-static const int FP_W_BEST   = 14;
-static const int FP_W_TIME   = 8;
+static const int FP_W_BEST = 14;
+static const int FP_W_TIME = 8;
 
 static CoinTable makeFpTable(bool utf8, bool compact)
 {
   return CoinTable({
-    { "Round",      FP_W_ROUND  },
-    { "Pass",       FP_W_PASS   },
-    { "Fractional", FP_W_FRAC   },
-    { "Suminf",     FP_W_SUMINF },
-    { "Status",     FP_W_STATUS, /*leftAlign=*/true },
-    { "BestSol",    FP_W_BEST   },
-    { "Time(s)",       FP_W_TIME   },
-  }, utf8, /*indent=*/2, compact);
+                     { "Round", FP_W_ROUND },
+                     { "Pass", FP_W_PASS },
+                     { "Fractional", FP_W_FRAC },
+                     { "Suminf", FP_W_SUMINF },
+                     { "Status", FP_W_STATUS, /*leftAlign=*/true },
+                     { "BestSol", FP_W_BEST },
+                     { "Time(s)", FP_W_TIME },
+                   },
+    utf8, /*indent=*/2, compact);
 }
 
 CbcFPumpOutput::CbcFPumpOutput(FILE *fp, bool utf8, int logLevel,
@@ -1800,7 +1915,8 @@ CbcFPumpOutput::CbcFPumpOutput(FILE *fp, bool utf8, int logLevel,
 
 void CbcFPumpOutput::onStart(int numFrac, double suminf, double searchElapsedAtStart)
 {
-  if (!isActive()) return;
+  if (!isActive())
+    return;
   startTime_ = CoinWallclockTime();
   searchElapsedAtStart_ = searchElapsedAtStart;
   lastPrintTime_ = startTime_;
@@ -1814,7 +1930,8 @@ void CbcFPumpOutput::onStart(int numFrac, double suminf, double searchElapsedAtS
 
 void CbcFPumpOutput::noteRowSolution(const std::string &type, double obj)
 {
-  if (!isActive()) return;
+  if (!isActive())
+    return;
   pendingSolution_ = true;
   pendingType_ = type;
   pendingObj_ = obj;
@@ -1826,7 +1943,7 @@ bool CbcFPumpOutput::shouldPrint(int pass, double elapsed) const
 {
   if (passFreq_ <= 0 && timeFreq_ <= 0.0)
     return true;
-  if (printedRows_ < 10)   // always show the first 10 rows
+  if (printedRows_ < 10) // always show the first 10 rows
     return true;
   if (passFreq_ > 0 && (pass - lastPrintPass_) >= passFreq_)
     return true;
@@ -1837,7 +1954,8 @@ bool CbcFPumpOutput::shouldPrint(int pass, double elapsed) const
 
 void CbcFPumpOutput::printTableHeader(int numFrac, double suminf)
 {
-  if (headerPrinted_) return;
+  if (headerPrinted_)
+    return;
   headerPrinted_ = true;
 
   char title[80];
@@ -1850,7 +1968,8 @@ void CbcFPumpOutput::printTableHeader(int numFrac, double suminf)
 
 void CbcFPumpOutput::printTableEnd()
 {
-  if (!headerPrinted_ || tableClosed_) return;
+  if (!headerPrinted_ || tableClosed_)
+    return;
   tableClosed_ = true;
   printTableClose(fp_, makeFpTable(utf8_, compact_));
 }
@@ -1865,22 +1984,24 @@ void CbcFPumpOutput::printRow(bool hasSolution, int round, int pass,
   if (bestSol < 1e30)
     std::snprintf(bestStr, sizeof(bestStr), "%.6g", bestSol);
   const char *pfx = hasSolution
-    ? (utf8_ ? " \xe2\x98\x85" : " *")  // ★ or *
+    ? (utf8_ ? " \xe2\x98\x85" : " *") // ★ or *
     : "  ";
 
   int fracVis = utf8VisLen(fracStr);
-  int sumVis  = utf8VisLen(suminfStr);
-  int fracPad = FP_W_FRAC   - fracVis;
-  int sumPad  = FP_W_SUMINF - sumVis;
-  if (fracPad < 0) fracPad = 0;
-  if (sumPad  < 0) sumPad  = 0;
+  int sumVis = utf8VisLen(suminfStr);
+  int fracPad = FP_W_FRAC - fracVis;
+  int sumPad = FP_W_SUMINF - sumVis;
+  if (fracPad < 0)
+    fracPad = 0;
+  if (sumPad < 0)
+    sumPad = 0;
 
   fprintf(fp_, "%s%*d%s%*d%s%*s%s%*s%s%-*s%s%*s%s%*s\n",
     pfx,
     FP_W_ROUND, round, bar,
-    FP_W_PASS,  pass,  bar,
-    fracPad  + (int)fracStr.size(),  fracStr.c_str(),  bar,
-    sumPad   + (int)suminfStr.size(), suminfStr.c_str(), bar,
+    FP_W_PASS, pass, bar,
+    fracPad + (int)fracStr.size(), fracStr.c_str(), bar,
+    sumPad + (int)suminfStr.size(), suminfStr.c_str(), bar,
     FP_W_STATUS, status.c_str(), bar,
     FP_W_BEST, bestStr, bar,
     FP_W_TIME, timeStr.c_str());
@@ -1890,12 +2011,13 @@ void CbcFPumpOutput::printRow(bool hasSolution, int round, int pass,
 void CbcFPumpOutput::onPass(int round, int pass, int numFrac, double suminf,
   double obj, int /*iters*/, bool isOscillating)
 {
-  if (!isActive()) return;
+  if (!isActive())
+    return;
 
-  lastRound_       = round;
-  lastPass_        = pass;
+  lastRound_ = round;
+  lastPass_ = pass;
   lastNumFrac_val_ = numFrac;
-  lastSuminf_val_  = suminf;
+  lastSuminf_val_ = suminf;
 
   // `now` is a raw wall-clock reading, used only for the shouldPrint()
   // interval-gating diff and lastPrintTime_ bookkeeping (both raw-vs-raw
@@ -1935,17 +2057,17 @@ void CbcFPumpOutput::onPass(int round, int pass, int numFrac, double suminf,
     status = "not converging";
   }
 
-  prevSuminf_  = suminf;
+  prevSuminf_ = suminf;
   prevNumFrac_ = numFrac;
 
   // Format fractional and suminf columns
   char fracBuf[24], sumBuf[24];
   if (hasPendingSol && pendingType_ == "rounding") {
     std::snprintf(fracBuf, sizeof(fracBuf), "%s", utf8_ ? "\xe2\x80\x94" : "---");
-    std::snprintf(sumBuf,  sizeof(sumBuf),  "rounding");
+    std::snprintf(sumBuf, sizeof(sumBuf), "rounding");
   } else {
-    std::snprintf(fracBuf, sizeof(fracBuf), "%d",    numFrac);
-    std::snprintf(sumBuf,  sizeof(sumBuf),  "%.4f",  suminf);
+    std::snprintf(fracBuf, sizeof(fracBuf), "%d", numFrac);
+    std::snprintf(sumBuf, sizeof(sumBuf), "%.4f", suminf);
   }
 
   double bestSolToShow = hasPendingSol ? pendingObj_ : 1e30;
@@ -1954,7 +2076,7 @@ void CbcFPumpOutput::onPass(int round, int pass, int numFrac, double suminf,
 
   lastPrintTime_ = now;
   lastPrintPass_ = pass;
-  lastPrinted_   = true;
+  lastPrinted_ = true;
   printedRows_++;
 
   pendingSolution_ = false;
@@ -1964,20 +2086,23 @@ void CbcFPumpOutput::onPass(int round, int pass, int numFrac, double suminf,
 
 void CbcFPumpOutput::onRoundingImproved(double newObj)
 {
-  if (!isActive()) return;
+  if (!isActive())
+    return;
   if (newObj < bestSol_)
     bestSol_ = newObj;
 }
 
 void CbcFPumpOutput::onNoSolutionInRetry()
 {
-  if (!isActive()) return;
-  if (!headerPrinted_ || lastPass_ == 0) return;
+  if (!isActive())
+    return;
+  if (!headerPrinted_ || lastPass_ == 0)
+    return;
   if (!lastPrinted_) {
     double elapsed = (CoinWallclockTime() - startTime_) + searchElapsedAtStart_;
     char fracBuf[24], sumBuf[24];
-    std::snprintf(fracBuf, sizeof(fracBuf), "%d",   lastNumFrac_val_);
-    std::snprintf(sumBuf,  sizeof(sumBuf),  "%.4f", lastSuminf_val_);
+    std::snprintf(fracBuf, sizeof(fracBuf), "%d", lastNumFrac_val_);
+    std::snprintf(sumBuf, sizeof(sumBuf), "%.4f", lastSuminf_val_);
     printRow(false, lastRound_, lastPass_, fracBuf, sumBuf, "no solution", 1e30, elapsed);
     lastPrinted_ = true;
     printedRows_++;
@@ -1986,23 +2111,25 @@ void CbcFPumpOutput::onNoSolutionInRetry()
 
 void CbcFPumpOutput::onRetry(int /*newRound*/, double /*newCutoff*/)
 {
-  if (!isActive() || !headerPrinted_) return;
+  if (!isActive() || !headerPrinted_)
+    return;
   lastPrintTime_ = CoinWallclockTime();
   lastPrintPass_ = 0;
-  lastPrinted_   = false;
-  prevSuminf_    = 1e30;
-  prevNumFrac_   = INT_MAX;
+  lastPrinted_ = false;
+  prevSuminf_ = 1e30;
+  prevNumFrac_ = INT_MAX;
 }
 
 void CbcFPumpOutput::onEnd(double bestSol, double /*elapsed_cpu*/, int rounds, int totalPasses)
 {
-  if (!isActive()) return;
+  if (!isActive())
+    return;
   // Always show the last pass if it wasn't printed (frequency limiting may have skipped it).
   if (headerPrinted_ && !lastPrinted_ && lastPass_ > 0) {
     double elapsed = (CoinWallclockTime() - startTime_) + searchElapsedAtStart_;
     char fracBuf[24], sumBuf[24];
-    std::snprintf(fracBuf, sizeof(fracBuf), "%d",    lastNumFrac_val_);
-    std::snprintf(sumBuf,  sizeof(sumBuf),  "%.4f",  lastSuminf_val_);
+    std::snprintf(fracBuf, sizeof(fracBuf), "%d", lastNumFrac_val_);
+    std::snprintf(sumBuf, sizeof(sumBuf), "%.4f", lastSuminf_val_);
     printRow(false, lastRound_, lastPass_, fracBuf, sumBuf, "", 1e30, elapsed);
     lastPrinted_ = true;
   }
@@ -2036,29 +2163,34 @@ void CbcFPumpOutput::onEnd(double bestSol, double /*elapsed_cpu*/, int rounds, i
 // CbcRootHeurOutput — per-heuristic summary for root-node heuristics
 // ===========================================================================
 
-static const int RH_W_NAME    = 24;
-static const int RH_W_STATUS  = 12;
-static const int RH_W_BEST    = 14;
-static const int RH_W_TIME    = 8;
+static const int RH_W_NAME = 24;
+static const int RH_W_STATUS = 12;
+static const int RH_W_BEST = 14;
+static const int RH_W_TIME = 8;
 
 static CoinTable makeRhTable(bool utf8, bool compact)
 {
   return CoinTable({
-    { "Heuristic", RH_W_NAME,   /*leftAlign=*/true },
-    { "Status",    RH_W_STATUS, /*leftAlign=*/true },
-    { "BestSol",   RH_W_BEST   },
-    { "Time(s)",   RH_W_TIME   },
-  }, utf8, /*indent=*/2, compact);
+                     { "Heuristic", RH_W_NAME, /*leftAlign=*/true },
+                     { "Status", RH_W_STATUS, /*leftAlign=*/true },
+                     { "BestSol", RH_W_BEST },
+                     { "Time(s)", RH_W_TIME },
+                   },
+    utf8, /*indent=*/2, compact);
 }
 
 CbcRootHeurOutput::CbcRootHeurOutput(FILE *fp, bool utf8, int logLevel)
-  : fp_(fp), utf8_(utf8), compact_(CbcOutput::useCompact()), logLevel_(logLevel)
+  : fp_(fp)
+  , utf8_(utf8)
+  , compact_(CbcOutput::useCompact())
+  , logLevel_(logLevel)
 {
 }
 
 void CbcRootHeurOutput::onStart()
 {
-  if (!isActive()) return;
+  if (!isActive())
+    return;
   startTime_ = CoinWallclockTime();
   inPhase_ = true;
   ended_ = false;
@@ -2070,7 +2202,8 @@ void CbcRootHeurOutput::onStart()
 
 void CbcRootHeurOutput::ensureTableHeader()
 {
-  if (tableOpen_) return;
+  if (tableOpen_)
+    return;
   tableOpen_ = true;
   CoinTable tbl = makeRhTable(utf8_, compact_);
   fprintf(fp_, "\n");
@@ -2080,7 +2213,8 @@ void CbcRootHeurOutput::ensureTableHeader()
 void CbcRootHeurOutput::onHeurResult(const char *name, bool accepted,
   double userObj, double elapsed)
 {
-  if (!isActive() || !inPhase_) return;
+  if (!isActive() || !inPhase_)
+    return;
   ensureTableHeader();
 
   const char *bar = tableBar(utf8_, compact_);
@@ -2088,7 +2222,8 @@ void CbcRootHeurOutput::onHeurResult(const char *name, bool accepted,
     ? (utf8_ ? " \xe2\x98\x85" : " *")
     : "  ";
   const char *status = accepted ? "solution" : "no solution";
-  if (accepted && userObj < bestSol_) bestSol_ = userObj;
+  if (accepted && userObj < bestSol_)
+    bestSol_ = userObj;
 
   char objBuf[32] = "";
   if (accepted && userObj < 1e30)
@@ -2098,16 +2233,17 @@ void CbcRootHeurOutput::onHeurResult(const char *name, bool accepted,
 
   fprintf(fp_, "%s%-*s%s%-*s%s%*s%s%*s\n",
     pfx,
-    RH_W_NAME,   name,   bar,
+    RH_W_NAME, name, bar,
     RH_W_STATUS, status, bar,
-    RH_W_BEST,   objBuf, bar,
-    RH_W_TIME,   timeStr.c_str());
+    RH_W_BEST, objBuf, bar,
+    RH_W_TIME, timeStr.c_str());
   fflush(fp_);
 }
 
 void CbcRootHeurOutput::onEnd()
 {
-  if (!isActive() || !inPhase_ || ended_) return;
+  if (!isActive() || !inPhase_ || ended_)
+    return;
   ended_ = true;
   inPhase_ = false;
 
@@ -2130,55 +2266,61 @@ void CbcRootHeurOutput::onEnd()
 // ===========================================================================
 
 // Progress table column widths
-static const int CG_W_PASS   = 4;
-static const int CG_W_ROWS   = 8;
-static const int CG_W_TIGHT  = 8;
-static const int CG_W_FRAC   = 6;
+static const int CG_W_PASS = 4;
+static const int CG_W_ROWS = 8;
+static const int CG_W_TIGHT = 8;
+static const int CG_W_FRAC = 6;
 static const int CG_W_SUMINF = 10;
-static const int CG_W_OBJ    = 16;
-static const int CG_W_TIME   = 8;
+static const int CG_W_OBJ = 16;
+static const int CG_W_TIME = 8;
 
 static CoinTable makeCgProgTable(bool utf8, bool compact)
 {
   return CoinTable({
-    { "Pass",      CG_W_PASS   },
-    { "Rows",      CG_W_ROWS   },
-    { "Tight",     CG_W_TIGHT  },
-    { "Frac",      CG_W_FRAC   },
-    { "Suminf",    CG_W_SUMINF },
-    { "Objective", CG_W_OBJ    },
-    { "Time(s)",      CG_W_TIME   },
-  }, utf8, /*indent=*/2, compact);
+                     { "Pass", CG_W_PASS },
+                     { "Rows", CG_W_ROWS },
+                     { "Tight", CG_W_TIGHT },
+                     { "Frac", CG_W_FRAC },
+                     { "Suminf", CG_W_SUMINF },
+                     { "Objective", CG_W_OBJ },
+                     { "Time(s)", CG_W_TIME },
+                   },
+    utf8, /*indent=*/2, compact);
 }
 
 // Generator summary table column widths
-static const int CG_W_GENNAME  = 22;
-static const int CG_W_ROWCUTS  = 8;
-static const int CG_W_DENSITY  = 11;
-static const int CG_W_COLCUTS  = 8;
-static const int CG_W_GENTIME  = 9;
-static const int CG_W_NEXTRUN  = 12;
+static const int CG_W_GENNAME = 22;
+static const int CG_W_ROWCUTS = 8;
+static const int CG_W_DENSITY = 11;
+static const int CG_W_COLCUTS = 8;
+static const int CG_W_GENTIME = 9;
+static const int CG_W_NEXTRUN = 12;
 
 static CoinTable makeCgGenTable(bool utf8, bool compact)
 {
   return CoinTable({
-    { "Generator",   CG_W_GENNAME, /*leftAlign=*/true },
-    { "Row cuts",    CG_W_ROWCUTS },
-    { "Avg density", CG_W_DENSITY },
-    { "Col cuts",    CG_W_COLCUTS },
-    { "Time(s)",        CG_W_GENTIME },
-    { "Next run",    CG_W_NEXTRUN, /*leftAlign=*/true },
-  }, utf8, /*indent=*/2, compact);
+                     { "Generator", CG_W_GENNAME, /*leftAlign=*/true },
+                     { "Row cuts", CG_W_ROWCUTS },
+                     { "Avg density", CG_W_DENSITY },
+                     { "Col cuts", CG_W_COLCUTS },
+                     { "Time(s)", CG_W_GENTIME },
+                     { "Next run", CG_W_NEXTRUN, /*leftAlign=*/true },
+                   },
+    utf8, /*indent=*/2, compact);
 }
 
 CbcCutGenOutput::CbcCutGenOutput(FILE *fp, bool utf8, int logLevel)
-  : fp_(fp), utf8_(utf8), compact_(CbcOutput::useCompact()), logLevel_(logLevel)
+  : fp_(fp)
+  , utf8_(utf8)
+  , compact_(CbcOutput::useCompact())
+  , logLevel_(logLevel)
 {
 }
 
 void CbcCutGenOutput::onStart()
 {
-  if (state_ != State::Idle) return;
+  if (state_ != State::Idle)
+    return;
   state_ = State::Started;
   fprintf(fp_, "\n%s\n\n", CoinTable::phaseStart(title_.c_str(), utf8_).c_str());
   fflush(fp_);
@@ -2186,22 +2328,23 @@ void CbcCutGenOutput::onStart()
 
 void CbcCutGenOutput::resetForRestart(const char *title)
 {
-  state_             = State::Idle;
+  state_ = State::Idle;
   progHeaderPrinted_ = false;
-  progTableClosed_   = false;
-  genTablePrinted_   = false;
-  haveSummary_       = false;
+  progTableClosed_ = false;
+  genTablePrinted_ = false;
+  haveSummary_ = false;
   genInfos_.clear();
-  sumNcuts_   = 0;
+  sumNcuts_ = 0;
   sumFromObj_ = 0.0;
-  sumToObj_   = 0.0;
-  sumPasses_  = 0;
+  sumToObj_ = 0.0;
+  sumPasses_ = 0;
   title_ = title ? title : "Cut generation (root node, part 2)";
 }
 
 void CbcCutGenOutput::onPass(int pass, int rows, int tight, int frac, double suminf, double obj, double t)
 {
-  if (state_ != State::Started) return;
+  if (state_ != State::Started)
+    return;
 
   if (!progHeaderPrinted_) {
     progHeaderPrinted_ = true;
@@ -2210,7 +2353,7 @@ void CbcCutGenOutput::onPass(int pass, int rows, int tight, int frac, double sum
 
   const char *bar = tableBar(utf8_, compact_);
   char objBuf[24], suminfBuf[16];
-  std::snprintf(objBuf,    sizeof(objBuf),    "%.6g", obj);
+  std::snprintf(objBuf, sizeof(objBuf), "%.6g", obj);
   std::snprintf(suminfBuf, sizeof(suminfBuf), "%.4g", suminf);
   // t is the solve-scoped elapsed time (model->getCurrentSeconds()) parsed
   // from CbcModel's own CBC_ROOT_DETAIL message -- use it directly rather
@@ -2220,44 +2363,49 @@ void CbcCutGenOutput::onPass(int pass, int rows, int tight, int frac, double sum
   // huge and meaningless) timestamp instead of an elapsed duration.
   const std::string timeBuf = fmtTime(t);
   fprintf(fp_, "  %*d%s%*d%s%*d%s%*d%s%*s%s%*s%s%*s\n",
-    CG_W_PASS,   pass,             bar,
-    CG_W_ROWS,   rows,             bar,
-    CG_W_TIGHT,  tight,            bar,
-    CG_W_FRAC,   frac,             bar,
-    CG_W_SUMINF, suminfBuf,        bar,
-    CG_W_OBJ,    objBuf,           bar,
-    CG_W_TIME,   timeBuf.c_str());
+    CG_W_PASS, pass, bar,
+    CG_W_ROWS, rows, bar,
+    CG_W_TIGHT, tight, bar,
+    CG_W_FRAC, frac, bar,
+    CG_W_SUMINF, suminfBuf, bar,
+    CG_W_OBJ, objBuf, bar,
+    CG_W_TIME, timeBuf.c_str());
   fflush(fp_);
 }
 
 void CbcCutGenOutput::printProgressEnd()
 {
-  if (!progHeaderPrinted_ || progTableClosed_) return;
+  if (!progHeaderPrinted_ || progTableClosed_)
+    return;
   progTableClosed_ = true;
   printTableClose(fp_, makeCgProgTable(utf8_, compact_));
 }
 
 void CbcCutGenOutput::onSummary(int ncuts, double fromObj, double toObj, int passes)
 {
-  if (state_ != State::Started) return;
-  sumNcuts_   = ncuts;
+  if (state_ != State::Started)
+    return;
+  sumNcuts_ = ncuts;
   sumFromObj_ = fromObj;
-  sumToObj_   = toObj;
-  sumPasses_  = passes;
+  sumToObj_ = toObj;
+  sumPasses_ = passes;
   haveSummary_ = true;
   printProgressEnd();
 }
 
 void CbcCutGenOutput::onGenerator(const GenInfo &g)
 {
-  if (state_ == State::Idle) return;
+  if (state_ == State::Idle)
+    return;
   genInfos_.push_back(g);
 }
 
 static std::string nextRunStr(int freq)
 {
-  if (freq <= -90)   return "disabled";
-  if (freq == 1)     return "every node";
+  if (freq <= -90)
+    return "disabled";
+  if (freq == 1)
+    return "every node";
   if (freq > 1) {
     char buf[24];
     std::snprintf(buf, sizeof(buf), "every %d nodes", freq);
@@ -2269,7 +2417,8 @@ static std::string nextRunStr(int freq)
 
 void CbcCutGenOutput::printGeneratorTable()
 {
-  if (genTablePrinted_ || genInfos_.empty()) return;
+  if (genTablePrinted_ || genInfos_.empty())
+    return;
   genTablePrinted_ = true;
 
   const CoinTable tbl = makeCgGenTable(utf8_, compact_);
@@ -2302,7 +2451,8 @@ void CbcCutGenOutput::printGeneratorTable()
 
 void CbcCutGenOutput::close()
 {
-  if (state_ == State::Closed || state_ == State::Idle) return;
+  if (state_ == State::Closed || state_ == State::Idle)
+    return;
   state_ = State::Closed;
 
   printProgressEnd(); // idempotent — close progress table if not done
@@ -2327,33 +2477,35 @@ void CbcCutGenOutput::close()
 // CbcBnBOutput — Branch-and-bound tree tabular output
 // ============================================================================
 
-static const int BB_W_NODES   = 8;
-static const int BB_W_ONTREE  = 8;
-static const int BB_W_DEPTH   = 6;
+static const int BB_W_NODES = 8;
+static const int BB_W_ONTREE = 8;
+static const int BB_W_DEPTH = 6;
 static const int BB_W_BESTSOL = 15;
-static const int BB_W_METHOD  = 16;
-static const int BB_W_BOUND   = 15;
-static const int BB_W_GAP     = 8;
-static const int BB_W_TIME    = 9;
+static const int BB_W_METHOD = 16;
+static const int BB_W_BOUND = 15;
+static const int BB_W_GAP = 8;
+static const int BB_W_TIME = 9;
 
 static CoinTable makeBnBTable(bool utf8, bool compact)
 {
   return CoinTable({
-    { "Nodes",     BB_W_NODES,   false },
-    { "OnTree",    BB_W_ONTREE,  false },
-    { "Depth",     BB_W_DEPTH,   false },
-    { "BestSol",   BB_W_BESTSOL, false },
-    { "Method",    BB_W_METHOD,  true  },
-    { "BestBound", BB_W_BOUND,   false },
-    { "Gap%",      BB_W_GAP,     false },
-    { "Time(s)",      BB_W_TIME,    false },
-  }, utf8, /*indent=*/2, compact);
+                     { "Nodes", BB_W_NODES, false },
+                     { "OnTree", BB_W_ONTREE, false },
+                     { "Depth", BB_W_DEPTH, false },
+                     { "BestSol", BB_W_BESTSOL, false },
+                     { "Method", BB_W_METHOD, true },
+                     { "BestBound", BB_W_BOUND, false },
+                     { "Gap%", BB_W_GAP, false },
+                     { "Time(s)", BB_W_TIME, false },
+                   },
+    utf8, /*indent=*/2, compact);
 }
 
 // Format an objective value: "—" for 1e49+, otherwise %.6g
 static std::string bnbFmtObj(double v, bool utf8)
 {
-  if (v >= 1e49) return utf8 ? "\xe2\x80\x94" : "-";
+  if (v >= 1e49)
+    return utf8 ? "\xe2\x80\x94" : "-";
   char buf[32];
   std::snprintf(buf, sizeof(buf), "%.6g", v);
   return buf;
@@ -2390,28 +2542,37 @@ static std::string bnbFmtCount(long n)
 // Shorten or truncate a heuristic method name to fit BB_W_METHOD chars
 static std::string bnbMethodName(const char *raw)
 {
-  if (!raw || !*raw) return "B&B";
-  if (std::strstr(raw, "rounding in feaspump")) return "FP rounding";
-  if (std::strstr(raw, "feasibility pump"))     return "FP";
+  if (!raw || !*raw)
+    return "B&B";
+  if (std::strstr(raw, "rounding in feaspump"))
+    return "FP rounding";
+  if (std::strstr(raw, "feasibility pump"))
+    return "FP";
   std::string s(raw);
-  if ((int)s.size() > BB_W_METHOD) s.resize(BB_W_METHOD);
+  if ((int)s.size() > BB_W_METHOD)
+    s.resize(BB_W_METHOD);
   return s;
 }
 
 // ── CbcBnBOutput methods ────────────────────────────────────────────────────
 
 CbcBnBOutput::CbcBnBOutput(FILE *fp, bool utf8, int logLevel)
-  : fp_(fp), utf8_(utf8), compact_(CbcOutput::useCompact()), logLevel_(logLevel)
-{}
+  : fp_(fp)
+  , utf8_(utf8)
+  , compact_(CbcOutput::useCompact())
+  , logLevel_(logLevel)
+{
+}
 
 CbcBnBOutput::~CbcBnBOutput()
 {
-  if (tableOpen_) closeTable();
+  if (tableOpen_)
+    closeTable();
 }
 
 void CbcBnBOutput::startPhase()
 {
-  inPhase_  = true;
+  inPhase_ = true;
   tableOpen_ = true;
   const CoinTable tbl = makeBnBTable(utf8_, compact_);
   fprintf(fp_, "\n%s\n\n", CoinTable::phaseStart("Branch and bound", utf8_).c_str());
@@ -2432,32 +2593,48 @@ void CbcBnBOutput::printRow(bool isIncumbent, long nodes, int onTree, int depth,
     : "  ";
 
   char nodeStr[24], onTreeStr[24], depthStr[16];
-  std::snprintf(nodeStr,   sizeof(nodeStr),   "%ld", nodes);
-  std::snprintf(onTreeStr, sizeof(onTreeStr), "%d",  onTree);
-  std::snprintf(depthStr,  sizeof(depthStr),  "%d",  depth);
+  std::snprintf(nodeStr, sizeof(nodeStr), "%ld", nodes);
+  std::snprintf(onTreeStr, sizeof(onTreeStr), "%d", onTree);
+  std::snprintf(depthStr, sizeof(depthStr), "%d", depth);
   const std::string timeStr = fmtTime(wallclock);
 
-  const std::string bsStr  = bnbFmtObj(bestSol,   utf8_);
-  const std::string bbStr  = bnbFmtObj(bestBound,  utf8_);
+  const std::string bsStr = bnbFmtObj(bestSol, utf8_);
+  const std::string bbStr = bnbFmtObj(bestBound, utf8_);
   const std::string gapStr = bnbFmtGap(bestSol, bestBound, utf8_);
-  const std::string mStr   = method ? bnbMethodName(method) : "";
+  const std::string mStr = method ? bnbMethodName(method) : "";
 
   fprintf(fp_, "%s", star);
-  fprintf(fp_, "%*s%s", BB_W_NODES,  nodeStr,   bar);
+  fprintf(fp_, "%*s%s", BB_W_NODES, nodeStr, bar);
   fprintf(fp_, "%*s%s", BB_W_ONTREE, onTreeStr, bar);
-  fprintf(fp_, "%*s%s", BB_W_DEPTH,  depthStr,  bar);
+  fprintf(fp_, "%*s%s", BB_W_DEPTH, depthStr, bar);
   // BestSol: right-align with visual-width correction for UTF-8 dashes
-  { int pad = BB_W_BESTSOL - utf8VisLen(bsStr); if (pad > 0) fprintf(fp_, "%*s", pad, ""); }
+  {
+    int pad = BB_W_BESTSOL - utf8VisLen(bsStr);
+    if (pad > 0)
+      fprintf(fp_, "%*s", pad, "");
+  }
   fprintf(fp_, "%s%s", bsStr.c_str(), bar);
   // Method: left-align
   fprintf(fp_, "%s", mStr.c_str());
-  { int vis = utf8VisLen(mStr); if (vis < BB_W_METHOD) fprintf(fp_, "%*s", BB_W_METHOD - vis, ""); }
+  {
+    int vis = utf8VisLen(mStr);
+    if (vis < BB_W_METHOD)
+      fprintf(fp_, "%*s", BB_W_METHOD - vis, "");
+  }
   fprintf(fp_, "%s", bar);
   // BestBound: right-align
-  { int pad = BB_W_BOUND - utf8VisLen(bbStr);  if (pad > 0) fprintf(fp_, "%*s", pad, ""); }
+  {
+    int pad = BB_W_BOUND - utf8VisLen(bbStr);
+    if (pad > 0)
+      fprintf(fp_, "%*s", pad, "");
+  }
   fprintf(fp_, "%s%s", bbStr.c_str(), bar);
   // Gap%: right-align
-  { int pad = BB_W_GAP - utf8VisLen(gapStr); if (pad > 0) fprintf(fp_, "%*s", pad, ""); }
+  {
+    int pad = BB_W_GAP - utf8VisLen(gapStr);
+    if (pad > 0)
+      fprintf(fp_, "%*s", pad, "");
+  }
   fprintf(fp_, "%s%s", gapStr.c_str(), bar);
   // Time: right-align
   fprintf(fp_, "%*s\n", BB_W_TIME, timeStr.c_str());
@@ -2467,8 +2644,8 @@ void CbcBnBOutput::printRow(bool isIncumbent, long nodes, int onTree, int depth,
 void CbcBnBOutput::onProgress(long nodes, int onTree, int depth, double bestSol,
   double bestBound, double elapsed)
 {
-  lastOnTree_    = onTree;
-  lastDepth_     = depth;
+  lastOnTree_ = onTree;
+  lastDepth_ = depth;
   lastBestBound_ = bestBound;
   // Flush incumbents found during root cut gen (before first status row).
   // We use the bound from this first progress call so gap% is meaningful.
@@ -2496,13 +2673,13 @@ void CbcBnBOutput::queuePreProgressIncumbent(double obj, const char *method,
 }
 
 void CbcBnBOutput::onBnBIncumbent(double obj, long nodes, int depth,
-				  int ontree, double elapsed)
+  int ontree, double elapsed)
 {
   printRow(true, nodes, ontree, depth, obj, "B&B", lastBestBound_, elapsed);
 }
 
 void CbcBnBOutput::onHeurIncumbent(double obj, const char *method,
-				   int ontree, int depth,
+  int ontree, int depth,
   long nodes, double elapsed)
 {
   printRow(true, nodes, ontree, depth, obj, method, lastBestBound_, elapsed);
@@ -2539,7 +2716,8 @@ void CbcBnBOutput::openContinuation()
 
 void CbcBnBOutput::closeTable()
 {
-  if (!tableOpen_) return;
+  if (!tableOpen_)
+    return;
   printTableClose(fp_, makeBnBTable(utf8_, compact_));
   tableOpen_ = false;
 }
@@ -2579,7 +2757,7 @@ void CbcBnBOutput::onComplete(bool optimal, double bestSol, double bestBound,
     std::snprintf(detail, sizeof(detail),
       "Optimal%s%sObj: %s   Bound: %s   Gap: %s   Nodes: %s   Iters: %s   Time: %ss",
       reasonPart.c_str(), dash,
-      bnbFmtObj(bestSol,   utf8_).c_str(),
+      bnbFmtObj(bestSol, utf8_).c_str(),
       bnbFmtObj(bestBound, utf8_).c_str(),
       bnbFmtGap(bestSol, bestBound, utf8_).c_str(),
       bnbFmtCount(nodes).c_str(),
@@ -2597,7 +2775,7 @@ void CbcBnBOutput::onComplete(bool optimal, double bestSol, double bestBound,
     std::snprintf(detail, sizeof(detail),
       "Stopped%s%sBestSol: %s   Bound: %s   Gap: %s   Nodes: %s   Iters: %s   Time: %ss",
       reasonPart.c_str(), dash,
-      bnbFmtObj(bestSol,   utf8_).c_str(),
+      bnbFmtObj(bestSol, utf8_).c_str(),
       bnbFmtObj(bestBound, utf8_).c_str(),
       bnbFmtGap(bestSol, bestBound, utf8_).c_str(),
       bnbFmtCount(nodes).c_str(),
@@ -2611,27 +2789,27 @@ void CbcBnBOutput::onComplete(bool optimal, double bestSol, double bestBound,
 
 void CbcBnBOutput::onStrongStats(long calls, long iters, long fathomed, int fixed)
 {
-  hasStrong_  = true;
-  sbCalls_    = calls;
-  sbIters_    = iters;
+  hasStrong_ = true;
+  sbCalls_ = calls;
+  sbIters_ = iters;
   sbFathomed_ = fathomed;
-  sbFixed_    = fixed;
+  sbFixed_ = fixed;
 }
 
 void CbcBnBOutput::onOtherStats(int maxDepth, double djFixed)
 {
   hasDepth_ = true;
   maxDepth_ = maxDepth;
-  djFixed_  = djFixed;
+  djFixed_ = djFixed;
 }
 
 void CbcBnBOutput::onOtherStats2(int maxDepth, double djFixed,
   long fathomTimes, long fathomNodes, long fathomIters)
 {
-  hasDepth_    = true;
-  maxDepth_    = maxDepth;
-  djFixed_     = djFixed;
-  hasFathom_   = true;
+  hasDepth_ = true;
+  maxDepth_ = maxDepth;
+  djFixed_ = djFixed;
+  hasFathom_ = true;
   fathomTimes_ = fathomTimes;
   fathomNodes_ = fathomNodes;
   fathomIters_ = fathomIters;
@@ -2640,11 +2818,11 @@ void CbcBnBOutput::onOtherStats2(int maxDepth, double djFixed,
 void CbcBnBOutput::onOrbitalStats(int successes, double avgExtra,
   int fixed, double avgFixed)
 {
-  hasOrbital_   = true;
+  hasOrbital_ = true;
   orbSuccesses_ = successes;
-  orbAvgExtra_  = avgExtra;
-  orbFixed_     = fixed;
-  orbAvgFixed_  = avgFixed;
+  orbAvgExtra_ = avgExtra;
+  orbFixed_ = fixed;
+  orbAvgFixed_ = avgFixed;
 }
 
 void CbcBnBOutput::printFooter()

@@ -8492,10 +8492,11 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   // add cut generators if wanted
   std::string switchOffChoice;
   configureCutGenerators(*babModel_, bkPivotingStrategy, &switchOffChoice);
-  printGeneralMessage(model_, switchOffChoice);
+  if (model_.messageHandler()->logLevel() >= 2)
+    printGeneralMessage(model_, switchOffChoice);
   // Could tune more
   // passCuts and minDrop may be `auto', resolved here from the instance;
-  // every resolved value is logged so the choice is visible.
+  // Resolved values are logged at level 2 and above.
   std::string autoChoices;
   double minimumDrop;
   if (parameters[CbcParam::MINIMUMDROP]->isAuto()) {
@@ -8591,7 +8592,7 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   } else {
     babModel_->setMaximumCutPassesAtRoot(parameters[CbcParam::CUTPASS]->intVal());
   }
-  if (!autoChoices.empty())
+  if (!autoChoices.empty() && model_.messageHandler()->logLevel() >= 2)
     printGeneralMessage(model_, autoChoices);
   babModel_->setMinimumDrop(minimumDrop);
   babModel_->setMaximumCutPasses(parameters[CbcParam::CUTPASSINTREE]->intVal());
@@ -10147,7 +10148,8 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
       choice << "depthMiniBab " << (miniBabAuto ? "auto" : "-1") << " -> "
              << babModel_->fastNodeDepth() << " (rows+cols " << size
              << (size < iSize ? " < " : " >= ") << "sizeMiniBab " << iSize << ")";
-      printGeneralMessage(model_, choice.str());
+      if (model_.messageHandler()->logLevel() >= 2)
+        printGeneralMessage(model_, choice.str());
     } else if (babModel_->fastNodeDepth() == -999) {
       babModel_->setFastNodeDepth(-1);
     }

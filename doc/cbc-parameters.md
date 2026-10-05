@@ -1802,6 +1802,9 @@ Level of detail in CBC output.
 
 If set to 0 then there should be no output in normal circumstances. A value of 1 is probably the best value for most uses, while 2 and 3 give more information.
 
+Resolved cutSwitchOff, passCuts/minDrop, depthMiniBab, and dive iteration
+limit diagnostics are printed only at levels 2 and above.
+
 **Range:** -1 to 999999 (default: 1)
 
 ### `-lplogLevel`
@@ -2427,7 +2430,7 @@ Used when depthMiniBab is auto or -1: a problem whose row and column counts add 
 
 Minimum objective improvement for a root cut pass to count
 
-Root cut generation stops once a pass improves the objective by less than this, unless passCuts (or the cutPassSmall/cutPassMedium/cutPassLarge value it resolves to) is negative. The default, auto, is min(0.05, 1e-5*|objective| + 1e-5), using the LP objective when branch-and-bound is set up. The choice is logged.
+Root cut generation stops once a pass improves the objective by less than this, unless passCuts (or the cutPassSmall/cutPassMedium/cutPassLarge value it resolves to) is negative. The default, auto, is min(0.05, 1e-5*|objective| + 1e-5), using the LP objective when branch-and-bound is set up. The choice is logged at logLevel 2 and above.
 
 **Range:** 0 to inf (default: auto)
 
@@ -2572,4 +2575,3 @@ This exercises the unit test for clp and then solves the netlib test set using p
 Solve entire netlib test set with 'best' algorithm
 
 This exercises the unit test for clp and then solves the netlib test set using whatever works best. I know this is cheating but it also stresses the code better by doing a mixture of stuff. The best algorithm was chosen on a Linux ThinkPad using native cholesky with University of Florida ordering.
-

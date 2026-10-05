@@ -19983,7 +19983,7 @@ void CbcModel::adjustHeuristics()
       numberAdjusted++;
     }
   }
-  if (numberAdjusted && !parentModel_) {
+  if (numberAdjusted && !parentModel_ && messageHandler()->logLevel() >= 2) {
     char general[200];
     sprintf(general,
       "dive iteration limits: tree %d (%s), root %d (%s) for %d dive heuristic(s)",

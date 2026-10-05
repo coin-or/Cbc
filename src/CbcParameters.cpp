@@ -760,6 +760,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::COEFSTRENGTHENING]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::ROWREDUCTIONS]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::PREPROCNAMES]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::PREPROCTIMES]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::DOHEURISTIC]->setTopic("Heuristics");
   parameters_[CbcParam::USESOLUTION]->setTopic("Heuristics");
   parameters_[CbcParam::MESSAGES]->setTopic("Output");
@@ -984,6 +985,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
      parameters_[CbcParam::MESSAGES]->setDefault("off");
      parameters_[CbcParam::PREPROCNAMES]->setDefault("on");
+     parameters_[CbcParam::PREPROCTIMES]->setDefault("off");
      parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setDefault("on");
      parameters_[CbcParam::ROWREDUCTIONS]->setDefault("on");
      parameters_[CbcParam::SINGLETONBOUNDS]->setDefault("on");
@@ -3308,6 +3310,13 @@ void CbcParameters::addCbcSolverBoolParams() {
       "Normally the preprocessed model has column names replaced by new names "
       "C0000... Setting this option to on keeps original names in variables "
       "which still exist in the preprocessed problem");
+
+  parameters_[CbcParam::PREPROCTIMES]->setup(
+      "preprocT!imes", "Whether to report where preprocessing spent its time",
+      "When on, preprocessing ends with a table of wall-clock time per phase "
+      "(presolve, LP solves, probing, ...) and one row per preprocessing pass, "
+      "and postprocessing reports its own breakdown.  Times include every "
+      "preprocessing attempt, e.g. the simpler retry after a failed first one.");
 
   parameters_[CbcParam::SOS]->setup(
       "sos!Options", "Whether to use SOS from AMPL",

@@ -4220,6 +4220,7 @@ int CbcSolver::preprocess(
           bool u8 = CbcOutput::useUtf8();
           preprocHandler = new CbcPreprocHandler(fp, u8, ll,
             babModel_->getCurrentSeconds());
+          preprocHandler->setStats(&process.stats());
           process.passInMessageHandler(preprocHandler);
           fprintf(fp, "\n%s\n\n",
             CoinTable::phaseStart("Preprocessing", u8).c_str());
@@ -4303,8 +4304,13 @@ int CbcSolver::preprocess(
       setPreProcessingMode(saveSolver_, 0);
 
       // Print preprocessing table summary
-      if (preprocHandler)
+      if (preprocHandler) {
         preprocHandler->printTableEnd();
+        if (parameters_[CbcParam::PREPROCTIMES]->modeVal())
+          CbcOutput::printPreprocessTimes(
+            babModel_->messageHandler()->filePointer(), CbcOutput::useUtf8(),
+            process.stats(), false, CoinWallclockTime() - preprocStart);
+      }
 #if CBC_USE_PAPILO
       // Convert back
       if (maximize) {
@@ -5240,6 +5246,8 @@ int CbcSolver::postprocess(
         process.postProcess(*babModel_->solver());
         double ppElapsed = CoinWallclockTime() - ppStart;
         statistics.postprocess_time = ppElapsed;
+        if (ll >= 1 && parameters_[CbcParam::PREPROCTIMES]->modeVal())
+          CbcOutput::printPreprocessTimes(ppfp, u8, process.stats(), true, ppElapsed);
         if (ll >= 1) {
           fprintf(ppfp, "%s Postprocessing complete \xe2\x80\x94 Time: %.3gs\n",
             u8 ? "\xe2\x9c\x94" : "OK", ppElapsed);

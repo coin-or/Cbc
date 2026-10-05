@@ -29,6 +29,7 @@
 class CbcModel;
 class OsiSolverInterface;
 class ClpSimplex;
+class CglPreProcessStats;
 
 // ---------------------------------------------------------------------------
 // CbcPreprocHandler — intercepts CglPreProcess messages during preprocessing
@@ -82,6 +83,10 @@ public:
    *  via the destructor). */
   void markInfeasible(const std::string &reason = "");
 
+  /** Where the per-round table rows come from.  Must outlive the handler
+   *  (pass &process.stats()). */
+  void setStats(const CglPreProcessStats *stats) { stats_ = stats; }
+
   // Accessors for the stored processed-model stats
   bool hasProcessedModel() const { return hasStats2_; }
   int processedRows() const { return procRows_; }
@@ -107,6 +112,7 @@ private:
   bool infeasible_ = false;
   std::string infeasReason_;
   int passCount_ = 0;
+  const CglPreProcessStats *stats_ = nullptr;
 
   // Stored processed-model stats (from CGL_PROCESS_STATS2)
   bool hasStats2_ = false;
@@ -456,6 +462,16 @@ public:
    *  No-op if ih.totalErrors() == 0.
    */
   static void printImportErrors(FILE *fp, const CbcImportHandler &ih);
+
+  /** Print where CglPreProcess spent its time: a table of phases and, for
+   *  preprocessing, one row per pass.  postprocessing selects the
+   *  postProcess() phases instead of the preProcessNonDefault() ones.
+   *  wallSeconds, if positive, is the caller's own time for the whole
+   *  phase; the table then also shows what was spent outside CglPreProcess
+   *  (e.g. checking the returned LP and retrying). */
+  static void printPreprocessTimes(FILE *fp, bool utf8,
+    const CglPreProcessStats &stats, bool postprocessing,
+    double wallSeconds = -1.0);
 
 #ifdef CBC_HAS_NAUTY
   /** Print a clean symmetry-detection (nauty) section.

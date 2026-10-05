@@ -11,6 +11,7 @@
 #include "ClpSimplex.hpp"
 #include "CoinTable.hpp"
 #include "CoinTime.hpp"
+#include "CglPreProcess.hpp"
 #ifdef CBC_HAS_NAUTY
 #include "CbcSymmetry.hpp"
 #endif
@@ -20,6 +21,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <functional>
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -252,21 +254,19 @@ int CbcPreprocHandler::print()
   if (src == "Cgl" && ext == 2)
     return 0;
 
-  // CGL_PROCESS_STATS (ext=3): "N fixed, N tightened bounds, N strengthened rows, N substitutions"
+  // CGL_PROCESS_STATS (ext=3): one round of CglPreProcess::modified().
+  // CglPreProcess records the round in its stats just before sending this.
   if (src == "Cgl" && ext == 3) {
-    int fixed = 0, tightened = 0, strengthened = 0, subst = 0;
-    // messageBuffer() may contain a "Cgl0003I " prefix; find the data part
-    const char *p = std::strstr(buf, " fixed,");
-    if (!p) p = buf;
-    else { while (p > buf && *(p-1) != ' ' && *(p-1) != '\t') --p; }
-    std::sscanf(p, "%d fixed, %d tightened bounds, %d strengthened rows, %d substitutions",
-      &fixed, &tightened, &strengthened, &subst);
+    if (!stats_ || stats_->rounds().empty())
+      return CoinMessageHandler::print();
+    const CglPreProcessStats::Round &round = stats_->rounds().back();
     if (!headerPrinted_) {
       printTableHeader();
       headerPrinted_ = true;
     }
     passCount_++;
-    printTableRow(passCount_, fixed, tightened, strengthened, subst);
+    printTableRow(passCount_, round.fixed, round.tightened,
+      round.strengthened, round.substitutions);
     return 0;
   }
 
@@ -1048,6 +1048,101 @@ void CbcOutput::printProblemSummary(CbcModel &model,
 {
   printProblemSummary(model.messageHandler(), solver,
     model.messageHandler()->logLevel(), ih);
+}
+
+void CbcOutput::printPreprocessTimes(FILE *fp, bool utf8,
+  const CglPreProcessStats &stats, bool postprocessing, double wallSeconds)
+{
+  if (!fp)
+    return;
+  typedef CglPreProcessStats S;
+  const S::Phase root = postprocessing ? S::PostProcess : S::Total;
+  if (!stats.calls(root))
+    return;
+  // With the caller's time, it becomes the root of the table, and
+  // CglPreProcess's own phases are one level down
+  const bool withWall = wallSeconds > 0.0;
+  const double total = withWall ? std::max(wallSeconds, stats.seconds(root))
+                                : stats.seconds(root);
+  const int extraDepth = withWall ? 1 : 0;
+  const bool compact = useCompact();
+  const char *bar = tableBar(utf8, compact);
+  const int nameWidth = 28;
+  CoinTable phases({ { "Phase", nameWidth, true }, { "Time(s)", 8 },
+                     { "%", 6 }, { "Calls", 6 } },
+    utf8, /*indent=*/2, compact);
+  fprintf(fp, "\n");
+  printTableOpen(fp, phases);
+  auto printRow = [&](const std::string &name, double seconds, int calls) {
+    char percent[16];
+    std::snprintf(percent, sizeof(percent), "%.1f",
+      total > 0.0 ? 100.0 * seconds / total : 0.0);
+    std::string callsText = calls >= 0 ? std::to_string(calls) : "";
+    fprintf(fp, "  %-*s%s%*s%s%*s%s%*s\n", nameWidth, name.c_str(), bar,
+      8, fmtTime(seconds).c_str(), bar, 6, percent, bar, 6, callsText.c_str());
+  };
+  // Depth-first, so each phase is followed by its children and then by an
+  // "other" row for the time the parent spent outside them.
+  std::function< void(S::Phase) > printPhase = [&](S::Phase phase) {
+    const std::string indent(2 * (S::depth(phase) - S::depth(root) + extraDepth), ' ');
+    const char *name = (withWall && phase == root) ? "CglPreProcess" : S::name(phase);
+    printRow(indent + name, stats.seconds(phase), stats.calls(phase));
+    bool hasChildren = false;
+    for (int i = 0; i < S::NumPhases; i++) {
+      S::Phase child = static_cast< S::Phase >(i);
+      if (S::parent(child) == phase && stats.calls(child)) {
+        printPhase(child);
+        hasChildren = true;
+      }
+    }
+    if (hasChildren)
+      printRow(indent + "  other", stats.selfSeconds(phase), -1);
+  };
+  if (withWall)
+    printRow(postprocessing ? "postprocessing (wall clock)" : "preprocessing (wall clock)",
+      total, -1);
+  printPhase(root);
+  if (withWall)
+    printRow("  outside CglPreProcess", total - stats.seconds(root), -1);
+  printTableClose(fp, phases);
+  if (postprocessing || stats.passes().empty()) {
+    fflush(fp);
+    return;
+  }
+  CoinTable passes({ { "Pass", 5 }, { "Rows", 8 }, { "Cols", 8 },
+                     { "NZ", 10 }, { "Changes", 8 }, { "LP obj", 14 },
+                     { "Time(s)", 8 },
+                     { "Presolve", 8 }, { "LP", 8 }, { "Modify", 8 },
+                     { "Probing", 8 } },
+    utf8, /*indent=*/2, compact);
+  fprintf(fp, "\n");
+  printTableOpen(fp, passes);
+  auto objText = [](double objective) {
+    char text[32];
+    if (objective == COIN_DBL_MAX)
+      std::snprintf(text, sizeof(text), "-");
+    else
+      std::snprintf(text, sizeof(text), "%.8g", objective);
+    return std::string(text);
+  };
+  if (stats.initialObjective() != COIN_DBL_MAX)
+    fprintf(fp, "  %5s%s%8s%s%8s%s%10s%s%8s%s%14s\n", "init", bar, "", bar,
+      "", bar, "", bar, "", bar, objText(stats.initialObjective()).c_str());
+  for (const S::Pass &pass : stats.passes()) {
+    const double *t = pass.phaseSeconds;
+    fprintf(fp, "  %5d%s%8d%s%8d%s%10lld%s%8d%s%14s%s%8s%s%8s%s%8s%s%8s%s%8s\n",
+      pass.pass, bar, pass.rows, bar, pass.columns, bar,
+      static_cast< long long >(pass.elements), bar, pass.changes, bar,
+      objText(pass.objective).c_str(), bar,
+      fmtTime(pass.seconds).c_str(), bar,
+      fmtTime(t[S::PassPresolve]).c_str(), bar,
+      fmtTime(t[S::PassLp] + t[S::PassResolve]).c_str(), bar,
+      fmtTime(t[S::Modified]).c_str(), bar,
+      fmtTime(t[S::ModProbing]).c_str());
+  }
+  printTableClose(fp, passes);
+  fprintf(fp, "\n");
+  fflush(fp);
 }
 
 void CbcOutput::printImportErrors(FILE *fp, const CbcImportHandler &ih)

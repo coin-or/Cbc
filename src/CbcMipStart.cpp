@@ -499,8 +499,7 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
         lp->initialSolve();
     }
   }
-  // seem to be problems when maximizing
-  if (!lp->isProvenOptimal()||lp->getObjSense()<0) {
+  if (!lp->isProvenOptimal()) {
     messHandler->message(CBC_GENERAL, messages)
       << "Warning: mipstart values could not be used to build a solution." << CoinMessageEol;
     status = 1;
@@ -511,6 +510,13 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
     sprintf(printLine, "MIPStart solution provided values for %d of %d integer variables, %d variables are still fractional.", fixed, lp->getNumIntegers(), static_cast< int >(lp->getFractionalIndices().size()));
     messHandler->message(CBC_GENERAL, messages)
       << printLine << CoinMessageEol;
+    // seem to be problems when maximizing
+    if (lp->getObjSense()<0) {
+      messHandler->message(CBC_GENERAL, messages)
+	<< "Warning: When maximizing and fractional - seem to be problems." << CoinMessageEol;
+      status = 1;
+      goto TERMINATE;
+    }
     if (lp->getFractionalIndices().size() < 5) {
       for (int i = 0; i < lp->getFractionalIndices().size(); i++) {
         int iColumn = lp->getFractionalIndices()[i];

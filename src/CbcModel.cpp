@@ -2496,7 +2496,10 @@ void CbcModel::branchAndBound(int doStatistics)
         needCuts = true;
       }
     }
-    if (needCuts) {
+    // Solvers that add cuts at solutions (OsiBabSolver type 3, e.g. Bonmin's
+    // OA algorithms) already handle atSolution generators and add rows
+    // directly, so do not treat those generators as lazy constraints
+    if (needCuts && !solverCharacteristics_->solutionAddsCuts()) {
       moreSpecialOptions2_ |= 65536; // lazy constraints
       // switch off nauty
       moreSpecialOptions2_ &= ~(128 | 256);

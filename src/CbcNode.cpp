@@ -868,6 +868,12 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         bool roundAgain = false;
         // get basis
         CoinWarmStartBasis *ws = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
+        // a basis that does not cover all columns (e.g. the empty warm start
+        // of Bonmin's NLP interface) can't be adjusted - treat as no basis
+        if (ws && ws->getNumStructural() < numberColumns) {
+          delete ws;
+          ws = NULL;
+        }
         if (!ws)
           break;
         double tolerance;
@@ -2682,7 +2688,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 	  }
         }
         // Double check looks OK - just look at rows with all integers
-        if (model->allDynamic()) {
+        // (skipped if the solver has no matrix, e.g. Bonmin's NLP interface)
+        if (model->allDynamic() && solver->getMatrixByCol()) {
           double *solution = CoinCopyOfArray(saveSolution, numberColumns);
           for (int i = 0; i < numberColumns; i++) {
             if (model->isInteger(i))
@@ -2781,6 +2788,12 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         bool roundAgain = false;
         // get basis
         CoinWarmStartBasis *ws = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
+        // a basis that does not cover all columns (e.g. the empty warm start
+        // of Bonmin's NLP interface) can't be adjusted - treat as no basis
+        if (ws && ws->getNumStructural() < numberColumns) {
+          delete ws;
+          ws = NULL;
+        }
         if (!ws)
           break;
         double tolerance;

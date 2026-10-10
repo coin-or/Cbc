@@ -2496,7 +2496,10 @@ void CbcModel::branchAndBound(int doStatistics)
         needCuts = true;
       }
     }
-    if (needCuts) {
+    // Solvers that add cuts at solutions (OsiBabSolver type 3, e.g. Bonmin's
+    // OA algorithms) already handle atSolution generators and add rows
+    // directly, so do not treat those generators as lazy constraints
+    if (needCuts && !solverCharacteristics_->solutionAddsCuts()) {
       moreSpecialOptions2_ |= 65536; // lazy constraints
       // switch off nauty
       moreSpecialOptions2_ &= ~(128 | 256);
@@ -22100,6 +22103,15 @@ bool CbcModel::reallyValid(OsiCuts *existingCuts)
     }
   }
   if (!anyAtSolution)
+    return true;
+  // Solvers that add cuts at solutions (OsiBabSolver type 3, e.g. Bonmin's
+  // OA algorithms) handle their atSolution generators themselves, and those
+  // generators add rows to the LP directly, so don't run them here (see the
+  // lazy constraint test in branchAndBound()). Use the solver's own
+  // OsiBabSolver, as this can be called before branchAndBound() has set
+  // solverCharacteristics_.
+  OsiBabSolver *babSolver = dynamic_cast< OsiBabSolver * >(solver_->getAuxiliaryInfo());
+  if (babSolver && babSolver->solutionAddsCuts())
     return true;
   /*
     Now step through the cut generators and see if any of them are flagged to

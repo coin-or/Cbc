@@ -102,8 +102,10 @@ fi
 
 # Informational notes (';'-separated) about how the solve went
 NOTES=""
-grep -qE 'Barrier: Cholesky setup/factorization failed|CHOLMOD: (factor too large|factorization failed)' "$LOG_FILE" 2>/dev/null \
+grep -q 'falling back to dual simplex' "$LOG_FILE" 2>/dev/null \
   && NOTES="${NOTES:+$NOTES;}barrier_fallback"
+grep -q 'fallback disabled by CLP_BARRIER_NO_FALLBACK' "$LOG_FILE" 2>/dev/null \
+  && NOTES="${NOTES:+$NOTES;}barrier_failure"
 grep -q 'Bound tightening: infeasibility proved' "$LOG_FILE" 2>/dev/null \
   && NOTES="${NOTES:+$NOTES;}infeasible_by_propagation"
 
@@ -147,12 +149,18 @@ if [[ $EXIT_CODE -eq 124 ]]; then
   STATUS="TIMEOUT_KILLED"
 elif [[ $MEMOUT -eq 1 ]]; then
   STATUS="MEMOUT"
+elif [[ $EXIT_CODE -ne 0 ]]; then
+  STATUS="ERROR"
 elif grep -qi '✔ Optimal' "$LOG_FILE" 2>/dev/null; then
   STATUS="OPTIMAL"
 elif grep -qiw 'infeasible' "$LOG_FILE" 2>/dev/null; then
   STATUS="INFEASIBLE"
-elif grep -qi 'stopped on time' "$LOG_FILE" 2>/dev/null; then
+elif grep -qiE 'stopped on time|✔ Stopped' "$LOG_FILE" 2>/dev/null; then
+  # Solver stopped without proving optimality: counts as unsolved, same as a timeout
   STATUS="TIMEOUT"
+  if grep -qi '✔ Stopped' "$LOG_FILE" 2>/dev/null && ! grep -qi 'stopped on time' "$LOG_FILE" 2>/dev/null; then
+    NOTES="${NOTES:+$NOTES;}stopped_early"
+  fi
 else
   STATUS="ERROR"
 fi

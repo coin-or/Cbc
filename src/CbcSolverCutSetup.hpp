@@ -17,6 +17,16 @@
 class CbcModel;
 class CbcParameters;
 
+/// Resolve the CLI's instance-dependent root pass budget and minimum drop.
+struct CbcRootCutSettings {
+  int passes;
+  double minimumDrop;
+  int dropPatience;
+};
+
+CbcRootCutSettings resolveRootCutSettings(
+  const CbcModel &model, CbcParameters &parameters);
+
 /// Register all cut generators on babModel based on parameter settings,
 /// then apply per-generator tuning (switches, accuracy, timing, cutDepth).
 void installCutGenerators(

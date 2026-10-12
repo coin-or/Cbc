@@ -543,6 +543,15 @@ public:
   {
     retryPeriod_ = value;
   }
+  /// Explicit root cadence; 0 retains adaptive scheduling.
+  inline int rootCallPeriod() const
+  {
+    return rootCallPeriod_;
+  }
+  inline void setRootCallPeriod(int value)
+  {
+    rootCallPeriod_ = value;
+  }
   /// Set model
   inline void setModel(CbcModel *model)
   {
@@ -640,6 +649,7 @@ private:
   int nextRetryPass_;
   /// Current backoff period in passes (see retryPeriod())
   int retryPeriod_;
+  int rootCallPeriod_;
   /// Switches - see gets and sets
   int switches_;
   /// Maximum number of times to enter

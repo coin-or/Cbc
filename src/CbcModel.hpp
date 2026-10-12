@@ -1004,6 +1004,16 @@ public:
     return minimumDrop_;
   }
 
+  /// Consecutive below-minimum-drop rounds allowed at the root (default 1).
+  inline void setRootCutDropPatience(int value)
+  {
+    rootCutDropPatience_ = value;
+  }
+  inline int getRootCutDropPatience() const
+  {
+    return rootCutDropPatience_;
+  }
+
   /** Set the maximum number of cut passes at root node (default 20)
         Minimum drop can also be used for fine tuning */
   inline void setMaximumCutPassesAtRoot(int value)
@@ -3281,6 +3291,7 @@ private:
 
   /// Minimum degradation in objective value to continue cut generation
   double minimumDrop_;
+  int rootCutDropPatience_;
   /// Number of solutions
   int numberSolutions_;
   /// Number of saved solutions

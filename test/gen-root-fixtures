@@ -55,6 +55,9 @@
 #   --pass2            Use the pass-2 defaults described above
 #   --skip-build       Reuse test/.cbc-rootdump-bin instead of rebuilding it
 #                       (it must already exist)
+#   --lp-opts="..."    Extra cbc options (e.g. "-lpMethod barrier") replacing
+#                      the pass-2 racing options; for instances whose root LP
+#                      is only tractable with a specific LP configuration
 #   --keep-bin         Don't delete test/.cbc-rootdump-bin when done
 #   --no-color         Disable ANSI colors
 set -uo pipefail
@@ -72,6 +75,7 @@ PREFIX="${PREFIX:-$HOME/prog/cbc}"
 PASS2=0
 SKIP_BUILD=0
 KEEP_BIN=0
+LP_OPTS=""
 FORCE_COLOR=1
 PATTERNS=()
 WORKER_NAME=""
@@ -87,6 +91,7 @@ for arg in "$@"; do
     --pass2) PASS2=1 ;;
     --skip-build) SKIP_BUILD=1 ;;
     --keep-bin) KEEP_BIN=1 ;;
+    --lp-opts=*) LP_OPTS="${arg#*=}" ;;
     --no-color) FORCE_COLOR=0 ;;
     --worker=*) WORKER_NAME="${arg#*=}" ;;
     -h|--help)
@@ -114,6 +119,9 @@ if [[ -n "$WORKER_NAME" ]]; then
   extra_opts=()
   if [[ "$PASS2_ENV" == 1 ]]; then
     extra_opts=(-threads "$THREADS_ENV" -lpMethod=racing)
+  fi
+  if [[ -n "$LP_OPTS_ENV" ]]; then
+    read -r -a extra_opts <<< "$LP_OPTS_ENV"
   fi
   # -maxNodes 1 stops branch-and-bound right after the root node is processed
   # (cuts + heuristics already ran by then), so a dump-enabled run costs only
@@ -231,7 +239,7 @@ if [[ ${#TODO[@]} -eq 0 ]]; then
 fi
 
 export MIPS_DIR_ENV="$MIPS_DIR" FIXTURE_DIR_ENV="$FIXTURE_DIR" PASS2_ENV="$PASS2" \
-  THREADS_ENV="$THREADS" SECS_ENV="$SECS" DUMP_BIN_ENV="$DUMP_BIN"
+  THREADS_ENV="$THREADS" LP_OPTS_ENV="$LP_OPTS" SECS_ENV="$SECS" DUMP_BIN_ENV="$DUMP_BIN"
 
 printf '%s\n' "${TODO[@]}" | parallel --jobs "$JOBS" --line-buffer "$0" --worker={}
 

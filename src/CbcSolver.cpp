@@ -8498,15 +8498,12 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   // passCuts and minDrop may be `auto', resolved here from the instance;
   // Resolved values are logged at level 2 and above.
   std::string autoChoices;
-  double minimumDrop;
+  const CbcRootCutSettings rootCuts = resolveRootCutSettings(*babModel_, parameters);
+  const double minimumDrop = rootCuts.minimumDrop;
   if (parameters[CbcParam::MINIMUMDROP]->isAuto()) {
-    minimumDrop = fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
-    minimumDrop = std::min(5.0e-2, minimumDrop);
     std::ostringstream choice;
     choice << "minDrop auto -> " << minimumDrop;
     autoChoices = choice.str();
-  } else {
-    minimumDrop = parameters[CbcParam::MINIMUMDROP]->dblVal();
   }
   if (parameters[CbcParam::CUTPASS]->isAuto()) {
     // Root cut-pass budget, tiered by column count with a *row*-count OR
@@ -8569,20 +8566,17 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
     int smallCols = parameters[CbcParam::SIZESMALLCOLS]->intVal();
     int largeCols = parameters[CbcParam::SIZELARGECOLS]->intVal();
     std::ostringstream choice;
-    int cutPass;
+    const int cutPass = rootCuts.passes;
     if (numCols < smallCols || numRows < smallRows) {
-      cutPass = parameters[CbcParam::CUTPASSSMALL]->intVal();
       choice << "passCuts auto -> " << cutPass << " (small: ";
       if (numRows < smallRows)
         choice << "rows " << numRows << " < sizeSmallRows " << smallRows;
       else
         choice << "cols " << numCols << " < sizeSmallCols " << smallCols;
     } else if (numCols < largeCols) {
-      cutPass = parameters[CbcParam::CUTPASSMEDIUM]->intVal();
       choice << "passCuts auto -> " << cutPass << " (medium: cols "
              << numCols << " < sizeLargeCols " << largeCols;
     } else {
-      cutPass = parameters[CbcParam::CUTPASSLARGE]->intVal();
       choice << "passCuts auto -> " << cutPass << " (large: cols "
              << numCols << " >= sizeLargeCols " << largeCols;
     }
@@ -8590,11 +8584,12 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
     autoChoices = autoChoices.empty() ? choice.str() : choice.str() + ", " + autoChoices;
     babModel_->setMaximumCutPassesAtRoot(cutPass);
   } else {
-    babModel_->setMaximumCutPassesAtRoot(parameters[CbcParam::CUTPASS]->intVal());
+    babModel_->setMaximumCutPassesAtRoot(rootCuts.passes);
   }
   if (!autoChoices.empty() && model_.messageHandler()->logLevel() >= 2)
     printGeneralMessage(model_, autoChoices);
   babModel_->setMinimumDrop(minimumDrop);
+  babModel_->setRootCutDropPatience(rootCuts.dropPatience);
   babModel_->setMaximumCutPasses(parameters[CbcParam::CUTPASSINTREE]->intVal());
   // Do more strong branching if small
   // if (babModel_->getNumCols()<5000)

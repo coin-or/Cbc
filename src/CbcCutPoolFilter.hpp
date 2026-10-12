@@ -28,6 +28,7 @@
 #define CBCCUTPOOLFILTER_HPP
 
 class OsiCuts;
+#include <vector>
 
 /// Thresholds for cbcFilterGeneratedCuts(); the defaults are cbc's.
 struct CbcCutPoolFilterSettings {
@@ -41,12 +42,22 @@ struct CbcCutPoolFilterSettings {
   double maxParallelism;
   /// Filter regardless of minCols, minElements and minCandidates
   bool always;
+  /// 0: legacy; 1/2: efficacy/sparse efficacy; 3/4: no per-column contest.
+  int scoreMode;
+  /// 0: local only; 1: global only; 2: local and global (root only).
+  int rootScope;
+  int rootReusePeriod;
+  int rootReuseMaxCuts;
   CbcCutPoolFilterSettings()
     : minCols(500)
     , minElements(0)
     , minCandidates(10)
     , maxParallelism(0.9)
     , always(false)
+    , scoreMode(0)
+    , rootScope(0)
+    , rootReusePeriod(0)
+    , rootReuseMaxCuts(20)
   {
   }
 };
@@ -82,6 +93,7 @@ struct CbcCutPoolFilterSettings {
  **/
 bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
   int numCols, int numElements, const char *generatorTag,
-  const CbcCutPoolFilterSettings &settings);
+  const CbcCutPoolFilterSettings &settings,
+  std::vector< int > *survivors = nullptr);
 
-#endif //CBCCUTPOOLFILTER_HPP
+#endif // CBCCUTPOOLFILTER_HPP

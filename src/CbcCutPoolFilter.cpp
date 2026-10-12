@@ -15,19 +15,135 @@
 #include "OsiRowCut.hpp"
 
 #include <cstdlib>
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <utility>
 #include <vector>
 
 namespace {
 
 const double CBC_CUTPOOL_FILTER_INF = 1.0e30;
 
+struct ScoredCut {
+  int index;
+  double score;
+  std::vector< std::pair< int, double > > normal;
+};
+
+bool filterByEfficacy(OsiCuts &cs, int first, const double *x, int numCols,
+  const std::vector< signed char > &sign, const CbcCutPoolFilterSettings &settings,
+  std::vector< int > *survivors)
+{
+  std::vector< ScoredCut > candidates;
+  std::vector< int > best(numCols, -1);
+  for (int k = first; k < cs.sizeRowCuts(); ++k) {
+    if (!sign[k - first])
+      continue;
+    const OsiRowCut &cut = cs.rowCut(k);
+    // Never remove a mandatory cut.
+    if (cut.effectiveness() >= 1.0e20)
+      continue;
+    const CoinPackedVector &row = cut.row();
+    double norm = 0.0;
+    for (int j = 0; j < row.getNumElements(); ++j)
+      norm = std::hypot(norm, row.getElements()[j]);
+    if (!std::isfinite(norm) || norm <= 0.0)
+      continue;
+    const double direction = sign[k - first];
+    const double rhs = direction > 0 ? cut.ub() : -cut.lb();
+    double violation = -rhs / norm;
+    ScoredCut candidate;
+    candidate.index = k;
+    for (int j = 0; j < row.getNumElements(); ++j) {
+      int column = row.getIndices()[j];
+      double coefficient = direction * row.getElements()[j] / norm;
+      violation += coefficient * x[column];
+      candidate.normal.emplace_back(column, coefficient);
+    }
+    if (!std::isfinite(violation))
+      continue;
+    candidate.score = violation / ((settings.scoreMode == 2 || settings.scoreMode == 4) ? row.getNumElements() : 1);
+    std::sort(candidate.normal.begin(), candidate.normal.end());
+    int position = static_cast< int >(candidates.size());
+    candidates.push_back(candidate);
+    for (const auto &entry : candidate.normal) {
+      int &winner = best[entry.first];
+      if (winner < 0 || candidate.score > candidates[winner].score)
+        winner = position;
+    }
+  }
+  std::vector< bool > winner(candidates.size(), false);
+  for (int position : best) {
+    if (position >= 0)
+      winner[position] = true;
+  }
+  std::vector< int > order;
+  for (int j = 0; j < static_cast< int >(candidates.size()); ++j) {
+    if (winner[j] || settings.scoreMode >= 3)
+      order.push_back(j);
+  }
+  std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
+    return candidates[a].score > candidates[b].score;
+  });
+  std::vector< int > kept;
+  std::vector< bool > keep(candidates.size(), false);
+  for (int position : order) {
+    bool parallel = false;
+    for (int previous : kept) {
+      const auto &a = candidates[position].normal;
+      const auto &b = candidates[previous].normal;
+      size_t i = 0, j = 0;
+      double dot = 0.0;
+      while (i < a.size() && j < b.size()) {
+        if (a[i].first < b[j].first)
+          ++i;
+        else if (b[j].first < a[i].first)
+          ++j;
+        else {
+          dot += a[i++].second * b[j++].second;
+        }
+      }
+      if (settings.maxParallelism < 1.0 && dot > settings.maxParallelism) {
+        parallel = true;
+        break;
+      }
+    }
+    if (!parallel) {
+      kept.push_back(position);
+      keep[position] = true;
+    }
+  }
+  std::vector< int > removed;
+  for (int j = 0; j < static_cast< int >(candidates.size()); ++j) {
+    if (!keep[j])
+      removed.push_back(candidates[j].index);
+  }
+  std::sort(removed.rbegin(), removed.rend());
+  if (survivors) {
+    survivors->clear();
+    for (int index = 0; index < cs.sizeRowCuts(); ++index) {
+      if (!std::binary_search(removed.rbegin(), removed.rend(), index))
+        survivors->push_back(index);
+    }
+  }
+  for (int index : removed)
+    cs.eraseRowCut(index);
+  return !removed.empty();
+}
+
 } // namespace
 
 bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
   int numCols, int numElements, const char *generatorTag,
-  const CbcCutPoolFilterSettings &settings)
+  const CbcCutPoolFilterSettings &settings, std::vector< int > *survivors)
 {
   const int lastRowCut = cs.sizeRowCuts();
+  if (survivors) {
+    survivors->clear();
+    for (int k = 0; k < lastRowCut; ++k)
+      survivors->push_back(k);
+  }
   const int nCandidates = lastRowCut - firstRowCut;
   if (nCandidates <= 0)
     return false;
@@ -101,7 +217,7 @@ bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
   // negated to "-ax <= -lb" form for scoring purposes. Genuine ranged or
   // equality cuts (both bounds finite and used) don't fit this model and
   // are left untouched -- unconditionally kept.
-  std::vector<signed char> sign(nCandidates, 0);
+  std::vector< signed char > sign(nCandidates, 0);
   int nFilterable = 0;
   for (int k = firstRowCut; k < lastRowCut; k++) {
     const OsiRowCut *rc = cs.rowCutPtr(k);
@@ -123,12 +239,14 @@ bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
     return false;
   if (nFilterable < minCandidates && !alwaysFilter)
     return false;
+  if (settings.scoreMode)
+    return filterByEfficacy(cs, firstRowCut, x, numCols, sign, settings, survivors);
 
   CoinCutPool pool(x, numCols, generatorTag);
   pool.setMaxParallelism(maxParallelism);
 
-  std::vector<int> idxBuf(numCols);
-  std::vector<double> coefBuf(numCols);
+  std::vector< int > idxBuf(numCols);
+  std::vector< double > coefBuf(numCols);
   for (int k = firstRowCut; k < lastRowCut; k++) {
     const int idx = k - firstRowCut;
     if (!sign[idx])
@@ -155,6 +273,13 @@ bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
     keep[pool.cutTag(i)] = true;
 
   bool removedAny = false;
+  if (survivors) {
+    survivors->clear();
+    for (int k = 0; k < lastRowCut; ++k) {
+      if (k < firstRowCut || !sign[k - firstRowCut] || keep[k - firstRowCut])
+        survivors->push_back(k);
+    }
+  }
   // Erase from highest to lowest index so earlier indices stay valid
   // (OsiCuts::eraseRowCut() shifts subsequent entries down).
   for (int k = lastRowCut - 1; k >= firstRowCut; k--) {

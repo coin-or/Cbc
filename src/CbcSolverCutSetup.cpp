@@ -35,10 +35,36 @@
 #include "CglZeroHalf.hpp"
 
 #include <cctype>
+#include <cmath>
 #include <climits>
 #include <cstring>
 #include <cstdlib>
 #include <sstream>
+#include <stdexcept>
+
+CbcRootCutSettings resolveRootCutSettings(
+  const CbcModel &model, CbcParameters &parameters)
+{
+  CbcRootCutSettings settings;
+  settings.dropPatience = parameters[CbcParam::ROOTCUTDROPPATIENCE]->intVal();
+  if (parameters[CbcParam::MINIMUMDROP]->isAuto()) {
+    settings.minimumDrop = std::min(5.0e-2,
+      std::fabs(model.solver()->getObjValue()) * 1.0e-5 + 1.0e-5);
+  } else {
+    settings.minimumDrop = parameters[CbcParam::MINIMUMDROP]->dblVal();
+  }
+  if (!parameters[CbcParam::CUTPASS]->isAuto()) {
+    settings.passes = parameters[CbcParam::CUTPASS]->intVal();
+  } else if (model.getNumCols() < parameters[CbcParam::SIZESMALLCOLS]->intVal()
+    || model.getNumRows() < parameters[CbcParam::SIZESMALLROWS]->intVal()) {
+    settings.passes = parameters[CbcParam::CUTPASSSMALL]->intVal();
+  } else if (model.getNumCols() < parameters[CbcParam::SIZELARGECOLS]->intVal()) {
+    settings.passes = parameters[CbcParam::CUTPASSMEDIUM]->intVal();
+  } else {
+    settings.passes = parameters[CbcParam::CUTPASSLARGE]->intVal();
+  }
+  return settings;
+}
 
 namespace {
 // -cutSwitchOff key for each name a generator is registered under below.
@@ -216,6 +242,12 @@ void installCutGenerators(
     filter.minCandidates = parameters[CbcParam::CUTFILTERMINCANDIDATES]->intVal();
     filter.maxParallelism = parameters[CbcParam::CUTFILTERMAXPARALLELISM]->dblVal();
     filter.always = parameters[CbcParam::CUTFILTERALWAYS]->modeVal() != 0;
+    filter.scoreMode = parameters[CbcParam::ROOTCUTFILTERSCORE]->intVal();
+    filter.rootScope = parameters[CbcParam::ROOTCUTFILTERSCOPE]->intVal();
+    filter.rootReusePeriod = parameters[CbcParam::ROOTCUTREUSEPERIOD]->intVal();
+    filter.rootReuseMaxCuts = parameters[CbcParam::ROOTCUTREUSEMAXCUTS]->intVal();
+    if (filter.rootScope && !filter.scoreMode)
+      throw std::invalid_argument("rootCutFilterScope requires a nonzero rootCutFilterScore");
     babModel.setCutPoolFilterSettings(filter);
   }
   // The clique/odd-wheel/implied-clique generators filter in their own
@@ -788,6 +820,7 @@ void installCutGenerators(
       storedZeroHalf->setRowMaxFractionalCount(
         parameters[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->intVal());
     babModel.cutGenerator(numberGenerators)->setNeedsRefresh(true);
+    babModel.cutGenerator(numberGenerators)->setRootCallPeriod(parameters[CbcParam::ZEROHALFROOTPERIOD]->intVal());
     // Also expensive on dense graphs at root; only count as productive for
     // the adaptive root skip when it actually moves the bound (see
     // RedSplit2/GMI/LandP comment above).

@@ -69,6 +69,7 @@ CbcCutGenerator::CbcCutGenerator()
   , numberConsecutiveMisses_(0)
   , nextRetryPass_(0)
   , retryPeriod_(0)
+  , rootCallPeriod_(0)
   , switches_(1)
   , maximumTries_(-1)
 {
@@ -95,6 +96,7 @@ CbcCutGenerator::CbcCutGenerator(CbcModel *model, CglCutGenerator *generator,
   , numberConsecutiveMisses_(0)
   , nextRetryPass_(0)
   , retryPeriod_(0)
+  , rootCallPeriod_(0)
   , switches_(1)
   , maximumTries_(-1)
 {
@@ -149,6 +151,7 @@ CbcCutGenerator::CbcCutGenerator(const CbcCutGenerator &rhs)
   numberConsecutiveMisses_ = rhs.numberConsecutiveMisses_;
   nextRetryPass_ = rhs.nextRetryPass_;
   retryPeriod_ = rhs.retryPeriod_;
+  rootCallPeriod_ = rhs.rootCallPeriod_;
 }
 
 // Assignment operator
@@ -183,6 +186,7 @@ CbcCutGenerator::operator=(const CbcCutGenerator &rhs)
     numberConsecutiveMisses_ = rhs.numberConsecutiveMisses_;
     nextRetryPass_ = rhs.nextRetryPass_;
     retryPeriod_ = rhs.retryPeriod_;
+    rootCallPeriod_ = rhs.rootCallPeriod_;
   }
   return *this;
 }
@@ -234,6 +238,10 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
   if (howOften <= -100 || howOften == 0)
     return false;
   int pass = model_->getCurrentPassNumber() - 1;
+  const bool rootCadence = !node && !model_->parentModel()
+    && !model_->getNodeCount() && rootCallPeriod_ > 0;
+  if (rootCadence && pass >= 0 && pass % rootCallPeriod_)
+    return false;
   if (maximumTries_ > 0) {
     // howOften means what it says
     if ((pass % howOften) != 0 || depth)
@@ -286,6 +294,9 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
     doThis = false;
   }
   if (fullScan || doThis) {
+    if (rootCadence && model_->logLevel() > 1)
+      printf("[root-cadence] generator=%s pass=%d period=%d\n",
+        generatorName_, pass + 1, rootCallPeriod_);
     CoinThreadRandom *randomNumberGenerator = NULL;
     {
       OsiClpSolverInterface *clpSolver
@@ -729,9 +740,13 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       || dynamic_cast< CglLandP * >(generator_)
       || dynamic_cast< CglRedSplit2 * >(generator_)
       || generator) {
-      cbcFilterGeneratedCuts(cs, numberRowCutsBefore, solver->getColSolution(),
-        solver->getNumCols(), solver->getNumElements(), generatorName_,
-        model_->cutPoolFilterSettings());
+      CbcCutPoolFilterSettings filter = model_->cutPoolFilterSettings();
+      if (node || model_->parentModel() || model_->getNodeCount())
+        filter.scoreMode = 0;
+      if (filter.rootScope != 1 || node || model_->parentModel() || model_->getNodeCount())
+        cbcFilterGeneratedCuts(cs, numberRowCutsBefore, solver->getColSolution(),
+          solver->getNumCols(), solver->getNumElements(), generatorName_,
+          filter);
     }
 #ifdef CGL_DEBUG
     if (debugger2) {

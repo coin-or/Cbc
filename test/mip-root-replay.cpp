@@ -44,6 +44,8 @@
  */
 
 #include "CbcModel.hpp"
+#include "CbcCutGenerator.hpp"
+#include "CbcEventHandler.hpp"
 #include "CbcParameters.hpp"
 #include "CbcSolverCutSetup.hpp"
 #include "CbcSolverHeuristics.hpp"
@@ -52,6 +54,7 @@
 #include "OsiClpSolverInterface.hpp"
 
 #include <cmath>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -65,6 +68,78 @@ static double wallClock()
 {
   return CoinGetTimeOfDay();
 }
+
+struct RootReplayObservation {
+  RootReplayObservation()
+    : start(0.0)
+    , completed(false)
+    , bound(0.0)
+    , seconds(0.0)
+    , passes(0)
+  {
+  }
+  double start;
+  bool completed;
+  double bound;
+  double seconds;
+  int passes;
+};
+
+class RootReplayHandler : public CbcEventHandler {
+public:
+  RootReplayHandler(RootReplayObservation &observation, bool rootOnly)
+    : observation_(observation)
+    , rootOnly_(rootOnly)
+  {
+  }
+  virtual CbcEventHandler *clone() const { return new RootReplayHandler(*this); }
+  virtual CbcAction event(CbcEvent whichEvent)
+  {
+    if (model_->parentModel() || model_->getNodeCount())
+      return noAction;
+    if (whichEvent == generatedCuts || whichEvent == afterRootCuts) {
+      const OsiSolverInterface *solver = model_->solver();
+      const bool optimal = solver->isProvenOptimal();
+      const double elapsed = wallClock() - observation_.start;
+      const double bound = solver->getObjValue() * solver->getObjSenseInCbc();
+      const int pass = model_->getCurrentPassNumber();
+      double separation = 0.0;
+      for (int i = 0; i < model_->numberCutGenerators(); ++i)
+        separation += model_->cutGenerator(i)->timeInCutGenerator();
+      printf("[root-pass] event=%s pass=%d lpOptimal=%d bound=%.17g elapsed=%.6f "
+             "separationCpu=%.6f lpIterations=%d\n",
+        whichEvent == generatedCuts ? "generated" : "finished",
+        pass, static_cast< int >(optimal), bound, elapsed, separation,
+        solver->getIterationCount());
+      if (whichEvent == afterRootCuts) {
+        observation_.completed = optimal && !model_->maximumSecondsReached()
+          && std::isfinite(bound) && std::fabs(bound) < 1.0e40;
+        observation_.bound = bound;
+        observation_.seconds = elapsed;
+        observation_.passes = pass;
+        for (int i = 0; i < model_->numberCutGenerators(); ++i) {
+          const CbcCutGenerator *generator = model_->cutGenerator(i);
+          printf("[root-generator] name=%s calls=%d cuts=%d seconds=%.6f "
+                 "howOften=%d maximumTries=%d switchedOff=%d nextRetry=%d rootPeriod=%d\n",
+            generator->cutGeneratorName(), generator->numberTimesEntered(),
+            generator->numberCutsInTotal(), generator->timeInCutGenerator(),
+            generator->howOften(), generator->maximumTries(),
+            static_cast< int >(generator->switchedOff()), generator->nextRetryPass(),
+            generator->rootCallPeriod());
+        }
+        if (rootOnly_) {
+          model_->sayEventHappened();
+          return stop;
+        }
+      }
+    }
+    return noAction;
+  }
+
+private:
+  RootReplayObservation &observation_;
+  bool rootOnly_;
+};
 
 static bool fileExists(const std::string &path)
 {
@@ -356,22 +431,18 @@ public:
     // minimumDrop even in the default path, so --min-drop-scale=X alone can
     // still be used to explore alternative minDrop thresholds without a
     // --pass-cuts override).
-    double minimumDrop = fabs(model.solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
-    minimumDrop = std::min(5.0e-2, minimumDrop);
+    const CbcRootCutSettings settings = resolveRootCutSettings(model, cutParams_);
     if (passCutsOverride_ != 0) {
       model.setMaximumCutPassesAtRoot(passCutsOverride_);
     } else {
-      int numCols = model.getNumCols();
-      int numRows = model.getNumRows();
-      if (numCols < 500 || numRows < 500)
-        model.setMaximumCutPassesAtRoot(-100);
-      else if (numCols < 5000)
-        model.setMaximumCutPassesAtRoot(100);
-      else
-        model.setMaximumCutPassesAtRoot(50);
+      model.setMaximumCutPassesAtRoot(settings.passes);
     }
-    model.setMinimumDrop(minimumDrop * minDropScale_);
-    model.setMaximumCutPasses(4);
+    model.setMinimumDrop(settings.minimumDrop * minDropScale_);
+    model.setRootCutDropPatience(settings.dropPatience);
+    model.setMaximumCutPasses(cutParams_[CbcParam::CUTPASSINTREE]->intVal());
+    printf("[root-settings] passes=%d minimumDrop=%.17g treePasses=%d dropPatience=%d\n",
+      model.getMaximumCutPassesAtRoot(), model.getMinimumDrop(),
+      model.getMaximumCutPasses(), model.getRootCutDropPatience());
   }
   virtual void setupHeuristics(CbcModel &model)
   {
@@ -443,6 +514,8 @@ static void usage(const char *prog)
     "  --sec=N              wall time backstop for the replay (default 60)\n"
     "  --no-cuts            skip attaching cut generators\n"
     "  --no-heur            skip attaching heuristics\n"
+    "  --root-only          stop after root cuts, before branching; emit root telemetry\n"
+    "  --root-telemetry     emit root telemetry without changing the node budget\n"
     "  --log=N              CBC log level (default 0)\n"
     "  --data-dir=PATH      mip-sanity-data checkout, for bks.tsv gap reporting\n"
     "  --quiet              suppress warnings\n"
@@ -522,6 +595,7 @@ static void usage(const char *prog)
     "  --adaptive-skip      turn on the adaptive root cut-generator skip (on by\n"
     "                       default in the cbc CLI, off in a bare CbcModel and\n"
     "                       so here); tune it with --param=cutSkip...=N\n"
+    "  --no-adaptive-skip   explicitly disable adaptive root skipping\n"
     "\n"
     "Invalid-cut / debug-cuts reproduction:\n"
     "  If <stem>.debugsol exists (written by CbcRootFixtureDump.hpp when the\n"
@@ -548,12 +622,13 @@ int main(int argc, char **argv)
     const char *env = getenv("CBC_ROOT_FIXTURE_DIR");
     const char *home = getenv("HOME");
     fixtureDir = (env && *env) ? env
-                                : std::string(home ? home : ".") + "/instances/mip-sanity-data/rootFixtures";
+                               : std::string(home ? home : ".") + "/instances/mip-sanity-data/rootFixtures";
   }
   std::string tag = "root";
   int nodes = 16;
   double sec = 60.0;
   bool doCuts = true, doHeur = true, quiet = false, minimalHeur = false;
+  bool rootOnly = false, rootTelemetry = false;
   int logLevel = 0;
   std::string dataDir;
 
@@ -582,7 +657,7 @@ int main(int argc, char **argv)
   int diveScheduleK = 1, diveOnlyNoSol = -1; // -1 = unset (leave each dive's own default)
   std::string divingC, divingF, divingG, divingL, divingP, divingV; // empty = leave CbcParameters default
   int diveOpt = -1, diveOptSolves = -1; // -1 = unset
-  std::vector<std::string> paramOverrides; // --param=NAME=VALUE, applied last
+  std::vector< std::string > paramOverrides; // --param=NAME=VALUE, applied last
   bool adaptiveSkip = false;
 
   for (int i = 1; i < argc; ++i) {
@@ -599,6 +674,11 @@ int main(int argc, char **argv)
       doCuts = false;
     else if (a == "--no-heur")
       doHeur = false;
+    else if (a == "--root-only") {
+      rootOnly = true;
+      rootTelemetry = true;
+    } else if (a == "--root-telemetry")
+      rootTelemetry = true;
     else if (a == "--minimal-heur")
       minimalHeur = true;
     else if (a.rfind("--fpump=", 0) == 0)
@@ -671,6 +751,8 @@ int main(int argc, char **argv)
       paramOverrides.push_back(a.substr(8));
     else if (a == "--adaptive-skip")
       adaptiveSkip = true;
+    else if (a == "--no-adaptive-skip")
+      adaptiveSkip = false;
     else if (a.rfind("--log=", 0) == 0)
       logLevel = atoi(a.c_str() + 6);
     else if (a.rfind("--data-dir=", 0) == 0)
@@ -701,7 +783,7 @@ int main(int argc, char **argv)
   // appends (e.g. "pk1.root" -> "pk1") -- this is the key bks.tsv/limits.tsv
   // rows are actually indexed by, not the fixture stem's basename.
   const std::string instanceName = (name.size() > tag.size() + 1
-                                      && name.compare(name.size() - tag.size() - 1, tag.size() + 1, "." + tag) == 0)
+                                     && name.compare(name.size() - tag.size() - 1, tag.size() + 1, "." + tag) == 0)
     ? name.substr(0, name.size() - tag.size() - 1)
     : name;
 
@@ -778,6 +860,7 @@ int main(int argc, char **argv)
          "debugSol=%d\n",
     name.c_str(), si.getNumRows(), si.getNumCols(), warmStartIters, loadTime, lpBound,
     (int)haveDebugSol);
+  fflush(stdout);
 
   CbcModel model(si);
   model.setLogLevel(0);
@@ -861,10 +944,20 @@ int main(int argc, char **argv)
     char *end = NULL;
     if (param->type() == CoinParam::paramInt) {
       const long v = strtol(pval.c_str(), &end, 10);
-      rc = (end == pval.c_str() || *end) ? 1 : param->setVal(static_cast< int >(v), &message);
+      if (pval == "auto" && param->autoAllowed())
+        rc = param->setVal(CoinParam::autoIntValue(), &message);
+      else
+        rc = (end == pval.c_str() || *end || v < INT_MIN || v > INT_MAX)
+          ? 1
+          : param->setVal(static_cast< int >(v), &message);
     } else if (param->type() == CoinParam::paramDbl) {
       const double v = strtod(pval.c_str(), &end);
-      rc = (end == pval.c_str() || *end) ? 1 : param->setVal(v, &message);
+      if (pval == "auto" && param->autoAllowed())
+        rc = param->setVal(CoinParam::autoDblValue(), &message);
+      else
+        rc = (end == pval.c_str() || *end || !std::isfinite(v))
+          ? 1
+          : param->setVal(v, &message);
     } else {
       rc = param->setVal(pval, &message);
     }
@@ -905,12 +998,33 @@ int main(int argc, char **argv)
     model.setCutAdaptiveSkipSettings(skip);
   }
 
+  RootReplayObservation observation;
+  if (rootTelemetry) {
+    RootReplayHandler handler(observation, rootOnly);
+    model.passInEventHandler(&handler);
+  }
   const double t1 = wallClock();
+  observation.start = t1;
   model.branchAndBound();
   const double bbTime = wallClock() - t1;
 
   const bool optimal = model.isProvenOptimal();
   const bool infeasible = model.isProvenInfeasible();
+  if (rootTelemetry) {
+    if (!observation.completed && optimal && !infeasible && !model.getNodeCount()
+      && !model.maximumSecondsReached()) {
+      observation.bound = model.getObjValue();
+      observation.completed = std::isfinite(observation.bound)
+        && std::fabs(observation.bound) < 1.0e40;
+      observation.seconds = bbTime;
+    }
+    printf("[root-result] completed=%d bound=%.17g seconds=%.6f passes=%d "
+           "timeLimit=%d optimal=%d infeasible=%d\n",
+      static_cast< int >(observation.completed), observation.bound,
+      observation.completed ? observation.seconds : bbTime, observation.passes,
+      static_cast< int >(model.maximumSecondsReached()),
+      static_cast< int >(optimal), static_cast< int >(infeasible));
+  }
   const double bound = model.getBestPossibleObjValue();
   const bool haveSolution = model.getSolutionCount() > 0 || (optimal && !infeasible);
   const double best = haveSolution ? model.getObjValue() : COIN_DBL_MAX;

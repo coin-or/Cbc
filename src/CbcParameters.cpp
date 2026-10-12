@@ -735,7 +735,7 @@ void CbcParameters::addCbcParams()
   // Integer params — ZeroHalf tuning (sub-topic of Cuts)
   for (int code : { CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT,
          CbcParam::ZEROHALFROWMAXPAIRCOUNT,
-         CbcParam::ZEROHALFSPARSETHRESH })
+         CbcParam::ZEROHALFSPARSETHRESH, CbcParam::ZEROHALFROOTPERIOD })
     parameters_[code]->setTopic("Cuts");
   parameters_[CbcParam::TWOMIRLENGTH]->setTopic("Cuts");
   parameters_[CbcParam::GOMORYLIMITROOT]->setTopic("Cuts");
@@ -799,6 +799,11 @@ void CbcParameters::addCbcParams()
 
   // Model params — Cuts
   parameters_[CbcParam::CUTPASS]->setTopic("Cuts");
+  parameters_[CbcParam::ROOTCUTDROPPATIENCE]->setTopic("Cuts");
+  parameters_[CbcParam::ROOTCUTFILTERSCORE]->setTopic("Cuts");
+  parameters_[CbcParam::ROOTCUTFILTERSCOPE]->setTopic("Cuts");
+  parameters_[CbcParam::ROOTCUTREUSEPERIOD]->setTopic("Cuts");
+  parameters_[CbcParam::ROOTCUTREUSEMAXCUTS]->setTopic("Cuts");
 
   // Model params — Strategy
   for (int code : { CbcParam::MIPOPTIONS, CbcParam::MOREMIPOPTIONS,
@@ -890,6 +895,11 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::CUTPASSSMALL]->setDefault(-100);
     parameters_[CbcParam::CUTPASSMEDIUM]->setDefault(100);
     parameters_[CbcParam::CUTPASSLARGE]->setDefault(50);
+    parameters_[CbcParam::ROOTCUTDROPPATIENCE]->setDefault(2);
+    parameters_[CbcParam::ROOTCUTFILTERSCORE]->setDefault(1);
+    parameters_[CbcParam::ROOTCUTFILTERSCOPE]->setDefault(1);
+    parameters_[CbcParam::ROOTCUTREUSEPERIOD]->setDefault(0);
+    parameters_[CbcParam::ROOTCUTREUSEMAXCUTS]->setDefault(20);
     parameters_[CbcParam::SIZESMALLROWS]->setDefault(500);
     parameters_[CbcParam::SIZESMALLCOLS]->setDefault(500);
     parameters_[CbcParam::SIZELARGECOLS]->setDefault(5000);
@@ -987,6 +997,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setDefault(-1);
     parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
     parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
+    parameters_[CbcParam::ZEROHALFROOTPERIOD]->setDefault(0);
     parameters_[CbcParam::COEFSTRENGTHENING]->setDefault("on");
     parameters_[CbcParam::CPX]->setDefault("off");
     parameters_[CbcParam::DOHEURISTIC]->setDefault("off");
@@ -2472,12 +2483,59 @@ void CbcParameters::addCbcSolverIntParams()
                                  "A negative value -n means that n passes are also applied if "
                                  "the objective does not drop.");
 
+  parameters_[CbcParam::ROOTCUTFILTERSCOPE]->setup(
+    "rootCutFilterSc!ope", "Root selection: 0 local, 1 global, 2 both",
+    0, 2,
+    "Combined-round selection using rootCutFilterScore (default 1: global). "
+    "Score must be nonzero for global selection; 0 restores the per-generator "
+    "filters only. Mode 1 bypasses the generic "
+    "per-generator filter at root; mode 2 retains it. Generator-internal "
+    "filters remain active. Mandatory/branch cuts are protected. Existing "
+    "cutFilter eligibility and parallelism settings apply. Tree and "
+    "subproblem selection are unchanged.");
+
+  parameters_[CbcParam::ROOTCUTREUSEPERIOD]->setup(
+    "rootCutReuseP!eriod", "Scan removed root cuts every k rounds (0 = legacy)",
+    0, COIN_INT_MAX,
+    "0 preserves reuse only when generators produce no new cuts. Positive k "
+    "also scans the existing removed-root-cut collection on rounds divisible "
+    "by k, even with new cuts present. Violated cuts are ranked by normalized "
+    "violation and capped by rootCutReuseMaxCuts. No new persistent pool is "
+    "created; rejected generator candidates are not retained. Tree/subproblem "
+    "behavior is unchanged.");
+  parameters_[CbcParam::ROOTCUTREUSEMAXCUTS]->setup(
+    "rootCutReuseM!axCuts", "Most removed cuts reactivated on a scheduled scan",
+    1, COIN_INT_MAX,
+    "Limits additional root reactivation when rootCutReusePeriod is positive. "
+    "The existing no-new-cuts fallback is unchanged.");
+
   parameters_[CbcParam::CUTPASSSMALL]->setup(
     "cutPassS!mall", "Root cut passes for a small problem when passCuts is auto",
     -COIN_INT_MAX, COIN_INT_MAX,
     "Used when passCuts is auto and the problem has fewer rows than "
     "sizeSmallRows or fewer columns than sizeSmallCols. The default -100 "
     "means up to 100 passes, ignoring minDrop.");
+
+  parameters_[CbcParam::ROOTCUTDROPPATIENCE]->setup(
+    "rootCutDropP!atience", "Consecutive below-minDrop rounds before stopping root cuts",
+    1, COIN_INT_MAX,
+    "The default 2 requires two consecutive weak rounds; 1 restores the "
+    "previous stopping rule. Values above 1 require this many consecutive root rounds with objective improvement "
+    "below minDrop before stopping for insufficient progress; a successful "
+    "round resets the counter. Existing progress-history exceptions still "
+    "apply. This also delays stopping on empty or "
+    "zero-iteration root rounds. The pass and time budgets still apply. "
+    "Ignored for negative passCuts, nonpositive minDrop, tree nodes and "
+    "heuristic subproblems.");
+  parameters_[CbcParam::ROOTCUTFILTERSCORE]->setup(
+    "rootCutFilterS!core", "Root cut score: legacy, efficacy or sparse efficacy",
+    0, 4,
+    "Root-only selection score (default 1). 0 preserves legacy fitness; "
+    "1 uses violation divided by the coefficient Euclidean norm; 2 also "
+    "divides by total cut nonzeros. Modes 3 and 4 use the scores of 1 and 2 "
+    "respectively but omit the best-per-column contest. All apply "
+    "cutFilterMaxParallelism greedily in score order. Ranged, "
+    "equality and mandatory cuts are retained. No tree/subproblem change.");
 
   parameters_[CbcParam::CUTPASSMEDIUM]->setup(
     "cutPassM!edium", "Root cut passes for a medium problem when passCuts is auto",
@@ -2998,6 +3056,17 @@ void CbcParameters::addCbcSolverIntParams()
     "A value of 0 forces sparse mode for testing. Negative values disable "
     "threshold-based switching, but sparse mode is still used automatically "
     "when the dense graph would be unsafe.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::ZEROHALFROOTPERIOD]->setup(
+    "zeroHalfRootP!eriod", "Root round interval for ZeroHalf (0 = adaptive)",
+    0, COIN_INT_MAX,
+    "0 preserves existing scheduling. A positive k tries ZeroHalf at root "
+    "rounds 1, 1+k, 1+2k, bypassing adaptive backoff for this generator. "
+    "Shutdown rules still apply: use cutSwitchOff zeroHalf:0 to retain it "
+    "after barren calls. Tree and subproblem scheduling are unchanged. "
+    "Root patience, pass and time budgets still apply; the solver need not "
+    "continue until the next scheduled call.",
     CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::GOMORYLIMITROOT]->setup(

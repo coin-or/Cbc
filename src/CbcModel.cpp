@@ -94,6 +94,7 @@ extern int gomory_try;
 #include "CbcHeuristicRINS.hpp"
 #include "CbcMessage.hpp"
 #include "CbcModel.hpp"
+#include "CbcCutPoolFilter.hpp"
 #include "CbcOutput.hpp"
 #include "CbcStatistics.hpp"
 #include "CbcStrategy.hpp"
@@ -6669,6 +6670,7 @@ CbcModel::CbcModel()
   , testSolution_(nullptr)
   , globalConflictCuts_(nullptr)
   , minimumDrop_(1.0e-7)
+  , rootCutDropPatience_(1)
   , numberSolutions_(0)
   , numberSavedSolutions_(0)
   , maximumSavedSolutions_(0)
@@ -7042,6 +7044,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , sumChangeObjective2_(rhs.sumChangeObjective2_)
   , globalConflictCuts_(nullptr)
   , minimumDrop_(rhs.minimumDrop_)
+  , rootCutDropPatience_(rhs.rootCutDropPatience_)
   , numberSolutions_(rhs.numberSolutions_)
   , numberSavedSolutions_(rhs.numberSavedSolutions_)
   , maximumSavedSolutions_(rhs.maximumSavedSolutions_)
@@ -7462,6 +7465,7 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
       rhs.numberSavedSolutions_, maximumSavedSolutions_, numberColumns);
     testSolution_ = currentSolution_;
     minimumDrop_ = rhs.minimumDrop_;
+    rootCutDropPatience_ = rhs.rootCutDropPatience_;
     numberSolutions_ = rhs.numberSolutions_;
     stateOfSearch_ = rhs.stateOfSearch_;
     whenCuts_ = rhs.whenCuts_;
@@ -7994,6 +7998,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
     deleteSavedSolutionsArray(savedSolutions_, maximumSavedSolutions_);
   }
   minimumDrop_ = rhs.minimumDrop_;
+  rootCutDropPatience_ = rhs.rootCutDropPatience_;
   specialOptions_ = rhs.specialOptions_;
   moreSpecialOptions_ = rhs.moreSpecialOptions_;
   moreSpecialOptions2_ = rhs.moreSpecialOptions2_;
@@ -8063,6 +8068,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
         generator_[i] = new CbcCutGenerator(*rhs.virginGenerator_[i]);
         // But copy across maximumTries and switches
         generator_[i]->setMaximumTries(rhs.generator_[i]->maximumTries());
+        generator_[i]->setRootCallPeriod(rhs.generator_[i]->rootCallPeriod());
         generator_[i]->setSwitches(rhs.generator_[i]->switches());
         // Also carry across the adaptive root cut-generator skip's runtime
         // state (see CbcModel::serialCuts()) -- otherwise a generator that
@@ -9561,6 +9567,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   double minimumDrop = minimumDrop_;
   bool allowZeroIterations = false;
   int maximumBadPasses = 0;
+  int consecutiveRootDropMisses = 0;
   if (numberTries < 0) {
     numberTries = -numberTries;
     // minimumDrop *= 1.0e-5 ;
@@ -9572,6 +9579,8 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     allowZeroIterations = true;
   }
   int saveNumberTries = numberTries;
+  const bool rootDropPatience = !node && !parentModel_ && !numberNodes_
+    && !allowZeroIterations && minimumDrop > 0.0 && rootCutDropPatience_ > 1;
   /*
       Is it time to scan the cuts in order to remove redundant cuts? If so, set
       up to do it.
@@ -10036,6 +10045,55 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       if (!feasible)
         violated = -2;
     }
+    if (feasible && !node && !parentModel_ && !numberNodes_
+      && !keepGoing && cutPoolFilterSettings_.rootScope) {
+      // Protect non-generator and must-call-again cuts; compact attribution
+      // using original positions returned by the selector.
+      std::vector< double > effectiveness(theseCuts.sizeRowCuts());
+      for (int k = 0; k < theseCuts.sizeRowCuts(); ++k) {
+        OsiRowCut *cut = theseCuts.rowCutPtr(k);
+        effectiveness[k] = cut->effectiveness();
+        const int tag = whichGenerator_[lastNumberCuts + k];
+        const int generator = tag % 10000;
+        if (generator < 0 || generator >= numberCutGenerators_
+          || generator_[generator]->mustCallAgain())
+          cut->setEffectiveness(COIN_DBL_MAX);
+      }
+      std::vector< int > survivors;
+      const int before = theseCuts.sizeRowCuts();
+      std::vector< int > originalTags;
+      if (handler_->logLevel() > 1)
+        originalTags.assign(whichGenerator_ + lastNumberCuts,
+          whichGenerator_ + lastNumberCuts + before);
+      cbcFilterGeneratedCuts(theseCuts, 0, solver_->getColSolution(),
+        solver_->getNumCols(), solver_->getNumElements(), "root-round",
+        cutPoolFilterSettings_, &survivors);
+      for (int k = 0; k < static_cast< int >(survivors.size()); ++k) {
+        whichGenerator_[lastNumberCuts + k] = whichGenerator_[lastNumberCuts + survivors[k]];
+        theseCuts.rowCutPtr(k)->setEffectiveness(effectiveness[survivors[k]]);
+      }
+      if (handler_->logLevel() > 1) {
+        printf("[root-selection] pass=%d candidates=%d kept=%d scope=%d score=%d",
+          currentPassNumber_, before, theseCuts.sizeRowCuts(),
+          cutPoolFilterSettings_.rootScope, cutPoolFilterSettings_.scoreMode);
+        std::vector< int > generated(numberCutGenerators_, 0), kept(numberCutGenerators_, 0);
+        for (int k = 0; k < before; ++k) {
+          const int generator = originalTags[k] % 10000;
+          if (generator >= 0 && generator < numberCutGenerators_)
+            ++generated[generator];
+        }
+        for (int k = 0; k < theseCuts.sizeRowCuts(); ++k) {
+          const int generator = whichGenerator_[lastNumberCuts + k] % 10000;
+          if (generator >= 0 && generator < numberCutGenerators_)
+            ++kept[generator];
+        }
+        for (int g = 0; g < numberCutGenerators_; ++g) {
+          if (generated[g])
+            printf(" %s=%d/%d", generator_[g]->cutGeneratorName(), kept[g], generated[g]);
+        }
+        printf("\n");
+      }
+    }
     // if (!feasible)
     // break;
     /*
@@ -10425,6 +10483,17 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
               numberLastAttempts++;
           }
         }
+        if (rootDropPatience) {
+          const double drop = thisObj - cut_obj[CUT_HISTORY - 1];
+          if (drop < minimumDrop)
+            ++consecutiveRootDropMisses;
+          else
+            consecutiveRootDropMisses = 0;
+          badObj = badObj && consecutiveRootDropMisses >= rootCutDropPatience_;
+          if (handler_->logLevel() > 1)
+            printf("[root-drop] pass=%d drop=%.17g minimumDrop=%.17g misses=%d patience=%d\n",
+              currentPassNumber_, drop, minimumDrop, consecutiveRootDropMisses, rootCutDropPatience_);
+        }
         // magic numbers, they seemed reasonable; there's a possibility here of
         // going more than nominal number of passes if we're doing really well.
         if (numberTries == 1 && currentDepth_ < 12 && currentPassNumber_ < 10) {
@@ -10450,7 +10519,8 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           && !keepGoing) {
           numberTries = 0;
         }
-        if (numberRowCuts + numberColumnCuts == 0 || (cutIterations == 0 && !allowZeroIterations)) {
+        if ((numberRowCuts + numberColumnCuts == 0 || (cutIterations == 0 && !allowZeroIterations))
+          && (!rootDropPatience || consecutiveRootDropMisses >= rootCutDropPatience_)) {
           // maybe give it one more try
           if (numberLastAttempts > 2 || currentDepth_ || experimentBreak < 2)
             numberTries = 0;
@@ -11486,7 +11556,12 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
     }
     if (generator_[i]->whetherCallAtEnd())
       generate = false;
-    if (generate && !node && !parentModel_ && cutAdaptiveSkip) {
+    if (generate && !node && !parentModel_ && !numberNodes_
+      && generator_[i]->rootCallPeriod() > 0
+      && (currentPassNumber_ - 1) % generator_[i]->rootCallPeriod())
+      generate = false;
+    if (generate && !node && !parentModel_ && cutAdaptiveSkip
+      && !generator_[i]->rootCallPeriod()) {
       // On backoff after repeated consecutive misses at root -- skip until
       // the scheduled retry pass (see bookkeeping below).
       const int nextRetry = generator_[i]->nextRetryPass();
@@ -11802,7 +11877,8 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
     }
     numberRowCutsAfter = theseCuts.sizeRowCuts();
     numberColumnCutsAfter = theseCuts.sizeColCuts();
-    if (generate && !node && !parentModel_ && cutAdaptiveSkip) {
+    if (generate && !node && !parentModel_ && cutAdaptiveSkip
+      && !generator_[i]->rootCallPeriod()) {
       bool producedCuts = (numberRowCutsAfter > numberRowCutsBefore) || (numberColumnCutsAfter > numberColumnCutsBefore);
       // For generators marked boundStallAware(), a pass where root progress
       // has been negligible (ineffectualCuts(), set just before this loop
@@ -11958,6 +12034,44 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
     }
   }
   // Add in any violated saved cuts
+  if (!node && !parentModel_ && !numberNodes_
+    && cutPoolFilterSettings_.rootReusePeriod > 0
+    && currentPassNumber_ % cutPoolFilterSettings_.rootReusePeriod == 0
+    && (theseCuts.sizeRowCuts() || theseCuts.sizeColCuts())) {
+    double tolerance;
+    solver_->getDblParam(OsiPrimalTolerance, tolerance);
+    std::vector< std::pair< double, int > > candidates;
+    for (int k = 0; k < slackCuts.sizeRowCuts(); ++k) {
+      const OsiRowCut &cut = slackCuts.rowCut(k);
+      double violation = cut.violated(cbcColSolution_);
+      if (violation <= 100.0 * tolerance)
+        continue;
+      double norm = 0.0;
+      for (int j = 0; j < cut.row().getNumElements(); ++j)
+        norm = std::hypot(norm, cut.row().getElements()[j]);
+      if (std::isfinite(norm) && norm > 0.0 && std::isfinite(violation))
+        candidates.emplace_back(-violation / norm, k);
+    }
+    std::sort(candidates.begin(), candidates.end());
+    int added = 0;
+    int numberOld = theseCuts.sizeRowCuts() + lastNumberCuts;
+    resizeWhichGenerator(numberOld, numberOld + std::min(
+      static_cast< int >(candidates.size()), cutPoolFilterSettings_.rootReuseMaxCuts));
+    for (const auto &candidate : candidates) {
+      if (added >= cutPoolFilterSettings_.rootReuseMaxCuts)
+        break;
+      OsiRowCut cut = slackCuts.rowCut(candidate.second);
+      if (theseCuts.insertIfNotDuplicate(cut)) {
+        whichGenerator_[numberOld++] = 20097;
+        ++added;
+      }
+    }
+    if (handler_->logLevel() > 1)
+      printf("[root-reuse] pass=%d pool=%d violated=%d added=%d period=%d cap=%d\n",
+        currentPassNumber_, slackCuts.sizeRowCuts(),
+        static_cast< int >(candidates.size()), added,
+        cutPoolFilterSettings_.rootReusePeriod, cutPoolFilterSettings_.rootReuseMaxCuts);
+  }
   if (!theseCuts.sizeRowCuts() && !theseCuts.sizeColCuts()) {
     int numberOld = theseCuts.sizeRowCuts() + lastNumberCuts;
     int numberCuts = slackCuts.sizeRowCuts();

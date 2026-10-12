@@ -2019,7 +2019,15 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
     double fractionRow = 1.0;
     if (dualize == 3) {
       dualize = 1;
-      if (clp->numberRows() < 50000
+      const CbcParameters::LPMethod methodForDualize = forcedMethod >= 0
+        ? static_cast< CbcParameters::LPMethod >(forcedMethod)
+        : (autoLpMode ? autoS.method : parameters_.getLpMethod());
+      if (methodForDualize == CbcParameters::LPBarrier) {
+        // Barrier factorizes A*D*A' (rows x rows); on tall LPs the dual
+        // (cols x cols) is far cheaper. Benchmarked: rows >= 1.5*cols wins.
+        if (2 * clp->numberRows() < 3 * clp->numberColumns())
+          tryIt = false;
+      } else if (clp->numberRows() < 50000
         || 5 * clp->numberColumns() > clp->numberRows()) {
         tryIt = false;
       } else {

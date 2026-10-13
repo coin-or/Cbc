@@ -1,0 +1,38 @@
+# LP scaling screening: the best config of each method crossed with every
+# -scaling mode. The *_scdefault rows (Clp default scaling = automatic) are the
+# baselines, run under the same limits in the same experiment so comparisons are
+# paired. -dualize stays at its default (auto): tall LPs are dualized for barrier.
+# Format: tag|args
+
+dual_pertv72_scdefault|-psi 0 -pertValue 72 -idiot 0 -sprint 0 -lpMethod dual
+dual_pesteep_pertv58_scdefault|-dualPivot automatic -psi 0 -pertValue 58 -idiot 0 -sprint 0 -lpMethod dual
+primal_idiot50_scdefault|-psi 0 -pertValue 100 -idiot 50 -sprint 0 -lpMethod primal
+barrier_univ_scdefault|-cholesky Uni -lpMethod barrier
+
+dual_pertv72_scoff|-psi 0 -pertValue 72 -idiot 0 -sprint 0 -lpMethod dual -scaling off
+dual_pertv72_scequi|-psi 0 -pertValue 72 -idiot 0 -sprint 0 -lpMethod dual -scaling equilibrium
+dual_pertv72_scgeo|-psi 0 -pertValue 72 -idiot 0 -sprint 0 -lpMethod dual -scaling geometric
+dual_pertv72_scauto|-psi 0 -pertValue 72 -idiot 0 -sprint 0 -lpMethod dual -scaling automatic
+dual_pertv72_scdyn|-psi 0 -pertValue 72 -idiot 0 -sprint 0 -lpMethod dual -scaling dynamic
+dual_pertv72_scrows|-psi 0 -pertValue 72 -idiot 0 -sprint 0 -lpMethod dual -scaling rowsonly
+
+dual_pesteep_pertv58_scoff|-dualPivot automatic -psi 0 -pertValue 58 -idiot 0 -sprint 0 -lpMethod dual -scaling off
+dual_pesteep_pertv58_scequi|-dualPivot automatic -psi 0 -pertValue 58 -idiot 0 -sprint 0 -lpMethod dual -scaling equilibrium
+dual_pesteep_pertv58_scgeo|-dualPivot automatic -psi 0 -pertValue 58 -idiot 0 -sprint 0 -lpMethod dual -scaling geometric
+dual_pesteep_pertv58_scauto|-dualPivot automatic -psi 0 -pertValue 58 -idiot 0 -sprint 0 -lpMethod dual -scaling automatic
+dual_pesteep_pertv58_scdyn|-dualPivot automatic -psi 0 -pertValue 58 -idiot 0 -sprint 0 -lpMethod dual -scaling dynamic
+dual_pesteep_pertv58_scrows|-dualPivot automatic -psi 0 -pertValue 58 -idiot 0 -sprint 0 -lpMethod dual -scaling rowsonly
+
+primal_idiot50_scoff|-psi 0 -pertValue 100 -idiot 50 -sprint 0 -lpMethod primal -scaling off
+primal_idiot50_scequi|-psi 0 -pertValue 100 -idiot 50 -sprint 0 -lpMethod primal -scaling equilibrium
+primal_idiot50_scgeo|-psi 0 -pertValue 100 -idiot 50 -sprint 0 -lpMethod primal -scaling geometric
+primal_idiot50_scauto|-psi 0 -pertValue 100 -idiot 50 -sprint 0 -lpMethod primal -scaling automatic
+primal_idiot50_scdyn|-psi 0 -pertValue 100 -idiot 50 -sprint 0 -lpMethod primal -scaling dynamic
+primal_idiot50_scrows|-psi 0 -pertValue 100 -idiot 50 -sprint 0 -lpMethod primal -scaling rowsonly
+
+barrier_univ_scoff|-cholesky Uni -lpMethod barrier -scaling off
+barrier_univ_scequi|-cholesky Uni -lpMethod barrier -scaling equilibrium
+barrier_univ_scgeo|-cholesky Uni -lpMethod barrier -scaling geometric
+barrier_univ_scauto|-cholesky Uni -lpMethod barrier -scaling automatic
+barrier_univ_scdyn|-cholesky Uni -lpMethod barrier -scaling dynamic
+barrier_univ_scrows|-cholesky Uni -lpMethod barrier -scaling rowsonly

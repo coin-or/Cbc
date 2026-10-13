@@ -149,6 +149,7 @@ def parse_log(path):
                 res["time"] = num(m.group(1))
             toks = s.split()
             heur_row = (len(toks) >= 3 and toks[0][:1].isalpha() and num(toks[-1]) is not None
+                        and "solution" in s and section.startswith(("Root node", "Feasibility"))
                         and not toks[0].startswith(("Round", "Pass", "Nodes", "Heuristic", "Effort", "Phase")))
             if not toks or not re.match(r"^[\d.]", toks[0]) and not toks[0][0].isalpha():
                 continue

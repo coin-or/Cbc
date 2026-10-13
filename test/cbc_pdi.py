@@ -115,6 +115,9 @@ def parse_log(path):
                 if m and root_lp is None:
                     root_lp = (float(m.group(2)), num(m.group(1)))
                     cursor = root_lp[0]
+                m = re.search(r"best\s+\S+\s+in\s+([\d.eE+-]+)s", s)
+                if m:
+                    cursor += float(m.group(1))
                 m = re.search(r"Preprocessing complete.*Time:\s*([\d.eE+-]+)s", s)
                 if m:
                     cursor = max(cursor, float(m.group(1)))
@@ -164,6 +167,13 @@ def parse_log(path):
                         v = num(toks[-2])
                         if star and v is not None:
                             prim.append((t, v))
+            elif star and not section.startswith(("Branch and bound", "Root node heuristics")):
+                # Starred incumbent in any other table (Feasibility Jump,
+                # proximity search, ...): no timestamp, so place it at the
+                # running time cursor and take the last numeric column.
+                nums = [num(x) for x in toks if num(x) is not None]
+                if nums:
+                    prim.append((cursor, nums[-1]))
             elif section.startswith("Root node heuristics"):
                 # Name... Status BestSol Time   (Time = duration of the heuristic)
                 d = num(toks[-1])
@@ -225,6 +235,8 @@ def build_trace(ev, sense_max):
         tr.status = "stopped"
     tr.final_primal = None if final.get("obj") is None else sg * final["obj"]
     tr.final_dual = None if final.get("bound") is None else sg * final["bound"]
+    if tr.status == "stopped" and tr.final_dual is not None and tr.end_time:
+        tr.add_dual(tr.end_time, tr.final_dual)
     if tr.status == "optimal" and tr.final_primal is not None:
         tr.add_primal(tr.end_time or 0.0, tr.final_primal)
         # a proof closes the gap exactly at the end

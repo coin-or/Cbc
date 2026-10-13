@@ -243,7 +243,17 @@ void installCutGenerators(
   laTranslate[CbcParameters::CGBothInstead] = 12;
   int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
 
-  // Auto-tuning cut generators based on problem classification
+  // Auto-tuning cut generators based on problem classification. A parameter
+  // is only touched while it is `auto' (never set by the user); picks made by
+  // a previous call are undone first so a reused parameter set starts clean.
+  {
+    const std::vector< int > &autoCodes = CbcProblemClassifier::autoCutParams();
+    for (size_t i = 0; i < autoCodes.size(); ++i) {
+      CbcParam *p = parameters[autoCodes[i]];
+      if (p->isAuto() && p->modeVal() != p->defaultMode())
+        p->setModeValAuto(p->defaultMode());
+    }
+  }
   if (parameters[CbcParam::AUTOTUNECUTS]->modeVal() != 0) {
     CbcParameters::ProblemClassMode overrideMode = static_cast< CbcParameters::ProblemClassMode >(
       parameters[CbcParam::PROBLEMCLASS]->modeVal());
@@ -254,23 +264,32 @@ void installCutGenerators(
       std::ostringstream tunedMsg;
       tunedMsg << "AutoTuneCuts: " << cls.className << " (" << cls.rationale
                << ")\n  -> " << rec.summary;
-
-      // Apply disables if parameter is at default
-      for (size_t i = 0; i < rec.disableParams.size(); ++i) {
-        int code = rec.disableParams[i];
-        if (parameters[code]->isDefault()) {
-          parameters[code]->setVal("off");
+      std::string changed, kept;
+      // Only parameters still at `auto' are changed; the rest are reported
+      std::vector< std::pair< int, int > > picks;
+      for (size_t i = 0; i < rec.disableParams.size(); ++i)
+        picks.push_back(std::make_pair(rec.disableParams[i], static_cast< int >(CbcParameters::CGOff)));
+      for (size_t i = 0; i < rec.enableParams.size(); ++i)
+        picks.push_back(rec.enableParams[i]);
+      for (size_t i = 0; i < picks.size(); ++i) {
+        CbcParam *p = parameters[picks[i].first];
+        std::string name = p->name();
+        std::string::size_type bang = name.find('!');
+        if (bang != std::string::npos)
+          name.erase(bang, 1);
+        if (p->isAuto()) {
+          if (p->modeVal() != picks[i].second)
+            p->setModeValAuto(picks[i].second);
+          changed += " " + name + "=" + p->modeString(p->modeVal());
+        } else {
+          kept += " " + name + "=" + p->kwdVal();
         }
       }
-      // Apply enables if parameter is at default
-      for (size_t i = 0; i < rec.enableParams.size(); ++i) {
-        int code = rec.enableParams[i].first;
-        int mode = rec.enableParams[i].second;
-        if (parameters[code]->isDefault()) {
-          parameters[code]->setVal(mode);
-        }
-      }
-      // Apply cut filter settings if at default
+      tunedMsg << "\n  auto-set:" << changed;
+      if (!kept.empty())
+        tunedMsg << "\n  user-set (kept):" << kept;
+      tunedMsg << "\n";
+      // Cut filter settings, if not set by the user
       if (rec.filterScoreMode >= 0 && parameters[CbcParam::ROOTCUTFILTERSCORE]->isDefault()) {
         parameters[CbcParam::ROOTCUTFILTERSCORE]->setIntVal(rec.filterScoreMode);
       }

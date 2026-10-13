@@ -98,6 +98,9 @@ public:
   /// Compute cut tuning recommendations based on classification result
   static CutTuningRecommendations getCutTuning(const ClassificationResult &result);
 
+  /// Cut generator parameters that may be `auto' (resolved by the tuner)
+  static const std::vector< int > &autoCutParams();
+
   /// Map ProblemClass enum to readable name
   static const char *className(ProblemClass pc);
 

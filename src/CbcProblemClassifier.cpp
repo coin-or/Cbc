@@ -167,6 +167,19 @@ CbcProblemClassifier::ClassificationResult CbcProblemClassifier::classify(
   return res;
 }
 
+const std::vector< int > &CbcProblemClassifier::autoCutParams()
+{
+  static const int codes[] = {
+    CbcParam::CLIQUECUTS, CbcParam::FLOWCUTS, CbcParam::GMICUTS,
+    CbcParam::GOMORYCUTS, CbcParam::KNAPSACKCUTS, CbcParam::LANDPCUTS,
+    CbcParam::MIRCUTS, CbcParam::ODDWHEELCUTS, CbcParam::PROBINGCUTS,
+    CbcParam::REDSPLITCUTS, CbcParam::REDSPLIT2CUTS, CbcParam::TWOMIRCUTS,
+    CbcParam::ZEROHALFCUTS
+  };
+  static const std::vector< int > list(codes, codes + sizeof(codes) / sizeof(codes[0]));
+  return list;
+}
+
 CbcProblemClassifier::CutTuningRecommendations CbcProblemClassifier::getCutTuning(
   const ClassificationResult &result)
 {

@@ -1,6 +1,6 @@
 # CBC Parameter Reference
 
-*CBC v2.933-90-ge60549a4-dirty — September 2026*
+*CBC v2.933-133-geaa3997f — October 2026*
 
 Parameters are specified on the command line **before** `-solve`:
 ```
@@ -12,10 +12,10 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 ## Contents
 
 - [Stopping](#stopping) (10 parameters)
-- [MIP Preprocessing](#mip-preprocessing) (12 parameters)
+- [MIP Preprocessing](#mip-preprocessing) (13 parameters)
 - [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (9 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
-- [Cuts](#cuts) (56 parameters)
+- [Cuts](#cuts) (66 parameters)
 - [Heuristics](#heuristics) (37 parameters)
 - [Branching](#branching) (8 parameters)
 - [Tolerances](#tolerances) (6 parameters)
@@ -135,6 +135,14 @@ If column names will be kept in pre-processed model
 Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem
 
 **Values:** `off`, `on` (default: `on`)
+
+### `-preprocTimes`
+
+Whether to report where preprocessing spent its time
+
+When on, preprocessing ends with a table of wall-clock time per phase (presolve, LP solves, probing, ...) and one row per preprocessing pass, and postprocessing reports its own breakdown.  Times include every preprocessing attempt, e.g. the simpler retry after a failed first one.
+
+**Values:** `off`, `on` (default: `off`)
 
 ### `-rowReductions`
 
@@ -345,7 +353,7 @@ This can be used to switch on or off all cuts (apart from Reduce and Split).  Th
 
 Whether to use Flow Cover cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglFlowCover
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `onglobal` (default: `ifmove`)
@@ -354,7 +362,7 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 Whether to use alternative Gomory cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  This version is by Giacomo Nannicini and may be more robust than gomoryCuts.
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `endonly`, `long`, `longroot`, `longifmove`, `forcelongon`, `longendonly` (default: `root`)
@@ -363,7 +371,7 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 Whether to use Gomory cuts
 
-The original cuts - beware of imitations!  Having gone out of favor, they are now more fashionable as LP solvers are more robust and they interact well with other cuts.  They will almost always give cuts (although in this executable they are limited as to number of variables in cut).  However the cuts may be dense so it is worth experimenting (Long allows any length). Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+The original cuts - beware of imitations!  Having gone out of favor, they are now more fashionable as LP solvers are more robust and they interact well with other cuts.  They will almost always give cuts (although in this executable they are limited as to number of variables in cut).  However the cuts may be dense so it is worth experimenting (Long allows any length). Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglGomory
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `forceandglobal`, `forcelongon`, `onglobal`, `longer`, `shorter` (default: `ifmove`)
@@ -380,7 +388,7 @@ Strengthens rows shaped like x1 + x2 + ... + xk <= M*y (all binary; typically mo
 
 Whether to use Knapsack cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglKnapsackCover
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `forceandglobal`, `onglobal` (default: `ifmove`)
@@ -397,7 +405,7 @@ This is a gross simplification of 'A Relax-and-Cut Framework for Gomory's Mixed-
 
 Whether to use lift-and-project cuts
 
-These cuts may be expensive to compute. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+These cuts may be expensive to compute. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglLandP
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `iflongon` (default: `root`)
@@ -414,7 +422,7 @@ This is a Lagrangean relaxation for Twomir cuts.  See lagomoryCuts for descripti
 
 Whether to use Mixed Integer Rounding cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglMixedIntegerRounding2
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `onglobal` (default: `ifmove`)
@@ -439,7 +447,7 @@ Value 'forceOnBut' turns on probing and forces CBC to do probing at every node, 
 
 Whether to use Reduce-and-Split cuts
 
-These cuts may be expensive to generate. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+These cuts may be expensive to generate. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglRedSplit
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon` (default: `off`)
@@ -456,7 +464,7 @@ This switches on reduce and split cuts (either at root or in entire tree). This 
 
 Whether to use Residual Capacity cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglResidualCapacity
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon` (default: `off`)
@@ -465,7 +473,7 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 Whether to use Two phase Mixed Integer Rounding cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglTwomir
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `forceandglobal`, `forcelongon`, `onglobal` (default: `ifmove`)
@@ -474,7 +482,7 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 Whether to use zero half cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  This implementation was written by Alberto Caprara.
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `onglobal` (default: `ifmove`)
@@ -502,6 +510,32 @@ Whether the implied-clique cut generator filters its cuts
 The implied-clique cut generator normally only removes duplicate cuts, since the per-column filter used for clique cuts was measured to remove almost nothing here. When on, it applies that filter too. cliqueFilterAlways also turns it on.
 
 **Values:** `off`, `on` (default: `off`)
+
+### `-autoTuneCuts`
+
+Whether to auto-tune cut generators based on problem class
+
+When on, CBC analyzes instance features to classify the problem (pure set partitioning, set packing, set covering, mixed SPP, etc.) and tailors cut generator selection, effort, and filtering automatically, disabling ineffective generators that waste time. Only parameters still at 'auto' (the default of the individual cut generators, e.g. gomoryCuts, cliqueCuts, zeroHalfCuts, ...) are changed; anything set explicitly, including 'gomoryCuts ifmove', is never touched. The class found and each parameter changed are logged. See problemClass to force a class, and cutPassRatio/minDropRatio to scale effort relative to the resolved values.
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-problemClass`
+
+Problem class override for auto-tuning
+
+Overrides problem classification for algorithm and cut tuning.
+  auto:         automatic detection using instance features (default)
+  general:      general MIP (disables special class auto-tuning)
+  partitioning: pure set partitioning (all rows sum x_j = 1)
+  packing:      pure set packing (all rows sum x_j <= 1)
+  partpack:     set partitioning and packing (sum x_j = 1 or <= 1, like rmp11)
+  covering:     pure set covering (all rows sum x_j >= 1)
+  mixedspp:     mixed SPP (100% of rows are partitioning/packing/covering)
+  mostlyspp:    mostly SPP (>= 85% of rows are SPP)
+  knapsack:     0-1 knapsack problem
+  general01:    general 0-1 MIP
+
+**Values:** `auto`, `general`, `partitioning`, `packing`, `partpack`, `covering`, `mixedspp`, `mostlyspp`, `knapsack`, `general01` (default: `auto`)
 
 ### `-aggregatelevel`
 
@@ -534,6 +568,46 @@ Number of rounds that cut generators are applied in the tree
 The default is 4 passes at each node, stopping early once the objective stops dropping. A negative value -n means that n passes are also applied if the objective does not drop.
 
 **Range:** -INT_MAX to INT_MAX (default: 4)
+
+### `-rootCutDropPatience`
+
+Consecutive below-minDrop rounds before stopping root cuts
+
+The default 2 requires two consecutive weak rounds; 1 restores the previous stopping rule. Values above 1 require this many consecutive root rounds with objective improvement below minDrop before stopping for insufficient progress; a successful round resets the counter. Existing progress-history exceptions still apply. This also delays stopping on empty or zero-iteration root rounds. The pass and time budgets still apply. Ignored for negative passCuts, nonpositive minDrop, tree nodes and heuristic subproblems.
+
+**Range:** 1 to INT_MAX (default: 2)
+
+### `-rootCutFilterScore`
+
+Root cut score: legacy, efficacy or sparse efficacy
+
+Root-only selection score (default 1). 0 preserves legacy fitness; 1 uses violation divided by the coefficient Euclidean norm; 2 also divides by total cut nonzeros. Modes 3 and 4 use the scores of 1 and 2 respectively but omit the best-per-column contest. All apply cutFilterMaxParallelism greedily in score order. Ranged, equality and mandatory cuts are retained. No tree/subproblem change.
+
+**Range:** 0 to 4 (default: 1)
+
+### `-rootCutFilterScope`
+
+Root selection: 0 local, 1 global, 2 both
+
+Combined-round selection using rootCutFilterScore (default 1: global). Score must be nonzero for global selection; 0 restores the per-generator filters only. Mode 1 bypasses the generic per-generator filter at root; mode 2 retains it. Generator-internal filters remain active. Mandatory/branch cuts are protected. Existing cutFilter eligibility and parallelism settings apply. Tree and subproblem selection are unchanged.
+
+**Range:** 0 to 2 (default: 1)
+
+### `-rootCutReusePeriod`
+
+Scan removed root cuts every k rounds (0 = legacy)
+
+0 preserves reuse only when generators produce no new cuts. Positive k also scans the existing removed-root-cut collection on rounds divisible by k, even with new cuts present. Violated cuts are ranked by normalized violation and capped by rootCutReuseMaxCuts. No new persistent pool is created; rejected generator candidates are not retained. Tree/subproblem behavior is unchanged.
+
+**Range:** 0 to INT_MAX (default: 0)
+
+### `-rootCutReuseMaxCuts`
+
+Most removed cuts reactivated on a scheduled scan
+
+Limits additional root reactivation when rootCutReusePeriod is positive. The existing no-new-cuts fallback is unchanged.
+
+**Range:** 1 to INT_MAX (default: 20)
 
 ### `-slowcutpasses`
 
@@ -582,6 +656,14 @@ Active-node threshold for sparse ZeroHalf separation graph
 If positive, ZeroHalf will use the sparse separation-graph implementation when the number of active separator nodes exceeds this threshold. A value of 0 forces sparse mode for testing. Negative values disable threshold-based switching, but sparse mode is still used automatically when the dense graph would be unsafe.
 
 **Range:** -1 to INT_MAX (default: 8000)
+
+### `-zeroHalfRootPeriod`
+
+Root round interval for ZeroHalf (0 = adaptive)
+
+0 preserves existing scheduling. A positive k tries ZeroHalf at root rounds 1, 1+k, 1+2k, bypassing adaptive backoff for this generator. Shutdown rules still apply: use cutSwitchOff zeroHalf:0 to retain it after barren calls. Tree and subproblem scheduling are unchanged. Root patience, pass and time budgets still apply; the solver need not continue until the next scheduled call.
+
+**Range:** 0 to INT_MAX (default: 0)
 
 ### `-cutGateMinCols`
 
@@ -774,6 +856,22 @@ Parallelism above which the clique cut filter drops the weaker cut
 Like cutFilterMaxParallelism, for the clique, odd-wheel and implied-clique cut generators. The default, 1, turns this filter off: a sweep of 0.1 to 0.9 found no value that paid off for these cuts.
 
 **Range:** 0 to 1 (default: 1)
+
+### `-cutPassRatio`
+
+Relative multiplier for the root cut passes budget
+
+Scales the resolved root cut pass budget by this factor (e.g. 1.5 runs 1.5x passes, 0.8 runs 0.8x passes).
+
+**Range:** 0 to 100 (default: 1)
+
+### `-minDropRatio`
+
+Relative multiplier for the minimum drop threshold
+
+Scales the minimum drop threshold by this factor (e.g. 0.5 lowers minDrop to allow more passes).
+
+**Range:** 0 to 10000000000 (default: 1)
 
 ### `-passCuts`
 
@@ -1494,11 +1592,11 @@ The default is minimize - use 'direction maximize' for maximization.
 
 ### `-vector`
 
-Whether to use vector? Form of matrix in simplex
+Try and use vector instructions in simplex
 
-If this is on ClpPackedMatrix uses extra column copy in odd format.
+At present only for Intel architectures - but could be extended. Uses avx2 or avx512 instructions. Uses different storage for matrix - can be of benefit without instruction set on some problems. I may add pool to switch on a pool matrix
 
-**Values:** `off`, `on` (default: `off`)
+**Values:** `off`, `on`, `ones` (default: `off`)
 
 ### `-decompose`
 
@@ -1801,9 +1899,6 @@ elapsed uses elapsed (wall-clock) time for stopping, while cpu uses CPU time. El
 Level of detail in CBC output.
 
 If set to 0 then there should be no output in normal circumstances. A value of 1 is probably the best value for most uses, while 2 and 3 give more information.
-
-Resolved cutSwitchOff, passCuts/minDrop, depthMiniBab, and dive iteration
-limit diagnostics are printed only at levels 2 and above.
 
 **Range:** -1 to 999999 (default: 1)
 
@@ -2430,7 +2525,7 @@ Used when depthMiniBab is auto or -1: a problem whose row and column counts add 
 
 Minimum objective improvement for a root cut pass to count
 
-Root cut generation stops once a pass improves the objective by less than this, unless passCuts (or the cutPassSmall/cutPassMedium/cutPassLarge value it resolves to) is negative. The default, auto, is min(0.05, 1e-5*|objective| + 1e-5), using the LP objective when branch-and-bound is set up. The choice is logged at logLevel 2 and above.
+Root cut generation stops once a pass improves the objective by less than this, unless passCuts (or the cutPassSmall/cutPassMedium/cutPassLarge value it resolves to) is negative. The default, auto, is min(0.05, 1e-5*|objective| + 1e-5), using the LP objective when branch-and-bound is set up. The choice is logged.
 
 **Range:** 0 to inf (default: auto)
 
@@ -2575,3 +2670,4 @@ This exercises the unit test for clp and then solves the netlib test set using p
 Solve entire netlib test set with 'best' algorithm
 
 This exercises the unit test for clp and then solves the netlib test set using whatever works best. I know this is cheating but it also stresses the code better by doing a mixture of stuff. The best algorithm was chosen on a Linux ThinkPad using native cholesky with University of Florida ordering.
+

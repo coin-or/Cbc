@@ -13,6 +13,7 @@
 
 #include "CbcParameters.hpp"
 #include "CbcParamUtils.hpp"
+#include "CbcProblemClassifier.hpp"
 
 /*
   Constructor for parameters class.
@@ -567,7 +568,10 @@ int CbcParameters::matches(std::string field, int &numberMatches)
   "'root' lets CBC run the cut generator generate only at the root node. "    \
   "Value 'ifmove' lets CBC use the cut generator in the tree if it looks as " \
   "if it is doing some good and moves the objective value. Value 'forceon' "  \
-  "turns on the cut generator and forces CBC to use it at every node.\n"
+  "turns on the cut generator and forces CBC to use it at every node. Value "  \
+  "'auto' (the default) keeps the built-in setting unless autoTuneCuts "      \
+  "recognises the problem class and picks a better one; any value given "     \
+  "explicitly always overrides the automatic choice.\n"
 
 #define HEURISTICS_LONGHELP                                                  \
   "Value 'on' means to use the heuristic in each node of the tree, i.e. "    \
@@ -1036,6 +1040,12 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::RESIDCAPCUTS]->setDefault("off");
     parameters_[CbcParam::TWOMIRCUTS]->setDefault("ifmove");
     parameters_[CbcParam::ZEROHALFCUTS]->setDefault("ifmove");
+    // Value 'auto' = built-in default, unless autoTuneCuts picks for the class
+    {
+      const std::vector< int > &autoCodes = CbcProblemClassifier::autoCutParams();
+      for (size_t i = 0; i < autoCodes.size(); ++i)
+        parameters_[autoCodes[i]]->setAutoAllowed();
+    }
     parameters_[CbcParam::COMBINE]->setDefault("off");
     parameters_[CbcParam::CROSSOVER]->setDefault("off");
     parameters_[CbcParam::DINS]->setDefault("off");
@@ -3494,7 +3504,12 @@ void CbcParameters::addCbcSolverBoolParams()
     "When on, CBC analyzes instance features to classify the problem "
     "(pure set partitioning, set packing, set covering, mixed SPP, etc.) "
     "and tailors cut generator selection, effort, and filtering automatically, "
-    "disabling ineffective generators that waste time.");
+    "disabling ineffective generators that waste time. Only parameters still "
+    "at 'auto' (the default of the individual cut generators, e.g. gomoryCuts, "
+    "cliqueCuts, zeroHalfCuts, ...) are changed; anything set explicitly, "
+    "including 'gomoryCuts ifmove', is never touched. The class found and each "
+    "parameter changed are logged. See problemClass to force a class, and "
+    "cutPassRatio/minDropRatio to scale effort relative to the resolved values.");
 
   parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setup(
     "preRootLPStr!enghtening",

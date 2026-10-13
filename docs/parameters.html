@@ -267,10 +267,10 @@
     <div id="match-count"></div>
     <nav id="sidebar-nav">
 <a href="#stopping" class="sb-link">Stopping<span class="sb-count">10</span></a>
-<a href="#mip-preprocessing" class="sb-link">MIP Preprocessing<span class="sb-count">12</span></a>
+<a href="#mip-preprocessing" class="sb-link">MIP Preprocessing<span class="sb-count">13</span></a>
 <a href="#mip-preprocessing-bound-propagation" class="sb-link">MIP Preprocessing — Bound Propagation<span class="sb-count">9</span></a>
 <a href="#lp-presolve" class="sb-link">LP Presolve<span class="sb-count">3</span></a>
-<a href="#cuts" class="sb-link">Cuts<span class="sb-count">56</span></a>
+<a href="#cuts" class="sb-link">Cuts<span class="sb-count">66</span></a>
 <a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">37</span></a>
 <a href="#branching" class="sb-link">Branching<span class="sb-count">8</span></a>
 <a href="#tolerances" class="sb-link">Tolerances<span class="sb-count">6</span></a>
@@ -290,7 +290,7 @@
   <div class="main-content">
     <header class="page-header">
       <h1>Parameter Reference</h1>
-      <p>CBC v2.933-90-ge60549a4-dirty &mdash; September 2026 &mdash; 284 parameters across 18 sections</p>
+      <p>CBC v2.933-133-geaa3997f &mdash; October 2026 &mdash; 328 parameters across 18 sections</p>
     </header>
 
 <section id="stopping" class="topic-section">
@@ -361,6 +361,11 @@
   <summary><span class="pname"><code>-PrepNames</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">If column names will be kept in pre-processed model</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
   <div class="pbody"><p class="plong">Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>on</code>)</span></div></div>
+</details>
+<details class="param" data-search="preproctimes whether to report where preprocessing spent its time">
+  <summary><span class="pname"><code>-preprocTimes</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to report where preprocessing spent its time</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
+  <div class="pbody"><p class="plong">When on, preprocessing ends with a table of wall-clock time per phase (presolve, LP solves, probing, ...) and one row per preprocessing pass, and postprocessing reports its own breakdown.  Times include every preprocessing attempt, e.g. the simpler retry after a failed first one.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
 </details>
 <details class="param" data-search="rowreductions whether to remove redundant rows before the root lp">
   <summary><span class="pname"><code>-rowReductions</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to remove redundant rows before the root LP</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
@@ -508,19 +513,19 @@
 </details>
 <details class="param" data-search="flowcovercuts whether to use flow cover cuts">
   <summary><span class="pname"><code>-flowCoverCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Flow Cover cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
-  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
+  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node. Value &#x27;auto&#x27; (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglFlowCover</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
 <details class="param" data-search="gmicuts whether to use alternative gomory cuts">
   <summary><span class="pname"><code>-GMICuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use alternative Gomory cuts</span><span class="pmeta">default:&nbsp;<code>root</code></span></summary>
-  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
+  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node. Value &#x27;auto&#x27; (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  This version is by Giacomo Nannicini and may be more robust than gomoryCuts.</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">endonly</code> <code class="kw">long</code> <code class="kw">longroot</code> <code class="kw">longifmove</code> <code class="kw">forcelongon</code> <code class="kw">longendonly</code>&ensp;<span class="pmeta">(default: <code>root</code>)</span></div></div>
 </details>
 <details class="param" data-search="gomorycuts whether to use gomory cuts">
   <summary><span class="pname"><code>-gomoryCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Gomory cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
-  <div class="pbody"><p class="plong">The original cuts - beware of imitations!  Having gone out of favor, they are now more fashionable as LP solvers are more robust and they interact well with other cuts.  They will almost always give cuts (although in this executable they are limited as to number of variables in cut).  However the cuts may be dense so it is worth experimenting (Long allows any length). Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
+  <div class="pbody"><p class="plong">The original cuts - beware of imitations!  Having gone out of favor, they are now more fashionable as LP solvers are more robust and they interact well with other cuts.  They will almost always give cuts (although in this executable they are limited as to number of variables in cut).  However the cuts may be dense so it is worth experimenting (Long allows any length). Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node. Value &#x27;auto&#x27; (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglGomory</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">forceandglobal</code> <code class="kw">forcelongon</code> <code class="kw">onglobal</code> <code class="kw">longer</code> <code class="kw">shorter</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
@@ -531,7 +536,7 @@
 </details>
 <details class="param" data-search="knapsackcuts whether to use knapsack cuts">
   <summary><span class="pname"><code>-knapsackCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Knapsack cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
-  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
+  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node. Value &#x27;auto&#x27; (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglKnapsackCover</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">forceandglobal</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
@@ -542,7 +547,7 @@
 </details>
 <details class="param" data-search="liftandprojectcuts whether to use lift-and-project cuts">
   <summary><span class="pname"><code>-liftAndProjectCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use lift-and-project cuts</span><span class="pmeta">default:&nbsp;<code>root</code></span></summary>
-  <div class="pbody"><p class="plong">These cuts may be expensive to compute. Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
+  <div class="pbody"><p class="plong">These cuts may be expensive to compute. Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node. Value &#x27;auto&#x27; (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglLandP</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">iflongon</code>&ensp;<span class="pmeta">(default: <code>root</code>)</span></div></div>
 </details>
@@ -553,7 +558,7 @@
 </details>
 <details class="param" data-search="mixedintegerroundingcuts whether to use mixed integer rounding cuts">
   <summary><span class="pname"><code>-mixedIntegerRoundingCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Mixed Integer Rounding cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
-  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
+  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node. Value &#x27;auto&#x27; (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglMixedIntegerRounding2</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
@@ -569,7 +574,7 @@
 </details>
 <details class="param" data-search="reduceandsplitcuts whether to use reduce-and-split cuts">
   <summary><span class="pname"><code>-reduceAndSplitCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Reduce-and-Split cuts</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
-  <div class="pbody"><p class="plong">These cuts may be expensive to generate. Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
+  <div class="pbody"><p class="plong">These cuts may be expensive to generate. Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node. Value &#x27;auto&#x27; (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglRedSplit</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
 </details>
@@ -580,19 +585,19 @@
 </details>
 <details class="param" data-search="residualcapacitycuts whether to use residual capacity cuts">
   <summary><span class="pname"><code>-residualCapacityCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Residual Capacity cuts</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
-  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
+  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node. Value &#x27;auto&#x27; (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglResidualCapacity</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
 </details>
 <details class="param" data-search="twomircuts whether to use two phase mixed integer rounding cuts">
   <summary><span class="pname"><code>-twoMirCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use Two phase Mixed Integer Rounding cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
-  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
+  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node. Value &#x27;auto&#x27; (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglTwomir</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">forceandglobal</code> <code class="kw">forcelongon</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
 <details class="param" data-search="zerohalfcuts whether to use zero half cuts">
   <summary><span class="pname"><code>-zeroHalfCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use zero half cuts</span><span class="pmeta">default:&nbsp;<code>ifmove</code></span></summary>
-  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node.
+  <div class="pbody"><p class="plong">Value &#x27;on&#x27; enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value &#x27;root&#x27; lets CBC run the cut generator generate only at the root node. Value &#x27;ifmove&#x27; lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value &#x27;forceon&#x27; turns on the cut generator and forces CBC to use it at every node. Value &#x27;auto&#x27; (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  This implementation was written by Alberto Caprara.</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">root</code> <code class="kw">ifmove</code> <code class="kw">forceon</code> <code class="kw">onglobal</code>&ensp;<span class="pmeta">(default: <code>ifmove</code>)</span></div></div>
 </details>
@@ -610,6 +615,26 @@
   <summary><span class="pname"><code>-impliedCliqueFilter</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether the implied-clique cut generator filters its cuts</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
   <div class="pbody"><p class="plong">The implied-clique cut generator normally only removes duplicate cuts, since the per-column filter used for clique cuts was measured to remove almost nothing here. When on, it applies that filter too. cliqueFilterAlways also turns it on.</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+</details>
+<details class="param" data-search="autotunecuts whether to auto-tune cut generators based on problem class">
+  <summary><span class="pname"><code>-autoTuneCuts</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to auto-tune cut generators based on problem class</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
+  <div class="pbody"><p class="plong">When on, CBC analyzes instance features to classify the problem (pure set partitioning, set packing, set covering, mixed SPP, etc.) and tailors cut generator selection, effort, and filtering automatically, disabling ineffective generators that waste time. Only parameters still at &#x27;auto&#x27; (the default of the individual cut generators, e.g. gomoryCuts, cliqueCuts, zeroHalfCuts, ...) are changed; anything set explicitly, including &#x27;gomoryCuts ifmove&#x27;, is never touched. The class found and each parameter changed are logged. See problemClass to force a class, and cutPassRatio/minDropRatio to scale effort relative to the resolved values.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>on</code>)</span></div></div>
+</details>
+<details class="param" data-search="problemclass problem class override for auto-tuning">
+  <summary><span class="pname"><code>-problemClass</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Problem class override for auto-tuning</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Overrides problem classification for algorithm and cut tuning.
+  auto:         automatic detection using instance features (default)
+  general:      general MIP (disables special class auto-tuning)
+  partitioning: pure set partitioning (all rows sum x_j = 1)
+  packing:      pure set packing (all rows sum x_j &lt;= 1)
+  partpack:     set partitioning and packing (sum x_j = 1 or &lt;= 1, like rmp11)
+  covering:     pure set covering (all rows sum x_j &gt;= 1)
+  mixedspp:     mixed SPP (100% of rows are partitioning/packing/covering)
+  mostlyspp:    mostly SPP (&gt;= 85% of rows are SPP)
+  knapsack:     0-1 knapsack problem
+  general01:    general 0-1 MIP</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">auto</code> <code class="kw">general</code> <code class="kw">partitioning</code> <code class="kw">packing</code> <code class="kw">partpack</code> <code class="kw">covering</code> <code class="kw">mixedspp</code> <code class="kw">mostlyspp</code> <code class="kw">knapsack</code> <code class="kw">general01</code>&ensp;<span class="pmeta">(default: <code>auto</code>)</span></div></div>
 </details>
 <details class="param" data-search="aggregatelevel level of aggregation used in cglmixedrounding">
   <summary><span class="pname"><code>-aggregatelevel</code></span><span class="badge badge-int">Integer</span><span class="pshort">Level of aggregation used in CglMixedRounding</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
@@ -630,6 +655,31 @@
   <summary><span class="pname"><code>-passTreeCuts</code></span><span class="badge badge-int">Integer</span><span class="pshort">Number of rounds that cut generators are applied in the tree</span><span class="pmeta">default:&nbsp;<code>4</code></span></summary>
   <div class="pbody"><p class="plong">The default is 4 passes at each node, stopping early once the objective stops dropping. A negative value -n means that n passes are also applied if the objective does not drop.</p>
 <div class="pextra"><strong>Range:</strong> −INT_MAX&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;4)</span></div></div>
+</details>
+<details class="param" data-search="rootcutdroppatience consecutive below-mindrop rounds before stopping root cuts">
+  <summary><span class="pname"><code>-rootCutDropPatience</code></span><span class="badge badge-int">Integer</span><span class="pshort">Consecutive below-minDrop rounds before stopping root cuts</span><span class="pmeta">default:&nbsp;<code>2</code></span></summary>
+  <div class="pbody"><p class="plong">The default 2 requires two consecutive weak rounds; 1 restores the previous stopping rule. Values above 1 require this many consecutive root rounds with objective improvement below minDrop before stopping for insufficient progress; a successful round resets the counter. Existing progress-history exceptions still apply. This also delays stopping on empty or zero-iteration root rounds. The pass and time budgets still apply. Ignored for negative passCuts, nonpositive minDrop, tree nodes and heuristic subproblems.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;2)</span></div></div>
+</details>
+<details class="param" data-search="rootcutfilterscore root cut score: legacy, efficacy or sparse efficacy">
+  <summary><span class="pname"><code>-rootCutFilterScore</code></span><span class="badge badge-int">Integer</span><span class="pshort">Root cut score: legacy, efficacy or sparse efficacy</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
+  <div class="pbody"><p class="plong">Root-only selection score (default 1). 0 preserves legacy fitness; 1 uses violation divided by the coefficient Euclidean norm; 2 also divides by total cut nonzeros. Modes 3 and 4 use the scores of 1 and 2 respectively but omit the best-per-column contest. All apply cutFilterMaxParallelism greedily in score order. Ranged, equality and mandatory cuts are retained. No tree/subproblem change.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;4&ensp;<span class="pmeta">(default:&nbsp;1)</span></div></div>
+</details>
+<details class="param" data-search="rootcutfilterscope root selection: 0 local, 1 global, 2 both">
+  <summary><span class="pname"><code>-rootCutFilterScope</code></span><span class="badge badge-int">Integer</span><span class="pshort">Root selection: 0 local, 1 global, 2 both</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
+  <div class="pbody"><p class="plong">Combined-round selection using rootCutFilterScore (default 1: global). Score must be nonzero for global selection; 0 restores the per-generator filters only. Mode 1 bypasses the generic per-generator filter at root; mode 2 retains it. Generator-internal filters remain active. Mandatory/branch cuts are protected. Existing cutFilter eligibility and parallelism settings apply. Tree and subproblem selection are unchanged.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;2&ensp;<span class="pmeta">(default:&nbsp;1)</span></div></div>
+</details>
+<details class="param" data-search="rootcutreuseperiod scan removed root cuts every k rounds (0 = legacy)">
+  <summary><span class="pname"><code>-rootCutReusePeriod</code></span><span class="badge badge-int">Integer</span><span class="pshort">Scan removed root cuts every k rounds (0 = legacy)</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
+  <div class="pbody"><p class="plong">0 preserves reuse only when generators produce no new cuts. Positive k also scans the existing removed-root-cut collection on rounds divisible by k, even with new cuts present. Violated cuts are ranked by normalized violation and capped by rootCutReuseMaxCuts. No new persistent pool is created; rejected generator candidates are not retained. Tree/subproblem behavior is unchanged.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
+</details>
+<details class="param" data-search="rootcutreusemaxcuts most removed cuts reactivated on a scheduled scan">
+  <summary><span class="pname"><code>-rootCutReuseMaxCuts</code></span><span class="badge badge-int">Integer</span><span class="pshort">Most removed cuts reactivated on a scheduled scan</span><span class="pmeta">default:&nbsp;<code>20</code></span></summary>
+  <div class="pbody"><p class="plong">Limits additional root reactivation when rootCutReusePeriod is positive. The existing no-new-cuts fallback is unchanged.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;20)</span></div></div>
 </details>
 <details class="param" data-search="slowcutpasses maximum number of rounds for slower cut generators">
   <summary><span class="pname"><code>-slowcutpasses</code></span><span class="badge badge-int">Integer</span><span class="pshort">Maximum number of rounds for slower cut generators</span><span class="pmeta">default:&nbsp;<code>10</code></span></summary>
@@ -660,6 +710,11 @@
   <summary><span class="pname"><code>-zeroHalfSparseThreshold</code></span><span class="badge badge-int">Integer</span><span class="pshort">Active-node threshold for sparse ZeroHalf separation graph</span><span class="pmeta">default:&nbsp;<code>8000</code></span></summary>
   <div class="pbody"><p class="plong">If positive, ZeroHalf will use the sparse separation-graph implementation when the number of active separator nodes exceeds this threshold. A value of 0 forces sparse mode for testing. Negative values disable threshold-based switching, but sparse mode is still used automatically when the dense graph would be unsafe.</p>
 <div class="pextra"><strong>Range:</strong> -1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;8000)</span></div></div>
+</details>
+<details class="param" data-search="zerohalfrootperiod root round interval for zerohalf (0 = adaptive)">
+  <summary><span class="pname"><code>-zeroHalfRootPeriod</code></span><span class="badge badge-int">Integer</span><span class="pshort">Root round interval for ZeroHalf (0 = adaptive)</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
+  <div class="pbody"><p class="plong">0 preserves existing scheduling. A positive k tries ZeroHalf at root rounds 1, 1+k, 1+2k, bypassing adaptive backoff for this generator. Shutdown rules still apply: use cutSwitchOff zeroHalf:0 to retain it after barren calls. Tree and subproblem scheduling are unchanged. Root patience, pass and time budgets still apply; the solver need not continue until the next scheduled call.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
 </details>
 <details class="param" data-search="cutgatemincols fewest columns for which gmi, lift-and-project and reduce2 run by default">
   <summary><span class="pname"><code>-cutGateMinCols</code></span><span class="badge badge-int">Integer</span><span class="pshort">Fewest columns for which GMI, lift-and-project and reduce2 run by default</span><span class="pmeta">default:&nbsp;<code>500</code></span></summary>
@@ -780,6 +835,16 @@
   <summary><span class="pname"><code>-cliqueFilterMaxParallelism</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Parallelism above which the clique cut filter drops the weaker cut</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
   <div class="pbody"><p class="plong">Like cutFilterMaxParallelism, for the clique, odd-wheel and implied-clique cut generators. The default, 1, turns this filter off: a sweep of 0.1 to 0.9 found no value that paid off for these cuts.</p>
 <div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;1)</span></div></div>
+</details>
+<details class="param" data-search="cutpassratio relative multiplier for the root cut passes budget">
+  <summary><span class="pname"><code>-cutPassRatio</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Relative multiplier for the root cut passes budget</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
+  <div class="pbody"><p class="plong">Scales the resolved root cut pass budget by this factor (e.g. 1.5 runs 1.5x passes, 0.8 runs 0.8x passes).</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;100&ensp;<span class="pmeta">(default:&nbsp;1)</span></div></div>
+</details>
+<details class="param" data-search="mindropratio relative multiplier for the minimum drop threshold">
+  <summary><span class="pname"><code>-minDropRatio</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Relative multiplier for the minimum drop threshold</span><span class="pmeta">default:&nbsp;<code>1</code></span></summary>
+  <div class="pbody"><p class="plong">Scales the minimum drop threshold by this factor (e.g. 0.5 lowers minDrop to allow more passes).</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;10000000000&ensp;<span class="pmeta">(default:&nbsp;1)</span></div></div>
 </details>
 <details class="param" data-search="passcuts number of cut passes at root node">
   <summary><span class="pname"><code>-passCuts</code></span><span class="badge badge-int">Integer</span><span class="pshort">Number of cut passes at root node</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
@@ -1272,10 +1337,10 @@ This should only be necessary if you have previously set maximization. A synonym
  You can also use the parameters &#x27;maximize&#x27; or &#x27;minimize&#x27;.</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">min!imize</code> <code class="kw">max!imize</code> <code class="kw">zero</code>&ensp;<span class="pmeta">(default: <code>min(imize)</code>)</span></div></div>
 </details>
-<details class="param" data-search="vector whether to use vector? form of matrix in simplex">
-  <summary><span class="pname"><code>-vector</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to use vector? Form of matrix in simplex</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
-  <div class="pbody"><p class="plong">If this is on ClpPackedMatrix uses extra column copy in odd format.</p>
-<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
+<details class="param" data-search="vector try and use vector instructions in simplex">
+  <summary><span class="pname"><code>-vector</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Try and use vector instructions in simplex</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
+  <div class="pbody"><p class="plong">At present only for Intel architectures - but could be extended. Uses avx2 or avx512 instructions. Uses different storage for matrix - can be of benefit without instruction set on some problems. I may add pool to switch on a pool matrix</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code> <code class="kw">ones</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
 </details>
 <details class="param" data-search="decompose whether to try decomposition">
   <summary><span class="pname"><code>-decompose</code></span><span class="badge badge-int">Integer</span><span class="pshort">Whether to try decomposition</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>

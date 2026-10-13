@@ -7334,6 +7334,8 @@ public:
     CbcParameters &parameters, int cbcLogLevel)
     : babModel_(babModel)
   {
+    babModel_.setProgressCsv(parameters[CbcParam::PROGRESSCSVFILE]->fileName(),
+      parameters[CbcParam::PROGRESSMINCHANGE]->dblVal());
     // FPump progress output
     int fpumpPassFreq = parameters[CbcParam::FPUMPPASSFREQ]->intVal();
     double fpumpTimeFreq = parameters[CbcParam::FPUMPTIMEFREQ]->dblVal();

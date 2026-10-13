@@ -213,6 +213,22 @@ def parse_log(path):
                 final=final, infeasible=infeasible)
 
 
+def apply_progress_csv(ev, path):
+    """Replace log-derived bound events by the exact timestamps of -progressCsv."""
+    prim, bnb = [], []
+    with open(path) as f:
+        for r in csv.DictReader(f):
+            t, p, d = float(r["time"]), float(r["primal"]), float(r["dual"])
+            pv = p if p < 1e49 else None
+            dv = d if d > -1e49 else None
+            if pv is not None:
+                prim.append((t, pv))
+            if dv is not None:
+                bnb.append((t, pv, dv))
+    ev["prim"], ev["bnb"], ev["root_lp"], ev["cuts"] = prim, bnb, None, []
+    return ev
+
+
 def build_trace(ev, sense_max):
     """Combine raw events into monotone primal/dual step functions (min sign)."""
     sg = -1.0 if sense_max else 1.0
@@ -389,7 +405,8 @@ def cmd_run(a):
         sec = a.sec or float(limits.get(name, {}).get("time_limit_sec") or 120)
         log = os.path.join(a.out, name + ".log")
         cmd = [a.cbc, os.path.join(inst_dir, name + ".mps.gz"), "-threads", str(a.threads),
-               "-sec", str(sec)] + ([] if a.nodes is None else ["-maxNodes", str(a.nodes)]) + extra + ["-solve"]
+               "-sec", str(sec),
+               "-progressCsv", os.path.join(a.out, name + ".progress.csv")] + ([] if a.nodes is None else ["-maxNodes", str(a.nodes)]) + extra + ["-solve"]
         with open(log, "w") as f:
             f.write("# cmd: %s\n# limit: %g\n" % (" ".join(cmd), sec))
             f.flush()
@@ -429,6 +446,9 @@ def analyze_dir(d, a):
         name = fn[:-4]
         path = os.path.join(d, fn)
         ev = parse_log(path)
+        pcsv = os.path.join(d, name + ".progress.csv")
+        if os.path.exists(pcsv) and os.path.getsize(pcsv) > 0:
+            ev = apply_progress_csv(ev, pcsv)
         ref, sense = bks_value(bks, name)
         maximize = (sense == "max") if sense else False
         tr = build_trace(ev, maximize)
@@ -555,6 +575,45 @@ def cmd_compare(a):
 # ---------------------------------------------------------------- plot
 
 
+def cmd_credit(a):
+    """Which method produced the improvements (from *.progress.csv files)."""
+    prim = {}   # source -> [count, sum relative improvement]
+    dual = {}
+    first = {}
+    n = 0
+    for d in a.dirs:
+        for fn in sorted(os.listdir(d)):
+            if not fn.endswith(".progress.csv"):
+                continue
+            n += 1
+            lp, ld = None, None
+            with open(os.path.join(d, fn)) as f:
+                for r in csv.DictReader(f):
+                    p_, d_, src = float(r["primal"]), float(r["dual"]), r["source"]
+                    if src in ("start", "final"):
+                        continue
+                    if p_ < 1e49 and (lp is None or p_ < lp - 1e-9 * max(1, abs(p_))):
+                        if lp is None:
+                            first[src] = first.get(src, 0) + 1
+                        else:
+                            e = prim.setdefault(src, [0, 0.0])
+                            e[0] += 1
+                            e[1] += (lp - p_) / max(1.0, abs(lp))
+                        lp = p_
+                    if d_ > -1e49 and (ld is None or d_ > ld + 1e-9 * max(1, abs(d_))):
+                        if ld is not None:
+                            e = dual.setdefault(src, [0, 0.0])
+                            e[0] += 1
+                            e[1] += (d_ - ld) / max(1.0, abs(ld))
+                        ld = d_
+    print("%d runs" % n)
+    for title, tab in (("first incumbent", {k: [v, 0.0] for k, v in first.items()}),
+                       ("primal improvements", prim), ("dual improvements", dual)):
+        print("\n%-22s %8s %12s" % (title, "count", "sum rel.chg"))
+        for k, (c, v) in sorted(tab.items(), key=lambda kv: -kv[1][0]):
+            print("  %-20s %8d %12.4f" % (k, c, v))
+
+
 def cmd_plot(a):
     import matplotlib
     matplotlib.use("Agg")
@@ -622,6 +681,10 @@ def main():
     c.add_argument("--tol", type=float, default=0.005)
     c.add_argument("--top", type=int, default=10)
     c.set_defaults(fn=cmd_compare)
+
+    cr = sub.add_parser("credit", help="improvements per source (needs *.progress.csv)")
+    cr.add_argument("dirs", nargs="+")
+    cr.set_defaults(fn=cmd_credit)
 
     p = sub.add_parser("plot", help="mean gap curves")
     p.add_argument("exps", nargs="+")

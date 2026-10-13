@@ -686,6 +686,7 @@ void CbcParameters::addCbcParams()
   parameters_[CbcParam::TIGHTENFACTOR]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::LPTIMEFREQ]->setTopic("Output");
   parameters_[CbcParam::FPUMPTIMEFREQ]->setTopic("Output");
+  parameters_[CbcParam::PROGRESSMINCHANGE]->setTopic("Output");
   parameters_[CbcParam::RINSCLOSEMAXDIST]->setTopic("Heuristics");
 
   // Integer params — Cuts
@@ -846,6 +847,7 @@ void CbcParameters::setDefaults(int strategy)
   parameters_[CbcParam::MIPSTARTFILE]->setDefault(std::string("mipstart.sol"));
   parameters_[CbcParam::MODELFILE]->setDefault(std::string("prob.mod"));
   parameters_[CbcParam::NEXTSOLFILE]->setDefault(std::string("next.sol"));
+  parameters_[CbcParam::PROGRESSCSVFILE]->setDefault(std::string(""));
   parameters_[CbcParam::PRINTMASK]->setDefault("");
   parameters_[CbcParam::CUTSWITCHOFF]->setDefault("auto");
   parameters_[CbcParam::MAXMEMORY]->setDefault("");
@@ -892,6 +894,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::RINSCLOSEMAXDIST]->setDefault(0.4);
     parameters_[CbcParam::LPTIMEFREQ]->setDefault(5.0);
     parameters_[CbcParam::FPUMPTIMEFREQ]->setDefault(5.0);
+    parameters_[CbcParam::PROGRESSMINCHANGE]->setDefault(1.0e-4);
     parameters_[CbcParam::AGGREGATEMIXED]->setDefault(1);
     parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setDefault(3);
     parameters_[CbcParam::BKMAXCALLS]->setDefault(1000);
@@ -1708,6 +1711,16 @@ void CbcParameters::addCbcSolverFileParams()
     "Adds header if file empty or does not exist.",
     CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::PROGRESSCSVFILE]->setup(
+    "progressCsv", "writes the primal/dual bound evolution to a CSV file",
+    "Writes a CSV with columns time,primal,dual,source,nodes: one row per "
+    "new incumbent (source = the heuristic that found it, or 'tree') and one "
+    "row per tree progress line (source = 'bound'). Times are seconds since "
+    "the start of the branch-and-bound model, values are those of the "
+    "preprocessed problem. Used by test/cbc_pdi.py for exact "
+    "primal-dual integral computation. Empty (default) disables it.",
+    CoinParam::displayPriorityLow);
+
   parameters_[CbcParam::DEBUGFILE]->setup(
     "debugF!ile", "sets name of file to read/write valid solution from/to",
     "This will read a solution file from the given file name.  It will use "
@@ -2303,6 +2316,16 @@ void CbcParameters::addCbcSolverDblParams()
     "fpumpTimeFreq",
     "Print feasibility pump progress every N seconds (0 = disabled, default 5).",
     0.0, 1e10, "", CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::PROGRESSMINCHANGE]->setup(
+    "progressMinC!hange",
+    "Minimum relative dual bound improvement recorded by progressCsv",
+    0.0, 1.0,
+    "A dual bound row is appended to the progressCsv file only if the bound "
+    "improved by at least this fraction of max(1,|bound|) since the last "
+    "recorded one. Incumbents, the start and the final state are always "
+    "recorded. 0 records every improvement. Default 1e-4.",
+    CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::MINIMUMDROP]->setup(
     "minD!rop", "Minimum objective improvement for a root cut pass to count",

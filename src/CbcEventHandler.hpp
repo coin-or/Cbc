@@ -111,7 +111,11 @@ public:
     /*! Setting up handler. */
     startUp,
     /*! Just before starting branching i.e. after root cuts. */
-    afterRootCuts
+    afterRootCuts,
+    /*! The global dual bound has improved (root LP, a root cut pass, or the
+        best bound over the open nodes). Informational: the action returned
+        is ignored. Read it with model->getBestPossibleObjValue(). */
+    dualBound
   };
 
   /*! \brief Action codes returned by the event handler.

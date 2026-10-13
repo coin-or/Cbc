@@ -5621,6 +5621,7 @@ void CbcModel::branchAndBound(int doStatistics)
         assert(getCutoff() < bestObjective_ - getCutoffIncrement() + 1.0e-6 + 1.0e-10 * fabs(bestObjective_));
       }
 #endif
+      reportDualBound(bestPossibleObjective_, "bound");
       if (!intParam_[CbcPrinting]) {
         // Parallel may not have any nodes
         if (!nNodes)
@@ -6018,6 +6019,11 @@ void CbcModel::branchAndBound(int doStatistics)
     handler_->message(CBC_END, messages_)
       << trueBestObjValue() << trueObjValue(bestPossibleObjective_) << numberIterations_
       << numberNodes_+numberExtraNodes_ << getCurrentSeconds() << CoinMessageEol;
+  }
+  if (progressCsv_ && !parentModel_) {
+    // final state
+    progressLastDual_ = std::min(bestPossibleObjective_, bestObjective_);
+    writeProgressCsv("final");
   }
   if ((moreSpecialOptions_ & 4194304) != 0) {
     // Conflict cuts
@@ -9642,6 +9648,9 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   do {
     currentPassNumber_++;
     numberTries--;
+    if (!node && !parentModel_ && solver_->isProvenOptimal())
+      reportDualBound(solver_->getObjValue() * solver_->getObjSenseInCbc(),
+        currentPassNumber_ == 1 ? "rootLP" : "cutpass");
 #ifdef CBC_DUMP_CLQSEP_FIXTURE
     // Capture the clique-separation fixture. This is the one point where the
     // preprocessed matrix, its optimal LP solution and basis, and the conflict
@@ -15355,6 +15364,7 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
             */
       specialOptions_ |= 256; // mark as full cut scan should be done
       saveBestSolution(solution, objectiveValue);
+      writeProgressCsv((how == CBC_ROUNDING && lastHeuristic_) ? lastHeuristic_->heuristicName() : "tree");
 #ifdef CHECK_KNOWN_SOLUTION
       // Diagnostic: whenever a new incumbent is accepted, log its source
       // (how: CBC_SOLUTION/CBC_SOLUTION2/CBC_ROUNDING/...), objective, node
@@ -19475,6 +19485,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         */
     // Set currentNode_ so can be used in handler
     currentNode_ = newNode;
+    sampleTreeDualBound(newNode);
     if (eventHandler_ && !eventHandler_->event(CbcEventHandler::node)) {
       eventHappened_ = true; // exit
     }
@@ -22750,3 +22761,65 @@ void CbcModel::fixFromGlobalCuts()
 #endif
 }
 #endif
+
+void CbcModel::setProgressCsv(const std::string &fileName, double minRelChange)
+{
+  progressCsv_.reset();
+  progressMinChange_ = minRelChange;
+  if (fileName.empty())
+    return;
+  FILE *fp = fopen(fileName.c_str(), "w");
+  if (!fp)
+    return;
+  fprintf(fp, "time,primal,dual,source,nodes\n");
+  progressCsv_.reset(fp, fclose);
+  // initial state; the dual bound is unknown until the first LP is solved
+  fprintf(fp, "0.000,1e+50,-1e+50,start,0\n");
+  fflush(fp);
+}
+
+void CbcModel::writeProgressCsv(const char *source)
+{
+  if (!progressCsv_ || parentModel_)
+    return;
+  const double primal = bestObjective_ < 1.0e30 ? trueObjValue(bestObjective_) : 1.0e50;
+  fprintf(progressCsv_.get(), "%.3f,%.10g,%.10g,%s,%d\n", getCurrentSeconds(), primal,
+    progressLastDual_ > -1.0e30 ? trueObjValue(progressLastDual_) : trueObjValue(bestPossibleObjective_),
+    source, numberNodes_ + numberExtraNodes_);
+  fflush(progressCsv_.get());
+}
+
+void CbcModel::reportDualBound(double minObjValue, const char *source)
+{
+  if (parentModel_ || minObjValue >= 1.0e30)
+    return;
+  minObjValue = std::min(minObjValue, bestObjective_);
+  const double scale = std::max(1.0, fabs(minObjValue));
+  if (minObjValue <= progressLastDual_ + 1.0e-9 * scale)
+    return;
+  const bool record = progressLastDual_ < -1.0e30 || minObjValue >= progressLastDual_ + progressMinChange_ * scale;
+  if (record) {
+    progressLastDual_ = minObjValue;
+    writeProgressCsv(source);
+  }
+  bestPossibleObjective_ = std::max(bestPossibleObjective_, minObjValue);
+  if (eventHandler_)
+    eventHandler_->event(CbcEventHandler::dualBound);
+}
+
+void CbcModel::sampleTreeDualBound(const CbcNode *current)
+{
+  if (parentModel_ || !tree_ || parallelMode() > 0 || (!progressCsv_ && !eventHandler_))
+    return;
+  // Scanning the open nodes is linear in the tree size: do it at every node
+  // while the tree is small, otherwise at most every 0.1 s.
+  const double now = getCurrentSeconds();
+  if (tree_->size() >= 1000 && now - progressLastSample_ < 0.1)
+    return;
+  progressLastSample_ = now;
+  double bound = tree_->getBestPossibleObjective();
+  // the node being processed is no longer on the tree but still bounds the optimum
+  if (current)
+    bound = std::min(bound, current->objectiveValue());
+  reportDualBound(bound, "node");
+}

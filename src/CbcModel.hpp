@@ -27,6 +27,8 @@
 // CLP_FACTORIZATION
 #endif
 #include <string>
+#include <memory>
+#include <cstdio>
 #include <vector>
 #include "CbcConfig.h"
 #include "CoinMessageHandler.hpp"
@@ -830,6 +832,15 @@ public:
   }
   /// Current time since start of branchAndbound
   double getCurrentSeconds() const;
+  /// Open a CSV recording time,primal,dual,source,nodes at each incumbent and bound update ("" closes it)
+  void setProgressCsv(const std::string &fileName, double minRelChange = 1.0e-4);
+  /// Append one row to the progress CSV if enabled
+  void writeProgressCsv(const char *source);
+  /** Report a (minimisation-sign) valid dual bound. If it improves on the last
+      reported one, appends a progress-CSV row and fires CbcEventHandler::dualBound. */
+  void reportDualBound(double minObjValue, const char *source);
+  /** Throttled report of the best bound over the open nodes (call once per node). */
+  void sampleTreeDualBound(const CbcNode *current);
 
   /** Set the
         \link CbcModel::CbcMaxMemory maximum amount of memory \endlink
@@ -3583,6 +3594,11 @@ private:
   CbcHeuristic **heuristic_;
   /// Pointer to heuristic solver which found last solution (or NULL)
   CbcHeuristic *lastHeuristic_;
+  /// Optional progress CSV (see setProgressCsv); not copied to sub-models
+  std::shared_ptr< FILE > progressCsv_;
+  double progressLastDual_ = -COIN_DBL_MAX;
+  double progressMinChange_ = 1.0e-4;
+  double progressLastSample_ = 0.0;
   /// Output handler for root-node heuristics (not owned; nullptr after doHeuristicsAtRoot)
   CbcRootHeurOutput *rootHeurOutput_ = nullptr;
 

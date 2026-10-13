@@ -148,6 +148,8 @@ def parse_log(path):
             if m:
                 res["time"] = num(m.group(1))
             toks = s.split()
+            heur_row = (len(toks) >= 3 and toks[0][:1].isalpha() and num(toks[-1]) is not None
+                        and not toks[0].startswith(("Round", "Pass", "Nodes", "Heuristic", "Effort", "Phase")))
             if not toks or not re.match(r"^[\d.]", toks[0]) and not toks[0][0].isalpha():
                 continue
 
@@ -167,6 +169,14 @@ def parse_log(path):
                         v = num(toks[-2])
                         if star and v is not None:
                             prim.append((t, v))
+            elif heur_row and not section.startswith(("Branch and bound", "Cut generation")):
+                # Heuristic table row ("Name  status  BestSol  Time"); the table
+                # continues under the Feasibility Jump header in the log.
+                d = num(toks[-1])
+                cursor += d
+                v = num(toks[-2])
+                if v is not None:
+                    prim.append((cursor, v))
             elif star and not section.startswith(("Branch and bound", "Root node heuristics")):
                 # Starred incumbent in any other table (Feasibility Jump,
                 # proximity search, ...): no timestamp, so place it at the
@@ -424,6 +434,9 @@ def analyze_dir(d, a):
         T = a.sec or log_limit(path) or float((limits.get(name) or {}).get("time_limit_sec") or 0) or (tr.end_time or 1.0)
         T = max(T, 1e-9)
         ref_min = None if ref is None else (-ref if maximize else ref)
+        if ref_min is not None and tr.primal and tr.primal[-1][1] < ref_min - 1e-4 * max(1.0, abs(ref_min)):
+            print("WARNING %s: incumbent %g beats best-known %g (parse error or stale bks)" % (
+                name, tr.primal[-1][1], ref_min), file=sys.stderr)
         m = integrate(tr, T, ref_min)
         if tr.status == "infeasible":
             m.update(pdi=None, primal_int=None, dual_int=None)

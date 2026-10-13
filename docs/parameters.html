@@ -1348,9 +1348,9 @@ This should only be necessary if you have previously set maximization. A synonym
 <div class="pextra"><strong>Range:</strong> −INT_MAX&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
 </details>
 <details class="param" data-search="dualize solves dual reformulation">
-  <summary><span class="pname"><code>-dualize</code></span><span class="badge badge-int">Integer</span><span class="pshort">Solves dual reformulation</span><span class="pmeta">default:&nbsp;<code>3</code></span></summary>
-  <div class="pbody"><p class="plong">Don&#x27;t even think about it.</p>
-<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;4&ensp;<span class="pmeta">(default:&nbsp;3)</span></div></div>
+  <summary><span class="pname"><code>-dualize</code></span><span class="badge badge-int">Integer</span><span class="pshort">Solves dual reformulation</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Solve the dual reformulation of the LP and map the solution back. 0 = off, 1 = on, 2 = on without the primal clean-up, 4 = for model export only. `auto&#x27; (default, same as 3) decides from the instance: barrier dualizes when rows &ge; 1.5*cols (the Cholesky factor is then cols x cols instead of rows x rows); simplex methods dualize only very tall models (rows &ge; 50000 and 5*cols <= rows). Any explicit value overrides the automatic choice.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;4 or auto&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
 </details>
 <details class="param" data-search="randomseed random seed for clp">
   <summary><span class="pname"><code>-randomSeed</code></span><span class="badge badge-int">Integer</span><span class="pshort">Random seed for Clp</span><span class="pmeta">default:&nbsp;<code>1234567</code></span></summary>

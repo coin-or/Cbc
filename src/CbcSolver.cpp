@@ -3334,7 +3334,8 @@ void CbcSolver::initialize()
   clpParameters[ClpParam::PRIMALWEIGHT]->setVal(lpSolver->infeasibilityCost());
   clpParameters[ClpParam::SPRINT]->setVal(doSprint);
   clpParameters[ClpParam::SUBSTITUTION]->setVal(substitution);
-  clpParameters[ClpParam::DUALIZE]->setVal(dualize);
+  clpParameters[ClpParam::DUALIZE]->setVal(
+    dualize == 3 ? CoinParam::autoIntValue() : dualize);
   parameters_[CbcParam::OUTPUTFORMAT]->setVal(outputFormat);
   parameters_[CbcParam::LOGLEVEL]->setVal(1);
   parameters_[CbcParam::LPLOGLEVEL]->setVal(1);
@@ -7244,7 +7245,8 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   clpParameters[ClpParam::PRIMALWEIGHT]->setVal(lpSolver->infeasibilityCost());
   clpParameters[ClpParam::SPRINT]->setVal(doSprint);
   clpParameters[ClpParam::SUBSTITUTION]->setVal(substitution);
-  clpParameters[ClpParam::DUALIZE]->setVal(dualize);
+  clpParameters[ClpParam::DUALIZE]->setVal(
+    dualize == 3 ? CoinParam::autoIntValue() : dualize);
   parameters[CbcParam::OUTPUTFORMAT]->setVal(outputFormat);
   parameters[CbcParam::LOGLEVEL]->setVal(1);
   parameters[CbcParam::LPLOGLEVEL]->setVal(1);
@@ -12173,7 +12175,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         } else if (clpParamCode == ClpParam::SUBSTITUTION) {
           substitution = iValue;
         } else if (clpParamCode == ClpParam::DUALIZE) {
-          dualize = iValue;
+          dualize = clpParameters[ClpParam::DUALIZE]->isAuto() ? 3 : iValue;
         } else if (clpParamCode == ClpParam::PERTVALUE) {
           // Apply PERTVALUE immediately so both CLP-handler and applyLpMethod()
           // paths see the user's setting.  PERTVALUE and PERTURBATION (the mode

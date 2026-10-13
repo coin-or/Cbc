@@ -1610,9 +1610,9 @@ Whether to try decomposition
 
 Solves dual reformulation
 
-Don't even think about it.
+Solve the dual reformulation of the LP and map the solution back. 0 = off, 1 = on, 2 = on without the primal clean-up, 4 = for model export only. `auto' (default, same as 3) decides from the instance: barrier dualizes when rows >= 1.5*cols (the Cholesky factor is then cols x cols instead of rows x rows); simplex methods dualize only very tall models (rows >= 50000 and 5*cols <= rows). Any explicit value overrides the automatic choice.
 
-**Range:** 0 to 4 (default: 3)
+**Range:** 0 to 4 or auto (default: auto)
 
 ### `-randomSeed`
 

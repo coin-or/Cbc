@@ -352,6 +352,21 @@ public:
     LPEndMarker
   };
 
+  /*! \brief Problem class mode for auto-tuning */
+  enum ProblemClassMode {
+    ProbClassAuto = 0,
+    ProbClassGeneral,
+    ProbClassPartitioning,
+    ProbClassPacking,
+    ProbClassPartPack,
+    ProbClassCovering,
+    ProbClassMixedSPP,
+    ProbClassMostlySPP,
+    ProbClassKnapsack,
+    ProbClassGeneral01,
+    ProbClassEndMarker
+  };
+
   /*! \brief Get bound propagation level */
   inline BoundPropLevel getBoundPropLevel() const
   {
@@ -370,6 +385,13 @@ public:
   {
     return static_cast< MipStartFixMode >(
       parameters_[CbcParam::MIPSTARTFIX]->modeVal());
+  }
+
+  /*! \brief Get problem class mode */
+  inline ProblemClassMode getProblemClassMode() const
+  {
+    return static_cast< ProblemClassMode >(
+      parameters_[CbcParam::PROBLEMCLASS]->modeVal());
   }
 
   /*

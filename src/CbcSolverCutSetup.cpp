@@ -14,6 +14,7 @@
 #include "CbcModel.hpp"
 #include "CbcParam.hpp"
 #include "CbcParameters.hpp"
+#include "CbcProblemClassifier.hpp"
 #include "CbcSolverCutSetup.hpp"
 
 #include "CglBKClique.hpp"
@@ -62,6 +63,14 @@ CbcRootCutSettings resolveRootCutSettings(
     settings.passes = parameters[CbcParam::CUTPASSMEDIUM]->intVal();
   } else {
     settings.passes = parameters[CbcParam::CUTPASSLARGE]->intVal();
+  }
+  double cutPassMult = parameters[CbcParam::CUTPASSMULTIPLIER]->dblVal();
+  if (cutPassMult > 0.0 && cutPassMult != 1.0) {
+    settings.passes = std::max(1, static_cast< int >(std::round(settings.passes * cutPassMult)));
+  }
+  double minDropMult = parameters[CbcParam::MINDROPMULTIPLIER]->dblVal();
+  if (minDropMult > 0.0 && minDropMult != 1.0) {
+    settings.minimumDrop *= minDropMult;
   }
   return settings;
 }
@@ -233,6 +242,48 @@ void installCutGenerators(
   laTranslate[CbcParameters::CGCleanInstead] = 11;
   laTranslate[CbcParameters::CGBothInstead] = 12;
   int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
+
+  // Auto-tuning cut generators based on problem classification
+  if (parameters[CbcParam::AUTOTUNECUTS]->modeVal() != 0) {
+    CbcParameters::ProblemClassMode overrideMode = static_cast< CbcParameters::ProblemClassMode >(
+      parameters[CbcParam::PROBLEMCLASS]->modeVal());
+    CbcProblemClassifier::ClassificationResult cls = CbcProblemClassifier::classify(babModel.solver(), overrideMode);
+    CbcProblemClassifier::CutTuningRecommendations rec = CbcProblemClassifier::getCutTuning(cls);
+
+    if (rec.apply) {
+      std::ostringstream tunedMsg;
+      tunedMsg << "AutoTuneCuts: " << cls.className << " (" << cls.rationale
+               << ")\n  -> " << rec.summary;
+
+      // Apply disables if parameter is at default
+      for (size_t i = 0; i < rec.disableParams.size(); ++i) {
+        int code = rec.disableParams[i];
+        if (parameters[code]->isDefault()) {
+          parameters[code]->setVal("off");
+        }
+      }
+      // Apply enables if parameter is at default
+      for (size_t i = 0; i < rec.enableParams.size(); ++i) {
+        int code = rec.enableParams[i].first;
+        int mode = rec.enableParams[i].second;
+        if (parameters[code]->isDefault()) {
+          parameters[code]->setVal(mode);
+        }
+      }
+      // Apply cut filter settings if at default
+      if (rec.filterScoreMode >= 0 && parameters[CbcParam::ROOTCUTFILTERSCORE]->isDefault()) {
+        parameters[CbcParam::ROOTCUTFILTERSCORE]->setIntVal(rec.filterScoreMode);
+      }
+      if (rec.filterAlways && parameters[CbcParam::CUTFILTERALWAYS]->isDefault()) {
+        parameters[CbcParam::CUTFILTERALWAYS]->setVal("on");
+      }
+      if (switchOffChoice) {
+        if (!switchOffChoice->empty())
+          *switchOffChoice += "\n";
+        *switchOffChoice += tunedMsg.str();
+      }
+    }
+  }
   // Parallelism filter on each round of Gomory/MIR/TwoMir/GMI/LandP/
   // RedSplit2/probing cuts (CbcCutGenerator -> cbcFilterGeneratedCuts).
   {

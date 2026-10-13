@@ -98,6 +98,7 @@ libCbc_la_SOURCES = \
 	CbcLpParamScorer.cpp CbcLpParamScorer.hpp \
 	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverCutSetup.cpp CbcSolverCutSetup.hpp \
+	CbcProblemClassifier.cpp CbcProblemClassifier.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
 	CbcParameters.cpp CbcParameters.hpp \

@@ -416,12 +416,17 @@ public:
   {
     if (!doCuts_)
       return;
+    std::string switchOff;
     installCutGenerators(model, cutParams_, /*complicatedInteger=*/0,
       /*dominatedCuts=*/false, /*cgraphMode=*/"on",
       /*oldCliqueMode=*/cutParams_[CbcParam::CLIQUECUTS]->modeVal(),
       /*maxCallsBK=*/1000, /*bkClqExtMethod=*/4,
       CoinBronKerbosch::PivotingStrategy::Weight,
-      /*oddWExtMethod=*/2, /*mixedRoundStrategy=*/1);
+      /*oddWExtMethod=*/2, /*mixedRoundStrategy=*/1,
+      /*switchOffChoice=*/&switchOff);
+    if (!switchOff.empty()) {
+      printf("[root-autotune] %s\n", switchOff.c_str());
+    }
     // Same recipe as CbcSolver.cpp's run() (whereFrom==2 block): minimum drop
     // scaled off the root objective, then the CLI's cols-tiered rule with an
     // OR-widened top tier: numCols<500 OR numRows<500 -> minDrop ignored, up
@@ -547,6 +552,13 @@ static void usage(const char *prog)
     "                       stops early once the minimum-drop test fails; negative\n"
     "                       N (abs value used as the pass cap) ignores minimum drop.\n"
     "  --min-drop-scale=X   multiply minimumDrop by X before applying it (default 1.0)\n"
+    "  --auto-tune-cuts=on|off  toggle problem-class-aware cut auto-tuning\n"
+    "                       (default: on)\n"
+    "  --problem-class=CLASS  override problem class for tuning\n"
+    "                       (auto|general|partitioning|packing|covering|\n"
+    "                        mixedspp|mostlyspp|knapsack|general01)\n"
+    "  --cut-pass-ratio=X   multiplier for root cut passes budget (default: 1.0)\n"
+    "  --min-drop-ratio=X   multiplier for minDrop threshold (default: 1.0)\n"
     "  --gmi=off|root|ifmove|on       GMI cut mode (default: root, matching the\n"
     "                       real CLI's shipped default -- NOT CbcParameters()'s\n"
     "                       own out-of-the-box default of off)\n"
@@ -642,14 +654,14 @@ int main(int argc, char **argv)
   std::string jumpRootPlacesOverride, pumpRootPlacesOverride;
   int passCutsOverride = 0;
   double minDropScale = 1.0;
-  // GMI/LandP/RedSplit2 cut-generator mode overrides. Default to "root" --
-  // matching CbcSolver.cpp's initialize() shipped defaults (REDSPLIT2CUTS/
-  // GMICUTS/LANDPCUTS all "root", see eeed3493) -- NOT the bare
-  // CbcParameters() constructor default ("ifmove"/"off"/"off"), so an
-  // unmodified replay (no --gmi=/--landp=/--redsplit2= flag) matches what
-  // the real `cbc` CLI actually ships today, not CbcParameters' own
-  // out-of-the-box defaults which predate that change.
-  std::string gmiMode = "root", landpMode = "root", redsplit2Mode = "root";
+  std::string autoTuneCuts;
+  std::string problemClass;
+  double cutPassRatio = -1.0;
+  double minDropRatio = -1.0;
+  // GMI/LandP/RedSplit2 cut-generator mode overrides. Leave empty by default
+  // so CbcParameters' defaults ("root", matching CbcSolver.cpp) are used
+  // and isDefault() reflects whether the user explicitly passed a flag.
+  std::string gmiMode, landpMode, redsplit2Mode;
   unsigned int randomSeed = 1; // matches CbcModel's own default
   std::string rinsScheduleMode, vndScheduleMode; // empty = legacy (no change)
   int rinsScheduleK = 1, vndScheduleK = 1;
@@ -709,6 +721,14 @@ int main(int argc, char **argv)
       passCutsOverride = atoi(a.c_str() + 12);
     else if (a.rfind("--min-drop-scale=", 0) == 0)
       minDropScale = atof(a.c_str() + 17);
+    else if (a.rfind("--auto-tune-cuts=", 0) == 0)
+      autoTuneCuts = a.substr(17);
+    else if (a.rfind("--problem-class=", 0) == 0)
+      problemClass = a.substr(16);
+    else if (a.rfind("--cut-pass-ratio=", 0) == 0)
+      cutPassRatio = atof(a.c_str() + 17);
+    else if (a.rfind("--min-drop-ratio=", 0) == 0)
+      minDropRatio = atof(a.c_str() + 17);
     else if (a.rfind("--gmi=", 0) == 0)
       gmiMode = a.substr(6);
     else if (a.rfind("--landp=", 0) == 0)
@@ -919,9 +939,20 @@ int main(int argc, char **argv)
   // See default-init rationale above the flag parsing block: these three
   // default to "root" here (not CbcParameters()'s own "off"/"off"/"ifmove"
   // out-of-the-box defaults) to match CbcSolver.cpp's shipped CLI defaults.
-  params[CbcParam::GMICUTS]->setVal(gmiMode);
-  params[CbcParam::LANDPCUTS]->setVal(landpMode);
-  params[CbcParam::REDSPLIT2CUTS]->setVal(redsplit2Mode);
+  if (!gmiMode.empty())
+    params[CbcParam::GMICUTS]->setVal(gmiMode);
+  if (!landpMode.empty())
+    params[CbcParam::LANDPCUTS]->setVal(landpMode);
+  if (!redsplit2Mode.empty())
+    params[CbcParam::REDSPLIT2CUTS]->setVal(redsplit2Mode);
+  if (!autoTuneCuts.empty())
+    params[CbcParam::AUTOTUNECUTS]->setVal(autoTuneCuts);
+  if (!problemClass.empty())
+    params[CbcParam::PROBLEMCLASS]->setVal(problemClass);
+  if (cutPassRatio >= 0.0)
+    params[CbcParam::CUTPASSMULTIPLIER]->setDblVal(cutPassRatio);
+  if (minDropRatio >= 0.0)
+    params[CbcParam::MINDROPMULTIPLIER]->setDblVal(minDropRatio);
   // Generic escape hatch, applied after every dedicated flag above so it
   // wins: any CbcParameters entry by its CLI name (same matching rules as
   // the cbc command line).

@@ -755,6 +755,10 @@ void CbcParameters::addCbcParams()
          CbcParam::CLIQUEFILTERMAXPARALLELISM,
          CbcParam::CLIQUEFILTERALWAYS,
          CbcParam::IMPLIEDCLIQUEFILTER,
+         CbcParam::AUTOTUNECUTS,
+         CbcParam::PROBLEMCLASS,
+         CbcParam::CUTPASSMULTIPLIER,
+         CbcParam::MINDROPMULTIPLIER,
          CbcParam::CUTSKIPMINTRIES, CbcParam::CUTSKIPMISSTHRESHOLD,
          CbcParam::CUTSKIPINITIALPERIOD, CbcParam::CUTSKIPMAXPERIOD,
          CbcParam::CUTSKIPMINCOLS })
@@ -989,6 +993,10 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::CLIQUEFILTERMAXPARALLELISM]->setDefault(1.0);
     parameters_[CbcParam::CLIQUEFILTERALWAYS]->setDefault("off");
     parameters_[CbcParam::IMPLIEDCLIQUEFILTER]->setDefault("off");
+    parameters_[CbcParam::AUTOTUNECUTS]->setDefault("on");
+    parameters_[CbcParam::PROBLEMCLASS]->setDefault("auto");
+    parameters_[CbcParam::CUTPASSMULTIPLIER]->setDefault(1.0);
+    parameters_[CbcParam::MINDROPMULTIPLIER]->setDefault(1.0);
     parameters_[CbcParam::CUTSKIPMINTRIES]->setDefault(3);
     parameters_[CbcParam::CUTSKIPMISSTHRESHOLD]->setDefault(3);
     parameters_[CbcParam::CUTSKIPINITIALPERIOD]->setDefault(5);
@@ -1011,18 +1019,20 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::SOS]->setDefault("off");
     parameters_[CbcParam::USESOLUTION]->setDefault("off");
     parameters_[CbcParam::CUTSTRATEGY]->setDefault("off");
+    parameters_[CbcParam::CLIQUECUTS]->setDefault("ifmove");
     parameters_[CbcParam::FLOWCUTS]->setDefault("ifmove");
-    parameters_[CbcParam::GMICUTS]->setDefault("off");
+    parameters_[CbcParam::GMICUTS]->setDefault("root");
     parameters_[CbcParam::GOMORYCUTS]->setDefault("ifmove");
+    parameters_[CbcParam::IMPLIEDCLIQUECUTS]->setDefault("ifmove");
     parameters_[CbcParam::KNAPSACKCUTS]->setDefault("ifmove");
     parameters_[CbcParam::LAGOMORYCUTS]->setDefault("off");
-    parameters_[CbcParam::LANDPCUTS]->setDefault("off");
+    parameters_[CbcParam::LANDPCUTS]->setDefault("root");
     parameters_[CbcParam::LATWOMIRCUTS]->setDefault("off");
     parameters_[CbcParam::MIRCUTS]->setDefault("ifmove");
     parameters_[CbcParam::ODDWHEELCUTS]->setDefault("ifmove");
     parameters_[CbcParam::PROBINGCUTS]->setDefault("ifmove");
     parameters_[CbcParam::REDSPLITCUTS]->setDefault("off");
-    parameters_[CbcParam::REDSPLIT2CUTS]->setDefault("ifmove");
+    parameters_[CbcParam::REDSPLIT2CUTS]->setDefault("root");
     parameters_[CbcParam::RESIDCAPCUTS]->setDefault("off");
     parameters_[CbcParam::TWOMIRCUTS]->setDefault("ifmove");
     parameters_[CbcParam::ZEROHALFCUTS]->setDefault("ifmove");
@@ -2095,6 +2105,31 @@ void CbcParameters::addCbcSolverKwdParams()
     "milpbt", CbcParameters::BndPropMILPbt);
   parameters_[CbcParam::BOUNDPROPLEVEL]->appendKwd(
     "fixpoint", CbcParameters::BndPropFixpoint);
+
+  parameters_[CbcParam::PROBLEMCLASS]->setup(
+    "problem!Class",
+    "Problem class override for auto-tuning",
+    "Overrides problem classification for algorithm and cut tuning.\n"
+    "  auto:         automatic detection using instance features (default)\n"
+    "  general:      general MIP (disables special class auto-tuning)\n"
+    "  partitioning: pure set partitioning (all rows sum x_j = 1)\n"
+    "  packing:      pure set packing (all rows sum x_j <= 1)\n"
+    "  partpack:     set partitioning and packing (sum x_j = 1 or <= 1, like rmp11)\n"
+    "  covering:     pure set covering (all rows sum x_j >= 1)\n"
+    "  mixedspp:     mixed SPP (100% of rows are partitioning/packing/covering)\n"
+    "  mostlyspp:    mostly SPP (>= 85% of rows are SPP)\n"
+    "  knapsack:     0-1 knapsack problem\n"
+    "  general01:    general 0-1 MIP");
+  parameters_[CbcParam::PROBLEMCLASS]->appendKwd("auto", CbcParameters::ProbClassAuto);
+  parameters_[CbcParam::PROBLEMCLASS]->appendKwd("general", CbcParameters::ProbClassGeneral);
+  parameters_[CbcParam::PROBLEMCLASS]->appendKwd("partitioning", CbcParameters::ProbClassPartitioning);
+  parameters_[CbcParam::PROBLEMCLASS]->appendKwd("packing", CbcParameters::ProbClassPacking);
+  parameters_[CbcParam::PROBLEMCLASS]->appendKwd("partpack", CbcParameters::ProbClassPartPack);
+  parameters_[CbcParam::PROBLEMCLASS]->appendKwd("covering", CbcParameters::ProbClassCovering);
+  parameters_[CbcParam::PROBLEMCLASS]->appendKwd("mixedspp", CbcParameters::ProbClassMixedSPP);
+  parameters_[CbcParam::PROBLEMCLASS]->appendKwd("mostlyspp", CbcParameters::ProbClassMostlySPP);
+  parameters_[CbcParam::PROBLEMCLASS]->appendKwd("knapsack", CbcParameters::ProbClassKnapsack);
+  parameters_[CbcParam::PROBLEMCLASS]->appendKwd("general01", CbcParameters::ProbClassGeneral01);
 
   parameters_[CbcParam::MIPSTARTFIX]->setup(
     "mipStartF!ix",
@@ -3264,6 +3299,18 @@ void CbcParameters::addCbcSolverIntParams()
     "cuts.",
     CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::CUTPASSMULTIPLIER]->setup(
+    "cutPass!Ratio",
+    "Relative multiplier for the root cut passes budget",
+    0.0, 100.0,
+    "Scales the resolved root cut pass budget by this factor (e.g. 1.5 runs 1.5x passes, 0.8 runs 0.8x passes).");
+
+  parameters_[CbcParam::MINDROPMULTIPLIER]->setup(
+    "minDrop!Ratio",
+    "Relative multiplier for the minimum drop threshold",
+    0.0, 1.0e10,
+    "Scales the minimum drop threshold by this factor (e.g. 0.5 lowers minDrop to allow more passes).");
+
   parameters_[CbcParam::CUTSKIPMINTRIES]->setup(
     "cutSkipMinT!ries",
     "Root passes before an idle cut generator may be skipped",
@@ -3440,6 +3487,14 @@ void CbcParameters::addCbcSolverBoolParams()
     "to remove almost nothing here. When on, it applies that filter too. "
     "cliqueFilterAlways also turns it on.",
     CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::AUTOTUNECUTS]->setup(
+    "auto!TuneCuts",
+    "Whether to auto-tune cut generators based on problem class",
+    "When on, CBC analyzes instance features to classify the problem "
+    "(pure set partitioning, set packing, set covering, mixed SPP, etc.) "
+    "and tailors cut generator selection, effort, and filtering automatically, "
+    "disabling ineffective generators that waste time.");
 
   parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setup(
     "preRootLPStr!enghtening",

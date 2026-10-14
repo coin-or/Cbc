@@ -30,6 +30,20 @@ class CbcParameters;
     object.
 */
 
+/** One family of control parameters per heuristic whose invocation is managed
+    by CbcHeuristicControl: X(ID, "prefix"). Each family defines
+    <prefix>Schedule/Every/Decay/Window/MinSuccess/MaxFail/TimeShare/Nodes,
+    all of which accept `auto` (= the heuristic's built-in value). To put
+    another heuristic under the same control add one line here and apply it
+    with applyHeuristicControl() where the heuristic is installed. */
+#define CBC_HEUR_CONTROL_LIST(X) \
+  X(RINS, "rins") \
+  X(VND, "vnd") \
+  X(DINS, "dins") \
+  X(COMBINE, "combine") \
+  X(CROSSOVER, "combine2") \
+  X(PROXIMITY, "proximity")
+
 class CBCLIB_EXPORT CbcParam : public CoinParam {
 
 public:
@@ -222,6 +236,8 @@ public:
     LPMETHOD,
     NODEBOUNDPROP,
     PROBLEMCLASS,
+#define CBC_HC_KWD(ID, N) HC_##ID##_SCHEDULE,
+    CBC_HEUR_CONTROL_LIST(CBC_HC_KWD)
     LASTKWDPARAM,
 
     // Integer Parameters
@@ -326,6 +342,8 @@ public:
     CUTSKIPINITIALPERIOD,
     CUTSKIPMAXPERIOD,
     CUTSKIPMINCOLS,
+#define CBC_HC_INT(ID, N) HC_##ID##_EVERY, HC_##ID##_WINDOW, HC_##ID##_MAXFAIL, HC_##ID##_NODES,
+    CBC_HEUR_CONTROL_LIST(CBC_HC_INT)
     LASTINTPARAM,
 
     // Double Parameters
@@ -365,6 +383,8 @@ public:
     CLIQUEFILTERMAXPARALLELISM,
     CUTPASSMULTIPLIER,
     MINDROPMULTIPLIER,
+#define CBC_HC_DBL(ID, N) HC_##ID##_DECAY, HC_##ID##_MINSUCCESS, HC_##ID##_TIMESHARE,
+    CBC_HEUR_CONTROL_LIST(CBC_HC_DBL)
     LASTDBLPARAM,
 
     FIRSTMODELPARAM,

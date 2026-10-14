@@ -1904,6 +1904,28 @@ void CbcParameters::addCbcSolverKwdParams()
     getParam(code)->setType(CoinParam::paramKwd);
   }
 
+  // Heuristic invocation control: see CBC_HEUR_CONTROL_LIST and
+  // CbcHeuristicControl. All of these default to `auto`, which keeps the
+  // heuristic's built-in setting.
+#define CBC_HC_KWD_SETUP(ID, N) \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->setup(N "Schedule", \
+    "When the " N " heuristic is attempted in the tree", \
+    "auto: the heuristic's built-in schedule (default).\n" \
+    "  legacy:    the heuristic's historical node-count gating.\n" \
+    "  depth:     only at depths that are a multiple of " N "Every.\n" \
+    "  nodes:     once every " N "Every nodes.\n" \
+    "  noimprove: every " N "Every nodes, and straight after each new incumbent.\n" \
+    "Back-off (" N "Decay, " N "Window, " N "MinSuccess), " N "MaxFail and " N "TimeShare apply on top of any schedule.", \
+    CoinParam::displayPriorityLow); \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("auto", 0); \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("legacy", 1); \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("depth", 2); \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("nodes", 3); \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("noimprove", 4); \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->setDefault("auto"); \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->setTopic("Heuristics");
+  CBC_HEUR_CONTROL_LIST(CBC_HC_KWD_SETUP)
+
   parameters_[CbcParam::COMMANDPRINTLEVEL]->setup(
     "allC!ommands", "What priority level of commands to print",
     "For the sake of your sanity, only the more useful and simple commands "
@@ -2240,6 +2262,26 @@ void CbcParameters::addCbcSolverDblParams()
     getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverDblParam);
   }
 
+#define CBC_HC_DBL_SETUP(ID, N) \
+  parameters_[CbcParam::HC_##ID##_DECAY]->setup(N "Decay", \
+    "Back-off growth of the " N " interval after unproductive runs", 0.0, 1.0e6, \
+    "Every " N "Window runs, if fewer than " N "MinSuccess of them improved the incumbent, " \
+    "the interval between runs is multiplied by (1 + this). 0 switches the back-off off. " \
+    "auto: the heuristic's built-in value.", CoinParam::displayPriorityLow); \
+  parameters_[CbcParam::HC_##ID##_MINSUCCESS]->setup(N "MinSuccess", \
+    "Success rate below which " N " backs off", 0.0, 1.0, \
+    "See " N "Decay. auto: the heuristic's built-in value (1/3).", CoinParam::displayPriorityLow); \
+  parameters_[CbcParam::HC_##ID##_TIMESHARE]->setup(N "TimeShare", \
+    "Largest fraction of the elapsed time " N " may use", 0.0, 1.0, \
+    "Once the heuristic has used more than this fraction of the elapsed solve time it is not started " \
+    "again until the fraction drops. 0 means no limit. auto: no limit.", CoinParam::displayPriorityLow); \
+  for (int c : { CbcParam::HC_##ID##_DECAY, CbcParam::HC_##ID##_MINSUCCESS, CbcParam::HC_##ID##_TIMESHARE }) { \
+    parameters_[c]->setAutoAllowed(); \
+    parameters_[c]->setDefault(CoinParam::autoDblValue()); \
+    parameters_[c]->setTopic("Heuristics"); \
+  }
+  CBC_HEUR_CONTROL_LIST(CBC_HC_DBL_SETUP)
+
   parameters_[CbcParam::ARTIFICIALCOST]->setup(
     "artif!icialCost",
     "Costs >= this treated as artificials in feasibility pump", 0.0,
@@ -2492,6 +2534,27 @@ void CbcParameters::addCbcSolverIntParams()
     code < CbcParam::LASTINTPARAM; code++) {
     getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverIntParam);
   }
+
+#define CBC_HC_INT_SETUP(ID, N) \
+  parameters_[CbcParam::HC_##ID##_EVERY]->setup(N "Every", \
+    "Interval (nodes or depth) between " N " attempts", 1, COIN_INT_MAX, \
+    "The K of " N "Schedule. auto: the heuristic's built-in value.", CoinParam::displayPriorityLow); \
+  parameters_[CbcParam::HC_##ID##_WINDOW]->setup(N "Window", \
+    "Runs between success-rate checks for " N, 1, COIN_INT_MAX, \
+    "See " N "Decay. auto: the heuristic's built-in value (10).", CoinParam::displayPriorityLow); \
+  parameters_[CbcParam::HC_##ID##_MAXFAIL]->setup(N "MaxFail", \
+    "Pause " N " after this many failed runs on the same incumbent", 0, COIN_INT_MAX, \
+    "The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.", \
+    CoinParam::displayPriorityLow); \
+  parameters_[CbcParam::HC_##ID##_NODES]->setup(N "Nodes", \
+    "Node limit of the sub-MIP solved by " N, 1, COIN_INT_MAX, \
+    "auto: the heuristic's built-in value.", CoinParam::displayPriorityLow); \
+  for (int c : { CbcParam::HC_##ID##_EVERY, CbcParam::HC_##ID##_WINDOW, CbcParam::HC_##ID##_MAXFAIL, CbcParam::HC_##ID##_NODES }) { \
+    parameters_[c]->setAutoAllowed(); \
+    parameters_[c]->setDefault(CoinParam::autoIntValue()); \
+    parameters_[c]->setTopic("Heuristics"); \
+  }
+  CBC_HEUR_CONTROL_LIST(CBC_HC_INT_SETUP)
 
   parameters_[CbcParam::AGGREGATEMIXED]->setup(
     "agg!regatelevel", "Level of aggregation used in CglMixedRounding", -1, 5,

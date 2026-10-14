@@ -20,7 +20,7 @@
 
 \title{CBC Parameter Reference}
 \author{COIN-OR Cbc Development Team}
-\date{October 2026 --- CBC v2.933-133-geaa3997f}
+\date{October 2026 --- CBC v2.933-140-g6c69fc09-dirty}
 
 \begin{document}
 \maketitle
@@ -1247,6 +1247,90 @@ If on then tries to branch to solution given by AMPL or priorities file.
 
 \textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
+\subsubsection*{\texttt{-rinsSchedule} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-rinsSchedule} \ptag{teal!70!black}{KW}}
+
+When the rins heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of rinsEvery.
+  nodes:     once every rinsEvery nodes.
+  noimprove: every rinsEvery nodes, and straight after each new incumbent.
+Back-off (rinsDecay, rinsWindow, rinsMinSuccess), rinsMaxFail and rinsTimeShare apply on top of any schedule.
+
+\textbf{Values:} \texttt{auto}, \texttt{legacy}, \texttt{depth}, \texttt{nodes}, \texttt{noimprove} (default: \texttt{auto})
+
+\subsubsection*{\texttt{-vndSchedule} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-vndSchedule} \ptag{teal!70!black}{KW}}
+
+When the vnd heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of vndEvery.
+  nodes:     once every vndEvery nodes.
+  noimprove: every vndEvery nodes, and straight after each new incumbent.
+Back-off (vndDecay, vndWindow, vndMinSuccess), vndMaxFail and vndTimeShare apply on top of any schedule.
+
+\textbf{Values:} \texttt{auto}, \texttt{legacy}, \texttt{depth}, \texttt{nodes}, \texttt{noimprove} (default: \texttt{auto})
+
+\subsubsection*{\texttt{-dinsSchedule} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-dinsSchedule} \ptag{teal!70!black}{KW}}
+
+When the dins heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of dinsEvery.
+  nodes:     once every dinsEvery nodes.
+  noimprove: every dinsEvery nodes, and straight after each new incumbent.
+Back-off (dinsDecay, dinsWindow, dinsMinSuccess), dinsMaxFail and dinsTimeShare apply on top of any schedule.
+
+\textbf{Values:} \texttt{auto}, \texttt{legacy}, \texttt{depth}, \texttt{nodes}, \texttt{noimprove} (default: \texttt{auto})
+
+\subsubsection*{\texttt{-combineSchedule} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combineSchedule} \ptag{teal!70!black}{KW}}
+
+When the combine heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of combineEvery.
+  nodes:     once every combineEvery nodes.
+  noimprove: every combineEvery nodes, and straight after each new incumbent.
+Back-off (combineDecay, combineWindow, combineMinSuccess), combineMaxFail and combineTimeShare apply on top of any schedule.
+
+\textbf{Values:} \texttt{auto}, \texttt{legacy}, \texttt{depth}, \texttt{nodes}, \texttt{noimprove} (default: \texttt{auto})
+
+\subsubsection*{\texttt{-combine2Schedule} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combine2Schedule} \ptag{teal!70!black}{KW}}
+
+When the combine2 heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of combine2Every.
+  nodes:     once every combine2Every nodes.
+  noimprove: every combine2Every nodes, and straight after each new incumbent.
+Back-off (combine2Decay, combine2Window, combine2MinSuccess), combine2MaxFail and combine2TimeShare apply on top of any schedule.
+
+\textbf{Values:} \texttt{auto}, \texttt{legacy}, \texttt{depth}, \texttt{nodes}, \texttt{noimprove} (default: \texttt{auto})
+
+\subsubsection*{\texttt{-proximitySchedule} \ptag{teal!70!black}{KW}}
+\addcontentsline{toc}{subsubsection}{\texttt{-proximitySchedule} \ptag{teal!70!black}{KW}}
+
+When the proximity heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of proximityEvery.
+  nodes:     once every proximityEvery nodes.
+  noimprove: every proximityEvery nodes, and straight after each new incumbent.
+Back-off (proximityDecay, proximityWindow, proximityMinSuccess), proximityMaxFail and proximityTimeShare apply on top of any schedule.
+
+\textbf{Values:} \texttt{auto}, \texttt{legacy}, \texttt{depth}, \texttt{nodes}, \texttt{noimprove} (default: \texttt{auto})
+
 \subsubsection*{\texttt{-depthMiniBab} \ptag{blue!60!black}{INT}}
 \addcontentsline{toc}{subsubsection}{\texttt{-depthMiniBab} \ptag{blue!60!black}{INT}}
 
@@ -1340,6 +1424,222 @@ Each diving heuristic stops a dive at the root after this many simplex iteration
 
 \textbf{Range:} 0 to INT\_MAX (default: auto)
 
+\subsubsection*{\texttt{-rinsEvery} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-rinsEvery} \ptag{blue!60!black}{INT}}
+
+Interval (nodes or depth) between rins attempts
+
+The K of rinsSchedule. auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-rinsWindow} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-rinsWindow} \ptag{blue!60!black}{INT}}
+
+Runs between success-rate checks for rins
+
+See rinsDecay. auto: the heuristic's built-in value (10).
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-rinsMaxFail} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-rinsMaxFail} \ptag{blue!60!black}{INT}}
+
+Pause rins after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+\textbf{Range:} 0 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-rinsNodes} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-rinsNodes} \ptag{blue!60!black}{INT}}
+
+Node limit of the sub-MIP solved by rins
+
+auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-vndEvery} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-vndEvery} \ptag{blue!60!black}{INT}}
+
+Interval (nodes or depth) between vnd attempts
+
+The K of vndSchedule. auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-vndWindow} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-vndWindow} \ptag{blue!60!black}{INT}}
+
+Runs between success-rate checks for vnd
+
+See vndDecay. auto: the heuristic's built-in value (10).
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-vndMaxFail} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-vndMaxFail} \ptag{blue!60!black}{INT}}
+
+Pause vnd after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+\textbf{Range:} 0 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-vndNodes} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-vndNodes} \ptag{blue!60!black}{INT}}
+
+Node limit of the sub-MIP solved by vnd
+
+auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-dinsEvery} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-dinsEvery} \ptag{blue!60!black}{INT}}
+
+Interval (nodes or depth) between dins attempts
+
+The K of dinsSchedule. auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-dinsWindow} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-dinsWindow} \ptag{blue!60!black}{INT}}
+
+Runs between success-rate checks for dins
+
+See dinsDecay. auto: the heuristic's built-in value (10).
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-dinsMaxFail} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-dinsMaxFail} \ptag{blue!60!black}{INT}}
+
+Pause dins after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+\textbf{Range:} 0 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-dinsNodes} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-dinsNodes} \ptag{blue!60!black}{INT}}
+
+Node limit of the sub-MIP solved by dins
+
+auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-combineEvery} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combineEvery} \ptag{blue!60!black}{INT}}
+
+Interval (nodes or depth) between combine attempts
+
+The K of combineSchedule. auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-combineWindow} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combineWindow} \ptag{blue!60!black}{INT}}
+
+Runs between success-rate checks for combine
+
+See combineDecay. auto: the heuristic's built-in value (10).
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-combineMaxFail} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combineMaxFail} \ptag{blue!60!black}{INT}}
+
+Pause combine after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+\textbf{Range:} 0 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-combineNodes} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combineNodes} \ptag{blue!60!black}{INT}}
+
+Node limit of the sub-MIP solved by combine
+
+auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-combine2Every} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combine2Every} \ptag{blue!60!black}{INT}}
+
+Interval (nodes or depth) between combine2 attempts
+
+The K of combine2Schedule. auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-combine2Window} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combine2Window} \ptag{blue!60!black}{INT}}
+
+Runs between success-rate checks for combine2
+
+See combine2Decay. auto: the heuristic's built-in value (10).
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-combine2MaxFail} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combine2MaxFail} \ptag{blue!60!black}{INT}}
+
+Pause combine2 after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+\textbf{Range:} 0 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-combine2Nodes} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combine2Nodes} \ptag{blue!60!black}{INT}}
+
+Node limit of the sub-MIP solved by combine2
+
+auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-proximityEvery} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-proximityEvery} \ptag{blue!60!black}{INT}}
+
+Interval (nodes or depth) between proximity attempts
+
+The K of proximitySchedule. auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-proximityWindow} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-proximityWindow} \ptag{blue!60!black}{INT}}
+
+Runs between success-rate checks for proximity
+
+See proximityDecay. auto: the heuristic's built-in value (10).
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-proximityMaxFail} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-proximityMaxFail} \ptag{blue!60!black}{INT}}
+
+Pause proximity after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+\textbf{Range:} 0 to INT\_MAX (default: auto)
+
+\subsubsection*{\texttt{-proximityNodes} \ptag{blue!60!black}{INT}}
+\addcontentsline{toc}{subsubsection}{\texttt{-proximityNodes} \ptag{blue!60!black}{INT}}
+
+Node limit of the sub-MIP solved by proximity
+
+auto: the heuristic's built-in value.
+
+\textbf{Range:} 1 to INT\_MAX (default: auto)
+
 \subsubsection*{\texttt{-artificialCost} \ptag{violet!65!black}{DBL}}
 \addcontentsline{toc}{subsubsection}{\texttt{-artificialCost} \ptag{violet!65!black}{DBL}}
 
@@ -1355,6 +1655,168 @@ Maximum fractional distance for RINS close-fixing fallback
 When the standard RINS fix-count threshold (>20\%\% of integers must agree between LP and best solution) is not met, integer variables whose current LP value is within this distance of the corresponding best-solution integer value are sorted by closeness and greedily fixed (closest first) until the threshold is satisfied. A value of 0.0 disables the fallback. Default: 0.4. Typical useful values: 0.2-0.5.
 
 \textbf{Range:} 0 to 0.5 (default: 0.4)
+
+\subsubsection*{\texttt{-rinsDecay} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-rinsDecay} \ptag{violet!65!black}{DBL}}
+
+Back-off growth of the rins interval after unproductive runs
+
+Every rinsWindow runs, if fewer than rinsMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+\textbf{Range:} 0 to 1000000 (default: auto)
+
+\subsubsection*{\texttt{-rinsMinSuccess} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-rinsMinSuccess} \ptag{violet!65!black}{DBL}}
+
+Success rate below which rins backs off
+
+See rinsDecay. auto: the heuristic's built-in value (1/3).
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-rinsTimeShare} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-rinsTimeShare} \ptag{violet!65!black}{DBL}}
+
+Largest fraction of the elapsed time rins may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-vndDecay} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-vndDecay} \ptag{violet!65!black}{DBL}}
+
+Back-off growth of the vnd interval after unproductive runs
+
+Every vndWindow runs, if fewer than vndMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+\textbf{Range:} 0 to 1000000 (default: auto)
+
+\subsubsection*{\texttt{-vndMinSuccess} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-vndMinSuccess} \ptag{violet!65!black}{DBL}}
+
+Success rate below which vnd backs off
+
+See vndDecay. auto: the heuristic's built-in value (1/3).
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-vndTimeShare} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-vndTimeShare} \ptag{violet!65!black}{DBL}}
+
+Largest fraction of the elapsed time vnd may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-dinsDecay} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-dinsDecay} \ptag{violet!65!black}{DBL}}
+
+Back-off growth of the dins interval after unproductive runs
+
+Every dinsWindow runs, if fewer than dinsMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+\textbf{Range:} 0 to 1000000 (default: auto)
+
+\subsubsection*{\texttt{-dinsMinSuccess} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-dinsMinSuccess} \ptag{violet!65!black}{DBL}}
+
+Success rate below which dins backs off
+
+See dinsDecay. auto: the heuristic's built-in value (1/3).
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-dinsTimeShare} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-dinsTimeShare} \ptag{violet!65!black}{DBL}}
+
+Largest fraction of the elapsed time dins may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-combineDecay} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combineDecay} \ptag{violet!65!black}{DBL}}
+
+Back-off growth of the combine interval after unproductive runs
+
+Every combineWindow runs, if fewer than combineMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+\textbf{Range:} 0 to 1000000 (default: auto)
+
+\subsubsection*{\texttt{-combineMinSuccess} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combineMinSuccess} \ptag{violet!65!black}{DBL}}
+
+Success rate below which combine backs off
+
+See combineDecay. auto: the heuristic's built-in value (1/3).
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-combineTimeShare} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combineTimeShare} \ptag{violet!65!black}{DBL}}
+
+Largest fraction of the elapsed time combine may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-combine2Decay} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combine2Decay} \ptag{violet!65!black}{DBL}}
+
+Back-off growth of the combine2 interval after unproductive runs
+
+Every combine2Window runs, if fewer than combine2MinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+\textbf{Range:} 0 to 1000000 (default: auto)
+
+\subsubsection*{\texttt{-combine2MinSuccess} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combine2MinSuccess} \ptag{violet!65!black}{DBL}}
+
+Success rate below which combine2 backs off
+
+See combine2Decay. auto: the heuristic's built-in value (1/3).
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-combine2TimeShare} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-combine2TimeShare} \ptag{violet!65!black}{DBL}}
+
+Largest fraction of the elapsed time combine2 may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-proximityDecay} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-proximityDecay} \ptag{violet!65!black}{DBL}}
+
+Back-off growth of the proximity interval after unproductive runs
+
+Every proximityWindow runs, if fewer than proximityMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+\textbf{Range:} 0 to 1000000 (default: auto)
+
+\subsubsection*{\texttt{-proximityMinSuccess} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-proximityMinSuccess} \ptag{violet!65!black}{DBL}}
+
+Success rate below which proximity backs off
+
+See proximityDecay. auto: the heuristic's built-in value (1/3).
+
+\textbf{Range:} 0 to 1 (default: auto)
+
+\subsubsection*{\texttt{-proximityTimeShare} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsubsection}{\texttt{-proximityTimeShare} \ptag{violet!65!black}{DBL}}
+
+Largest fraction of the elapsed time proximity may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+\textbf{Range:} 0 to 1 (default: auto)
 
 \section{Branching}
 
@@ -1817,7 +2279,7 @@ Solves dual reformulation
 
 Don't even think about it.
 
-\textbf{Range:} 0 to 4 (default: 3)
+\textbf{Range:} 0 to 4 (default: 0)
 
 \subsection*{\texttt{-randomSeed} \ptag{blue!60!black}{INT}}
 \addcontentsline{toc}{subsection}{\texttt{-randomSeed} \ptag{blue!60!black}{INT}}
@@ -2221,6 +2683,15 @@ Print feasibility pump progress every N seconds (0 = disabled, default 5).
 
 \textbf{Range:} 0 to 10000000000 (default: 5)
 
+\subsection*{\texttt{-progressMinChange} \ptag{violet!65!black}{DBL}}
+\addcontentsline{toc}{subsection}{\texttt{-progressMinChange} \ptag{violet!65!black}{DBL}}
+
+Minimum relative dual bound improvement recorded by progressCsv
+
+A dual bound row is appended to the progressCsv file only if the bound improved by at least this fraction of max(1,|bound|) since the last recorded one. Incumbents, the start and the final state are always recorded. 0 records every improvement. Default 1e-4.
+
+\textbf{Range:} 0 to 1 (default: 0.0001)
+
 \subsection*{\texttt{-bufferedMode} \ptag{teal!70!black}{KW}}
 \addcontentsline{toc}{subsection}{\texttt{-bufferedMode} \ptag{teal!70!black}{KW}}
 
@@ -2474,6 +2945,13 @@ This will set the name the model will be written to and read from. This is initi
 sets name for file to store suboptimal solutions in
 
 This will set the name solutions will be written to and read from. This is initialized to 'next.sol'. 
+
+\subsection*{\texttt{-progressCsv} \ptag{gray!60!black}{FILE}}
+\addcontentsline{toc}{subsection}{\texttt{-progressCsv} \ptag{gray!60!black}{FILE}}
+
+writes the primal/dual bound evolution to a CSV file
+
+Writes a CSV with columns time,primal,dual,source,nodes: one row per new incumbent (source = the heuristic that found it, or 'tree') and one row per tree progress line (source = 'bound'). Times are seconds since the start of the branch-and-bound model, values are those of the preprocessed problem. Used by test/cbc\_pdi.py for exact primal-dual integral computation. Empty (default) disables it.
 
 \subsection*{\texttt{-priorityFile} \ptag{gray!60!black}{FILE}}
 \addcontentsline{toc}{subsection}{\texttt{-priorityFile} \ptag{gray!60!black}{FILE}}

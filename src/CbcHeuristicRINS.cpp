@@ -215,10 +215,12 @@ int CbcHeuristicRINS::solution(double &solutionValue,
     if (howOften_ >= 100 && numberNodes >= lastNode_ + 2 * howOften_) {
       numberNodes = howOften_;
     }
-    runNow = (numberNodes % howOften_) == 0 && passOK;
+    runNow = (numberNodes % howOften_) == 0 && passOK && shouldRunBySchedule();
   }
   if (runNow) {
     lastNode_ = model_->getNodeCount();
+    RunGuard runGuard(this);
+    const int successesBefore = numberSuccesses_;
 #ifdef RINS_CLOSE_DEBUG
     printf("RINS close-fix: entering work block at node=%d passNumber=%d\n",
       model_->getNodeCount(), model_->getCurrentPassNumber());
@@ -506,11 +508,7 @@ int CbcHeuristicRINS::solution(double &solutionValue,
     }
 
     numberTries_++;
-    if ((numberTries_ % 10) == 0 && numberSuccesses_ * 3 < numberTries_)
-      // compute the decayed value in double and clamp before truncating back
-      // to int, otherwise repeated growth (e.g. across a long B&B run) can
-      // silently overflow howOften_ (see CbcHeuristic.cpp's analogous cap)
-      howOften_ = static_cast< int >(std::min(howOften_ * (1.0 + decayFactor_), 1.0e6));
+    runGuard.finish(numberSuccesses_ > successesBefore);
     delete newSolver;
   }
   return returnCode;

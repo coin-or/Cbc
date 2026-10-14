@@ -271,7 +271,7 @@
 <a href="#mip-preprocessing-bound-propagation" class="sb-link">MIP Preprocessing — Bound Propagation<span class="sb-count">9</span></a>
 <a href="#lp-presolve" class="sb-link">LP Presolve<span class="sb-count">3</span></a>
 <a href="#cuts" class="sb-link">Cuts<span class="sb-count">66</span></a>
-<a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">37</span></a>
+<a href="#heuristics" class="sb-link">Heuristics<span class="sb-count">85</span></a>
 <a href="#branching" class="sb-link">Branching<span class="sb-count">8</span></a>
 <a href="#tolerances" class="sb-link">Tolerances<span class="sb-count">6</span></a>
 <a href="#conflict-graph" class="sb-link">Conflict Graph<span class="sb-count">5</span></a>
@@ -280,8 +280,8 @@
 <a href="#simplex" class="sb-link">Simplex<span class="sb-count">19</span></a>
 <a href="#barrier" class="sb-link">Barrier<span class="sb-count">3</span></a>
 <a href="#scaling" class="sb-link">Scaling<span class="sb-count">4</span></a>
-<a href="#output" class="sb-link">Output<span class="sb-count">23</span></a>
-<a href="#i-o" class="sb-link">I/O<span class="sb-count">36</span></a>
+<a href="#output" class="sb-link">Output<span class="sb-count">24</span></a>
+<a href="#i-o" class="sb-link">I/O<span class="sb-count">37</span></a>
 <a href="#parallelism" class="sb-link">Parallelism<span class="sb-count">1</span></a>
 <a href="#general" class="sb-link">General<span class="sb-count">51</span></a>
     </nav>
@@ -290,7 +290,7 @@
   <div class="main-content">
     <header class="page-header">
       <h1>Parameter Reference</h1>
-      <p>CBC v2.933-133-geaa3997f &mdash; October 2026 &mdash; 328 parameters across 18 sections</p>
+      <p>CBC v2.933-140-g6c69fc09-dirty &mdash; October 2026 &mdash; 378 parameters across 18 sections</p>
     </header>
 
 <section id="stopping" class="topic-section">
@@ -1000,6 +1000,66 @@
   <div class="pbody"><p class="plong">If on then tries to branch to solution given by AMPL or priorities file.</p>
 <div class="pextra"><strong>Values:</strong> <code class="kw">off</code> <code class="kw">on</code>&ensp;<span class="pmeta">(default: <code>off</code>)</span></div></div>
 </details>
+<details class="param" data-search="rinsschedule when the rins heuristic is attempted in the tree">
+  <summary><span class="pname"><code>-rinsSchedule</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">When the rins heuristic is attempted in the tree</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in schedule (default).
+  legacy:    the heuristic&#x27;s historical node-count gating.
+  depth:     only at depths that are a multiple of rinsEvery.
+  nodes:     once every rinsEvery nodes.
+  noimprove: every rinsEvery nodes, and straight after each new incumbent.
+Back-off (rinsDecay, rinsWindow, rinsMinSuccess), rinsMaxFail and rinsTimeShare apply on top of any schedule.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">auto</code> <code class="kw">legacy</code> <code class="kw">depth</code> <code class="kw">nodes</code> <code class="kw">noimprove</code>&ensp;<span class="pmeta">(default: <code>auto</code>)</span></div></div>
+</details>
+<details class="param" data-search="vndschedule when the vnd heuristic is attempted in the tree">
+  <summary><span class="pname"><code>-vndSchedule</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">When the vnd heuristic is attempted in the tree</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in schedule (default).
+  legacy:    the heuristic&#x27;s historical node-count gating.
+  depth:     only at depths that are a multiple of vndEvery.
+  nodes:     once every vndEvery nodes.
+  noimprove: every vndEvery nodes, and straight after each new incumbent.
+Back-off (vndDecay, vndWindow, vndMinSuccess), vndMaxFail and vndTimeShare apply on top of any schedule.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">auto</code> <code class="kw">legacy</code> <code class="kw">depth</code> <code class="kw">nodes</code> <code class="kw">noimprove</code>&ensp;<span class="pmeta">(default: <code>auto</code>)</span></div></div>
+</details>
+<details class="param" data-search="dinsschedule when the dins heuristic is attempted in the tree">
+  <summary><span class="pname"><code>-dinsSchedule</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">When the dins heuristic is attempted in the tree</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in schedule (default).
+  legacy:    the heuristic&#x27;s historical node-count gating.
+  depth:     only at depths that are a multiple of dinsEvery.
+  nodes:     once every dinsEvery nodes.
+  noimprove: every dinsEvery nodes, and straight after each new incumbent.
+Back-off (dinsDecay, dinsWindow, dinsMinSuccess), dinsMaxFail and dinsTimeShare apply on top of any schedule.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">auto</code> <code class="kw">legacy</code> <code class="kw">depth</code> <code class="kw">nodes</code> <code class="kw">noimprove</code>&ensp;<span class="pmeta">(default: <code>auto</code>)</span></div></div>
+</details>
+<details class="param" data-search="combineschedule when the combine heuristic is attempted in the tree">
+  <summary><span class="pname"><code>-combineSchedule</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">When the combine heuristic is attempted in the tree</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in schedule (default).
+  legacy:    the heuristic&#x27;s historical node-count gating.
+  depth:     only at depths that are a multiple of combineEvery.
+  nodes:     once every combineEvery nodes.
+  noimprove: every combineEvery nodes, and straight after each new incumbent.
+Back-off (combineDecay, combineWindow, combineMinSuccess), combineMaxFail and combineTimeShare apply on top of any schedule.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">auto</code> <code class="kw">legacy</code> <code class="kw">depth</code> <code class="kw">nodes</code> <code class="kw">noimprove</code>&ensp;<span class="pmeta">(default: <code>auto</code>)</span></div></div>
+</details>
+<details class="param" data-search="combine2schedule when the combine2 heuristic is attempted in the tree">
+  <summary><span class="pname"><code>-combine2Schedule</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">When the combine2 heuristic is attempted in the tree</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in schedule (default).
+  legacy:    the heuristic&#x27;s historical node-count gating.
+  depth:     only at depths that are a multiple of combine2Every.
+  nodes:     once every combine2Every nodes.
+  noimprove: every combine2Every nodes, and straight after each new incumbent.
+Back-off (combine2Decay, combine2Window, combine2MinSuccess), combine2MaxFail and combine2TimeShare apply on top of any schedule.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">auto</code> <code class="kw">legacy</code> <code class="kw">depth</code> <code class="kw">nodes</code> <code class="kw">noimprove</code>&ensp;<span class="pmeta">(default: <code>auto</code>)</span></div></div>
+</details>
+<details class="param" data-search="proximityschedule when the proximity heuristic is attempted in the tree">
+  <summary><span class="pname"><code>-proximitySchedule</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">When the proximity heuristic is attempted in the tree</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in schedule (default).
+  legacy:    the heuristic&#x27;s historical node-count gating.
+  depth:     only at depths that are a multiple of proximityEvery.
+  nodes:     once every proximityEvery nodes.
+  noimprove: every proximityEvery nodes, and straight after each new incumbent.
+Back-off (proximityDecay, proximityWindow, proximityMinSuccess), proximityMaxFail and proximityTimeShare apply on top of any schedule.</p>
+<div class="pextra"><strong>Values:</strong> <code class="kw">auto</code> <code class="kw">legacy</code> <code class="kw">depth</code> <code class="kw">nodes</code> <code class="kw">noimprove</code>&ensp;<span class="pmeta">(default: <code>auto</code>)</span></div></div>
+</details>
 <details class="param" data-search="depthminibab depth at which to try mini branch-and-bound">
   <summary><span class="pname"><code>-depthMiniBab</code></span><span class="badge badge-int">Integer</span><span class="pshort">Depth at which to try mini branch-and-bound</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
   <div class="pbody"><p class="plong">Rather a complicated parameter but can be useful. If &gt;=0 the code does approximately 100 nodes of fast branch and bound (using Clp, saving factorizations etc.) every now and then at depth&gt;=value. If negative, -2 means use Cplex if it is linked in; otherwise go into depth first complete search fast branch and bound when depth&gt;= -value-2 (so -3 will use this at depth&gt;=1), switched on only after 500 nodes. -1 means off, except for a small problem (see sizeMiniBab) where it acts as -12. -999 means off for every problem. The default, auto, uses 5 for a small problem and 8 otherwise (1 with strategy easy). The actual logic is too twisted to describe here. The value chosen for auto or -1 is logged.</p>
@@ -1058,6 +1118,126 @@
   <div class="pbody"><p class="plong">Each diving heuristic stops a dive at the root after this many simplex iterations. The default, auto, uses max(40000, 8*rows+4*columns) of the preprocessed problem. Not applied with rootHeurSchedule. The value used is logged.</p>
 <div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
 </details>
+<details class="param" data-search="rinsevery interval (nodes or depth) between rins attempts">
+  <summary><span class="pname"><code>-rinsEvery</code></span><span class="badge badge-int">Integer</span><span class="pshort">Interval (nodes or depth) between rins attempts</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The K of rinsSchedule. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="rinswindow runs between success-rate checks for rins">
+  <summary><span class="pname"><code>-rinsWindow</code></span><span class="badge badge-int">Integer</span><span class="pshort">Runs between success-rate checks for rins</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See rinsDecay. auto: the heuristic&#x27;s built-in value (10).</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="rinsmaxfail pause rins after this many failed runs on the same incumbent">
+  <summary><span class="pname"><code>-rinsMaxFail</code></span><span class="badge badge-int">Integer</span><span class="pshort">Pause rins after this many failed runs on the same incumbent</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="rinsnodes node limit of the sub-mip solved by rins">
+  <summary><span class="pname"><code>-rinsNodes</code></span><span class="badge badge-int">Integer</span><span class="pshort">Node limit of the sub-MIP solved by rins</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="vndevery interval (nodes or depth) between vnd attempts">
+  <summary><span class="pname"><code>-vndEvery</code></span><span class="badge badge-int">Integer</span><span class="pshort">Interval (nodes or depth) between vnd attempts</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The K of vndSchedule. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="vndwindow runs between success-rate checks for vnd">
+  <summary><span class="pname"><code>-vndWindow</code></span><span class="badge badge-int">Integer</span><span class="pshort">Runs between success-rate checks for vnd</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See vndDecay. auto: the heuristic&#x27;s built-in value (10).</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="vndmaxfail pause vnd after this many failed runs on the same incumbent">
+  <summary><span class="pname"><code>-vndMaxFail</code></span><span class="badge badge-int">Integer</span><span class="pshort">Pause vnd after this many failed runs on the same incumbent</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="vndnodes node limit of the sub-mip solved by vnd">
+  <summary><span class="pname"><code>-vndNodes</code></span><span class="badge badge-int">Integer</span><span class="pshort">Node limit of the sub-MIP solved by vnd</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="dinsevery interval (nodes or depth) between dins attempts">
+  <summary><span class="pname"><code>-dinsEvery</code></span><span class="badge badge-int">Integer</span><span class="pshort">Interval (nodes or depth) between dins attempts</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The K of dinsSchedule. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="dinswindow runs between success-rate checks for dins">
+  <summary><span class="pname"><code>-dinsWindow</code></span><span class="badge badge-int">Integer</span><span class="pshort">Runs between success-rate checks for dins</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See dinsDecay. auto: the heuristic&#x27;s built-in value (10).</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="dinsmaxfail pause dins after this many failed runs on the same incumbent">
+  <summary><span class="pname"><code>-dinsMaxFail</code></span><span class="badge badge-int">Integer</span><span class="pshort">Pause dins after this many failed runs on the same incumbent</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="dinsnodes node limit of the sub-mip solved by dins">
+  <summary><span class="pname"><code>-dinsNodes</code></span><span class="badge badge-int">Integer</span><span class="pshort">Node limit of the sub-MIP solved by dins</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combineevery interval (nodes or depth) between combine attempts">
+  <summary><span class="pname"><code>-combineEvery</code></span><span class="badge badge-int">Integer</span><span class="pshort">Interval (nodes or depth) between combine attempts</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The K of combineSchedule. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combinewindow runs between success-rate checks for combine">
+  <summary><span class="pname"><code>-combineWindow</code></span><span class="badge badge-int">Integer</span><span class="pshort">Runs between success-rate checks for combine</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See combineDecay. auto: the heuristic&#x27;s built-in value (10).</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combinemaxfail pause combine after this many failed runs on the same incumbent">
+  <summary><span class="pname"><code>-combineMaxFail</code></span><span class="badge badge-int">Integer</span><span class="pshort">Pause combine after this many failed runs on the same incumbent</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combinenodes node limit of the sub-mip solved by combine">
+  <summary><span class="pname"><code>-combineNodes</code></span><span class="badge badge-int">Integer</span><span class="pshort">Node limit of the sub-MIP solved by combine</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combine2every interval (nodes or depth) between combine2 attempts">
+  <summary><span class="pname"><code>-combine2Every</code></span><span class="badge badge-int">Integer</span><span class="pshort">Interval (nodes or depth) between combine2 attempts</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The K of combine2Schedule. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combine2window runs between success-rate checks for combine2">
+  <summary><span class="pname"><code>-combine2Window</code></span><span class="badge badge-int">Integer</span><span class="pshort">Runs between success-rate checks for combine2</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See combine2Decay. auto: the heuristic&#x27;s built-in value (10).</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combine2maxfail pause combine2 after this many failed runs on the same incumbent">
+  <summary><span class="pname"><code>-combine2MaxFail</code></span><span class="badge badge-int">Integer</span><span class="pshort">Pause combine2 after this many failed runs on the same incumbent</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combine2nodes node limit of the sub-mip solved by combine2">
+  <summary><span class="pname"><code>-combine2Nodes</code></span><span class="badge badge-int">Integer</span><span class="pshort">Node limit of the sub-MIP solved by combine2</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="proximityevery interval (nodes or depth) between proximity attempts">
+  <summary><span class="pname"><code>-proximityEvery</code></span><span class="badge badge-int">Integer</span><span class="pshort">Interval (nodes or depth) between proximity attempts</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The K of proximitySchedule. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="proximitywindow runs between success-rate checks for proximity">
+  <summary><span class="pname"><code>-proximityWindow</code></span><span class="badge badge-int">Integer</span><span class="pshort">Runs between success-rate checks for proximity</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See proximityDecay. auto: the heuristic&#x27;s built-in value (10).</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="proximitymaxfail pause proximity after this many failed runs on the same incumbent">
+  <summary><span class="pname"><code>-proximityMaxFail</code></span><span class="badge badge-int">Integer</span><span class="pshort">Pause proximity after this many failed runs on the same incumbent</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="proximitynodes node limit of the sub-mip solved by proximity">
+  <summary><span class="pname"><code>-proximityNodes</code></span><span class="badge badge-int">Integer</span><span class="pshort">Node limit of the sub-MIP solved by proximity</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 1&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
 <details class="param" data-search="artificialcost costs &gt;= this treated as artificials in feasibility pump">
   <summary><span class="pname"><code>-artificialCost</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Costs &gt;= this treated as artificials in feasibility pump</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
   <div class="pbody"><div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;inf&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
@@ -1066,6 +1246,96 @@
   <summary><span class="pname"><code>-rinsCloseMaxDist</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Maximum fractional distance for RINS close-fixing fallback</span><span class="pmeta">default:&nbsp;<code>0.4</code></span></summary>
   <div class="pbody"><p class="plong">When the standard RINS fix-count threshold (&gt;20%% of integers must agree between LP and best solution) is not met, integer variables whose current LP value is within this distance of the corresponding best-solution integer value are sorted by closeness and greedily fixed (closest first) until the threshold is satisfied. A value of 0.0 disables the fallback. Default: 0.4. Typical useful values: 0.2-0.5.</p>
 <div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;0.5&ensp;<span class="pmeta">(default:&nbsp;0.4)</span></div></div>
+</details>
+<details class="param" data-search="rinsdecay back-off growth of the rins interval after unproductive runs">
+  <summary><span class="pname"><code>-rinsDecay</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Back-off growth of the rins interval after unproductive runs</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Every rinsWindow runs, if fewer than rinsMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1000000&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="rinsminsuccess success rate below which rins backs off">
+  <summary><span class="pname"><code>-rinsMinSuccess</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Success rate below which rins backs off</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See rinsDecay. auto: the heuristic&#x27;s built-in value (1/3).</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="rinstimeshare largest fraction of the elapsed time rins may use">
+  <summary><span class="pname"><code>-rinsTimeShare</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Largest fraction of the elapsed time rins may use</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="vnddecay back-off growth of the vnd interval after unproductive runs">
+  <summary><span class="pname"><code>-vndDecay</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Back-off growth of the vnd interval after unproductive runs</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Every vndWindow runs, if fewer than vndMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1000000&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="vndminsuccess success rate below which vnd backs off">
+  <summary><span class="pname"><code>-vndMinSuccess</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Success rate below which vnd backs off</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See vndDecay. auto: the heuristic&#x27;s built-in value (1/3).</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="vndtimeshare largest fraction of the elapsed time vnd may use">
+  <summary><span class="pname"><code>-vndTimeShare</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Largest fraction of the elapsed time vnd may use</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="dinsdecay back-off growth of the dins interval after unproductive runs">
+  <summary><span class="pname"><code>-dinsDecay</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Back-off growth of the dins interval after unproductive runs</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Every dinsWindow runs, if fewer than dinsMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1000000&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="dinsminsuccess success rate below which dins backs off">
+  <summary><span class="pname"><code>-dinsMinSuccess</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Success rate below which dins backs off</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See dinsDecay. auto: the heuristic&#x27;s built-in value (1/3).</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="dinstimeshare largest fraction of the elapsed time dins may use">
+  <summary><span class="pname"><code>-dinsTimeShare</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Largest fraction of the elapsed time dins may use</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combinedecay back-off growth of the combine interval after unproductive runs">
+  <summary><span class="pname"><code>-combineDecay</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Back-off growth of the combine interval after unproductive runs</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Every combineWindow runs, if fewer than combineMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1000000&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combineminsuccess success rate below which combine backs off">
+  <summary><span class="pname"><code>-combineMinSuccess</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Success rate below which combine backs off</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See combineDecay. auto: the heuristic&#x27;s built-in value (1/3).</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combinetimeshare largest fraction of the elapsed time combine may use">
+  <summary><span class="pname"><code>-combineTimeShare</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Largest fraction of the elapsed time combine may use</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combine2decay back-off growth of the combine2 interval after unproductive runs">
+  <summary><span class="pname"><code>-combine2Decay</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Back-off growth of the combine2 interval after unproductive runs</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Every combine2Window runs, if fewer than combine2MinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1000000&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combine2minsuccess success rate below which combine2 backs off">
+  <summary><span class="pname"><code>-combine2MinSuccess</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Success rate below which combine2 backs off</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See combine2Decay. auto: the heuristic&#x27;s built-in value (1/3).</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="combine2timeshare largest fraction of the elapsed time combine2 may use">
+  <summary><span class="pname"><code>-combine2TimeShare</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Largest fraction of the elapsed time combine2 may use</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="proximitydecay back-off growth of the proximity interval after unproductive runs">
+  <summary><span class="pname"><code>-proximityDecay</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Back-off growth of the proximity interval after unproductive runs</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Every proximityWindow runs, if fewer than proximityMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic&#x27;s built-in value.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1000000&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="proximityminsuccess success rate below which proximity backs off">
+  <summary><span class="pname"><code>-proximityMinSuccess</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Success rate below which proximity backs off</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">See proximityDecay. auto: the heuristic&#x27;s built-in value (1/3).</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+</details>
+<details class="param" data-search="proximitytimeshare largest fraction of the elapsed time proximity may use">
+  <summary><span class="pname"><code>-proximityTimeShare</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Largest fraction of the elapsed time proximity may use</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
+  <div class="pbody"><p class="plong">Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
 </details>
 </div>
 </section>
@@ -1348,9 +1618,9 @@ This should only be necessary if you have previously set maximization. A synonym
 <div class="pextra"><strong>Range:</strong> −INT_MAX&thinsp;&ndash;&thinsp;INT_MAX&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
 </details>
 <details class="param" data-search="dualize solves dual reformulation">
-  <summary><span class="pname"><code>-dualize</code></span><span class="badge badge-int">Integer</span><span class="pshort">Solves dual reformulation</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
-  <div class="pbody"><p class="plong">Solve the dual reformulation of the LP and map the solution back. 0 = off, 1 = on, 2 = on without the primal clean-up, 4 = for model export only. `auto&#x27; (default, same as 3) decides from the instance: barrier dualizes when rows &ge; 1.5*cols (the Cholesky factor is then cols x cols instead of rows x rows); simplex methods dualize only very tall models (rows &ge; 50000 and 5*cols <= rows). Any explicit value overrides the automatic choice.</p>
-<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;4 or auto&ensp;<span class="pmeta">(default:&nbsp;auto)</span></div></div>
+  <summary><span class="pname"><code>-dualize</code></span><span class="badge badge-int">Integer</span><span class="pshort">Solves dual reformulation</span><span class="pmeta">default:&nbsp;<code>0</code></span></summary>
+  <div class="pbody"><p class="plong">Don&#x27;t even think about it.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;4&ensp;<span class="pmeta">(default:&nbsp;0)</span></div></div>
 </details>
 <details class="param" data-search="randomseed random seed for clp">
   <summary><span class="pname"><code>-randomSeed</code></span><span class="badge badge-int">Integer</span><span class="pshort">Random seed for Clp</span><span class="pmeta">default:&nbsp;<code>1234567</code></span></summary>
@@ -1594,6 +1864,11 @@ integer - nonzero integer column variables
   <summary><span class="pname"><code>-fpumpTimeFreq</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Print feasibility pump progress every N seconds (0 = disabled, default 5).</span><span class="pmeta">default:&nbsp;<code>5</code></span></summary>
   <div class="pbody"><div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;10000000000&ensp;<span class="pmeta">(default:&nbsp;5)</span></div></div>
 </details>
+<details class="param" data-search="progressminchange minimum relative dual bound improvement recorded by progresscsv">
+  <summary><span class="pname"><code>-progressMinChange</code></span><span class="badge badge-dbl">Double</span><span class="pshort">Minimum relative dual bound improvement recorded by progressCsv</span><span class="pmeta">default:&nbsp;<code>0.0001</code></span></summary>
+  <div class="pbody"><p class="plong">A dual bound row is appended to the progressCsv file only if the bound improved by at least this fraction of max(1,|bound|) since the last recorded one. Incumbents, the start and the final state are always recorded. 0 records every improvement. Default 1e-4.</p>
+<div class="pextra"><strong>Range:</strong> 0&thinsp;&ndash;&thinsp;1&ensp;<span class="pmeta">(default:&nbsp;0.0001)</span></div></div>
+</details>
 <details class="param" data-search="bufferedmode whether to flush print buffer">
   <summary><span class="pname"><code>-bufferedMode</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to flush print buffer</span><span class="pmeta">default:&nbsp;<code>on</code></span></summary>
   <div class="pbody"><p class="plong">Default is on, off switches on unbuffered output</p>
@@ -1756,6 +2031,10 @@ All features are computed in O(nz) time.</p></div>
 <details class="param" data-search="nextsolutionfile sets name for file to store suboptimal solutions in">
   <summary><span class="pname"><code>-nextSolutionFile</code></span><span class="badge badge-file">File</span><span class="pshort">sets name for file to store suboptimal solutions in</span></summary>
   <div class="pbody"><p class="plong">This will set the name solutions will be written to and read from. This is initialized to &#x27;next.sol&#x27;. </p></div>
+</details>
+<details class="param" data-search="progresscsv writes the primal/dual bound evolution to a csv file">
+  <summary><span class="pname"><code>-progressCsv</code></span><span class="badge badge-file">File</span><span class="pshort">writes the primal/dual bound evolution to a CSV file</span></summary>
+  <div class="pbody"><p class="plong">Writes a CSV with columns time,primal,dual,source,nodes: one row per new incumbent (source = the heuristic that found it, or &#x27;tree&#x27;) and one row per tree progress line (source = &#x27;bound&#x27;). Times are seconds since the start of the branch-and-bound model, values are those of the preprocessed problem. Used by test/cbc_pdi.py for exact primal-dual integral computation. Empty (default) disables it.</p></div>
 </details>
 <details class="param" data-search="priorityfile name of file to import priorities from">
   <summary><span class="pname"><code>-priorityFile</code></span><span class="badge badge-file">File</span><span class="pshort">Name of file to import priorities from</span></summary>

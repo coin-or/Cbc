@@ -52,6 +52,7 @@ libCbc_la_SOURCES = \
 	CbcGeneral.cpp CbcGeneral.hpp \
 	CbcGeneralDepth.cpp CbcGeneralDepth.hpp \
 	CbcHeuristic.cpp CbcHeuristic.hpp \
+	CbcHeuristicControl.cpp CbcHeuristicControl.hpp \
 	CbcHeuristicDINS.cpp CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.cpp CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
@@ -198,6 +199,7 @@ includecoin_HEADERS = \
 	CbcGeneralDepth.hpp \
 	CbcGenMessages.hpp \
 	CbcHeuristic.hpp \
+	CbcHeuristicControl.hpp \
 	CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.hpp \

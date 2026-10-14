@@ -206,10 +206,12 @@ int CbcHeuristicVND::solution(double &solutionValue,
       if ((numberNodes > 40 && numberNodes <= 50) || (numberNodes > 90 && numberNodes < 100))
         numberNodes = howOften_;
     }
-    runNow = (numberNodes % howOften_) == 0 && passOK;
+    runNow = (numberNodes % howOften_) == 0 && passOK && shouldRunBySchedule();
   }
   if (runNow) {
     lastNode_ = model_->getNodeCount();
+    RunGuard runGuard(this);
+    const int successesBefore = numberSuccesses_;
     OsiSolverInterface *solver = model_->solver();
 
     int numberIntegers = model_->numberIntegers();
@@ -293,10 +295,7 @@ int CbcHeuristicVND::solution(double &solutionValue,
         //printf("\n");
       }
       numberTries_++;
-      if ((numberTries_ % 10) == 0 && numberSuccesses_ * 3 < numberTries_)
-        // see CbcHeuristicRINS.cpp for why this is clamped in double before
-        // truncating back to int (avoids silent int overflow on long runs)
-        howOften_ = static_cast< int >(std::min(howOften_ * (1.0 + decayFactor_), 1.0e6));
+      runGuard.finish(numberSuccesses_ > successesBefore);
     }
 
     delete newSolver;

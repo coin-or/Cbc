@@ -69,3 +69,41 @@ Add an enumerator to `CbcProblemClassifier::ProblemClass`, detect it in
 `classify()`, and add a `case` to `getCutTuning()` listing `disableParams` /
 `enableParams`. New tunable parameters must be added to
 `CbcProblemClassifier::autoCutParams()` so they accept `auto`.
+
+# Heuristic invocation control
+
+How often a tree heuristic runs is decided in one place,
+`CbcHeuristicControl` (`src/CbcHeuristicControl.hpp`), the same for RINS, VND,
+DINS, combine, combine2 (crossover) and proximity search. For each of them
+there are eight parameters, `<h>` being `rins`, `vnd`, `dins`, `combine`,
+`combine2` or `proximity`:
+
+| Parameter | Meaning |
+|---|---|
+| `<h>Schedule` | `auto`, `legacy`, `depth`, `nodes`, `noimprove` (every K nodes and straight after each new incumbent) |
+| `<h>Every` | K of the schedule |
+| `<h>Decay` | back-off: K is multiplied by `1 + decay` ... |
+| `<h>Window` | ... every `window` runs, if fewer than ... |
+| `<h>MinSuccess` | ... this fraction of the runs improved the incumbent |
+| `<h>MaxFail` | pause after this many failed runs on the same incumbent (resumes when it changes; 0 = never) |
+| `<h>TimeShare` | do not start a run while the heuristic has used more than this fraction of the elapsed time (0 = no limit) |
+| `<h>Nodes` | node limit of the sub-MIP |
+
+All accept `auto`, which keeps the built-in value (RINS/VND: `noimprove`,
+K=100, window 10, min success 1/3, decay 5 for RINS/DINS with `on` and 1.5
+otherwise, none for VND). For the heuristics triggered by a new incumbent
+(combine, combine2, proximity) a non-legacy schedule means "at least K nodes
+since the last run".
+
+Back-off previously changed an interval that the default `noimprove` schedule
+never read, so it had no effect; it now does. With `-log 2` a per-heuristic
+summary (runs, improvements, seconds, back-offs, skips, final policy) is
+printed at the end, and `CBC_HEUR_TRACE=1` traces every decision.
+`Cbc/test/test-heuristic-control` checks that the parameters control the
+number of runs. The summary and the controls apply to the model's own
+heuristics, so use the default `-threads 0` when measuring them.
+
+To put another heuristic under the same control, add a line to
+`CBC_HEUR_CONTROL_LIST` in `CbcParam.hpp`, route its gating through
+`shouldRunBySchedule()` (periodic) or `controlAllows()` (incumbent-triggered)
+and bracket its run with `CbcHeuristic::RunGuard`.

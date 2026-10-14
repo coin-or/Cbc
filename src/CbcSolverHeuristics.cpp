@@ -1166,6 +1166,49 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
   return NULL;
 }
 
+namespace {
+struct HeuristicControlIds {
+  int schedule, every, decay, window, minSuccess, maxFail, timeShare, nodes;
+};
+#define CBC_HC_IDS(ID, N) \
+  const HeuristicControlIds hcIds##ID = { CbcParam::HC_##ID##_SCHEDULE, CbcParam::HC_##ID##_EVERY, \
+    CbcParam::HC_##ID##_DECAY, CbcParam::HC_##ID##_WINDOW, CbcParam::HC_##ID##_MINSUCCESS, \
+    CbcParam::HC_##ID##_MAXFAIL, CbcParam::HC_##ID##_TIMESHARE, CbcParam::HC_##ID##_NODES };
+CBC_HEUR_CONTROL_LIST(CBC_HC_IDS)
+
+/** Overrides the built-in invocation control of a heuristic with every
+    <prefix>* parameter the user set; `auto` leaves the built-in value. Call
+    after the built-in setup, before model->addHeuristic(). */
+void applyHeuristicControl(CbcHeuristic &h, CbcParameters &parameters, const HeuristicControlIds &id)
+{
+  CbcHeuristicControl &c = h.control();
+  const int mode = parameters[id.schedule]->modeVal();
+  if (mode != 0) {
+    static const HeuristicScheduleMode modes[] = { HeuristicScheduleMode::Legacy, HeuristicScheduleMode::Legacy,
+      HeuristicScheduleMode::EveryKDepth, HeuristicScheduleMode::EveryKNodes,
+      HeuristicScheduleMode::EveryKNodesNoImprove };
+    h.setScheduleMode(modes[mode], c.everyK);
+  }
+  if (!parameters[id.every]->isAuto()) {
+    c.everyK = parameters[id.every]->intVal();
+    c.initialK = c.everyK;
+  }
+  if (!parameters[id.decay]->isAuto()) {
+    h.setDecayFactor(parameters[id.decay]->dblVal());
+  }
+  if (!parameters[id.window]->isAuto())
+    c.window = parameters[id.window]->intVal();
+  if (!parameters[id.minSuccess]->isAuto())
+    c.minSuccess = parameters[id.minSuccess]->dblVal();
+  if (!parameters[id.maxFail]->isAuto())
+    c.maxFailures = parameters[id.maxFail]->intVal();
+  if (!parameters[id.timeShare]->isAuto())
+    c.timeShare = parameters[id.timeShare]->dblVal();
+  if (!parameters[id.nodes]->isAuto())
+    h.setNumberNodes(parameters[id.nodes]->intVal());
+}
+} // namespace
+
 int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   int noPrinting_, int initialPumpTune)
 {
@@ -1534,6 +1577,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     // See the matching RINS comment above -- same scheduling default and
     // rationale apply to VND.
     heuristic6b.setScheduleMode(HeuristicScheduleMode::EveryKNodesNoImprove, 100);
+    applyHeuristicControl(heuristic6b, parameters, hcIdsVND);
     model->addHeuristic(&heuristic6b);
     anyToDo = true;
   }
@@ -1724,6 +1768,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     else
       heuristic5a.setDecayFactor(1.5);
     heuristic5a.setNumberNodes(1000);
+    applyHeuristicControl(heuristic5a, parameters, hcIdsDINS);
     model->addHeuristic(&heuristic5a);
     anyToDo = true;
   }
@@ -1757,6 +1802,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     // 16 regressions, +2 optimal, 0 new failures/overtimes) that justified
     // shipping this as the default instead of Legacy.
     heuristic5.setScheduleMode(HeuristicScheduleMode::EveryKNodesNoImprove, 100);
+    applyHeuristicControl(heuristic5, parameters, hcIdsRINS);
     model->addHeuristic(&heuristic5);
     anyToDo = true;
   }
@@ -1784,6 +1830,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     if (useCombine > 3)
       searchType += 10; // experiment
     heuristic2.setSearchType(searchType);
+    applyHeuristicControl(heuristic2, parameters, hcIdsCOMBINE);
     model->addHeuristic(&heuristic2);
     anyToDo = true;
   }
@@ -1803,6 +1850,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       heuristic2a.setNumberNodes(300);
       heuristic2a.setFeasibilityPumpOptions(-3);
     }
+    applyHeuristicControl(heuristic2a, parameters, hcIdsPROXIMITY);
     model->addHeuristic(&heuristic2a);
     anyToDo = true;
   }
@@ -1812,6 +1860,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     heuristic2a.setFractionSmall(0.3);
     // just fix at lower
     heuristic2a.setWhen(11);
+    applyHeuristicControl(heuristic2a, parameters, hcIdsCROSSOVER);
     model->addHeuristic(&heuristic2a);
     model->setMaximumSavedSolutions(5);
     anyToDo = true;

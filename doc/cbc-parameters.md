@@ -1,6 +1,6 @@
 # CBC Parameter Reference
 
-*CBC v2.933-133-geaa3997f — October 2026*
+*CBC v2.933-140-g6c69fc09-dirty — October 2026*
 
 Parameters are specified on the command line **before** `-solve`:
 ```
@@ -16,7 +16,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (9 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
 - [Cuts](#cuts) (66 parameters)
-- [Heuristics](#heuristics) (37 parameters)
+- [Heuristics](#heuristics) (85 parameters)
 - [Branching](#branching) (8 parameters)
 - [Tolerances](#tolerances) (6 parameters)
 - [Conflict Graph](#conflict-graph) (5 parameters)
@@ -25,8 +25,8 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [Simplex](#simplex) (19 parameters)
 - [Barrier](#barrier) (3 parameters)
 - [Scaling](#scaling) (4 parameters)
-- [Output](#output) (23 parameters)
-- [I/O](#i/o) (36 parameters)
+- [Output](#output) (24 parameters)
+- [I/O](#i/o) (37 parameters)
 - [Parallelism](#parallelism) (1 parameters)
 - [General](#general) (51 parameters)
 
@@ -1105,6 +1105,84 @@ If on then tries to branch to solution given by AMPL or priorities file.
 
 **Values:** `off`, `on` (default: `off`)
 
+#### `-rinsSchedule`
+
+When the rins heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of rinsEvery.
+  nodes:     once every rinsEvery nodes.
+  noimprove: every rinsEvery nodes, and straight after each new incumbent.
+Back-off (rinsDecay, rinsWindow, rinsMinSuccess), rinsMaxFail and rinsTimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
+#### `-vndSchedule`
+
+When the vnd heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of vndEvery.
+  nodes:     once every vndEvery nodes.
+  noimprove: every vndEvery nodes, and straight after each new incumbent.
+Back-off (vndDecay, vndWindow, vndMinSuccess), vndMaxFail and vndTimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
+#### `-dinsSchedule`
+
+When the dins heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of dinsEvery.
+  nodes:     once every dinsEvery nodes.
+  noimprove: every dinsEvery nodes, and straight after each new incumbent.
+Back-off (dinsDecay, dinsWindow, dinsMinSuccess), dinsMaxFail and dinsTimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
+#### `-combineSchedule`
+
+When the combine heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of combineEvery.
+  nodes:     once every combineEvery nodes.
+  noimprove: every combineEvery nodes, and straight after each new incumbent.
+Back-off (combineDecay, combineWindow, combineMinSuccess), combineMaxFail and combineTimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
+#### `-combine2Schedule`
+
+When the combine2 heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of combine2Every.
+  nodes:     once every combine2Every nodes.
+  noimprove: every combine2Every nodes, and straight after each new incumbent.
+Back-off (combine2Decay, combine2Window, combine2MinSuccess), combine2MaxFail and combine2TimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
+#### `-proximitySchedule`
+
+When the proximity heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of proximityEvery.
+  nodes:     once every proximityEvery nodes.
+  noimprove: every proximityEvery nodes, and straight after each new incumbent.
+Back-off (proximityDecay, proximityWindow, proximityMinSuccess), proximityMaxFail and proximityTimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
 #### `-depthMiniBab`
 
 Depth at which to try mini branch-and-bound
@@ -1189,6 +1267,198 @@ Each diving heuristic stops a dive at the root after this many simplex iteration
 
 **Range:** 0 to INT_MAX (default: auto)
 
+#### `-rinsEvery`
+
+Interval (nodes or depth) between rins attempts
+
+The K of rinsSchedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-rinsWindow`
+
+Runs between success-rate checks for rins
+
+See rinsDecay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-rinsMaxFail`
+
+Pause rins after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-rinsNodes`
+
+Node limit of the sub-MIP solved by rins
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-vndEvery`
+
+Interval (nodes or depth) between vnd attempts
+
+The K of vndSchedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-vndWindow`
+
+Runs between success-rate checks for vnd
+
+See vndDecay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-vndMaxFail`
+
+Pause vnd after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-vndNodes`
+
+Node limit of the sub-MIP solved by vnd
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-dinsEvery`
+
+Interval (nodes or depth) between dins attempts
+
+The K of dinsSchedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-dinsWindow`
+
+Runs between success-rate checks for dins
+
+See dinsDecay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-dinsMaxFail`
+
+Pause dins after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-dinsNodes`
+
+Node limit of the sub-MIP solved by dins
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combineEvery`
+
+Interval (nodes or depth) between combine attempts
+
+The K of combineSchedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combineWindow`
+
+Runs between success-rate checks for combine
+
+See combineDecay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combineMaxFail`
+
+Pause combine after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-combineNodes`
+
+Node limit of the sub-MIP solved by combine
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combine2Every`
+
+Interval (nodes or depth) between combine2 attempts
+
+The K of combine2Schedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combine2Window`
+
+Runs between success-rate checks for combine2
+
+See combine2Decay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combine2MaxFail`
+
+Pause combine2 after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-combine2Nodes`
+
+Node limit of the sub-MIP solved by combine2
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-proximityEvery`
+
+Interval (nodes or depth) between proximity attempts
+
+The K of proximitySchedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-proximityWindow`
+
+Runs between success-rate checks for proximity
+
+See proximityDecay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-proximityMaxFail`
+
+Pause proximity after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-proximityNodes`
+
+Node limit of the sub-MIP solved by proximity
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
 #### `-artificialCost`
 
 Costs >= this treated as artificials in feasibility pump
@@ -1202,6 +1472,150 @@ Maximum fractional distance for RINS close-fixing fallback
 When the standard RINS fix-count threshold (>20%% of integers must agree between LP and best solution) is not met, integer variables whose current LP value is within this distance of the corresponding best-solution integer value are sorted by closeness and greedily fixed (closest first) until the threshold is satisfied. A value of 0.0 disables the fallback. Default: 0.4. Typical useful values: 0.2-0.5.
 
 **Range:** 0 to 0.5 (default: 0.4)
+
+#### `-rinsDecay`
+
+Back-off growth of the rins interval after unproductive runs
+
+Every rinsWindow runs, if fewer than rinsMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-rinsMinSuccess`
+
+Success rate below which rins backs off
+
+See rinsDecay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-rinsTimeShare`
+
+Largest fraction of the elapsed time rins may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-vndDecay`
+
+Back-off growth of the vnd interval after unproductive runs
+
+Every vndWindow runs, if fewer than vndMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-vndMinSuccess`
+
+Success rate below which vnd backs off
+
+See vndDecay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-vndTimeShare`
+
+Largest fraction of the elapsed time vnd may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-dinsDecay`
+
+Back-off growth of the dins interval after unproductive runs
+
+Every dinsWindow runs, if fewer than dinsMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-dinsMinSuccess`
+
+Success rate below which dins backs off
+
+See dinsDecay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-dinsTimeShare`
+
+Largest fraction of the elapsed time dins may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-combineDecay`
+
+Back-off growth of the combine interval after unproductive runs
+
+Every combineWindow runs, if fewer than combineMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-combineMinSuccess`
+
+Success rate below which combine backs off
+
+See combineDecay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-combineTimeShare`
+
+Largest fraction of the elapsed time combine may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-combine2Decay`
+
+Back-off growth of the combine2 interval after unproductive runs
+
+Every combine2Window runs, if fewer than combine2MinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-combine2MinSuccess`
+
+Success rate below which combine2 backs off
+
+See combine2Decay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-combine2TimeShare`
+
+Largest fraction of the elapsed time combine2 may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-proximityDecay`
+
+Back-off growth of the proximity interval after unproductive runs
+
+Every proximityWindow runs, if fewer than proximityMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-proximityMinSuccess`
+
+Success rate below which proximity backs off
+
+See proximityDecay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-proximityTimeShare`
+
+Largest fraction of the elapsed time proximity may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
 
 ## Branching
 
@@ -1610,9 +2024,9 @@ Whether to try decomposition
 
 Solves dual reformulation
 
-Solve the dual reformulation of the LP and map the solution back. 0 = off, 1 = on, 2 = on without the primal clean-up, 4 = for model export only. `auto' (default, same as 3) decides from the instance: barrier dualizes when rows >= 1.5*cols (the Cholesky factor is then cols x cols instead of rows x rows); simplex methods dualize only very tall models (rows >= 50000 and 5*cols <= rows). Any explicit value overrides the automatic choice.
+Don't even think about it.
 
-**Range:** 0 to 4 or auto (default: auto)
+**Range:** 0 to 4 (default: 0)
 
 ### `-randomSeed`
 
@@ -1972,6 +2386,14 @@ Print feasibility pump progress every N seconds (0 = disabled, default 5).
 
 **Range:** 0 to 10000000000 (default: 5)
 
+### `-progressMinChange`
+
+Minimum relative dual bound improvement recorded by progressCsv
+
+A dual bound row is appended to the progressCsv file only if the bound improved by at least this fraction of max(1,|bound|) since the last recorded one. Incumbents, the start and the final state are always recorded. 0 records every improvement. Default 1e-4.
+
+**Range:** 0 to 1 (default: 0.0001)
+
 ### `-bufferedMode`
 
 Whether to flush print buffer
@@ -2196,6 +2618,12 @@ This will set the name the model will be written to and read from. This is initi
 sets name for file to store suboptimal solutions in
 
 This will set the name solutions will be written to and read from. This is initialized to 'next.sol'. 
+
+### `-progressCsv`
+
+writes the primal/dual bound evolution to a CSV file
+
+Writes a CSV with columns time,primal,dual,source,nodes: one row per new incumbent (source = the heuristic that found it, or 'tree') and one row per tree progress line (source = 'bound'). Times are seconds since the start of the branch-and-bound model, values are those of the preprocessed problem. Used by test/cbc_pdi.py for exact primal-dual integral computation. Empty (default) disables it.
 
 ### `-priorityFile`
 

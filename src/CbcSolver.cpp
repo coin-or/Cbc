@@ -138,6 +138,7 @@ void CbcCrashHandler(int sig);
 #include "CbcCompareObjective.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcHeuristic.hpp"
+#include "CbcHeuristicControl.hpp"
 #include "CbcHeuristicDiveCoefficient.hpp"
 #include "CbcHeuristicDiveFractional.hpp"
 #include "CbcHeuristicDiveGuided.hpp"
@@ -10917,25 +10918,21 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
     statistics.cgraph_time = babModel_->solver()->getCGraphBuildTime();
     statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
   }
-#ifdef COIN_DEVELOP
-  printf("%d solutions found by heuristics\n",
-    babModel_->getNumberHeuristicSolutions());
-  // Not really generator but I am feeling lazy
-  for (iGenerator = 0; iGenerator < babModel_->numberHeuristics();
-    iGenerator++) {
-    CbcHeuristic *heuristic = babModel_->heuristic(iGenerator);
-    if (heuristic->numRuns()) {
-      // Need to bring others inline
+  if (babModel_->logLevel() > 1) {
+    for (int iHeur = 0; iHeur < babModel_->numberHeuristics(); iHeur++) {
+      const CbcHeuristic *heuristic = babModel_->heuristic(iHeur);
+      const CbcHeuristicControl &hc = heuristic->control();
+      if (hc.runs == 0 && hc.skippedPaused + hc.skippedTime + hc.skippedSchedule == 0)
+        continue;
       buffer.str("");
-      buffer << heuristic->heuristicName() << " was tried "
-             << heuristic->numRuns() << " times out of "
-             << heuristic->numCouldRun() << " and created "
-             << heuristic->numberSolutionsFound()
-             << " solutions" << std::endl;
+      buffer << "Heuristic " << heuristic->heuristicName() << ": " << hc.runs << " runs, "
+             << hc.successes << " improved, " << hc.seconds << "s, " << hc.backoffs
+             << " back-offs, skipped " << hc.skippedSchedule << " (schedule) "
+             << hc.skippedPaused << " (paused) " << hc.skippedTime << " (time share); "
+             << hc.describe();
       printGeneralMessage(model_, buffer.str());
     }
   }
-#endif
   // adjust time to allow for children on some systems
   time2 = CoinCpuTime() + CoinCpuTimeJustChildren();
   totalTime += time2 - time1;

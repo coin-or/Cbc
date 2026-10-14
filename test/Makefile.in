@@ -1343,7 +1343,7 @@ coefstr-test$(EXEEXT): $(coefstr_test_OBJECTS) $(coefstr_test_DEPENDENCIES) $(EX
 	@rm -f coefstr-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(coefstr_test_OBJECTS) $(coefstr_test_LDADD) $(LIBS)
 
-final-bound-test$(EXEEXT): $(final_bound_test_OBJECTS) $(final_bound_test_DEPENDENCIES) $(EXTRA_final_bound_test_DEPENDENCIES)
+final-bound-test$(EXEEXT): $(final_bound_test_OBJECTS) $(final_bound_test_DEPENDENCIES) $(EXTRA_final_bound_test_DEPENDENCIES) 
 	@rm -f final-bound-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(final_bound_test_OBJECTS) $(final_bound_test_LDADD) $(LIBS)
 

@@ -200,7 +200,14 @@ int CbcHeuristicDINS::solution(double &solutionValue,
     numberKeptSolutions_ = std::min(numberKeptSolutions_ + 1, maximumKeepSolutions_);
   }
   int finalReturnCode = 0;
-  if (((model_->getNodeCount() % howOften_) == howOften_ / 2 || !model_->getNodeCount()) && (model_->getCurrentPassNumber() <= 1 || model_->getCurrentPassNumber() == 999999)) {
+  const bool passOK = model_->getCurrentPassNumber() <= 1 || model_->getCurrentPassNumber() == 999999;
+  bool runNow;
+  if (scheduleMode() != HeuristicScheduleMode::Legacy)
+    runNow = shouldRunBySchedule() && passOK;
+  else
+    runNow = ((model_->getNodeCount() % howOften_) == howOften_ / 2 || !model_->getNodeCount()) && passOK && shouldRunBySchedule();
+  if (runNow) {
+    RunGuard runGuard(this);
     OsiSolverInterface *solver = model_->solver();
 
     //int numberIntegers = model_->numberIntegers();
@@ -390,10 +397,7 @@ int CbcHeuristicDINS::solution(double &solutionValue,
       delete newSolver;
     }
     numberTries_++;
-    if ((numberTries_ % 10) == 0 && numberSuccesses_ * 3 < numberTries_)
-      // see CbcHeuristicRINS.cpp for why this is clamped in double before
-      // truncating back to int (avoids silent int overflow on long runs)
-      howOften_ = static_cast< int >(std::min(howOften_ * (1.0 + decayFactor_), 1.0e6));
+    runGuard.finish(finalReturnCode == 1);
   }
   return finalReturnCode;
 }

@@ -13,6 +13,7 @@
 #include "OsiBranchingObject.hpp"
 #include "CbcConfig.h"
 #include "CbcModel.hpp"
+#include "CbcHeuristicControl.hpp"
 
 class OsiSolverInterface;
 
@@ -89,38 +90,6 @@ enum class HeuristicCategory {
   CONSTRUCTIVE = 0,
   IMPROVEMENT = 1,
   IMPROVEMENT_2 = 2
-};
-
-/** Node-count/depth-based scheduling policy for periodic re-invocation of a
-    heuristic deep in the tree. Several heuristics (notably
-    CbcHeuristicRINS/CbcHeuristicVND) historically reimplemented their own
-    ad-hoc node-count math for this (magic constants like "wait at least 12
-    nodes", "force a run at node 50 or 100", "double the interval if 2x it
-    has passed with no trigger", decay the interval by a fixed fraction
-    every 10 tries if success rate is below 30% -- see
-    CbcHeuristicRINS::solution()/CbcHeuristicVND::solution() pre-refactor).
-    This enum gives that policy an explicit, named, reusable form:
-      - Legacy: unchanged, heuristic-specific historical behavior (default;
-        shouldRunBySchedule() below is a no-op observer in this mode --
-        each heuristic's own pre-existing gating logic remains solely
-        responsible).
-      - EveryKDepth: run only when the current tree depth is a multiple of
-        K (i.e. at depths 0, K, 2K, 3K, ...).
-      - EveryKNodes: run once every K nodes explored overall, independent
-        of depth.
-      - EveryKNodesNoImprove: run every K nodes since the last incumbent
-        improvement, AND immediately again right after any improvement
-        (which resets the K-node window). Suited to improvement
-        heuristics like RINS/VND: a fresh incumbent is itself a natural
-        trigger (there is a new target to compare the LP relaxation
-        against), while a long stall (no improvement for K nodes) should
-        prompt another attempt.
-    See RINS-FIXTURES.md for the benchmarking behind these modes. */
-enum class HeuristicScheduleMode {
-  Legacy = 0,
-  EveryKDepth = 1,
-  EveryKNodes = 2,
-  EveryKNodesNoImprove = 3
 };
 
 /** Heuristic base class */
@@ -401,6 +370,7 @@ public:
   inline void setDecayFactor(double value)
   {
     decayFactor_ = value;
+    control_.decay = value;
   }
   /// Set input solution
   void setInputSolution(const double *solution, double objValue);
@@ -442,31 +412,54 @@ public:
   {
     minDistanceToRun_ = value;
   }
-  /** Select a HeuristicScheduleMode and its K parameter. Only takes
-      effect for heuristics that consult shouldRunBySchedule() from their
-      own gating logic (currently CbcHeuristicRINS and CbcHeuristicVND);
-      other heuristics ignore it. Default is Legacy (no behavior change). */
+  /** Select a HeuristicScheduleMode and its K parameter. Takes effect for
+      heuristics that consult shouldRunBySchedule()/controlAllows() from
+      their own gating logic (RINS, VND, DINS, FJ, the dives, combine,
+      crossover, proximity). Default is Legacy (no behaviour change). */
   inline void setScheduleMode(HeuristicScheduleMode mode, int k = 1)
   {
-    scheduleMode_ = mode;
-    scheduleK_ = k > 0 ? k : 1;
+    control_.mode = mode;
+    control_.everyK = k > 0 ? k : 1;
+    control_.initialK = control_.everyK;
   }
   inline HeuristicScheduleMode scheduleMode() const
   {
-    return scheduleMode_;
+    return control_.mode;
   }
   inline int scheduleK() const
   {
-    return scheduleK_;
+    return control_.everyK;
   }
+  /// The policy and statistics deciding when this heuristic runs
+  inline CbcHeuristicControl &control() { return control_; }
+  inline const CbcHeuristicControl &control() const { return control_; }
   /** Returns true if, per scheduleMode()/scheduleK(), this is a node at
-      which the heuristic should attempt to run. Has side effects
-      (advances internal node/solution-count bookkeeping), so a heuristic
-      should call it at most once per candidate invocation. Always
-      returns true when scheduleMode() is Legacy -- in that mode it is a
-      pure no-op observer and gates nothing; the heuristic's own
-      pre-existing logic remains solely responsible. */
+      which the heuristic should attempt to run; also applies the
+      maxFailures and timeShare limits of control(). Has side effects
+      (advances internal bookkeeping), so a heuristic should call it at most
+      once per candidate invocation. In Legacy mode only the limits apply:
+      the heuristic's own pre-existing logic decides the rest. */
   bool shouldRunBySchedule();
+  /** Only the schedule-independent limits (pause after repeated failures,
+      time share) and, for non-Legacy modes, a minimum gap of K nodes since
+      the last run. For heuristics triggered by a new incumbent rather than
+      periodically (combine, crossover, proximity). */
+  bool controlAllows();
+
+  /** Brackets one real execution of the heuristic. Time is always charged
+      to control(); the run only counts (towards back-off, failures and
+      statistics) if finish() is called, so early exits do not count. */
+  class RunGuard {
+  public:
+    explicit RunGuard(CbcHeuristic *heuristic);
+    ~RunGuard();
+    void finish(bool success);
+
+  private:
+    CbcHeuristic *h_;
+    double start_;
+    bool finished_;
+  };
 
   /** Allow this heuristic to be considered during in-tree node processing
       (whereFrom 3 "after cuts at other nodes" / 4 "during cuts at other
@@ -636,15 +629,8 @@ protected:
         this is tested, but we may switch to avgDistanceToRun_ in the future. */
   int minDistanceToRun_;
 
-  /// See setScheduleMode()
-  HeuristicScheduleMode scheduleMode_;
-  /// See setScheduleMode()
-  int scheduleK_;
-  /// Node count at which this heuristic last ran under the schedule
-  int scheduleLastRunNode_;
-  /// model_->getSolutionCount() observed at the last shouldRunBySchedule()
-  /// call, used by EveryKNodesNoImprove to detect a fresh incumbent
-  int scheduleLastSolutionCount_;
+  /// Policy and statistics of when to run (see CbcHeuristicControl)
+  CbcHeuristicControl control_;
   /// See setMaxInvocations()
   int maxInvocations_ = 0;
   /// See recordInvocation()

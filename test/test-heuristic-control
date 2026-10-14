@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Checks that the per-heuristic invocation-control parameters
+# (<h>Schedule/Every/Decay/Window/MinSuccess/MaxFail/TimeShare/Nodes, see
+# CbcHeuristicControl) really change how often a heuristic runs, in the tree.
+#
+# usage: test-heuristic-control [--cbc=PATH] [--instance=FILE.mps[.gz]] [--nodes=N]
+# Needs an instance whose tree has a few thousand nodes and where RINS runs;
+# the default is e40400 from the 2017+spp set.
+set -u
+CBC=${CBC:-cbc}
+INST=$HOME/inst/miplib/2017+spp/e40400.mps.gz
+NODES=3000
+for a in "$@"; do
+  case $a in
+  --cbc=*) CBC=${a#*=} ;;
+  --instance=*) INST=${a#*=} ;;
+  --nodes=*) NODES=${a#*=} ;;
+  *) echo "unknown option $a"; exit 2 ;;
+  esac
+done
+
+fail=0
+# prints "<runs> <backoffs> <paused> <timeshare-skips> <finalK>" of heuristic $1
+stat() {
+  local h=$1
+  shift
+  "$CBC" "$INST" -maxNodes "$NODES" -log 2 "$@" -solve 2>&1 |
+    awk -v h="$h" '$1=="Heuristic" && $2==h":" && $4=="runs," {
+      gsub(/[(),;]/," "); runs=$3; bo=$8; paused=$13; ts=$15; k=""
+      for(i=1;i<=NF;i++) if($i ~ /^K=/) k=substr($i,3)
+      print runs, bo, paused, ts, k; found=1 }
+      END { if(!found) print "0 0 0 0 0" }'
+}
+check() { # description, condition (0 = ok)
+  if [ "$2" -eq 0 ]; then echo "PASS  $1"; else echo "FAIL  $1"; fail=1; fi
+}
+
+read -r r0 b0 p0 t0 k0 <<<"$(stat RINS)"
+read -r r1 b1 p1 t1 k1 <<<"$(stat RINS -rinsSchedule auto -rinsEvery auto -rinsDecay auto -rinsMaxFail auto)"
+echo "default: runs=$r0 backoffs=$b0 K=$k0"
+check "auto parameters equal the defaults" $([ "$r0 $b0 $k0" = "$r1 $b1 $k1" ] && echo 0 || echo 1)
+
+read -r r b p t k <<<"$(stat RINS -rinsDecay 0)"
+check "rinsDecay 0 switches the back-off off (K stays 100, runs=$r >= default $r0)" $([ "$b" -eq 0 ] && [ "$k" -eq 100 ] && [ "$r" -ge "$r0" ] && echo 0 || echo 1)
+
+read -r r b p t k <<<"$(stat RINS -rinsDecay 2)"
+check "rinsDecay 2 triples K per back-off (backoffs=$b K=$k)" $([ "$b" -ge 1 ] && [ "$k" -eq $((100 * 3 ** b)) ] && echo 0 || echo 1)
+
+read -r r b p t k <<<"$(stat RINS -rinsDecay 0 -rinsEvery 20)"
+check "rinsEvery 20 runs more often than 100 (runs=$r)" $([ "$r" -gt 0 ] && [ "$k" -eq 20 ] && echo 0 || echo 1)
+read -r rr b p t k <<<"$(stat RINS -rinsDecay 0 -rinsEvery 1000)"
+check "rinsEvery 1000 runs less often than 20 (runs=$rr < $r)" $([ "$rr" -lt "$r" ] && echo 0 || echo 1)
+
+read -r r b p t k <<<"$(stat RINS -rinsDecay 0 -rinsMaxFail 1)"
+check "rinsMaxFail 1 pauses RINS (paused skips=$p)" $([ "$p" -gt 0 ] && echo 0 || echo 1)
+
+read -r r b p t k <<<"$(stat RINS -rinsTimeShare 0.00001)"
+check "tiny rinsTimeShare stops RINS (runs=$r time-share skips=$t)" $([ "$t" -gt 0 ] && [ "$r" -le 3 ] && echo 0 || echo 1)
+
+read -r r b p t k <<<"$(stat VND -vndEvery 10 -vndDecay 0)"
+read -r rv b p t k <<<"$(stat VND -vndEvery 1000 -vndDecay 0)"
+check "vndEvery controls VND (runs $r vs $rv)" $([ "$r" -gt "$rv" ] && echo 0 || echo 1)
+
+read -r r b p t k <<<"$(stat RINS -rinsSchedule nodes -rinsEvery 50 -rinsDecay 0)"
+check "rinsSchedule nodes -rinsEvery 50 runs RINS (runs=$r)" $([ "$r" -gt 0 ] && echo 0 || echo 1)
+
+[ $fail -eq 0 ] && echo "ALL PASSED" || echo "SOME CHECKS FAILED"
+exit $fail

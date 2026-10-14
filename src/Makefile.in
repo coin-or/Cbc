@@ -169,7 +169,8 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcFixVariable.lo libCbc_la-CbcFullNodeInfo.lo \
 	libCbc_la-CbcFollowOn.lo libCbc_la-CbcGeneral.lo \
 	libCbc_la-CbcGeneralDepth.lo libCbc_la-CbcHeuristic.lo \
-	libCbc_la-CbcHeuristicDINS.lo libCbc_la-CbcHeuristicDive.lo \
+	libCbc_la-CbcHeuristicControl.lo libCbc_la-CbcHeuristicDINS.lo \
+	libCbc_la-CbcHeuristicDive.lo \
 	libCbc_la-CbcHeuristicDiveCoefficient.lo \
 	libCbc_la-CbcHeuristicDiveConfigurable.lo \
 	libCbc_la-CbcDiveScheduler.lo \
@@ -269,6 +270,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcGeneral.Plo \
 	./$(DEPDIR)/libCbc_la-CbcGeneralDepth.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristic.Plo \
+	./$(DEPDIR)/libCbc_la-CbcHeuristicControl.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicDINS.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicDW.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicDive.Plo \
@@ -601,6 +603,7 @@ libCbc_la_SOURCES = \
 	CbcGeneral.cpp CbcGeneral.hpp \
 	CbcGeneralDepth.cpp CbcGeneralDepth.hpp \
 	CbcHeuristic.cpp CbcHeuristic.hpp \
+	CbcHeuristicControl.cpp CbcHeuristicControl.hpp \
 	CbcHeuristicDINS.cpp CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.cpp CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
@@ -734,6 +737,7 @@ includecoin_HEADERS = \
 	CbcGeneralDepth.hpp \
 	CbcGenMessages.hpp \
 	CbcHeuristic.hpp \
+	CbcHeuristicControl.hpp \
 	CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.hpp \
@@ -970,6 +974,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcGeneral.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcGeneralDepth.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristic.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicControl.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicDINS.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicDW.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicDive.Plo@am__quote@ # am--include-marker
@@ -1277,6 +1282,13 @@ libCbc_la-CbcHeuristic.lo: CbcHeuristic.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcHeuristic.cpp' object='libCbc_la-CbcHeuristic.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcHeuristic.lo `test -f 'CbcHeuristic.cpp' || echo '$(srcdir)/'`CbcHeuristic.cpp
+
+libCbc_la-CbcHeuristicControl.lo: CbcHeuristicControl.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcHeuristicControl.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcHeuristicControl.Tpo -c -o libCbc_la-CbcHeuristicControl.lo `test -f 'CbcHeuristicControl.cpp' || echo '$(srcdir)/'`CbcHeuristicControl.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcHeuristicControl.Tpo $(DEPDIR)/libCbc_la-CbcHeuristicControl.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcHeuristicControl.cpp' object='libCbc_la-CbcHeuristicControl.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcHeuristicControl.lo `test -f 'CbcHeuristicControl.cpp' || echo '$(srcdir)/'`CbcHeuristicControl.cpp
 
 libCbc_la-CbcHeuristicDINS.lo: CbcHeuristicDINS.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcHeuristicDINS.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcHeuristicDINS.Tpo -c -o libCbc_la-CbcHeuristicDINS.lo `test -f 'CbcHeuristicDINS.cpp' || echo '$(srcdir)/'`CbcHeuristicDINS.cpp
@@ -1892,6 +1904,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcGeneral.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcGeneralDepth.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristic.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicControl.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicDINS.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicDW.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicDive.Plo
@@ -2033,6 +2046,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcGeneral.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcGeneralDepth.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristic.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicControl.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicDINS.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicDW.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicDive.Plo

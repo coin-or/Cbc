@@ -117,10 +117,6 @@ CbcHeuristic::CbcHeuristic()
   , lastRunDeep_(0)
   , numRuns_(0)
   , minDistanceToRun_(1)
-  , scheduleMode_(HeuristicScheduleMode::Legacy)
-  , scheduleK_(1)
-  , scheduleLastRunNode_(-1000000)
-  , scheduleLastSolutionCount_(0)
   , runNodes_()
   , numCouldRun_(0)
   , numberSolutionsFound_(0)
@@ -153,10 +149,6 @@ CbcHeuristic::CbcHeuristic(CbcModel &model)
   , lastRunDeep_(0)
   , numRuns_(0)
   , minDistanceToRun_(1)
-  , scheduleMode_(HeuristicScheduleMode::Legacy)
-  , scheduleK_(1)
-  , scheduleLastRunNode_(-1000000)
-  , scheduleLastSolutionCount_(0)
   , runNodes_()
   , numCouldRun_(0)
   , numberSolutionsFound_(0)
@@ -190,10 +182,7 @@ void CbcHeuristic::gutsOfCopy(const CbcHeuristic &rhs)
   numRuns_ = rhs.numRuns_;
   numCouldRun_ = rhs.numCouldRun_;
   minDistanceToRun_ = rhs.minDistanceToRun_;
-  scheduleMode_ = rhs.scheduleMode_;
-  scheduleK_ = rhs.scheduleK_;
-  scheduleLastRunNode_ = rhs.scheduleLastRunNode_;
-  scheduleLastSolutionCount_ = rhs.scheduleLastSolutionCount_;
+  control_ = rhs.control_;
   maxInvocations_ = rhs.maxInvocations_;
   invocationsMade_ = rhs.invocationsMade_;
   runNodes_ = rhs.runNodes_;
@@ -292,7 +281,7 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
   whereFrom &= 7;
   if ((whereFrom_ & (1 << whereFrom)) == 0)
     return false;
-  if (scheduleMode_ != HeuristicScheduleMode::Legacy) {
+  if (control_.mode != HeuristicScheduleMode::Legacy) {
     // Generic schedule-based gating (see the declaration's doc comment):
     // skip the legacy shallowDepth_/howOftenShallow_/minDistanceToRun_
     // per-node throttling below entirely. Only the hot-start/no-rows
@@ -409,50 +398,63 @@ static bool cbcHeurTraceEnabled()
 
 bool CbcHeuristic::shouldRunBySchedule()
 {
-  if (scheduleMode_ == HeuristicScheduleMode::Legacy || !model_)
+  if (!model_)
     return true;
   const int nodeCount = model_->getNodeCount();
-  switch (scheduleMode_) {
-  case HeuristicScheduleMode::EveryKDepth: {
-    const int depth = model_->currentDepth();
-    const bool run = (depth % scheduleK_) == 0;
+  const int solCount = model_->getSolutionCount();
+  if (!control_.allows(nodeCount, model_->getCurrentSeconds(), solCount, false)) {
     if (cbcHeurTraceEnabled())
-      fprintf(stderr, "[HEUR-TRACE] %s schedule=EveryKDepth(K=%d) node=%d depth=%d -> %s\n",
-        heuristicName_.c_str(), scheduleK_, nodeCount, depth, run ? "RUN" : "skip");
-    return run;
+      fprintf(stderr, "[HEUR-TRACE] %s node=%d -> skip (%s)\n", heuristicName_.c_str(), nodeCount,
+        control_.paused(solCount) ? "paused after repeated failures" : "time share used");
+    return false;
   }
-  case HeuristicScheduleMode::EveryKNodesNoImprove: {
-    const int solCount = model_->getSolutionCount();
-    const bool improved = solCount != scheduleLastSolutionCount_;
-    scheduleLastSolutionCount_ = solCount;
-    if (improved) {
-      // A fresh incumbent is itself a natural trigger -- run now and
-      // reset the stall window.
-      scheduleLastRunNode_ = nodeCount;
-      if (cbcHeurTraceEnabled())
-        fprintf(stderr, "[HEUR-TRACE] %s schedule=EveryKNodesNoImprove(K=%d) node=%d -> RUN (new incumbent)\n",
-          heuristicName_.c_str(), scheduleK_, nodeCount);
-      return true;
-    }
-    const bool run = (nodeCount - scheduleLastRunNode_ >= scheduleK_);
-    if (run)
-      scheduleLastRunNode_ = nodeCount;
+  const bool run = control_.scheduled(nodeCount, model_->currentDepth(), solCount);
+  if (cbcHeurTraceEnabled() && control_.mode != HeuristicScheduleMode::Legacy)
+    fprintf(stderr, "[HEUR-TRACE] %s schedule=%s K=%d node=%d depth=%d -> %s\n",
+      heuristicName_.c_str(), CbcHeuristicControl::modeName(control_.mode), control_.everyK,
+      nodeCount, model_->currentDepth(), run ? "RUN" : "skip");
+  return run;
+}
+
+bool CbcHeuristic::controlAllows()
+{
+  if (!model_)
+    return true;
+  const int solCount = model_->getSolutionCount();
+  const bool ok = control_.allows(model_->getNodeCount(), model_->getCurrentSeconds(), solCount, true);
+  if (!ok && cbcHeurTraceEnabled())
+    fprintf(stderr, "[HEUR-TRACE] %s node=%d -> skip (control)\n", heuristicName_.c_str(), model_->getNodeCount());
+  return ok;
+}
+
+CbcHeuristic::RunGuard::RunGuard(CbcHeuristic *heuristic)
+  : h_(heuristic)
+  , start_(heuristic->model_ ? heuristic->model_->getCurrentSeconds() : 0.0)
+  , finished_(false)
+{
+}
+
+void CbcHeuristic::RunGuard::finish(bool success)
+{
+  if (finished_ || !h_->model_)
+    return;
+  finished_ = true;
+  const double used = h_->model_->getCurrentSeconds() - start_;
+  const int before = h_->control_.everyK;
+  h_->control_.finishRun(success, used, h_->model_->getNodeCount(), h_->model_->getSolutionCount());
+  if (h_->control_.everyK != before) {
+    // keep the legacy interval of the heuristics that still use it in step
+    h_->howOften_ = static_cast< int >(std::min(h_->howOften_ * (1.0 + h_->control_.decay), 1.0e6));
     if (cbcHeurTraceEnabled())
-      fprintf(stderr, "[HEUR-TRACE] %s schedule=EveryKNodesNoImprove(K=%d) node=%d lastRun=%d -> %s\n",
-        heuristicName_.c_str(), scheduleK_, nodeCount, scheduleLastRunNode_, run ? "RUN" : "skip");
-    return run;
+      fprintf(stderr, "[HEUR-TRACE] %s back-off: K %d -> %d after %d runs (%d successes)\n",
+        h_->heuristicName_.c_str(), before, h_->control_.everyK, h_->control_.runs, h_->control_.successes);
   }
-  case HeuristicScheduleMode::EveryKNodes:
-  default: {
-    const bool run = (nodeCount - scheduleLastRunNode_ >= scheduleK_);
-    if (run)
-      scheduleLastRunNode_ = nodeCount;
-    if (cbcHeurTraceEnabled())
-      fprintf(stderr, "[HEUR-TRACE] %s schedule=EveryKNodes(K=%d) node=%d lastRun=%d -> %s\n",
-        heuristicName_.c_str(), scheduleK_, nodeCount, scheduleLastRunNode_, run ? "RUN" : "skip");
-    return run;
-  }
-  }
+}
+
+CbcHeuristic::RunGuard::~RunGuard()
+{
+  if (!finished_ && h_->model_)
+    h_->control_.addSeconds(h_->model_->getCurrentSeconds() - start_);
 }
 
 bool CbcHeuristic::shouldHeurRun_randomChoice()

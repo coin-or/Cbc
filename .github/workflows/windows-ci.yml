@@ -21,10 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         include: [
-          { os: windows-2022, arch: x86_64, msystem: mingw64, debug: true, suffix: "-dbg" },
-          { os: windows-2025, arch: x86_64, msystem: mingw64, debug: false, suffix: "" },
-          { os: windows-2022, arch: msvc, msystem: mingw64, debug: true, suffix: "-dbg" },
-          { os: windows-2025, arch: msvc, msystem: mingw64, debug: false, suffix: "-md" },
+          { os: windows-2022, arch: x86_64, msystem: ucrt64, debug: true, suffix: "-dbg" },
+          { os: windows-2025, arch: x86_64, msystem: ucrt64, debug: false, suffix: "" },
+          { os: windows-2022, arch: msvc, msystem: ucrt64, debug: true, suffix: "-dbg" },
+          { os: windows-2025, arch: msvc, msystem: ucrt64, debug: false, suffix: "-md" },
         ]
     steps:
       - name: Checkout source
@@ -60,7 +60,7 @@ jobs:
       - name: Install requirements
         if: ${{ matrix.arch != 'msvc' }}
         run: |
-          pacman -S --noconfirm --needed mingw-w64-${{ matrix.arch }}-gcc mingw-w64-${{ matrix.arch }}-lapack mingw-w64-${{ matrix.arch }}-winpthreads-git mingw-w64-${{ matrix.arch }}-readline mingw-w64-${{ matrix.arch }}-suitesparse mingw-w64-${{ matrix.arch }}-metis
+          pacman -S --noconfirm --needed ${MINGW_PACKAGE_PREFIX}-gcc ${MINGW_PACKAGE_PREFIX}-lapack ${MINGW_PACKAGE_PREFIX}-winpthreads ${MINGW_PACKAGE_PREFIX}-readline ${MINGW_PACKAGE_PREFIX}-suitesparse ${MINGW_PACKAGE_PREFIX}-metis
         shell: msys2 {0}
       - name: Build project
         run: |

@@ -54,13 +54,14 @@ jobs:
           path-type: inherit
           msystem: ${{ matrix.msystem }}
       # setup-msys2 creates a fresh MSYS2 installation, so the requirements have
-      # to be installed into it (not into C:\msys64). The gcc toolchain is
-      # installed too, so that the libraries and the compiler come from the
-      # same MSYS2 environment instead of the runner's C:\mingw64.
+      # to be installed into it (not into C:\msys64). The gcc toolchain and
+      # pkgconf are installed too, so that the compiler, pkg-config, and the
+      # libraries all come from the same MSYS2 environment, instead of from
+      # the runner's C:\mingw64 and Strawberry Perl.
       - name: Install requirements
         if: ${{ matrix.arch != 'msvc' }}
         run: |
-          pacman -S --noconfirm --needed ${MINGW_PACKAGE_PREFIX}-gcc ${MINGW_PACKAGE_PREFIX}-lapack ${MINGW_PACKAGE_PREFIX}-winpthreads ${MINGW_PACKAGE_PREFIX}-readline ${MINGW_PACKAGE_PREFIX}-suitesparse ${MINGW_PACKAGE_PREFIX}-metis
+          pacman -S --noconfirm --needed ${MINGW_PACKAGE_PREFIX}-gcc ${MINGW_PACKAGE_PREFIX}-pkgconf ${MINGW_PACKAGE_PREFIX}-lapack ${MINGW_PACKAGE_PREFIX}-winpthreads ${MINGW_PACKAGE_PREFIX}-readline ${MINGW_PACKAGE_PREFIX}-suitesparse ${MINGW_PACKAGE_PREFIX}-metis
         shell: msys2 {0}
       - name: Build project
         run: |

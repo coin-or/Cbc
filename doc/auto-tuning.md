@@ -95,6 +95,13 @@ otherwise, none for VND). For the heuristics triggered by a new incumbent
 (combine, combine2, proximity) a non-legacy schedule means "at least K nodes
 since the last run".
 
+Class-specific `auto` (with `-autoTuneCuts on`): on a `PureSetCovering`
+problem VND's `auto` is `noimprove`, K=500, decay 0, max failures 3. Screening
+on 102 0-1 instances showed VND rarely pays there, and this gave PDI
+-0.0088 on that class and kept the optimal count (48). The same setting on
+all classes lost `e201600` (a MostlySPP instance that needs frequent VND), so
+other classes keep the default above. Explicit parameters override this.
+
 Back-off previously changed an interval that the default `noimprove` schedule
 never read, so it had no effect; it now does. With `-log 2` a per-heuristic
 summary (runs, improvements, seconds, back-offs, skips, final policy) is

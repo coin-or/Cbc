@@ -36,6 +36,7 @@
 #include "CbcHeuristicDivePseudoCost.hpp"
 #include "CbcHeuristicDiveVectorLength.hpp"
 #include "CbcParameters.hpp"
+#include "CbcProblemClassifier.hpp"
 #include "CbcStrategy.hpp"
 
 // Crunch down model
@@ -1577,6 +1578,19 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     // See the matching RINS comment above -- same scheduling default and
     // rationale apply to VND.
     heuristic6b.setScheduleMode(HeuristicScheduleMode::EveryKNodesNoImprove, 100);
+    // Class-specific `auto' (screening on the 0-1 benchmark): on pure set
+    // covering VND rarely finds anything, so call it every 500 nodes with no
+    // back-off decay and give up after 3 failures on one incumbent. Anything
+    // the user set explicitly overrides this in applyHeuristicControl().
+    if (parameters[CbcParam::AUTOTUNECUTS]->modeVal() != 0) {
+      CbcProblemClassifier::ClassificationResult cls = CbcProblemClassifier::classify(
+        model->solver(), static_cast< CbcParameters::ProblemClassMode >(parameters[CbcParam::PROBLEMCLASS]->modeVal()));
+      if (cls.problemClass == CbcProblemClassifier::PureSetCovering) {
+        heuristic6b.setScheduleMode(HeuristicScheduleMode::EveryKNodesNoImprove, 500);
+        heuristic6b.setDecayFactor(0.0);
+        heuristic6b.control().maxFailures = 3;
+      }
+    }
     applyHeuristicControl(heuristic6b, parameters, hcIdsVND);
     model->addHeuristic(&heuristic6b);
     anyToDo = true;

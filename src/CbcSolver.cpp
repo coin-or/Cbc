@@ -2161,9 +2161,51 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   // say in Cbc
   model2->setSpecialOptions(model2->specialOptions() | COIN_CBC_USING_CLP);
   solveOptions.setUnscaledPostsolve(true);
-  model2->initialSolve(solveOptions);
+  // Barrier on one formulation can fail in the Cholesky setup (factor too
+  // large); retry once on the other formulation (primal <-> dual) before
+  // letting Clp fall back to simplex. Only automatic dualize may switch
+  // formulation away from the primal.
+  const bool barrierRetry = clpMethod != ClpSolve::useDual
+    && lpMethod == CbcParameters::LPBarrier && clp->objectiveAsObject()->type() <= 1
+    && (dualize || dualize_ == 3);
+  if (barrierRetry)
+    solveOptions.setSpecialOption(4, solveOptions.getSpecialOption(4) | 8192);
+  bool setupFailed = false;
+  try {
+    model2->initialSolve(solveOptions);
+  } catch (CoinError &e) {
+    if (!barrierRetry
+      || e.message().find("Cholesky setup") == std::string::npos)
+      throw;
+    setupFailed = true;
+  }
   if (model2 != clp)
     clearClpTimeLimits(model2);
+  if (setupFailed) {
+    ClpSimplex *other = clp;
+    if (dualize) {
+      delete model2;
+      dualize = 0;
+    } else {
+      other = static_cast< ClpSimplexOther * >(clp)->dualOfModel(1.0, 1.0);
+      if (other)
+        other->setOptimizationDirection(1.0);
+      else
+        other = clp;
+      dualize = (other != clp) ? 1 : 0;
+    }
+    model2 = other;
+    printGeneralMessage(model_,
+      std::string("Barrier Cholesky setup failed; retrying on the ")
+        + (dualize ? "dual" : "primal") + " formulation");
+    solveOptions.setSpecialOption(4, solveOptions.getSpecialOption(4) & ~8192);
+    if (model2 != clp && model_.getMaximumSeconds() < 1.0e8)
+      applyClpTimeLimit(model_, model2);
+    model2->setSpecialOptions(model2->specialOptions() | COIN_CBC_USING_CLP);
+    model2->initialSolve(solveOptions);
+    if (model2 != clp)
+      clearClpTimeLimits(model2);
+  }
 
   // Undo autoLpMode's one-shot pivot/scaling/perturbation overrides now that
   // the root solve is done -- see the matching capture in step 2 above.

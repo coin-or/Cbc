@@ -60,11 +60,13 @@ jobs:
       # the runner's C:\mingw64 and Strawberry Perl. The MSYS pkgconf is used
       # rather than ${MINGW_PACKAGE_PREFIX}-pkgconf, because the latter reports
       # Windows-style paths (D:/...), with which libtool sets up a broken PATH
-      # for running the tests.
+      # for running the tests. gcc-fortran is installed because some configure
+      # scripts look for a Fortran compiler, and the runner's does not work
+      # with MSYS2's gcc.
       - name: Install requirements
         if: ${{ matrix.arch != 'msvc' }}
         run: |
-          pacman -S --noconfirm --needed ${MINGW_PACKAGE_PREFIX}-gcc pkgconf ${MINGW_PACKAGE_PREFIX}-lapack ${MINGW_PACKAGE_PREFIX}-winpthreads ${MINGW_PACKAGE_PREFIX}-readline ${MINGW_PACKAGE_PREFIX}-suitesparse ${MINGW_PACKAGE_PREFIX}-metis
+          pacman -S --noconfirm --needed ${MINGW_PACKAGE_PREFIX}-gcc ${MINGW_PACKAGE_PREFIX}-gcc-fortran pkgconf ${MINGW_PACKAGE_PREFIX}-lapack ${MINGW_PACKAGE_PREFIX}-winpthreads ${MINGW_PACKAGE_PREFIX}-readline ${MINGW_PACKAGE_PREFIX}-suitesparse ${MINGW_PACKAGE_PREFIX}-metis
         shell: msys2 {0}
       - name: Build project
         run: |

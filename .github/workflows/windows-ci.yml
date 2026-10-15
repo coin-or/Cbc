@@ -57,11 +57,14 @@ jobs:
       # to be installed into it (not into C:\msys64). The gcc toolchain and
       # pkgconf are installed too, so that the compiler, pkg-config, and the
       # libraries all come from the same MSYS2 environment, instead of from
-      # the runner's C:\mingw64 and Strawberry Perl.
+      # the runner's C:\mingw64 and Strawberry Perl. The MSYS pkgconf is used
+      # rather than ${MINGW_PACKAGE_PREFIX}-pkgconf, because the latter reports
+      # Windows-style paths (D:/...), with which libtool sets up a broken PATH
+      # for running the tests.
       - name: Install requirements
         if: ${{ matrix.arch != 'msvc' }}
         run: |
-          pacman -S --noconfirm --needed ${MINGW_PACKAGE_PREFIX}-gcc ${MINGW_PACKAGE_PREFIX}-pkgconf ${MINGW_PACKAGE_PREFIX}-lapack ${MINGW_PACKAGE_PREFIX}-winpthreads ${MINGW_PACKAGE_PREFIX}-readline ${MINGW_PACKAGE_PREFIX}-suitesparse ${MINGW_PACKAGE_PREFIX}-metis
+          pacman -S --noconfirm --needed ${MINGW_PACKAGE_PREFIX}-gcc pkgconf ${MINGW_PACKAGE_PREFIX}-lapack ${MINGW_PACKAGE_PREFIX}-winpthreads ${MINGW_PACKAGE_PREFIX}-readline ${MINGW_PACKAGE_PREFIX}-suitesparse ${MINGW_PACKAGE_PREFIX}-metis
         shell: msys2 {0}
       - name: Build project
         run: |

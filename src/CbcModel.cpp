@@ -5579,6 +5579,7 @@ void CbcModel::branchAndBound(int doStatistics)
       unlockThread();
     }
     sampleParallelDualBound();
+    sampleTreeDualBound();
     if ((numberNodes_ >= lastPrintEvery && CoinWallclockTime() - lastSecPrintProgress_ > secsPrintFrequency_)||!numberNodes_) {
       lastPrintEvery = numberNodes_ + printFrequency_;
       lockThread();
@@ -19492,7 +19493,6 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         */
     // Set currentNode_ so can be used in handler
     currentNode_ = newNode;
-    sampleTreeDualBound(newNode, node);
     if (eventHandler_ && !eventHandler_->event(CbcEventHandler::node)) {
       eventHappened_ = true; // exit
     }
@@ -22877,22 +22877,17 @@ void CbcModel::sampleParallelDualBound()
   reportDualBound(bound, "node");
 }
 
-void CbcModel::sampleTreeDualBound(const CbcNode *current, const CbcNode *parent)
+void CbcModel::sampleTreeDualBound()
 {
   if (parentModel_ || !tree_ || parallelMode() > 0 || (!progressCsv_ && !eventHandler_))
     return;
-  // Scanning the open nodes is linear in the tree size: do it at every node
-  // while the tree is small, otherwise at most every 0.1 s.
+  // Called between nodes, where the tree holds every open node (the same point
+  // at which the periodic printout refreshes bestPossibleObjective_). Scanning
+  // it is linear in the tree size: do it at every node while the tree is
+  // small, otherwise at most every 0.1 s.
   const double now = getCurrentSeconds();
   if (tree_->size() >= 1000 && now - progressLastSample_ < 0.1)
     return;
   progressLastSample_ = now;
-  double bound = tree_->getBestPossibleObjective();
-  // the node being processed is no longer on the tree but still bounds the optimum
-  if (current)
-    bound = std::min(bound, current->objectiveValue());
-  // the parent is off the tree too until its remaining branch is pushed back
-  if (parent && parent->nodeInfo() && parent->nodeInfo()->numberBranchesLeft() > 0)
-    bound = std::min(bound, parent->objectiveValue());
-  reportDualBound(bound, "node");
+  reportDualBound(tree_->getBestPossibleObjective(), "node");
 }

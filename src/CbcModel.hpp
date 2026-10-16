@@ -860,7 +860,7 @@ public:
     return progressOwner_ ? progressOwner_->progressInfo_ : progressInfo_;
   }
   /** Throttled report of the best bound over the open nodes (call once per node). */
-  void sampleTreeDualBound(const CbcNode *current, const CbcNode *parent = nullptr);
+  void sampleTreeDualBound();
   /// Master-thread sampling of the dual bound when worker threads run the tree
   void sampleParallelDualBound();
   /// Share the progress CSV with a thread clone

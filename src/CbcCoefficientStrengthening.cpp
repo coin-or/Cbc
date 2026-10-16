@@ -8,6 +8,7 @@
 #include "CoinMessageHandler.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinTime.hpp"
+#include <unordered_map>
 #include "OsiRowCutDebugger.hpp"
 #include "OsiSolverInterface.hpp"
 
@@ -49,12 +50,13 @@ const double COEFSTR_EPSILON = 1.0e-9;
 /// seconds on their own, all for a single row of one instance.
 const size_t CLIQUECOVER_MAX_ROW_VARS = 20000;
 
-/// Once the running total wall time spent inside greedyCliqueCover() across
-/// the whole run() call reaches this, stop attempting it on any further row
-/// (the ordinary per-column shrink rule still runs on every row regardless).
-/// A blanket cap independent of CLIQUECOVER_MAX_ROW_VARS because a corpus can
-/// have many mid-sized qualifying rows instead of one huge one.
-const double CLIQUECOVER_TIME_BUDGET = 2.0;
+/// Deterministic work budget for all clique covers of one run() call, in
+/// elements touched (see greedyCliqueCover()). Candidate rows are processed
+/// cheapest first, so the budget buys the largest number of rows; once the
+/// next row's estimated cost exceeds what is left, the remaining rows keep
+/// the plain per-column rule. Counting work instead of wall time makes the
+/// strengthened model identical from run to run and machine to machine.
+const unsigned long long CLIQUECOVER_WORK_BUDGET = 100000000ULL;
 
 /// One pending right-hand-side change, applied only once the matrix
 /// replacement has been verified to have taken effect.
@@ -62,6 +64,18 @@ struct RowBoundChange {
   int row;
   double lower;
   double upper;
+};
+
+/// Everything the per-row analysis produces; shared by the clique-cover
+/// planning pass and the strengthening pass so both see identical numbers.
+struct RowInfo {
+  bool hasUpper;
+  double scale;
+  double rhs;
+  double slack;
+  double minActivityOthers;
+  bool minOthersUnbounded;
+  std::vector< int > unitBinaryCols;
 };
 
 /*! \brief Greedy clique COVER of \p remaining (conflict-graph node ids,
@@ -73,37 +87,43 @@ struct RowBoundChange {
  * \p remaining, and repeats. Each step only shrinks the sorted candidate set
  * via std::set_intersection, so the total work is bounded by the sum of
  * neighbourhood sizes actually touched rather than the O(k^2) of checking
- * every pair directly -- this is what keeps it usable up to
- * CLIQUECOVER_MAX_ROW_VARS.
+ * every pair directly.
  *
- * \param cg        Conflict graph to query (must be non-null).
- * \param remaining Sorted, duplicate-free conflict-graph node ids to cover.
- * \param tempBuf   Scratch buffer, at least \c cg->size() entries; reused
- *                  across calls by the caller to avoid reallocating per row.
- * \param ivBuf     Scratch incidence buffer, at least \c cg->size() entries,
- *                  all zero on entry and restored to all zero on return (per
- *                  conflictingNodes()'s own self-cleaning contract).
- * \param deadline  Wall-clock time (CoinWallclockTime() units) at which to
- *                  give up and return a safe (but possibly loose) answer.
+ * Both stopping rules are deterministic (they count work, never time):
+ *  - \p workLimit: once the work counter reaches it, every still-uncovered
+ *    node is conservatively counted as its own singleton clique (always a
+ *    valid, if not maximally tight, upper bound on how many of them can be
+ *    simultaneously 1).
+ *  - \p maxUseful: the largest cover size that would still change anything
+ *    for the caller. A cover of more than this many cliques is useless, and
+ *    the count only grows, so the moment it is certain to exceed it the
+ *    search stops with \p pruned set.
  *
- * \return Number of cliques used to cover \p remaining. If the deadline is
- * hit partway through, every still-uncovered node is conservatively counted
- * as its own singleton clique (always a valid, if not maximally tight,
- * upper bound on how many of them can be simultaneously 1).
+ * \param work  Incremented by the elements touched (neighbour lists
+ *              retrieved, candidate sets intersected, remaining set copied).
+ * \return Number of cliques used to cover \p remaining (meaningless if
+ *         \p pruned).
  */
 size_t greedyCliqueCover(const CoinConflictGraph *cg,
   std::vector< size_t > remaining, size_t *tempBuf, char *ivBuf,
-  double deadline)
+  unsigned long long workLimit, unsigned long long &work, size_t maxUseful,
+  bool &pruned)
 {
   size_t nCliques = 0;
+  pruned = false;
   while (!remaining.empty()) {
-    if (CoinWallclockTime() >= deadline) {
+    if (nCliques + 1 > maxUseful) {
+      pruned = true;
+      return nCliques + 1;
+    }
+    if (work >= workLimit) {
       nCliques += remaining.size();
       break;
     }
 
     const size_t seed = remaining.front();
     std::pair< size_t, const size_t * > seedNb = cg->conflictingNodes(seed, tempBuf, ivBuf);
+    work += seedNb.first + remaining.size();
 
     std::vector< size_t > candidates;
     candidates.reserve(remaining.size());
@@ -113,11 +133,12 @@ size_t greedyCliqueCover(const CoinConflictGraph *cg,
 
     std::vector< size_t > cliqueMembers;
     cliqueMembers.push_back(seed);
-    while (!candidates.empty()) {
+    while (!candidates.empty() && work < workLimit) {
       const size_t next = candidates.front();
       cliqueMembers.push_back(next);
 
       std::pair< size_t, const size_t * > nextNb = cg->conflictingNodes(next, tempBuf, ivBuf);
+      work += nextNb.first + candidates.size();
       std::vector< size_t > narrowed;
       narrowed.reserve(candidates.size());
       std::set_intersection(candidates.begin() + 1, candidates.end(),
@@ -149,6 +170,10 @@ CbcCoefficientStrengthening::CbcCoefficientStrengthening()
   , nCliqueCoverRows_(0)
   , cliqueCoverReduction_(0)
   , cliqueCoverTimeUsed_(0.0)
+  , cliqueCoverCandidates_(0)
+  , cliqueCoverPruned_(0)
+  , cliqueCoverBudgetSkipped_(0)
+  , cliqueCoverWork_(0)
 {
 }
 
@@ -162,6 +187,10 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
   nCliqueCoverRows_ = 0;
   cliqueCoverReduction_ = 0;
   cliqueCoverTimeUsed_ = 0.0;
+  cliqueCoverCandidates_ = 0;
+  cliqueCoverPruned_ = 0;
+  cliqueCoverBudgetSkipped_ = 0;
+  cliqueCoverWork_ = 0;
 
   if (!solver || solver->getNumRows() == 0 || solver->getNumCols() == 0)
     return false;
@@ -216,21 +245,21 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
     cliqueIvBuf.assign(cgraph->size(), 0);
   }
 
-  for (int iRow = 0; iRow < numberRows; iRow++) {
+  auto analyzeRow = [&](int iRow, RowInfo &ri) -> bool {
     const CoinBigIndex start = rowStart[iRow];
     const int length = rowLength[iRow];
     // A singleton row carries no slack argument: shrinking its only
     // coefficient would just be a bound change, which is bound propagation's
     // job (and it has already run).
     if (length <= 1)
-      continue;
+      return false;
 
     // Exactly one finite side. A range row has two slacks and neither of them
     // alone justifies the change; a free row has none.
     const bool hasUpper = rowUpper[iRow] < COEFSTR_INFINITY;
     const bool hasLower = rowLower[iRow] > -COEFSTR_INFINITY;
     if (hasUpper == hasLower)
-      continue;
+      return false;
 
     // Normalise to a.x <= rhs: a >= row is negated wholesale.
     const double scale = hasUpper ? 1.0 : -1.0;
@@ -293,7 +322,7 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
       }
     }
     if (infiniteActivity)
-      continue;
+      return false;
 
     // The slack is what every coefficient in this row is capped at. It is
     // invariant under the change itself (the coefficient loses exactly what
@@ -301,73 +330,165 @@ bool CbcCoefficientStrengthening::run(OsiSolverInterface *solver,
     // below does not matter.
     double slack = maxActivity - rhs;
     if (slack <= COEFSTR_FEASTOL)
+      return false;
+    ri.hasUpper = hasUpper;
+    ri.scale = scale;
+    ri.rhs = rhs;
+    ri.slack = slack;
+    ri.minActivityOthers = minActivityOthers;
+    ri.minOthersUnbounded = minOthersUnbounded;
+    ri.unitBinaryCols.swap(unitBinaryCols);
+    return true;
+  };
+
+  // Clique-cover planning (see the class comment's "Conflict-aware slack"
+  // section). The cover only ever lowers the slack used for the row's OTHER
+  // integer columns, so most rows cannot benefit at all; for those that can,
+  // the cover is worth running only if it ends with few enough cliques, which
+  // gives an early-abort threshold. Candidates are then covered cheapest
+  // first under a deterministic work budget.
+  std::unordered_map< int, size_t > coverSize;
+  if (cgraph) {
+    struct Candidate {
+      int row;
+      unsigned long long cost;
+      size_t maxUseful;
+    };
+    std::vector< Candidate > candidates;
+    RowInfo ri;
+    for (int iRow = 0; iRow < numberRows; iRow++) {
+      if (!analyzeRow(iRow, ri))
+        continue;
+      const size_t k = ri.unitBinaryCols.size();
+      if (k < 2 || k > CLIQUECOVER_MAX_ROW_VARS)
+        continue;
+      const double cap = ri.minOthersUnbounded
+        ? COEFSTR_INFINITY
+        : (ri.rhs - ri.minActivityOthers);
+      if (cap < 2.0 - COEFSTR_FEASTOL)
+        continue;
+
+      std::sort(ri.unitBinaryCols.begin(), ri.unitBinaryCols.end());
+      double largestOther = 0.0;
+      const CoinBigIndex start = rowStart[iRow];
+      for (CoinBigIndex j = start; j < start + rowLength[iRow]; j++) {
+        const int iColumn = column[j];
+        if (!solver->isInteger(iColumn)
+          || colLower[iColumn] <= -COEFSTR_INFINITY
+          || colUpper[iColumn] >= COEFSTR_INFINITY
+          || std::binary_search(ri.unitBinaryCols.begin(),
+               ri.unitBinaryCols.end(), iColumn))
+          continue;
+        if (std::floor(colUpper[iColumn] + COEFSTR_FEASTOL)
+            - std::ceil(colLower[iColumn] - COEFSTR_FEASTOL)
+          < 1.0 - COEFSTR_FEASTOL)
+          continue;
+        largestOther = std::max(largestOther, std::fabs(element[j]));
+      }
+      // A cover of p cliques gives slack' = slack - (k - p); it changes
+      // something only if some other coefficient exceeds slack', i.e.
+      // p < largestOther - slack + k. The row's own guard needs
+      // (k - p) < slack, i.e. p > k - slack.
+      const double upperP = largestOther - ri.slack + static_cast< double >(k);
+      const double lowerP = static_cast< double >(k) - ri.slack;
+      if (upperP <= 1.0 + COEFSTR_FEASTOL)
+        continue;
+      size_t maxUseful = static_cast< size_t >(std::ceil(upperP - COEFSTR_FEASTOL)) - 1;
+      maxUseful = std::min(maxUseful, k - 1);
+      if (static_cast< double >(maxUseful) <= lowerP + COEFSTR_FEASTOL)
+        continue;
+
+      Candidate c;
+      c.row = iRow;
+      c.maxUseful = maxUseful;
+      c.cost = 0;
+      for (size_t i = 0; i < k; i++)
+        c.cost += cgraph->degree(static_cast< size_t >(ri.unitBinaryCols[i]));
+      candidates.push_back(c);
+    }
+    cliqueCoverCandidates_ = static_cast< int >(candidates.size());
+
+    std::sort(candidates.begin(), candidates.end(),
+      [](const Candidate &a, const Candidate &b) {
+        return a.cost != b.cost ? a.cost < b.cost : a.row < b.row;
+      });
+
+    const unsigned long long budget = CLIQUECOVER_WORK_BUDGET;
+    for (size_t ic = 0; ic < candidates.size(); ic++) {
+      const Candidate &c = candidates[ic];
+      if (cliqueCoverWork_ >= budget) {
+        cliqueCoverBudgetSkipped_ = static_cast< int >(candidates.size() - ic);
+        break;
+      }
+      if (!analyzeRow(c.row, ri))
+        continue;
+      std::vector< size_t > nodes(ri.unitBinaryCols.begin(), ri.unitBinaryCols.end());
+      std::sort(nodes.begin(), nodes.end());
+      bool pruned = false;
+      const double coverT0 = CoinWallclockTime();
+      const size_t p = greedyCliqueCover(cgraph, nodes, cliqueTempBuf.data(),
+        cliqueIvBuf.data(), budget, cliqueCoverWork_, c.maxUseful, pruned);
+      cliqueCoverTimeUsed_ += CoinWallclockTime() - coverT0;
+      if (pruned)
+        cliqueCoverPruned_++;
+      else
+        coverSize[c.row] = p;
+    }
+  }
+
+  for (int iRow = 0; iRow < numberRows; iRow++) {
+    const CoinBigIndex start = rowStart[iRow];
+    const int length = rowLength[iRow];
+    RowInfo rowInfo;
+    if (!analyzeRow(iRow, rowInfo))
       continue;
+    const bool hasUpper = rowInfo.hasUpper;
+    const double scale = rowInfo.scale;
+    double rhs = rowInfo.rhs;
+    double slack = rowInfo.slack;
+    std::vector< int > &unitBinaryCols = rowInfo.unitBinaryCols;
 
     // Slack used for unitBinaryCols themselves -- always the naive
     // (non-clique-adjusted) value; see the comment where it is consumed
     // below for why.
     double slackForUnitBinaryCols = slack;
 
-    // Clique-cover check (see the class comment's "Conflict-aware slack"
-    // section). unitBinaryCols is only ever populated when cgraph != NULL.
-    if (unitBinaryCols.size() >= 2
-      && unitBinaryCols.size() <= CLIQUECOVER_MAX_ROW_VARS
-      && cliqueCoverTimeUsed_ < CLIQUECOVER_TIME_BUDGET) {
-      // Anti-circularity guard: with unit coefficients, two unitBinaryCols
-      // members are related by a *direct* conflict edge sourced from this
-      // exact row (rather than some other part of the model) precisely when
-      // this row's own data already forces "not both 1" on its own, i.e. when
-      // its own cap on sum(unitBinaryCols) is <= 1 (1 + 1 > cap). That cap is
-      // rhs - minActivityOthers: the most sum(unitBinaryCols) could reach is
-      // the row's rhs minus whatever the rest of the row is forced to
-      // contribute at minimum. Skip whenever that cap is small enough that
-      // this row alone could be the (sole) source of the very conflicts the
-      // cover below would use -- using them then would "improve" the row
-      // using only itself, not a genuine external fact.
-      const double capUnitBinarySum = minOthersUnbounded
-        ? COEFSTR_INFINITY
-        : (rhs - minActivityOthers);
-      if (capUnitBinarySum >= 2.0 - COEFSTR_FEASTOL) {
-        const double coverT0 = CoinWallclockTime();
-        std::vector< size_t > nodes(unitBinaryCols.begin(), unitBinaryCols.end());
-        std::sort(nodes.begin(), nodes.end());
-        const int k = static_cast< int >(nodes.size());
-        const double deadline = coverT0 + (CLIQUECOVER_TIME_BUDGET - cliqueCoverTimeUsed_);
-        const int p = static_cast< int >(greedyCliqueCover(cgraph, nodes,
-          cliqueTempBuf.data(), cliqueIvBuf.data(), deadline));
-        cliqueCoverTimeUsed_ += CoinWallclockTime() - coverT0;
-
-        // p < k means at most p (not k) of these columns can be 1 at once,
-        // so the row's true maximum activity is maxActivity - (k - p), i.e.
-        // slack shrinks by the same amount. Guard against the (never
-        // observed on the corpus, but not provably impossible) case where
-        // that would drive slack to <= 0: unlike the naive maxActivity bound,
-        // a clique cover is derived from facts *external* to this row, so a
-        // non-positive result here would mean the row is actually redundant
-        // once those external constraints are accounted for -- a real but
-        // different finding (row redundancy) that the per-column rule below
-        // is not equipped to act on safely, so it is left for another pass.
-        //
-        // This adjusted `slack` must ONLY be used to shrink OTHER (non-
-        // unitBinaryCols) coefficients in the row below, e.g. a companion
-        // big-M column -- never the unitBinaryCols themselves. The bound
-        // "at most p of these k can be 1 simultaneously" justifies removing
-        // (k - p) from the row's rhs *once*, in aggregate; it does not
-        // justify reducing every one of the k members' own coefficients
-        // independently by the same amount, since the standard per-column
-        // shrink rule below decrements the rhs again for *each* column it
-        // touches (valid when columns are independent, but these k are
-        // mutually exclusive, not independent -- applying it to all of them
-        // compounds the rhs reduction k-fold instead of the single time the
-        // clique fact actually buys, incorrectly cutting off feasible
-        // points, e.g. an all-clique-members-zero point at a high value of
-        // some other row column). See CBC_DISABLE_CLIQUECOVER's history /
-        // the physiciansched3-3 investigation for a worked counterexample.
-        if (p < k && (k - p) < slack - COEFSTR_FEASTOL) {
-          slack -= (k - p);
-          nCliqueCoverRows_++;
-          cliqueCoverReduction_ += (k - p);
-        }
+    // Clique-cover result for this row (computed by the planning pass above).
+    const std::unordered_map< int, size_t >::const_iterator coverIt
+      = coverSize.find(iRow);
+    if (coverIt != coverSize.end()) {
+      const int k = static_cast< int >(unitBinaryCols.size());
+      const int p = static_cast< int >(coverIt->second);
+      // p < k means at most p (not k) of these columns can be 1 at once,
+      // so the row's true maximum activity is maxActivity - (k - p), i.e.
+      // slack shrinks by the same amount. Guard against the (never
+      // observed on the corpus, but not provably impossible) case where
+      // that would drive slack to <= 0: unlike the naive maxActivity bound,
+      // a clique cover is derived from facts *external* to this row, so a
+      // non-positive result here would mean the row is actually redundant
+      // once those external constraints are accounted for -- a real but
+      // different finding (row redundancy) that the per-column rule below
+      // is not equipped to act on safely, so it is left for another pass.
+      //
+      // This adjusted `slack` must ONLY be used to shrink OTHER (non-
+      // unitBinaryCols) coefficients in the row below, e.g. a companion
+      // big-M column -- never the unitBinaryCols themselves. The bound
+      // "at most p of these k can be 1 simultaneously" justifies removing
+      // (k - p) from the row's rhs *once*, in aggregate; it does not
+      // justify reducing every one of the k members' own coefficients
+      // independently by the same amount, since the standard per-column
+      // shrink rule below decrements the rhs again for *each* column it
+      // touches (valid when columns are independent, but these k are
+      // mutually exclusive, not independent -- applying it to all of them
+      // compounds the rhs reduction k-fold instead of the single time the
+      // clique fact actually buys, incorrectly cutting off feasible
+      // points, e.g. an all-clique-members-zero point at a high value of
+      // some other row column). See CBC_DISABLE_CLIQUECOVER's history /
+      // the physiciansched3-3 investigation for a worked counterexample.
+      if (p < k && (k - p) < slack - COEFSTR_FEASTOL) {
+        slack -= (k - p);
+        nCliqueCoverRows_++;
+        cliqueCoverReduction_ += (k - p);
       }
     }
 

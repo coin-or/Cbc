@@ -1675,6 +1675,11 @@ void CbcSolver::strengthenCoefficients(OsiSolverInterface *solverIn)
              " (total slack reduction %d, %.2fs)\n",
         cs.nCliqueCoverRows(), cs.cliqueCoverReduction(),
         cs.cliqueCoverTimeUsed());
+    if (logLevel >= 2 && cs.cliqueCoverCandidates())
+      printf("  Coefficient strengthening: clique cover candidates %d, pruned %d,"
+             " skipped by work budget %d, work %.3g\n",
+        cs.cliqueCoverCandidates(), cs.cliqueCoverPruned(),
+        cs.cliqueCoverBudgetSkipped(), static_cast< double >(cs.cliqueCoverWork()));
   }
 }
 

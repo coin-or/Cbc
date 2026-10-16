@@ -22,8 +22,8 @@
 // comment there for why the debugger itself is not yet attached this early
 // when driven from the "-debugCuts" CLI switch (it is already active by this
 // point when driven through Cbc_activateRowCutDebugger()/mip-debug-cuts).
-extern double *debugSolution;
-extern int debugNumberColumns;
+extern OSILIB_EXPORT double *debugSolution;
+extern OSILIB_EXPORT int debugNumberColumns;
 
 namespace {
 

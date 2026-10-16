@@ -567,8 +567,8 @@ static int applyConflictGraphBoundUpdates(const CoinStaticConflictGraph *cgraph,
   // getRowCutDebuggerAlways() (not getRowCutDebugger(), which relies on the
   // unreliable OsiRowCutDebugger::onOptimalPath()) and fall back to the
   // -debugCuts debugSolution global when no debugger is attached yet.
-  extern double *debugSolution;
-  extern int debugNumberColumns;
+  extern OSILIB_EXPORT double *debugSolution;
+  extern OSILIB_EXPORT int debugNumberColumns;
   const OsiRowCutDebugger *cgDebugger = solver->getRowCutDebuggerAlways();
   const double *cgOptSol = cgDebugger
     ? cgDebugger->optimalSolution()
@@ -768,8 +768,8 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
   // reference solution is available, re-check every row's activity against
   // its current bounds. This is only ever run under a debugger/-debugCuts,
   // so the extra O(nz) pass is not a concern for normal use.
-  extern double *debugSolution;
-  extern int debugNumberColumns;
+  extern OSILIB_EXPORT double *debugSolution;
+  extern OSILIB_EXPORT int debugNumberColumns;
   const OsiRowCutDebugger *clqDebugger = solver->getRowCutDebuggerAlways();
   const double *clqOptSol = clqDebugger
     ? clqDebugger->optimalSolution()
@@ -1307,8 +1307,8 @@ static int initialPumpTune = -1;
 // the matching #define in Cgl/src/CglPreProcess/CglPreProcess.cpp and
 // Osi/src/Osi/OsiPresolve.cpp.
 // #define DEBUG_PREPROCESS 2 -- disabled, see OsiPresolve.cpp comment
-extern double *debugSolution;
-extern int debugNumberColumns;
+extern OSILIB_EXPORT double *debugSolution;
+extern OSILIB_EXPORT int debugNumberColumns;
 
 static CbcModel *currentBranchModel = NULL;
 

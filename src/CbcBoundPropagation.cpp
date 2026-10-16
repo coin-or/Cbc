@@ -12,8 +12,8 @@
 
 // Reference solution loaded by -debugCuts; set before applyLpMethod() so that
 // bound propagation can check fixings before the OsiRowCutDebugger is active.
-extern double *debugSolution;
-extern int debugNumberColumns;
+extern OSILIB_EXPORT double *debugSolution;
+extern OSILIB_EXPORT int debugNumberColumns;
 
 #include <algorithm>
 #include <cassert>

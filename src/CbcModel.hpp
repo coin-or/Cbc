@@ -2305,6 +2305,17 @@ public:
   {
     return moreSpecialOptions2_;
   }
+  /** Whether some branching objects are not Cbc objects but plain
+      OsiObjects from another solver, such as the spatial branching
+      objects of Couenne. Set in branchAndBound(). Cuts are then not
+      restricted to the top of the tree or filtered by how much they are
+      violated, since such solvers rely on them to tighten the relaxation
+      after branching.
+  */
+  inline bool hasNonCbcObjects() const
+  {
+    return hasNonCbcObjects_;
+  }
   /// Set cutoff as constraint
   inline void setCutoffAsConstraint(bool yesNo)
   {
@@ -3262,6 +3273,8 @@ private:
 	24 bit (67108864) - model has been flipped
     */
   int moreSpecialOptions2_;
+  /// See hasNonCbcObjects()
+  bool hasNonCbcObjects_;
   /// User node comparison function
   CbcCompareBase *nodeCompare_;
   /// User feasibility function (see CbcFeasibleBase.hpp)

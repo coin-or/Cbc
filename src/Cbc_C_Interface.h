@@ -1243,7 +1243,10 @@ typedef struct Cbc_ProgressInfo {
  * with threads and with the incumbent callback, and come from whichever thread
  * triggered them: return quickly, and do not call back into the model except
  * for read-only queries. Return 0 to continue; a nonzero value asks Cbc to stop
- * the search as soon as possible (the status is then "stopped on event").
+ * the search as soon as possible: Cbc_status() is then 1 (stopped) and
+ * Cbc_secondaryStatus() is 5 (user event); the best solution found so far is kept.
+ * Use the info (time, nodes, primal/dual/gap, has_incumbent) to implement any
+ * stopping rule.
  * Events: every incumbent, every significant dual bound improvement
  * (parameter progressMinChange, default 1e-4), a heartbeat after progressInterval
  * seconds without either (default 1, 0 disables), and a final one. */

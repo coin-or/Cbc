@@ -2389,7 +2389,7 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
         "Optimal solution found",
         "Linear relaxation infeasible",
         "Optimal solution found (within gap tolerance)",
-        "node limit", "time limit", "user ctrl-c", "solution limit",
+        "node limit", "time limit", "user event", "solution limit",
         "Linear relaxation unbounded", "iterations limit",
         "Problem proven infeasible"
       };
@@ -5709,7 +5709,7 @@ int CbcSolver::postprocess(
       "Optimal solution found (within gap tolerance)",
       "node limit",
       "time limit",
-      "user ctrl-c",
+      "user event",
       "solution limit",
       "Linear relaxation unbounded",
       "Problem proven infeasible",

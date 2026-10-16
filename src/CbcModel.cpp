@@ -2296,6 +2296,7 @@ void CbcModel::branchAndBound(int doStatistics)
     strategy_->setupPrinting(*this, handler_->logLevel());
   }
   eventHappened_ = false;
+  progressStopRequested_ = false;
   CbcEventHandler *eventHandler = getEventHandler();
   if (eventHandler) {
     eventHandler->setModel(this);
@@ -5969,6 +5970,10 @@ void CbcModel::branchAndBound(int doStatistics)
     } else if (maximumNumberIterations_ >= 0 && numberIterations_ >= maximumNumberIterations_) {
       handler_->message(CBC_MAXITERS, messages_) << CoinMessageEol;
       secondaryStatus_ = 8;
+      status_ = 1;
+    } else if (progressStopRequested_) {
+      handler_->message(CBC_EVENT, messages_) << CoinMessageEol;
+      secondaryStatus_ = 5;
       status_ = 1;
     } else {
       handler_->message(CBC_EVENT, messages_) << CoinMessageEol;
@@ -22814,7 +22819,10 @@ void CbcModel::publishProgress(const char *source, CbcProgressInfo::Kind kind, b
     fflush(progressCsv_.get());
   }
   if (owner->eventHandler_ && owner->eventHandler_->event(CbcEventHandler::progress) == CbcEventHandler::stop)
+  {
+    owner->progressStopRequested_ = true;
     owner->sayEventHappened(); // worker threads notice it through the base model
+  }
 }
 
 void CbcModel::writeProgressCsv(const char *source)

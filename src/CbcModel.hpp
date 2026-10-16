@@ -3628,6 +3628,8 @@ private:
   double progressLastSample_ = 0.0;
   /// Best dual bound seen so far (minimisation sense), recorded or not
   double progressDualSeen_ = -COIN_DBL_MAX;
+  /// Set when the progress handler asked to stop; reported as status 1 / secondary 5
+  bool progressStopRequested_ = false;
   /// Time of the last progress notification
   double progressLastNotify_ = 0.0;
   /// Seconds without a notification after which a "tick" is sent

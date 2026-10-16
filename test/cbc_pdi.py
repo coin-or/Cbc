@@ -7,14 +7,19 @@ Sub-commands
   analyze  parse logs -> <dir>/pdi.tsv (one row per instance)
   compare  rank N>=2 experiment directories on the PDI metrics
   plot     mean gap-vs-time curves of experiments (needs matplotlib)
+  explain  one figure per run(s): bounds, gap(t) and the shaded PDI area
+  credit   which method (cuts, heuristics, tree) produced the improvements
 
 Metric (all minimisation internally; max problems are negated)
   gap(t) = 2                      no incumbent yet            (worst case)
          = 1                      incumbent but no dual bound, or p*d <= 0
          = |p-d| / max(|p|,|d|)   otherwise, in [0,1]; 0 when p == d
-  PDI    = (1/T) * integral_0^T gap(t) dt      in [0,2]; lower is better
-  T is the time limit; after a proven-optimal finish the gap stays 0, after
-  an early stop (e.g. node limit) the last gap is held. Besides the combined
+  PDI    = (1/T) * integral_0^T gap(t) dt      in [0,2]; MINIMISE it
+  T is the time horizon (default: the run's time limit; --sec overrides it).
+  After a proven-optimal finish the gap stays 0; after an early stop (node
+  limit, hard kill) the last gap is held until T, and a run longer than T is
+  truncated at T. To compare runs with different time limits, analyze all of
+  them with the same --sec. Besides the combined
   PDI the tool reports, when a best-known objective (bks.tsv) is available,
   the primal integral and dual integral against it (each in [0,1] with 1 =
   no incumbent / no bound), and t_first, t_gap10 and t_gap1 (time to first
@@ -437,6 +442,28 @@ def log_limit(path):
     return None
 
 
+def log_threads(path):
+    """Value of -threads in the '# cmd:' header written by `run`, 0 if absent."""
+    with open(path, errors="replace") as f:
+        for _ in range(3):
+            m = re.match(r"# cmd:.*\s-threads\s+(\d+)", f.readline())
+            if m:
+                return int(m.group(1))
+    return 0
+
+
+def run_events(path, pcsv, mode):
+    """Events of one run. -progressCsv is exact, but with -threads N>0 the tree
+    runs on clones that do not write it (only root events and the final line
+    survive), so auto mode falls back to the timestamped log rows there."""
+    ev = parse_log(path)
+    have = os.path.exists(pcsv) and os.path.getsize(pcsv) > 0
+    if mode == "csv" or (mode == "auto" and have and log_threads(path) == 0):
+        if have:
+            ev = apply_progress_csv(ev, pcsv)
+    return ev
+
+
 def analyze_dir(d, a):
     bks, limits = load_meta(a.data_dir)
     rows = []
@@ -445,10 +472,7 @@ def analyze_dir(d, a):
             continue
         name = fn[:-4]
         path = os.path.join(d, fn)
-        ev = parse_log(path)
-        pcsv = os.path.join(d, name + ".progress.csv")
-        if os.path.exists(pcsv) and os.path.getsize(pcsv) > 0:
-            ev = apply_progress_csv(ev, pcsv)
+        ev = run_events(path, os.path.join(d, name + ".progress.csv"), a.events)
         ref, sense = bks_value(bks, name)
         maximize = (sense == "max") if sense else False
         tr = build_trace(ev, maximize)
@@ -533,6 +557,11 @@ def cmd_compare(a):
     if not common:
         sys.exit("no common instances")
     print("%d common instances\n" % len(common))
+    mism = [i for i in common if len({fnum(r[i]["T"]) for _, r in exps}) > 1]
+    if mism:
+        print("WARNING: %d instances have different time horizons T across experiments (e.g. %s); "
+              "PDI is only comparable on one horizon: re-run 'analyze --sec <T>' on every directory.\n"
+              % (len(mism), mism[0]), file=sys.stderr)
     hdr = "%-14s %8s %8s %8s %8s %8s %8s %8s %6s" % (
         "experiment", "PDI", "primInt", "dualInt", "t_first", "t_gap1", "finalGap", "noSol", "opt")
     print(hdr)
@@ -651,6 +680,79 @@ def cmd_plot(a):
     print("wrote", a.out)
 
 
+def gap_steps(trace, T):
+    """Breakpoints and the gap held from each one (for plotting/inspection)."""
+    times = sorted({0.0, T} | {t for t, _ in trace.primal if t <= T} | {t for t, _ in trace.dual if t <= T})
+    end = trace.end_time
+    solved = trace.status in ("optimal", "infeasible")
+    gaps = []
+    for a in times[:-1]:
+        g = gap_value(step_at(trace.primal, a), step_at(trace.dual, a))
+        gaps.append(0.0 if solved and end is not None and a >= end else g)
+    return times, gaps
+
+
+def cmd_explain(a):
+    """One figure that shows what the PDI is: bounds on top, gap(t) below, and
+    the area under gap(t) (= PDI * T) shaded. Several runs are overlaid."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    bks, limits = load_meta(a.data_dir)
+    runs = []
+    for n, path in parse_exps(a.runs):
+        name = os.path.basename(path)[:-4]
+        ref, sense = bks_value(bks, name.split(".")[0] if not os.path.exists(path) else name)
+        maximize = (sense == "max") if sense else False
+        tr = build_trace(run_events(path, path[:-4] + ".progress.csv", a.events), maximize)
+        T = a.sec or log_limit(path) or (tr.end_time or 1.0)
+        runs.append((n, tr, T, maximize, ref))
+    T = max(r[2] for r in runs) if not a.sec else a.sec
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 7), sharex=True, gridspec_kw=dict(height_ratios=[1.1, 1]))
+    for k, (n, tr, _, maximize, ref) in enumerate(runs):
+        c = colors[k % len(colors)]
+        sg = -1.0 if maximize else 1.0
+        for pts, ls, lab in ((tr.primal, "-", "primal (incumbent)"), (tr.dual, "--", "dual (bound)")):
+            if not pts:
+                continue
+            xs = [t for t, _ in pts if t <= T]
+            ys = [sg * v for t, v in pts if t <= T]
+            if not xs:
+                continue
+            xs, ys = [0.0] + xs + [T], [ys[0]] + ys + [ys[-1]]
+            ax1.step(xs, ys, where="post", color=c, ls=ls, lw=1.6, label="%s: %s" % (n, lab))
+        if tr.end_time is not None and tr.end_time < T:
+            ax1.axvline(tr.end_time, color=c, ls=":", lw=1)
+            ax2.axvline(tr.end_time, color=c, ls=":", lw=1)
+            ax2.annotate("%s ends (%s)\ngap is held" % (n, tr.status), (tr.end_time, 1.75), color=c,
+                         fontsize=8, ha="right")
+        times, gaps = gap_steps(tr, T)
+        m = integrate(tr, T)
+        ax2.fill_between(times, gaps + [gaps[-1]], step="post", color=c, alpha=0.25)
+        ax2.step(times, gaps + [gaps[-1]], where="post", color=c, lw=1.6,
+                 label="%s: PDI = %.4f (area / T)" % (n, m["pdi"]))
+    ref = next((r[4] for r in runs if r[4] is not None), None)
+    if ref is not None:
+        ax1.axhline(ref, color="gray", ls=":", lw=1, label="best known")
+    ax1.set_ylabel("objective value")
+    ax1.legend(fontsize=8, ncol=2)
+    ax1.grid(alpha=0.3)
+    ax2.set_ylabel("gap(t)   (2 = no incumbent)")
+    ax2.set_xlabel("time (s)   - horizon T = %g s" % T)
+    ax2.set_ylim(0, 2.05)
+    ax2.grid(alpha=0.3)
+    ax2.legend(loc="center right", fontsize=9)
+    if a.logx:
+        ax2.set_xscale("symlog", linthresh=1.0)
+    ax2.set_xlim(0, T)
+    fig.suptitle("Primal-dual integral: PDI = shaded area under gap(t) divided by T  (smaller is better)", fontsize=10)
+    fig.tight_layout()
+    fig.savefig(a.out, dpi=130)
+    print("wrote", a.out)
+
+
 # ---------------------------------------------------------------- main
 
 
@@ -673,7 +775,10 @@ def main():
 
     z = sub.add_parser("analyze", help="logs -> pdi.tsv")
     z.add_argument("dirs", nargs="+")
-    z.add_argument("--sec", type=float, help="override the time horizon T")
+    z.add_argument("--sec", type=float, help="override the time horizon T (use the same value for every "
+                   "experiment you compare; shorter runs hold their last gap, longer ones are truncated)")
+    z.add_argument("--events", choices=("auto", "csv", "log"), default="auto",
+                   help="event source: auto = *.progress.csv unless the run used -threads N>0 (then the log)")
     z.set_defaults(fn=cmd_analyze)
 
     c = sub.add_parser("compare", help="rank experiments (pdi.tsv files)")
@@ -691,6 +796,14 @@ def main():
     p.add_argument("--out", default="gap-curves.png")
     p.add_argument("--sec", type=float)
     p.set_defaults(fn=cmd_plot)
+
+    ex = sub.add_parser("explain", help="figure of bounds, gap(t) and the PDI area for one or more runs")
+    ex.add_argument("runs", nargs="+", help="[name=]path/to/<instance>.log ...")
+    ex.add_argument("--out", default="pdi-explained.png")
+    ex.add_argument("--sec", type=float, help="common time horizon T (default: longest limit)")
+    ex.add_argument("--events", choices=("auto", "csv", "log"), default="auto")
+    ex.add_argument("--logx", action="store_true", help="symlog time axis")
+    ex.set_defaults(fn=cmd_explain)
 
     a = ap.parse_args()
     a.fn(a)

@@ -19492,7 +19492,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         */
     // Set currentNode_ so can be used in handler
     currentNode_ = newNode;
-    sampleTreeDualBound(newNode);
+    sampleTreeDualBound(newNode, node);
     if (eventHandler_ && !eventHandler_->event(CbcEventHandler::node)) {
       eventHappened_ = true; // exit
     }
@@ -22877,7 +22877,7 @@ void CbcModel::sampleParallelDualBound()
   reportDualBound(bound, "node");
 }
 
-void CbcModel::sampleTreeDualBound(const CbcNode *current)
+void CbcModel::sampleTreeDualBound(const CbcNode *current, const CbcNode *parent)
 {
   if (parentModel_ || !tree_ || parallelMode() > 0 || (!progressCsv_ && !eventHandler_))
     return;
@@ -22891,5 +22891,8 @@ void CbcModel::sampleTreeDualBound(const CbcNode *current)
   // the node being processed is no longer on the tree but still bounds the optimum
   if (current)
     bound = std::min(bound, current->objectiveValue());
+  // the parent is off the tree too until its remaining branch is pushed back
+  if (parent && parent->nodeInfo() && parent->nodeInfo()->numberBranchesLeft() > 0)
+    bound = std::min(bound, parent->objectiveValue());
   reportDualBound(bound, "node");
 }

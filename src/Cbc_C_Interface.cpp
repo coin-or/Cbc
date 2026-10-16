@@ -569,12 +569,6 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
           delete[] cnames[0];
           delete[] cnames;
         } // incumbent callback
-        if (this->progr_callback) {
-          const CbcModel *model = this->getModel();
-          double secs = model->getCurrentSeconds();
-          double lb = model->getBestPossibleObjValue();
-          this->progr_callback((void *) model, 0, model->getNodeCount(), "sol", secs, lb, bestCost, 0, NULL, this->pgAppData);
-        } // incumbent callback
       } // improved cost
 #ifdef CBC_THREAD
     assert(this->cbcMutex);
@@ -582,22 +576,19 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
 #endif
     } // solution found
 
-    if (this->progr_callback)
-    {
+    if (whichEvent == progress && this->progr_callback) {
+      // serialised by the model: incumbent or significant dual bound changes, and "tick" heartbeats
 #ifdef CBC_THREAD
-    assert(this->cbcMutex);
-    pthread_mutex_lock((this->cbcMutex));
+      assert(this->cbcMutex);
+      pthread_mutex_lock((this->cbcMutex));
 #endif
-      if (this->getModel()->getBestPossibleObjValue() >= this->bestBound+1e-5)
-      {
-        this->bestBound = this->getModel()->getBestPossibleObjValue();
-        const CbcModel *model = this->getModel();
-        double secs = model->getCurrentSeconds();
-        this->progr_callback((void *) model, 0, model->getNodeCount(), "bnd", secs, bestBound, bestCost, 0, NULL, this->pgAppData);
-      } // improved lower bound
+      const CbcModel *model = this->getModel();
+      const CbcProgressInfo &info = model->progressInfo();
+      this->progr_callback((void *) model, 0, info.nodes, info.source, info.seconds,
+        info.dual, info.primal, 0, NULL, this->pgAppData);
 #ifdef CBC_THREAD
-    assert(this->cbcMutex);
-    pthread_mutex_unlock((this->cbcMutex));
+      assert(this->cbcMutex);
+      pthread_mutex_unlock((this->cbcMutex));
 #endif
     } // has progress callback
   } // not in subtree

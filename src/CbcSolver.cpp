@@ -7421,10 +7421,11 @@ public:
     if (cbcLogLevel >= 1 && babModel_.numberIntegers() > 0) {
       // for now only one event so use default constructor
       // while somebody thinks
-      CbcEventHandler handler(&babModel_);
-      // CbcAction action();
-      // handler.setAction(handler.CbcEvent::endSearch,action);
-      babModel_.passInEventHandler(&handler);
+      // keep a handler already installed (e.g. by the C interface) so its callbacks still run
+      if (!babModel_.getEventHandler()) {
+        CbcEventHandler handler(&babModel_);
+        babModel_.passInEventHandler(&handler);
+      }
       FILE *outfp = babModel_.messageHandler()->filePointer();
       if (!outfp)
         outfp = stdout;

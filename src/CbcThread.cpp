@@ -576,6 +576,7 @@ CbcBaseModel::CbcBaseModel(CbcModel &model, int type)
     for (int i = 0; i < numberThreads_; i++) {
       //threadModel_[i] = new CbcModel(model, true);
       threadModel_[i] = model.clone(true);
+      threadModel_[i]->shareProgressCsv(model);
       threadModel_[i]->synchronizeHandlers(1);
       // reduce printout
       threadModel_[i]->messageHandler()->setLogLevel(printLevel);

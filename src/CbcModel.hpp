@@ -28,6 +28,7 @@
 #endif
 #include <string>
 #include <memory>
+#include <mutex>
 #include <cstdio>
 #include <vector>
 #include "CbcConfig.h"
@@ -149,6 +150,16 @@ struct CbcCutAdaptiveSkipSettings {
     , minCols(500)
   {
   }
+};
+
+/// Snapshot of the search progress, in the problem's own objective sense
+struct CbcProgressInfo {
+  double seconds = 0.0;
+  double primal = 1.0e50; ///< best incumbent (1e50 if none)
+  double dual = -1.0e50; ///< best proven dual bound (-1e50 if none)
+  int nodes = 0;
+  /// "rootLP", "cutpass", "bound", "node", "final", a heuristic name, "tick" (heartbeat)...
+  const char *source = "";
 };
 
 class CBCLIB_EXPORT CbcModel {
@@ -834,13 +845,27 @@ public:
   double getCurrentSeconds() const;
   /// Open a CSV recording time,primal,dual,source,nodes at each incumbent and bound update ("" closes it)
   void setProgressCsv(const std::string &fileName, double minRelChange = 1.0e-4);
-  /// Append one row to the progress CSV if enabled
+  /** Report an improved incumbent (called by whichever thread found it, also
+      thread clones). Writes a CSV row and fires CbcEventHandler::progress. */
   void writeProgressCsv(const char *source);
-  /** Report a (minimisation-sign) valid dual bound. If it improves on the last
-      reported one, appends a progress-CSV row and fires CbcEventHandler::dualBound. */
+  /** Report a (minimisation-sign) valid dual bound. A significant improvement
+      (see minRelChange) is recorded and fires CbcEventHandler::progress; with
+      no such event for progressHeartbeat_ seconds a "tick" event is fired. */
   void reportDualBound(double minObjValue, const char *source);
+  /// Latest snapshot delivered with CbcEventHandler::progress
+  const CbcProgressInfo &progressInfo() const
+  {
+    return progressOwner_ ? progressOwner_->progressInfo_ : progressInfo_;
+  }
   /** Throttled report of the best bound over the open nodes (call once per node). */
   void sampleTreeDualBound(const CbcNode *current);
+  /// Master-thread sampling of the dual bound when worker threads run the tree
+  void sampleParallelDualBound();
+  /// Share the progress CSV with a thread clone
+  void shareProgressCsv(CbcModel &owner);
+private:
+  void publishProgress(const char *source, bool writeRow);
+public:
 
   /** Set the
         \link CbcModel::CbcMaxMemory maximum amount of memory \endlink
@@ -3599,6 +3624,20 @@ private:
   double progressLastDual_ = -COIN_DBL_MAX;
   double progressMinChange_ = 1.0e-4;
   double progressLastSample_ = 0.0;
+  /// Best dual bound seen so far (minimisation sense), recorded or not
+  double progressDualSeen_ = -COIN_DBL_MAX;
+  /// Time of the last progress notification
+  double progressLastNotify_ = 0.0;
+  /// Seconds without a notification after which a "tick" is sent
+  double progressHeartbeat_ = 1.0;
+  /// Snapshot delivered with CbcEventHandler::progress
+  CbcProgressInfo progressInfo_;
+  /// Best incumbent (minimisation sense) already written to the progress CSV
+  double progressLastPrimal_ = COIN_DBL_MAX;
+  /// Serialises CSV writes and the progress state above between the base model and its thread clones
+  std::shared_ptr< std::mutex > progressMutex_;
+  /// For thread clones: the base model that owns the CSV (nullptr otherwise)
+  CbcModel *progressOwner_ = nullptr;
   /// Output handler for root-node heuristics (not owned; nullptr after doHeuristicsAtRoot)
   CbcRootHeurOutput *rootHeurOutput_ = nullptr;
 

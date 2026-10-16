@@ -6029,7 +6029,7 @@ void CbcModel::branchAndBound(int doStatistics)
         lock = std::unique_lock< std::mutex >(*progressMutex_);
       progressDualSeen_ = std::max(progressDualSeen_, std::min(bestPossibleObjective_, bestObjective_));
       progressLastPrimal_ = std::min(progressLastPrimal_, bestObjective_);
-      publishProgress("final", true);
+      publishProgress("final", CbcProgressInfo::final, true);
     }
   }
   if ((moreSpecialOptions_ & 4194304) != 0) {
@@ -22769,10 +22769,11 @@ void CbcModel::fixFromGlobalCuts()
 }
 #endif
 
-void CbcModel::setProgressCsv(const std::string &fileName, double minRelChange)
+void CbcModel::setProgressCsv(const std::string &fileName, double minRelChange, double heartbeatSeconds)
 {
   progressCsv_.reset();
   progressMinChange_ = minRelChange;
+  progressHeartbeat_ = heartbeatSeconds > 0.0 ? heartbeatSeconds : COIN_DBL_MAX;
   if (fileName.empty())
     return;
   FILE *fp = fopen(fileName.c_str(), "w");
@@ -22796,7 +22797,7 @@ void CbcModel::shareProgressCsv(CbcModel &owner)
 
 // Caller holds *progressMutex_ (when there is one). Delivery is serialised and
 // always goes through the base model, so handlers need not be thread safe.
-void CbcModel::publishProgress(const char *source, bool writeRow)
+void CbcModel::publishProgress(const char *source, CbcProgressInfo::Kind kind, bool writeRow)
 {
   CbcModel *owner = progressOwner_ ? progressOwner_ : this;
   CbcProgressInfo &info = owner->progressInfo_;
@@ -22805,14 +22806,15 @@ void CbcModel::publishProgress(const char *source, bool writeRow)
   info.dual = owner->progressDualSeen_ > -1.0e30 ? trueObjValue(owner->progressDualSeen_) : -1.0e50;
   info.nodes = owner->numberNodes_ + owner->numberExtraNodes_;
   info.source = source;
+  info.kind = kind;
   owner->progressLastNotify_ = info.seconds;
   if (writeRow && progressCsv_) {
     fprintf(progressCsv_.get(), "%.3f,%.10g,%.10g,%s,%d\n", info.seconds, info.primal, info.dual,
       source, info.nodes);
     fflush(progressCsv_.get());
   }
-  if (owner->eventHandler_)
-    owner->eventHandler_->event(CbcEventHandler::progress);
+  if (owner->eventHandler_ && owner->eventHandler_->event(CbcEventHandler::progress) == CbcEventHandler::stop)
+    owner->sayEventHappened(); // worker threads notice it through the base model
 }
 
 void CbcModel::writeProgressCsv(const char *source)
@@ -22833,7 +22835,7 @@ void CbcModel::writeProgressCsv(const char *source)
   } else if (bestObjective_ < progressLastPrimal_) {
     progressLastPrimal_ = bestObjective_;
   }
-  publishProgress(source, true);
+  publishProgress(source, CbcProgressInfo::incumbent, true);
 }
 
 void CbcModel::reportDualBound(double minObjValue, const char *source)
@@ -22851,9 +22853,9 @@ void CbcModel::reportDualBound(double minObjValue, const char *source)
   const bool significant = progressLastDual_ < -1.0e30 || minObjValue >= progressLastDual_ + progressMinChange_ * scale;
   if (significant && minObjValue > progressLastDual_ + 1.0e-9 * scale) {
     progressLastDual_ = minObjValue;
-    publishProgress(source, true);
+    publishProgress(source, CbcProgressInfo::bound, true);
   } else if (getCurrentSeconds() - progressLastNotify_ >= progressHeartbeat_) {
-    publishProgress("tick", false);
+    publishProgress("tick", CbcProgressInfo::tick, false);
   }
 }
 

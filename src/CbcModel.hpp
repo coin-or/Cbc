@@ -158,6 +158,8 @@ struct CbcProgressInfo {
   double primal = 1.0e50; ///< best incumbent (1e50 if none)
   double dual = -1.0e50; ///< best proven dual bound (-1e50 if none)
   int nodes = 0;
+  /// Why the event was sent
+  enum Kind { incumbent = 0, bound = 1, tick = 2, final = 3 } kind = tick;
   /// "rootLP", "cutpass", "bound", "node", "final", a heuristic name, "tick" (heartbeat)...
   const char *source = "";
 };
@@ -844,7 +846,7 @@ public:
   /// Current time since start of branchAndbound
   double getCurrentSeconds() const;
   /// Open a CSV recording time,primal,dual,source,nodes at each incumbent and bound update ("" closes it)
-  void setProgressCsv(const std::string &fileName, double minRelChange = 1.0e-4);
+  void setProgressCsv(const std::string &fileName, double minRelChange = 1.0e-4, double heartbeatSeconds = 1.0);
   /** Report an improved incumbent (called by whichever thread found it, also
       thread clones). Writes a CSV row and fires CbcEventHandler::progress. */
   void writeProgressCsv(const char *source);
@@ -864,7 +866,7 @@ public:
   /// Share the progress CSV with a thread clone
   void shareProgressCsv(CbcModel &owner);
 private:
-  void publishProgress(const char *source, bool writeRow);
+  void publishProgress(const char *source, CbcProgressInfo::Kind kind, bool writeRow);
 public:
 
   /** Set the

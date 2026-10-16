@@ -137,21 +137,6 @@ enum IntParam {
 };
 #define N_INT_PARAMS 23
   
-/** typedef for cbc callback to monitor the progress of the search
- * in terms of improved upper and lower bounds */
-typedef int(CBC_LINKAGE_CB *cbc_progress_callback)(void *model,
-                                                   int phase,
-                                                   int step,
-                                                   const char *phaseName,
-                                                   double seconds,
-                                                   double lb,
-                                                   double ub,
-                                                   int nint,
-                                                   int *vecint,
-                                                   void *cbData
-                                                   );
-
-
 /** typedef for cbc callback to monitor the discovery
  * of new integer feasible solutions */
 typedef int (CBC_LINKAGE_CB *cbc_incumbent_callback)(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData);
@@ -1229,16 +1214,51 @@ CBCLIB_EXPORT void CBC_LINKAGE Cbc_addCutCallback(
     int howOften,
     char atSolution );
 
+/** Why a search-progress event was sent */
+typedef enum {
+  CBC_PROGRESS_INCUMBENT = 0, /*!< a better integer solution was found */
+  CBC_PROGRESS_BOUND = 1,     /*!< the dual bound improved significantly (see parameter progressMinChange) */
+  CBC_PROGRESS_TICK = 2,      /*!< heartbeat: nothing changed for progressInterval seconds */
+  CBC_PROGRESS_FINAL = 3      /*!< the search ended */
+} Cbc_ProgressKind;
+
+/** Snapshot of the search, valid only during the callback. Values are in the
+ * problem's own objective sense (maximisation problems are not negated).
+ * struct_size is set by Cbc to sizeof(Cbc_ProgressInfo) so that fields can be
+ * appended later: read a field only if it lies within struct_size. */
+typedef struct Cbc_ProgressInfo {
+  int struct_size;
+  int kind;             /*!< a Cbc_ProgressKind */
+  double seconds;       /*!< time since the search started */
+  double primal;        /*!< best solution value; valid if has_incumbent */
+  double dual;          /*!< best proven bound; valid if has_bound */
+  double gap;           /*!< |primal-dual| / max(|primal|,|dual|); 1 if either is missing */
+  int nodes;            /*!< branch-and-bound nodes processed */
+  int has_incumbent;
+  int has_bound;
+  const char *source;   /*!< "rootLP", "cutpass", "bound", "node", "tick", "final", or the name of the heuristic that found the incumbent */
+} Cbc_ProgressInfo;
+
+/** callback for search progress. Calls are serialised (never concurrent), also
+ * with threads and with the incumbent callback, and come from whichever thread
+ * triggered them: return quickly, and do not call back into the model except
+ * for read-only queries. Return 0 to continue; a nonzero value asks Cbc to stop
+ * the search as soon as possible (the status is then "stopped on event").
+ * Events: every incumbent, every significant dual bound improvement
+ * (parameter progressMinChange, default 1e-4), a heartbeat after progressInterval
+ * seconds without either (default 1, 0 disables), and a final one. */
+typedef int(CBC_LINKAGE_CB *cbc_progress_info_callback)(Cbc_Model *model, const Cbc_ProgressInfo *info, void *appData);
+
+/** Registers the search progress callback (NULL removes it). Tune it with
+ * Cbc_setParameter(model, "progressMinChange", "1e-3") and
+ * Cbc_setParameter(model, "progressInterval", "0.5"). */
+CBCLIB_EXPORT void CBC_LINKAGE Cbc_setProgressCallback(
+  Cbc_Model *model, cbc_progress_info_callback cb, void *appData);
+
 /** callback to monitor new incumbent solutions **/
 CBCLIB_EXPORT void CBC_LINKAGE Cbc_addIncCallback(
     Cbc_Model *model, cbc_incumbent_callback inccb, 
     void *appData );
-
-/** callback to monitor improvements in lower or upper
- * bounds */
-CBCLIB_EXPORT void CBC_LINKAGE Cbc_addProgrCallback(
-  Cbc_Model *model, cbc_progress_callback prgcbc,
-  void *appData);
 
 /*@}*/
 

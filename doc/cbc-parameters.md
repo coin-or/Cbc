@@ -2394,6 +2394,14 @@ A dual bound row is appended to the progressCsv file only if the bound improved 
 
 **Range:** 0 to 1 (default: 0.0001)
 
+### `-progressInterval`
+
+Seconds without a progress event before a heartbeat is sent
+
+The search-progress event (also the C callback Cbc_setProgressCallback) is always sent on a new incumbent and on a significant dual bound improvement (see progressMinChange). If neither happens for this many seconds, a heartbeat ("tick") is sent so consumers see the node count advance. Ticks are not written to progressCsv. 0 disables heartbeats. Default 1.
+
+**Range:** 0 to 10000000000 (default: 1)
+
 ### `-bufferedMode`
 
 Whether to flush print buffer

@@ -23,8 +23,8 @@
 // CbcCoefficientStrengthening.cpp fall back on -- see the comment there for
 // why the debugger itself is not yet attached this early when driven from the
 // "-debugCuts" CLI switch.
-extern double *debugSolution;
-extern int debugNumberColumns;
+extern OSILIB_EXPORT double *debugSolution;
+extern OSILIB_EXPORT int debugNumberColumns;
 
 namespace {
 

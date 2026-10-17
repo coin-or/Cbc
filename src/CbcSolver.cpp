@@ -5150,7 +5150,17 @@ int CbcSolver::solveInitialLp(
             }
             lpMethodResult = applyLpMethod();
             if (lpMethodResult < 0) {
-              // Infeasible — clean up LP progress handler and skip BAB
+              // Infeasibility proved by bound propagation — mark model
+              // (as for the LP-only solve) and skip BAB
+              model_.setProblemStatus(0);
+              model_.setSecondaryStatus(1);
+              // say infeasible for solution
+              integerStatus_ = 6;
+              if (babModel_) {
+                babModel_->setProblemStatus(0);
+                babModel_->setSecondaryStatus(1);
+              }
+              // Clean up LP progress handler
 #ifndef CBC_OTHER_SOLVER
               if (lpSavedMsg && si) {
                 ClpSimplex *clpModel = si->getModelPtr();

@@ -1240,6 +1240,49 @@ void testDualReductionsType( enum LPReductions red ){
     free(getname);
 }
 
+void testNamedParamPrecedence() {
+    /* A gap set by name with Cbc_setParam must not be replaced by the
+     * typed default of Cbc_setAllowableFractionGap during Cbc_solve.
+     *
+     * Minimize -3x - 2y + 100000z
+     * s.t.     2x + 3y <= 4
+     *          x, y binary, z fixed at 1
+     *
+     * The optimum is x=1, y=0 (99997). The MIP start x=0, y=1 (99998) is
+     * within the default ratio gap of 1e-4 of the root bound, so the
+     * optimum is only found when ratioGap=0 takes effect. */
+
+    Cbc_Model *model = Cbc_newModel();
+
+    CoinBigIndex start[] = {0, 1, 2, 2};
+    int rowindex[] = {0, 0};
+    double value[] = {2, 3};
+    double collb[] = {0, 0, 1};
+    double colub[] = {1, 1, 1};
+    double obj[] = {-3, -2, 100000};
+    double rowlb[] = {-INFINITY};
+    double rowub[] = {4};
+    int mscols[] = {0, 1};
+    double msvalues[] = {0, 1};
+
+    Cbc_loadProblem(model, 3, 1, start, rowindex, value, collb, colub, obj, rowlb, rowub);
+
+    Cbc_setInteger(model, 0);
+    Cbc_setInteger(model, 1);
+
+    Cbc_setParam(model, "preprocess", "off");
+    Cbc_setParam(model, "heur", "off");
+    Cbc_setParam(model, "ratioGap", "0");
+    Cbc_setMIPStartI(model, 2, mscols, msvalues);
+
+    Cbc_solve(model);
+
+    assert(Cbc_isProvenOptimal(model));
+    assert(fabs(Cbc_getObjValue(model) - 99997.0) < 1e-6);
+
+    Cbc_deleteModel(model);
+}
+
 int main() {
     printf("\nStarting C Interface test.\n\n");
     char buildInfo[1024];
@@ -1277,6 +1320,9 @@ int main() {
     printf("Dual reduction type test\n");
     testDualReductionsType(LPR_Default);
     testDualReductionsType(LPR_NoDualReds);
+
+    printf("Named parameter precedence test\n");
+    testNamedParamPrecedence();
 
     return 0;
 }

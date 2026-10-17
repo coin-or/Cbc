@@ -5394,7 +5394,7 @@ int CbcSolver::postprocess(
 #ifdef JJF_ZERO
         // See if sos so we can fix
         OsiClpSolverInterface *osiclp = getClpSolver(saveSolver_);
-        if ((CBC_SKIP_CLP_TEST || osiclp) && osiclp->numberSOS()) {
+        if (osiclp && osiclp->numberSOS()) {
           // SOS
           numberSOS_ = osiclp->numberSOS();
           const CoinSet *setInfo = osiclp->setInfo();
@@ -5524,7 +5524,7 @@ int CbcSolver::postprocess(
           delete basis;
           originalSolver->initialSolve();
           OsiClpSolverInterface *osiclp = getClpSolver(originalSolver);
-          if (CBC_SKIP_CLP_TEST || osiclp)
+          if (osiclp)
             osiclp->getModelPtr()->checkUnscaledSolution();
         }
         // assert(originalSolver->isProvenOptimal());
@@ -6002,7 +6002,7 @@ int CbcSolver::solveInitialLp(
     return 2;
 #else
 #ifndef CBC_OTHER_SOLVER
-  if (CBC_SKIP_CLP_TEST || si)
+  if (si)
     si->setSpecialOptions(si->specialOptions() | 1024);
 #endif
   // ------ root LP progress output ------
@@ -6348,7 +6348,7 @@ int CbcSolver::solveInitialLp(
   // it cannot run past the CBC time limit on large instances.
   {
     OsiClpSolverInterface *siClp = getClpSolver(si);
-    if (CBC_SKIP_CLP_TEST || siClp) {
+    if (siClp) {
       applyClpTimeLimit(model_, siClp->getModelPtr());
     }
   }

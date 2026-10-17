@@ -526,7 +526,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   {
     OsiClpSolverInterface *clpSolver
       = getClpSolver(model_->solver());
-    if (CBC_SKIP_CLP_TEST||clpSolver) {
+    if (clpSolver) {
       if (maximumPasses == 30) {
         if (clpSolver->fakeObjective())
           maximumPasses = 100; // feasibility problem?
@@ -563,7 +563,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   // resolve() cannot outlast the global deadline.
   {
     OsiClpSolverInterface *clpClonedSolver = getClpSolver(clonedSolver);
-    if (CBC_SKIP_CLP_TEST||clpClonedSolver) {
+    if (clpClonedSolver) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())
@@ -587,7 +587,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     {
       OsiClpSolverInterface *clpSolver
         = getClpSolver(solver);
-      if (CBC_SKIP_CLP_TEST||clpSolver) {
+      if (clpSolver) {
         // better to clean up using primal?
         ClpSimplex *lp = clpSolver->getModelPtr();
 	// try and re-use factorization
@@ -809,7 +809,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       // now be stale).
       {
         OsiClpSolverInterface *clpSolver = getClpSolver(solver);
-        if (CBC_SKIP_CLP_TEST || clpSolver) {
+        if (clpSolver) {
           double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
           if (remaining > 0.0) {
             if (model_->useElapsedTime())
@@ -877,7 +877,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           = getClpSolver(clonedSolver);
         //printf("real cutoff %g fake %g - second pass %c\n",realCutoff,cutoff,
         //     secondMajorPass ? 'Y' : 'N');
-        if ((CBC_SKIP_CLP_TEST||clpSolver) && (((accumulate_ & 16) != 0) || ((accumulate_ & 8) != 0 && secondMajorPass))) {
+        if (clpSolver && (((accumulate_ & 16) != 0) || ((accumulate_ & 8) != 0 && secondMajorPass))) {
           // try rounding heuristic
           OsiSolverInterface *saveSolver = model_->swapSolver(clonedSolver);
           ClpSimplex *simplex = clpSolver->getModelPtr();
@@ -2331,7 +2331,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #endif
             OsiClpSolverInterface *clpSolver
               = getClpSolver(newSolver);
-            if (CBC_SKIP_CLP_TEST||clpSolver) {
+            if (clpSolver) {
               ClpSimplex *simplex = clpSolver->getModelPtr();
               //simplex->writeBasis("test.bas",true,2);
               //simplex->writeMps("test.mps",2,1);
@@ -3541,7 +3541,7 @@ CbcDisasterHandler::CbcDisasterHandler(CbcModel *model)
   if (model) {
     osiModel_
       = getClpSolver(model->solver());
-    if (CBC_SKIP_CLP_TEST||osiModel_)
+    if (osiModel_)
       setSimplex(osiModel_->getModelPtr());
   }
 }
@@ -3599,7 +3599,7 @@ void CbcDisasterHandler::setCbcModel(CbcModel *model)
   if (model) {
     osiModel_
       = getClpSolver(model->solver());
-    if (CBC_SKIP_CLP_TEST||osiModel_)
+    if (osiModel_)
       setSimplex(osiModel_->getModelPtr());
     else
       setSimplex(NULL);

@@ -759,7 +759,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     }
   }
   OsiClpSolverInterface *clpSolver = getClpSolver(solver);
-  if ((CBC_SKIP_CLP_TEST||clpSolver) && (clpSolver->specialOptions() & 65536) == 0) {
+  if (clpSolver && (clpSolver->specialOptions() & 65536) == 0) {
     // go faster stripes
     if (clpSolver->getNumRows() < 300 && clpSolver->getNumCols() < 500) {
       clpSolver->setupForRepeatedUse(2, 0);
@@ -962,7 +962,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   // Propagate remaining CBC time to LP solver for the preprocessing solve.
   if (model_->getMaximumSeconds() < 1.0e10) {
     OsiClpSolverInterface *clpSolverPre = getClpSolver(solver);
-    if (CBC_SKIP_CLP_TEST||clpSolverPre) {
+    if (clpSolverPre) {
       double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
       if (model_->useElapsedTime())
         clpSolverPre->getModelPtr()->setMaximumWallSeconds(remaining);
@@ -1025,7 +1025,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     }
 #endif
     OsiClpSolverInterface *clpSolver = getClpSolver(solver);
-    if (CBC_SKIP_CLP_TEST||clpSolver) {
+    if (clpSolver) {
       clpSolver->getModelPtr()->cleanSolver();
       clpSolver->getModelPtr()->setWhatsChanged(0);
     }
@@ -1181,7 +1181,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         // Propagate remaining CBC time to the post-presolve LP re-solve.
         if (model_->getMaximumSeconds() < 1.0e10) {
           OsiClpSolverInterface *clpSolver2TL = getClpSolver(solver2);
-          if (CBC_SKIP_CLP_TEST||clpSolver2TL) {
+          if (clpSolver2TL) {
             double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
             if (model_->useElapsedTime())
               clpSolver2TL->getModelPtr()->setMaximumWallSeconds(remaining);
@@ -1198,7 +1198,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         // redo SOS
         OsiClpSolverInterface *clpSolver
           = getClpSolver(model.solver());
-        if ((CBC_SKIP_CLP_TEST||clpSolver) && clpSolver->numberSOS()) {
+        if (clpSolver && clpSolver->numberSOS()) {
           int numberColumns = clpSolver->getNumCols();
           const int *originalColumns = process.originalColumns();
           CoinSet *setInfo = const_cast< CoinSet * >(clpSolver->setInfo());
@@ -1712,7 +1712,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             returnCode = 3;
             // post process
           OsiClpSolverInterface *clpSolver = getClpSolver(model.solver());
-          if (CBC_SKIP_CLP_TEST||clpSolver) {
+          if (clpSolver) {
             ClpSimplex *lpSolver = clpSolver->getModelPtr();
             lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
           }

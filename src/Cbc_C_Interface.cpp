@@ -3469,6 +3469,8 @@ Cbc_bestSolution(Cbc_Model *model)
       abort();
       break;
     case ContinuousOptimization:
+      if (!model->solver_->getModelPtr()->primalFeasible())
+        return NULL;
       return model->solver_->getColSolution();
     case IntegerOptimization:
       if (model->mipBestSolution)

@@ -139,6 +139,7 @@ void CbcCrashHandler(int sig);
 #include "CbcCutGenerator.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicControl.hpp"
+#include "CbcHeuristicSppGrasp.hpp"
 #include "CbcHeuristicDiveCoefficient.hpp"
 #include "CbcHeuristicDiveFractional.hpp"
 #include "CbcHeuristicDiveGuided.hpp"
@@ -3441,7 +3442,9 @@ void CbcSolver::initialize()
   parameters_[CbcParam::LANDPCUTS]->setVal("root");
   parameters_[CbcParam::RESIDCAPCUTS]->setVal("off");
   parameters_[CbcParam::ROUNDING]->setVal("on");
-  parameters_[CbcParam::FPUMP]->setVal("on");
+  // not setVal: the feasibility pump may be switched off automatically
+  // (e.g. by SppGrasp) unless the user asked for it
+  parameters_[CbcParam::FPUMP]->setModeValAuto(parameters_[CbcParam::FPUMP]->kwdToMode("on"));
   parameters_[CbcParam::GREEDY]->setVal("on");
   parameters_[CbcParam::DIVINGC]->setVal("on");
   parameters_[CbcParam::RINS]->setVal("on");
@@ -7353,7 +7356,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   parameters[CbcParam::LANDPCUTS]->setVal("root");
   parameters[CbcParam::RESIDCAPCUTS]->setVal("off");
   parameters[CbcParam::ROUNDING]->setVal("on");
-  parameters[CbcParam::FPUMP]->setVal("on");
+  parameters[CbcParam::FPUMP]->setModeValAuto(parameters[CbcParam::FPUMP]->kwdToMode("on"));
   parameters[CbcParam::GREEDY]->setVal("on");
   parameters[CbcParam::DIVINGC]->setVal("on");
   parameters[CbcParam::RINS]->setVal("on");
@@ -11029,7 +11032,42 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
 int CbcSolver::configureHeuristics(CbcModel *model, int type)
 {
   return doHeuristics(model, type, parameters_, parameters_.noPrinting(),
-    initialPumpTune_);
+    initialPumpTune_, sppGraspOriginal_);
+}
+
+void CbcSolver::babRunSppGraspOriginal()
+{
+  CbcParameters &parameters = parameters_;
+  sppGraspOriginal_ = 0;
+  if (!parameters[CbcParam::SPPGRASP]->modeVal() || !babModel_)
+    return;
+  OsiSolverInterface *solver = model_.solver();
+  if (!solver || babModel_->getNumCols() != solver->getNumCols())
+    return;
+  std::string reason;
+  if (!CbcHeuristicSppGrasp::isApplicable(*solver, true, &reason)) {
+    sppGraspOriginal_ = -1;
+    if (model_.messageHandler()->logLevel() > 1 && !parameters.noPrinting()) {
+      model_.messageHandler()->message(CBC_GENERAL, model_.messages())
+        << "SppGrasp not applicable: " + reason << CoinMessageEol;
+    }
+    return;
+  }
+  sppGraspOriginal_ = 1;
+  CbcHeuristicSppGrasp heuristic(model_);
+  heuristic.setMaxTime(parameters[CbcParam::SPPGRASPTIME]->dblVal());
+  const int numberColumns = solver->getNumCols();
+  std::vector< double > x(numberColumns, 0.0);
+  double obj = model_.getCutoff();
+  if (!heuristic.solution(obj, &x[0]))
+    return;
+  double newCutoff = std::min(babModel_->getCutoff(), obj + 1.0e-4);
+  babModel_->setBestSolution(&x[0], numberColumns, obj, false);
+  babModel_->setCutoff(newCutoff);
+  babModel_->setSolutionCount(1);
+  model_.setBestSolution(&x[0], numberColumns, obj, false);
+  model_.setCutoff(newCutoff);
+  model_.setSolutionCount(1);
 }
 
 void CbcSolver::configureCutGenerators(CbcModel &babModel,
@@ -13090,6 +13128,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               model_.setSolutionCount(1);
             }
           }
+          babRunSppGraspOriginal();
           // Do heuristics if asked for
           // HEURSTART
           // Do heuristics if asked for

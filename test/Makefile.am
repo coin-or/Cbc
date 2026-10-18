@@ -73,7 +73,7 @@ noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
 	lagomory-bench landp-bench \
 	twomir-bench mir2-bench impclique-explore impclique-bench impclique-vs-clique-bench \
-	impclique-real-bench mip-root-replay oddwheel-bench rins-bench
+	impclique-real-bench mip-root-replay oddwheel-bench rins-bench spp-grasp-bench
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 
@@ -469,6 +469,13 @@ impclique_real_bench_LDADD = ../src/libCbc.la
 mip_root_replay_SOURCES = mip-root-replay.cpp
 
 mip_root_replay_LDADD = ../src/libCbc.la
+
+# spp-grasp-bench: runs the set partitioning/packing GRASP heuristic
+# (CbcHeuristicSppGrasp) standalone on one instance to tune its criteria.
+
+spp_grasp_bench_SOURCES = spp-grasp-bench.cpp
+
+spp_grasp_bench_LDADD = ../src/libCbc.la
 
 ########################################################################
 #              RINS (and VND) heuristic replay/sweep bench             #

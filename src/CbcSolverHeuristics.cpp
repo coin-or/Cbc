@@ -26,6 +26,7 @@
 #include "CbcHeuristicFPump.hpp"
 #include "CbcHeuristicFeasibilityJump.hpp"
 #include "CbcHeuristicGreedy.hpp"
+#include "CbcHeuristicSppGrasp.hpp"
 #include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcHeuristicVND.hpp"
@@ -1211,7 +1212,7 @@ void applyHeuristicControl(CbcHeuristic &h, CbcParameters &parameters, const Heu
 } // namespace
 
 int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
-  int noPrinting_, int initialPumpTune)
+  int noPrinting_, int initialPumpTune, int sppGraspOriginal)
 {
 #ifdef JJF_ZERO // NEW_STYLE_SOLVER==0
   CbcParam *parameters_ = parameters;
@@ -1242,8 +1243,41 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   int useNaive = parameters[CbcParam::NAIVE]->modeVal();
   int useDW = parameters[CbcParam::DW]->modeVal();
   int useFeasibilityJump = parameters[CbcParam::FEASIBILITYJUMP]->modeVal();
+  int useSppGrasp = parameters[CbcParam::SPPGRASP]->modeVal();
   int kType = (type < 10) ? type : 1;
   assert(kType == 1 || kType == 2);
+  // Set partitioning/packing with a slack column on every partitioning row:
+  // a trivial solution always exists and SppGrasp quickly finds good ones
+  // (normally on the original model, before preprocessing, see
+  // CbcSolver::babRunSppGraspOriginal), so it replaces the (expensive)
+  // feasibility pump unless the user asked for the pump.
+  bool sppGraspDisablesFpump = false;
+  bool sppOn = useSppGrasp >= kType && useSppGrasp <= kType + 1;
+  std::string sppReason;
+  bool sppApplicable = sppOn
+    && CbcHeuristicSppGrasp::isApplicable(*model->solver(), true, &sppReason);
+  if (sppOn && !sppApplicable && !sppGraspOriginal
+    && generalMessageHandler->logLevel() > 1 && !noPrinting_) {
+    generalMessageHandler->message(CBC_GENERAL, generalMessages)
+      << "SppGrasp not applicable: " + sppReason << CoinMessageEol;
+  }
+  if (sppApplicable) {
+    anyToDo = true;
+    CbcHeuristicSppGrasp heuristicSpp(*model);
+    heuristicSpp.setMaxTime(parameters[CbcParam::SPPGRASPTIME]->dblVal());
+    heuristicSpp.setOrder(-100);
+    heuristicSpp.setRootHooks("LC");
+    model->addHeuristic(&heuristicSpp);
+  }
+  if (useSppGrasp && (sppGraspOriginal > 0 || (!sppGraspOriginal && sppApplicable))
+    && !parameters[CbcParam::FPUMP]->isUserSet() && useFpump != CbcParameters::CGOff) {
+    sppGraspDisablesFpump = true;
+    if (!noPrinting_ && kType == 1) {
+      generalMessageHandler->message(CBC_GENERAL, generalMessages)
+        << "SppGrasp: set partitioning with slacks - feasibility pump switched off"
+        << CoinMessageEol;
+    }
+  }
 #ifdef GET_ALL_SOLUTIONS
   // Very experimental
   if ((useDW == 13 || useDW == 33) && kType == 1) {
@@ -1312,7 +1346,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     fjCloneIndex = model->numberHeuristics() - 1;
   }
   // FPump done first as it only works if no solution
-  if (useFpump >= kType && useFpump <= kType + 1) {
+  if (useFpump >= kType && useFpump <= kType + 1 && !sppGraspDisablesFpump) {
     anyToDo = true;
     CbcHeuristicFPump heuristic4(*model);
     double dextra3 = parameters[CbcParam::SMALLBAB]->dblVal();

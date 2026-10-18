@@ -227,6 +227,8 @@ protected:
   std::vector< std::pair< std::string, double > > mipStart_;
   std::vector< std::pair< std::string, double > > mipStartBefore_;
   std::string mipStartFile_;
+  /// SppGrasp on the original model: 0 not tried, 1 applicable, -1 not applicable
+  int sppGraspOriginal_ = 0;
 
   // --- Import control ---
   /// Whether MPS/LP read errors are tolerated (0=fail on error, nonzero=continue)
@@ -535,6 +537,10 @@ public:
               registration-only calls
   */
   int configureHeuristics(CbcModel *model, int type);
+  /** Runs SppGrasp on the original (not yet preprocessed) model when it is a
+      set partitioning/packing problem with slacks, installing any solution
+      found as incumbent of model_ and babModel_. Sets sppGraspOriginal_. */
+  void babRunSppGraspOriginal();
 
   /** Register all cut generators on babModel based on this solver's
       current parameter, conflict-graph, and clique-detection settings.

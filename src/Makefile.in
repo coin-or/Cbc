@@ -184,6 +184,7 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcHeuristicFeasibilityJump.lo \
 	libCbc_la-CbcHeuristicGreedy.lo libCbc_la-CbcHeuristicLocal.lo \
 	libCbc_la-CbcHeuristicPivotAndFix.lo \
+	libCbc_la-CbcHeuristicSppGrasp.lo \
 	libCbc_la-CbcHeuristicRandRound.lo \
 	libCbc_la-CbcHeuristicRENS.lo libCbc_la-CbcHeuristicRINS.lo \
 	libCbc_la-CbcHeuristicVND.lo libCbc_la-CbcHeuristicDW.lo \
@@ -289,6 +290,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicRENS.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicRINS.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicRandRound.Plo \
+	./$(DEPDIR)/libCbc_la-CbcHeuristicSppGrasp.Plo \
 	./$(DEPDIR)/libCbc_la-CbcHeuristicVND.Plo \
 	./$(DEPDIR)/libCbc_la-CbcInstanceFeatures.Plo \
 	./$(DEPDIR)/libCbc_la-CbcLinked.Plo \
@@ -621,6 +623,7 @@ libCbc_la_SOURCES = \
 	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
+	CbcHeuristicSppGrasp.cpp CbcHeuristicSppGrasp.hpp \
 	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
 	CbcHeuristicRENS.cpp CbcHeuristicRENS.hpp \
 	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
@@ -754,6 +757,7 @@ includecoin_HEADERS = \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.hpp \
+	CbcHeuristicSppGrasp.hpp \
 	CbcHeuristicRandRound.hpp \
 	CbcHeuristicRENS.hpp \
 	CbcHeuristicRINS.hpp \
@@ -994,6 +998,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicRENS.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicRINS.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicRandRound.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicSppGrasp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcHeuristicVND.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcInstanceFeatures.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcLinked.Plo@am__quote@ # am--include-marker
@@ -1402,6 +1407,13 @@ libCbc_la-CbcHeuristicPivotAndFix.lo: CbcHeuristicPivotAndFix.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcHeuristicPivotAndFix.cpp' object='libCbc_la-CbcHeuristicPivotAndFix.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcHeuristicPivotAndFix.lo `test -f 'CbcHeuristicPivotAndFix.cpp' || echo '$(srcdir)/'`CbcHeuristicPivotAndFix.cpp
+
+libCbc_la-CbcHeuristicSppGrasp.lo: CbcHeuristicSppGrasp.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcHeuristicSppGrasp.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcHeuristicSppGrasp.Tpo -c -o libCbc_la-CbcHeuristicSppGrasp.lo `test -f 'CbcHeuristicSppGrasp.cpp' || echo '$(srcdir)/'`CbcHeuristicSppGrasp.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcHeuristicSppGrasp.Tpo $(DEPDIR)/libCbc_la-CbcHeuristicSppGrasp.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcHeuristicSppGrasp.cpp' object='libCbc_la-CbcHeuristicSppGrasp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcHeuristicSppGrasp.lo `test -f 'CbcHeuristicSppGrasp.cpp' || echo '$(srcdir)/'`CbcHeuristicSppGrasp.cpp
 
 libCbc_la-CbcHeuristicRandRound.lo: CbcHeuristicRandRound.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcHeuristicRandRound.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcHeuristicRandRound.Tpo -c -o libCbc_la-CbcHeuristicRandRound.lo `test -f 'CbcHeuristicRandRound.cpp' || echo '$(srcdir)/'`CbcHeuristicRandRound.cpp
@@ -1924,6 +1936,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicRENS.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicRINS.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicRandRound.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicSppGrasp.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicVND.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcInstanceFeatures.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcLinked.Plo
@@ -2066,6 +2079,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicRENS.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicRINS.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicRandRound.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicSppGrasp.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcHeuristicVND.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcInstanceFeatures.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcLinked.Plo

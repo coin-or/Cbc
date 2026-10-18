@@ -689,6 +689,7 @@ void CbcParameters::addCbcParams()
   parameters_[CbcParam::PROGRESSMINCHANGE]->setTopic("Output");
   parameters_[CbcParam::PROGRESSINTERVAL]->setTopic("Output");
   parameters_[CbcParam::RINSCLOSEMAXDIST]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPTIME]->setTopic("Heuristics");
 
   // Integer params — Cuts
   for (int code : { CbcParam::CUTDEPTH, CbcParam::CUTLENGTH,
@@ -893,6 +894,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::SMALLBAB]->setDefault(0.5);
     parameters_[CbcParam::TIGHTENFACTOR]->setDefault(0.0);
     parameters_[CbcParam::RINSCLOSEMAXDIST]->setDefault(0.4);
+    parameters_[CbcParam::SPPGRASPTIME]->setDefault(2.0);
     parameters_[CbcParam::LPTIMEFREQ]->setDefault(5.0);
     parameters_[CbcParam::FPUMPTIMEFREQ]->setDefault(5.0);
     parameters_[CbcParam::PROGRESSMINCHANGE]->setDefault(1.0e-4);
@@ -1077,6 +1079,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::RENS]->setDefault("off");
     parameters_[CbcParam::RINS]->setDefault("on");
     parameters_[CbcParam::ROUNDING]->setDefault("on");
+    parameters_[CbcParam::SPPGRASP]->setDefault("on");
     parameters_[CbcParam::VND]->setDefault("on");
     parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-6);
     parameters_[CbcParam::CUTOFF]->setDefault(1.0e50);
@@ -2320,6 +2323,15 @@ void CbcParameters::addCbcSolverDblParams()
     -COIN_DBL_MAX, COIN_DBL_MAX,
     "A value of 0.0 means off. Otherwise, add a constraint forcing objective "
     "below this value in feasibility pump",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPTIME]->setup(
+    "sppGraspTime", "Seconds per call of the sppGrasp heuristic", 0.0, 1.0e10,
+    "Time budget of each call of the set partitioning slack GRASP heuristic "
+    "(see sppGrasp); it runs on the original model after the root LP, "
+    "before preprocessing, and (when the preprocessed model keeps the "
+    "structure) again at the root of branch and bound, starting from the "
+    "incumbent.",
     CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::SMALLBAB]->setup(
@@ -4107,6 +4119,20 @@ void CbcParameters::addCbcSolverHeurParams()
     "This switches on a simple (but effective) rounding heuristic at each "
     "node of tree.");
 
+  parameters_[CbcParam::SPPGRASP]->setup(
+    "sppGrasp", "Whether to use the set partitioning slack GRASP heuristic",
+    "Only applies to set partitioning/packing problems (binary variables, "
+    "0-1 coefficients, rows sum x = 1 or sum x <= 1) in which every "
+    "partitioning row has a singleton (slack) column, so that a trivial "
+    "solution always exists. A greedy construction guided by the LP "
+    "solution followed by local search and a large neighbourhood search "
+    "around rows left to their slacks builds good solutions in seconds. "
+    "It runs on the original model, before preprocessing (which usually "
+    "destroys the structure), and its solution is passed on as incumbent. "
+    "When it applies and feasibilityPump was not set by the user, the "
+    "feasibility pump is switched off, as it is expensive and rarely "
+    "useful on these problems. See also sppGraspTime." HEURISTICS_LONGHELP);
+
   parameters_[CbcParam::VND]->setup(
     "Vnd!VariableNeighborhoodSearch",
     "Whether to try Variable Neighborhood Search", HEURISTICS_LONGHELP);
@@ -4141,6 +4167,7 @@ void CbcParameters::addCbcSolverHeurParams()
     case CbcParam::RENS:
     case CbcParam::RINS:
     case CbcParam::ROUNDING:
+    case CbcParam::SPPGRASP:
     case CbcParam::VND:
       parameters_[code]->appendKwd("off", CbcParameters::CGOff);
       parameters_[code]->appendKwd("on", CbcParameters::CGOn);

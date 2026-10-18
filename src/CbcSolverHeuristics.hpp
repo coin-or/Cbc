@@ -34,9 +34,11 @@ fixVubs(CbcModel &model, int skipZero2,
         2 - do heuristics (and set cutoff and best solution)
         3 - legacy reduced-heuristics mode (skip some heuristics)
         (out model later)
+    sppGraspOriginal: 1 if SppGrasp found the original (unpreprocessed)
+        model to be set partitioning/packing with slacks, -1 if not, 0 unknown
     */
 int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
-  int noPrinting_, int initialPumpTune);
+  int noPrinting_, int initialPumpTune, int sppGraspOriginal = 0);
 
 #endif // CbcSolverHeuristics_H
 

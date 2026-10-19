@@ -18,6 +18,20 @@ popd > /dev/null
 
 create_variables $SCRIPT_DIR/config.yml
 
+# Binary packages of this project that make_build_info lists (see
+# make_binary_packages in coinbrew's scripts/generate_readme)
+Package_Repology="coin-or-cbc"
+Package_Arch="coin-or-cbc"
+Package_Debian="coinor-cbc coinor-libcbc-dev"
+Package_Fedora="coin-or-Cbc coin-or-Cbc-devel"
+Package_FreeBSD="math/cbc"
+Package_Homebrew="cbc"
+Package_MSYS2="mingw-w64-ucrt-x86_64-coin-or-cbc"
+Package_Conda="coin-or-cbc"
+
+# The Doxygen documentation is published online
+Doxygen_URL=https://coin-or.github.io/$Description_Slug/Doxygen
+
 make_header
 
 echo "Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
@@ -181,6 +195,9 @@ echo "## CHANGELOG
           - \`oddwext\`: strategy used to search for wheel centers for the cuts found by CglOddWheel - 0=off, 1=one variable, 2=clique - default=2.
       - CglClique was replaced by CglBKClique as the default clique separator in CbcSolver.cpp.
 
+ * Release 2.10.14
+   * Fix that CPU time for presolve subtracted from time limit.
+
  * Release 2.10.10
    * Fix for accidental introduction of private symbol into public header.
 
@@ -317,7 +334,7 @@ echo "## CHANGELOG
  * Release 2.9.0
 
    * Introduced specialized branching methods for dealing with \"big Ms\".
-   * Introduced new methods for dealing with symmetry (requires installation of [nauty](http://pallini.di.uniroma1.it/))
+   * Introduced new methods for dealing with symmetry (requires installation of [nauty](https://pallini.di.uniroma1.it/))
    * Introduction of conflict cuts (off by default, turn on with \`-constraint conflict\`)
 
  * Release 2.8.13
@@ -435,8 +452,7 @@ echo "## CHANGELOG
      your command line -GMI root (or other options).
 
      The implementation of these cuts is described in G. Cornuejols, F.
-     Margot, and G. Nannicini \"On the safety of Gomory cut generators\"
-     http://faculty.sutd.edu.sg/~nannicini/index.php?page=publications
+     Margot, and G. Nannicini \"On the safety of Gomory cut generators\".
 
    * To encourage the use of some of the more exotic/expensive cut generators
      a parameter -slowcutpasses has been added. The idea is that the code does

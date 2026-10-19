@@ -6,9 +6,17 @@ on:
     branches:
       - 'master'
       - 'stable/*'
+    paths-ignore:
+      - 'README.md'
+      - '.coin-or/generate_readme'
+      - '.github/workflows/readme.yml'
   pull_request:
     branches:
       - '**'
+    paths-ignore:
+      - 'README.md'
+      - '.coin-or/generate_readme'
+      - '.github/workflows/readme.yml'
   release:
     types:
       - created

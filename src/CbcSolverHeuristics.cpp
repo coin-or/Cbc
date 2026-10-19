@@ -1265,6 +1265,8 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     anyToDo = true;
     CbcHeuristicSppGrasp heuristicSpp(*model);
     heuristicSpp.setMaxTime(parameters[CbcParam::SPPGRASPTIME]->dblVal());
+    heuristicSpp.setMaxWork(1.0e6 * parameters[CbcParam::SPPGRASPWORK]->dblVal());
+    heuristicSpp.setMaxNoImprove(parameters[CbcParam::SPPGRASPNOIMPROVE]->intVal());
     heuristicSpp.setOrder(-100);
     heuristicSpp.setRootHooks("LC");
     model->addHeuristic(&heuristicSpp);

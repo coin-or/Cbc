@@ -690,6 +690,8 @@ void CbcParameters::addCbcParams()
   parameters_[CbcParam::PROGRESSINTERVAL]->setTopic("Output");
   parameters_[CbcParam::RINSCLOSEMAXDIST]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPTIME]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPWORK]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPNOIMPROVE]->setTopic("Heuristics");
 
   // Integer params — Cuts
   for (int code : { CbcParam::CUTDEPTH, CbcParam::CUTLENGTH,
@@ -894,7 +896,8 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::SMALLBAB]->setDefault(0.5);
     parameters_[CbcParam::TIGHTENFACTOR]->setDefault(0.0);
     parameters_[CbcParam::RINSCLOSEMAXDIST]->setDefault(0.4);
-    parameters_[CbcParam::SPPGRASPTIME]->setDefault(2.0);
+    parameters_[CbcParam::SPPGRASPTIME]->setDefault(60.0);
+    parameters_[CbcParam::SPPGRASPWORK]->setDefault(1500.0);
     parameters_[CbcParam::LPTIMEFREQ]->setDefault(5.0);
     parameters_[CbcParam::FPUMPTIMEFREQ]->setDefault(5.0);
     parameters_[CbcParam::PROGRESSMINCHANGE]->setDefault(1.0e-4);
@@ -1013,6 +1016,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::CUTSKIPINITIALPERIOD]->setDefault(5);
     parameters_[CbcParam::CUTSKIPMAXPERIOD]->setDefault(20);
     parameters_[CbcParam::CUTSKIPMINCOLS]->setDefault(500);
+    parameters_[CbcParam::SPPGRASPNOIMPROVE]->setDefault(1000);
     parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setDefault(-1);
     parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
     parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
@@ -2326,12 +2330,24 @@ void CbcParameters::addCbcSolverDblParams()
     CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::SPPGRASPTIME]->setup(
-    "sppGraspTime", "Seconds per call of the sppGrasp heuristic", 0.0, 1.0e10,
-    "Time budget of each call of the set partitioning slack GRASP heuristic "
-    "(see sppGrasp); it runs on the original model after the root LP, "
-    "before preprocessing, and (when the preprocessed model keeps the "
-    "structure) again at the root of branch and bound, starting from the "
-    "incumbent.",
+    "sppGraspTime", "Safety time limit per call of the sppGrasp heuristic",
+    0.0, 1.0e10,
+    "Each call of the set partitioning slack GRASP heuristic (see sppGrasp) "
+    "stops on sppGraspWork or sppGraspNoImprove, which are deterministic; "
+    "this time limit (seconds) is only a safety net and makes the result "
+    "depend on the machine when it is reached. The heuristic runs on the "
+    "original model after the root LP, before preprocessing, and (when the "
+    "preprocessed model keeps the structure) again at the root of branch "
+    "and bound, starting from the incumbent.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPWORK]->setup(
+    "sppGraspWork", "Work limit per call of the sppGrasp heuristic", 0.0,
+    1.0e10,
+    "Deterministic budget of each call of the sppGrasp heuristic, in "
+    "millions of basic operations (mostly matrix entries visited); roughly "
+    "500-1000 per second on a current machine. 0 means no limit. See also "
+    "sppGraspNoImprove and sppGraspTime.",
     CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::SMALLBAB]->setup(
@@ -3464,6 +3480,15 @@ void CbcParameters::addCbcSolverIntParams()
     "Most root passes an idle cut generator is skipped for",
     1, COIN_INT_MAX,
     "See cutSkipInitialPeriod.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPNOIMPROVE]->setup(
+    "sppGraspNoImp!rove",
+    "LNS iterations without improvement before sppGrasp stops", 0,
+    COIN_INT_MAX,
+    "Each call of the sppGrasp heuristic stops its large neighbourhood "
+    "search after this many iterations without a new best solution (or on "
+    "sppGraspWork). 0 means no limit.",
     CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::CUTSKIPMINCOLS]->setup(

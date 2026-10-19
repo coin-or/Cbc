@@ -449,8 +449,7 @@ echo "## CHANGELOG
      your command line -GMI root (or other options).
 
      The implementation of these cuts is described in G. Cornuejols, F.
-     Margot, and G. Nannicini \"On the safety of Gomory cut generators\"
-     http://faculty.sutd.edu.sg/~nannicini/index.php?page=publications
+     Margot, and G. Nannicini \"On the safety of Gomory cut generators\".
 
    * To encourage the use of some of the more exotic/expensive cut generators
      a parameter -slowcutpasses has been added. The idea is that the code does

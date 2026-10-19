@@ -11047,6 +11047,8 @@ void CbcSolver::babRunSppGraspOriginal()
   sppGraspOriginal_ = 1;
   CbcHeuristicSppGrasp heuristic(model_);
   heuristic.setMaxTime(parameters[CbcParam::SPPGRASPTIME]->dblVal());
+  heuristic.setMaxWork(1.0e6 * parameters[CbcParam::SPPGRASPWORK]->dblVal());
+  heuristic.setMaxNoImprove(parameters[CbcParam::SPPGRASPNOIMPROVE]->intVal());
   const int numberColumns = solver->getNumCols();
   std::vector< double > x(numberColumns, 0.0);
   double obj = model_.getCutoff();

@@ -32,6 +32,7 @@ CbcSppGrasp::CbcSppGrasp()
   , scoresValid_(false)
   , seed_(1)
   , markStamp_(0)
+  , work_(0.0)
 {
 }
 
@@ -307,6 +308,7 @@ double CbcSppGrasp::evaluate(const std::vector< char > &solution) const
 {
   std::vector< int > cover(numberRows_, 0);
   double value = objOffset_;
+  work_ += numberColumns_ + numberRows_;
   for (int j = 0; j < numberColumns_; j++) {
     if (!solution[j]) {
       if (forced_[j])
@@ -316,6 +318,7 @@ double CbcSppGrasp::evaluate(const std::vector< char > &solution) const
     if (!usable_[j])
       return COIN_DBL_MAX;
     value += cost_[j];
+    work_ += colStart_[j + 1] - colStart_[j];
     for (int k = colStart_[j]; k < colStart_[j + 1]; k++)
       cover[colRows_[k]]++;
   }
@@ -358,33 +361,69 @@ double CbcSppGrasp::trivialSolution(std::vector< char > &solution)
 }
 
 double CbcSppGrasp::construct(const Config &config, std::vector< char > &solution,
-  const std::vector< char > *partial)
+  const std::vector< char > *partial, const std::vector< char > *previous)
 {
   if (!applicable_)
     return COIN_DBL_MAX;
   computeScores(config);
   const int n = numberColumns_;
   const int m = numberRows_;
+  // lazy: a column is alive if usable and none of its rows is covered,
+  // checked on demand; otherwise selections kill conflicting columns
+  // eagerly, which also maintains count_ (needed by the options rules)
+  const bool lazy = config.rowRule != RowMinOptions && config.rowRule != RowOptionsOverRegret
+    && config.rowRule != RowLogOptionsOverRegret;
   solution.assign(n, 0);
-  for (int j = 0; j < n; j++)
-    alive_[j] = usable_[j];
+  // basic operations, added to work_ on exit
+  struct WorkCount {
+    double &total;
+    double w;
+    ~WorkCount() { total += w; }
+  } work = { work_, static_cast< double >(n + m) };
+  if (!lazy) {
+    for (int j = 0; j < n; j++)
+      alive_[j] = usable_[j];
+  }
   for (int i = 0; i < m; i++) {
     owner_[i] = -1;
     pointer_[i] = rowStart_[i];
     pointer_[m + i] = rowStart_[i];
-    count_[i] = rowStart_[i + 1] - rowStart_[i];
+    if (!lazy)
+      count_[i] = rowStart_[i + 1] - rowStart_[i];
   }
+  auto isAlive = [&](int c) {
+    if (!lazy)
+      return alive_[c] != 0;
+    if (!usable_[c])
+      return false;
+    work.w++;
+    for (int k = colStart_[c]; k < colStart_[c + 1]; k++) {
+      if (owner_[colRows_[k]] >= 0)
+        return false;
+      work.w++;
+    }
+    return true;
+  };
   auto kill = [&](int c) {
     alive_[c] = 0;
+    work.w += colStart_[c + 1] - colStart_[c];
     for (int k = colStart_[c]; k < colStart_[c + 1]; k++)
       count_[colRows_[k]]--;
   };
   auto select = [&](int c) {
-    assert(alive_[c]);
+#ifndef NDEBUG
+    const double saved = work.w; // keep work identical in debug builds
+    assert(isAlive(c));
+    work.w = saved;
+#endif
     solution[c] = 1;
+    work.w += colStart_[c + 1] - colStart_[c];
     for (int k = colStart_[c]; k < colStart_[c + 1]; k++) {
       int i = colRows_[k];
       owner_[i] = c;
+      if (lazy)
+        continue;
+      work.w += rowStart_[i + 1] - rowStart_[i];
       for (int l = rowStart_[i]; l < rowStart_[i + 1]; l++) {
         int c2 = rowCols_[l];
         if (alive_[c2])
@@ -394,7 +433,7 @@ double CbcSppGrasp::construct(const Config &config, std::vector< char > &solutio
   };
   for (int j = 0; j < n; j++) {
     if (forced_[j]) {
-      if (!alive_[j])
+      if (!isAlive(j))
         return COIN_DBL_MAX;
       select(j);
     }
@@ -402,7 +441,7 @@ double CbcSppGrasp::construct(const Config &config, std::vector< char > &solutio
   if (partial) {
     for (int j = 0; j < n; j++) {
       if ((*partial)[j] && !solution[j]) {
-        if (!alive_[j])
+        if (!isAlive(j))
           return COIN_DBL_MAX;
         select(j);
       }
@@ -417,7 +456,7 @@ double CbcSppGrasp::construct(const Config &config, std::vector< char > &solutio
   // first and second alive option of row i (by score), -1 if none
   auto firstAlive = [&](int i) {
     int &p = pointer_[i];
-    while (p < rowStart_[i + 1] && !alive_[sortedRowCols_[p]])
+    while (p < rowStart_[i + 1] && !isAlive(sortedRowCols_[p]))
       p++;
     return p < rowStart_[i + 1] ? sortedRowCols_[p] : -1;
   };
@@ -425,7 +464,7 @@ double CbcSppGrasp::construct(const Config &config, std::vector< char > &solutio
     int &p = pointer_[m + i];
     if (p <= pointer_[i])
       p = pointer_[i] + 1;
-    while (p < rowStart_[i + 1] && !alive_[sortedRowCols_[p]])
+    while (p < rowStart_[i + 1] && !isAlive(sortedRowCols_[p]))
       p++;
     return p < rowStart_[i + 1] ? sortedRowCols_[p] : -1;
   };
@@ -434,6 +473,7 @@ double CbcSppGrasp::construct(const Config &config, std::vector< char > &solutio
     bool settled = true;
     while (settled) {
       settled = false;
+      work.w += open.size();
       size_t nOpen = 0;
       for (size_t t = 0; t < open.size(); t++) {
         int i = open[t];
@@ -455,6 +495,7 @@ double CbcSppGrasp::construct(const Config &config, std::vector< char > &solutio
       break;
     double bestKey = COIN_DBL_MAX;
     key.resize(open.size());
+    work.w += 2 * open.size();
     for (size_t t = 0; t < open.size(); t++) {
       int i = open[t];
       int c1 = firstAlive(i);
@@ -512,7 +553,7 @@ double CbcSppGrasp::construct(const Config &config, std::vector< char > &solutio
       numberCandidates = 0;
       for (int p = pointer_[i]; p < rowStart_[i + 1] && numberCandidates < config.colRclMax; p++) {
         int c = sortedRowCols_[p];
-        if (!alive_[c])
+        if (!isAlive(c))
           continue;
         if (score_[c] > limit)
           break;
@@ -527,22 +568,26 @@ double CbcSppGrasp::construct(const Config &config, std::vector< char > &solutio
   }
   // packing rows only: add any profitable column still possible
   for (int j = 0; j < n; j++)
-    if (alive_[j] && cost_[j] < 0.0)
+    if (cost_[j] < 0.0 && !solution[j] && isAlive(j))
       select(j);
   if (config.localSearch)
-    return localSearch(solution, config.localSearch, partial);
+    return localSearch(solution, config.localSearch, partial, config.repairScan, previous);
   return evaluate(solution);
 }
 
 double CbcSppGrasp::localSearch(std::vector< char > &solution, int level,
-  const std::vector< char > *reference)
+  const std::vector< char > *reference, int repairScan,
+  const std::vector< char > *previous)
 {
   const int n = numberColumns_;
   const int m = numberRows_;
+  // basic operations, added to work_ at the end
+  double w = n + m;
   std::fill(owner_.begin(), owner_.end(), -1);
   for (int j = 0; j < n; j++) {
     if (!solution[j])
       continue;
+    w += colStart_[j + 1] - colStart_[j];
     for (int k = colStart_[j]; k < colStart_[j + 1]; k++)
       owner_[colRows_[k]] = j;
   }
@@ -557,20 +602,40 @@ double CbcSppGrasp::localSearch(std::vector< char > &solution, int level,
       queue.push_back(j);
     }
   };
-  if (reference) {
+  if (previous) {
+    std::vector< int > previousOwner(m, -1);
+    w += n + m;
+    for (int j = 0; j < n; j++) {
+      if (!(*previous)[j])
+        continue;
+      w += colStart_[j + 1] - colStart_[j];
+      for (int k = colStart_[j]; k < colStart_[j + 1]; k++)
+        previousOwner[colRows_[k]] = j;
+    }
+    for (int i = 0; i < m; i++) {
+      if (owner_[i] == previousOwner[i])
+        continue;
+      w += rowStart_[i + 1] - rowStart_[i];
+      for (int l = rowStart_[i]; l < rowStart_[i + 1]; l++)
+        push(rowCols_[l]);
+    }
+  } else if (reference) {
     // only rows not covered by a column of reference changed
     for (int i = 0; i < m; i++) {
       int o = owner_[i];
       if (o >= 0 && (*reference)[o])
         continue;
+      w += rowStart_[i + 1] - rowStart_[i];
       for (int l = rowStart_[i]; l < rowStart_[i + 1]; l++)
         push(rowCols_[l]);
     }
   } else {
+    w += n;
     for (int j = 0; j < n; j++)
       if (colStart_[j + 1] > colStart_[j])
         push(j);
   }
+  w += queue.size();
   for (size_t t = queue.size(); t > 1; t--)
     std::swap(queue[t - 1], queue[randomInt(static_cast< int >(t))]);
   // tentative changes: (row, previous owner)
@@ -599,6 +664,7 @@ double CbcSppGrasp::localSearch(std::vector< char > &solution, int level,
       double delta = cost_[j];
       ejected.clear();
       bool feasible = true;
+      w += 1 + colStart_[j + 1] - colStart_[j];
       for (int k = colStart_[j]; k < colStart_[j + 1]; k++) {
         int o = owner_[colRows_[k]];
         if (o >= 0 && mark_[o] != markStamp_) {
@@ -621,6 +687,7 @@ double CbcSppGrasp::localSearch(std::vector< char > &solution, int level,
       double bound = delta;
       for (size_t e = 0; e < ejected.size(); e++) {
         int o = ejected[e];
+        w += colStart_[o + 1] - colStart_[o];
         for (int k = colStart_[o]; k < colStart_[o + 1]; k++) {
           int i = colRows_[k];
           if (owner_[i] == o) {
@@ -648,21 +715,26 @@ double CbcSppGrasp::localSearch(std::vector< char > &solution, int level,
             setOwner(freed[f], tentative);
           }
         } else {
-          // greedy repair: cheapest (per row) column whose rows are all open
+          // greedy repair: cheapest (per row) column whose rows are all open;
+          // abandoned once delta plus a lower bound on covering the rows
+          // still open cannot be negative (the move would be rejected)
+          double remaining = bound - delta;
           for (size_t f = 0; f < freed.size() && feasible; f++) {
             int i = freed[f];
             if (owner_[i] != -1)
               continue;
             int chosen = -1, scanned = 0;
-            for (int p = rowStart_[i]; p < rowStart_[i + 1] && scanned < 64; p++) {
+            for (int p = rowStart_[i]; p < rowStart_[i + 1] && scanned < repairScan; p++) {
               int c = repairOrder_[p];
               scanned++;
               bool free = true;
+              w++;
               for (int k = colStart_[c]; k < colStart_[c + 1]; k++) {
                 if (owner_[colRows_[k]] != -1) {
                   free = false;
                   break;
                 }
+                w++;
               }
               if (free) {
                 chosen = c;
@@ -677,13 +749,21 @@ double CbcSppGrasp::localSearch(std::vector< char > &solution, int level,
             }
             added.push_back(chosen);
             delta += cost_[chosen];
-            for (int k = colStart_[chosen]; k < colStart_[chosen + 1]; k++)
-              setOwner(colRows_[k], tentative);
+            w += colStart_[chosen + 1] - colStart_[chosen];
+            for (int k = colStart_[chosen]; k < colStart_[chosen + 1]; k++) {
+              int r = colRows_[k];
+              if (isEqual_[r] && owner_[r] == -1)
+                remaining -= minCostPerRow_[r];
+              setOwner(r, tentative);
+            }
+            if (delta + remaining > 1.0e-7)
+              feasible = false;
           }
         }
       } else {
         feasible = false;
       }
+      w += changed.size();
       if (!feasible || delta >= -1.0e-9) {
         for (size_t c = changed.size(); c > 0; c--)
           owner_[changed[c - 1].first] = changed[c - 1].second;
@@ -701,11 +781,13 @@ double CbcSppGrasp::localSearch(std::vector< char > &solution, int level,
       }
       for (size_t c = 0; c < changed.size(); c++) {
         int i = changed[c].first;
+        w += rowStart_[i + 1] - rowStart_[i];
         for (int l = rowStart_[i]; l < rowStart_[i + 1]; l++)
           push(rowCols_[l]);
       }
     }
   }
+  work_ += w;
   return evaluate(solution);
 }
 
@@ -713,6 +795,7 @@ double CbcSppGrasp::run(const Config &config, const RunParams &params,
   std::vector< char > &best, RunStats *stats, const std::vector< char > *initial)
 {
   const double start = CoinGetTimeOfDay();
+  const double startWork = work_;
   const int n = numberColumns_;
   RunStats local;
   RunStats &st = stats ? *stats : local;
@@ -727,6 +810,8 @@ double CbcSppGrasp::run(const Config &config, const RunParams &params,
       bestValue = value;
       best = sol;
       st.timeToBest = elapsed();
+      Improvement imp = { st.lnsIterations, value, st.timeToBest, work_ - startWork };
+      st.improvements.push_back(imp);
     }
   };
   // GRASP: first construction deterministic
@@ -772,12 +857,27 @@ double CbcSppGrasp::run(const Config &config, const RunParams &params,
       equalRows.push_back(i);
   std::vector< char > partial;
   Config c = config;
+  if (params.lnsColAlpha >= 0.0)
+    c.colAlpha = params.lnsColAlpha;
+  if (params.lnsRowAlpha >= 0.0)
+    c.rowAlpha = params.lnsRowAlpha;
+  if (params.lnsLocalSearch >= 0)
+    c.localSearch = params.lnsLocalSearch;
+  if (params.lnsRowRule >= 0)
+    c.rowRule = params.lnsRowRule;
   int destroyRows = params.destroyRows;
-  int sinceBest = 0;
+  int sinceBest = 0, noImprove = 0;
   const int randomRowThreshold = static_cast< int >(params.randomRowFraction * 1000000.0);
+  const bool lahc = params.acceptMode != AcceptThreshold;
+  std::vector< double > history(lahc ? std::max(1, params.lahcLength) : 0, currentValue);
   for (int it = 0; it < params.lnsIterations; it++) {
+    if (params.maxNoImprove > 0 && noImprove >= params.maxNoImprove)
+      break;
+    if (params.maxWork > 0.0 && work_ - startWork >= params.maxWork)
+      break;
     if (elapsed() > params.timeLimit)
       break;
+    work_ += 2 * n + numberRows_;
     std::fill(owner.begin(), owner.end(), -1);
     seeds.clear();
     for (int j = 0; j < n; j++) {
@@ -811,6 +911,7 @@ double CbcSppGrasp::run(const Config &config, const RunParams &params,
           std::swap(pool[q], pool[t]);
         }
         int j = pool[q];
+        work_ += colStart_[j + 1] - colStart_[j];
         for (int k = colStart_[j]; k < colStart_[j + 1]; k++) {
           int o = owner[colRows_[k]];
           if (o >= 0 && !forced_[o])
@@ -819,37 +920,51 @@ double CbcSppGrasp::run(const Config &config, const RunParams &params,
       }
     }
     if (params.destroyFraction > 0.0) {
+      work_ += n;
       int threshold = static_cast< int >(params.destroyFraction * 1000000.0);
       for (int j = 0; j < n; j++)
         if (partial[j] && !forced_[j] && randomInt(1000000) < threshold)
           partial[j] = 0;
     }
     double previousBest = bestValue;
-    double value = construct(c, trial, &partial);
+    double value = construct(c, trial, &partial, params.lnsFocus ? &current : NULL);
     st.lnsIterations++;
     record(value, trial);
     if (bestValue < previousBest) {
       sinceBest = 0;
+      noImprove = 0;
       destroyRows = params.destroyRows;
-    } else if (params.stallIterations > 0 && ++sinceBest >= params.stallIterations) {
-      sinceBest = 0;
-      int maxDestroyRows = std::max(params.destroyRows, params.maxDestroyRows);
-      if (destroyRows >= maxDestroyRows) {
-        // largest neighbourhood also stalled: restart from the best
-        destroyRows = params.destroyRows;
-        current = best;
-        currentValue = bestValue;
-      } else {
-        destroyRows = std::min(2 * destroyRows, maxDestroyRows);
+    } else {
+      noImprove++;
+      if (params.stallIterations > 0 && ++sinceBest >= params.stallIterations) {
+        sinceBest = 0;
+        int maxDestroyRows = std::max(params.destroyRows, params.maxDestroyRows);
+        if (destroyRows >= maxDestroyRows) {
+          // largest neighbourhood also stalled: restart from the best
+          destroyRows = params.destroyRows;
+          current = best;
+          currentValue = bestValue;
+        } else {
+          destroyRows = std::min(2 * destroyRows, maxDestroyRows);
+        }
       }
     }
-    if (value <= currentValue + 1.0e-7
+    if (lahc) {
+      double &h = history[it % history.size()];
+      if (value != COIN_DBL_MAX && (value <= h + 1.0e-7 || value <= currentValue + 1.0e-7)) {
+        currentValue = value;
+        current.swap(trial);
+      }
+      if (params.acceptMode == AcceptLahc || currentValue < h)
+        h = currentValue;
+    } else if (value <= currentValue + 1.0e-7
       || (value != COIN_DBL_MAX && value <= bestValue + params.acceptRelative * fabs(bestValue))) {
       currentValue = value;
       current.swap(trial);
     }
   }
   st.time = elapsed();
+  st.work = work_ - startWork;
   return bestValue;
 }
 

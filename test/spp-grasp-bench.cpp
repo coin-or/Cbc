@@ -26,8 +26,23 @@
 //                  (up to --maxdrows, then restart from the best)
 //     --pool=K     seed columns drawn among the K*dcols best of the row
 //     --rrows=F    probability that a seed row is any partitioning row
+//     --amode=M    LNS acceptance: 0 threshold (--accept), 1 LAHC,
+//                  2 LAHC with history entries only replaced by better values
+//     --lahc=L     LAHC history length
+//     --noimp=N    stop the LNS after N iterations without a new best (0 never)
+//     --maxwork=W  stop the LNS after W units of work (CbcSppGrasp::work(),
+//                  0 never); tuning sweeps use --noimp=0 --maxwork=0 and
+//                  replay the --trace offline
+//     --lcalpha=A --lralpha=A --lls=L --lrow=R  column/row RCL tolerance,
+//                  local search and row rule of the LNS repair (default:
+//                  those of the construction)
+//     --focus=0|1  LNS local search only from rows changed by destroy/repair
+//     --scan=K     greedy repair examines at most K columns per freed row
+//     --trace=FILE write instance, lnsIterations:work:time, then
+//                  iteration:value:time:work of every new best to FILE
 //   Cbc's settings (CbcHeuristicSppGrasp): --iters=1 --lns=100000000
-//     --accept=0.005 --time=2 (other defaults are Cbc's already)
+//     (other defaults are Cbc's already, except --time, whose Cbc default
+//     sppGraspTime is 60)
 //     --seed=S
 //     --lpcache=DIR  cache the root LP solution there (solved with Clp)
 //     --nolp       do not solve/use the LP
@@ -88,12 +103,14 @@ int main(int argc, char **argv)
   unsigned int seed = 1;
   std::string lpCache;
   bool useLp = true;
-  int lnsIterations = 0, destroyRows = 5, seedColumns = 5;
-  double destroyFraction = 0.0, acceptRelative = 0.0;
   CbcSppGrasp::RunParams defaults;
+  int lnsIterations = 0, destroyRows = defaults.destroyRows, seedColumns = defaults.seedColumns;
+  double destroyFraction = defaults.destroyFraction, acceptRelative = defaults.acceptRelative;
   int stallIterations = defaults.stallIterations, maxDestroyRows = defaults.maxDestroyRows;
   int seedPool = defaults.seedPool;
   double randomRowFraction = defaults.randomRowFraction;
+  CbcSppGrasp::RunParams params = defaults;
+  std::string traceFile;
   for (int a = 2; a < argc; a++) {
     std::string arg = argv[a];
     std::string::size_type eq = arg.find('=');
@@ -143,6 +160,28 @@ int main(int argc, char **argv)
       seedPool = atoi(val);
     else if (key == "--rrows")
       randomRowFraction = atof(val);
+    else if (key == "--amode")
+      params.acceptMode = atoi(val);
+    else if (key == "--lahc")
+      params.lahcLength = atoi(val);
+    else if (key == "--noimp")
+      params.maxNoImprove = atoi(val);
+    else if (key == "--maxwork")
+      params.maxWork = atof(val);
+    else if (key == "--lcalpha")
+      params.lnsColAlpha = atof(val);
+    else if (key == "--lralpha")
+      params.lnsRowAlpha = atof(val);
+    else if (key == "--lls")
+      params.lnsLocalSearch = atoi(val);
+    else if (key == "--lrow")
+      params.lnsRowRule = atoi(val);
+    else if (key == "--focus")
+      params.lnsFocus = atoi(val) != 0;
+    else if (key == "--scan")
+      config.repairScan = atoi(val);
+    else if (key == "--trace")
+      traceFile = val;
     else if (key == "--nolp")
       useLp = false;
     else {
@@ -187,7 +226,6 @@ int main(int argc, char **argv)
     grasp.setLpSolution(x.data(), dj.data());
   grasp.setSeed(seed);
   std::vector< char > best;
-  CbcSppGrasp::RunParams params;
   params.graspIterations = iterations;
   params.lnsIterations = lnsIterations;
   params.timeLimit = timeLimit;
@@ -203,6 +241,18 @@ int main(int argc, char **argv)
   double bestValue = grasp.run(config, params, best, &stats);
   double trivial = stats.trivial, first = stats.first, timeToBest = stats.timeToBest;
   int it = stats.graspIterations * 100000 + stats.lnsIterations;
+  if (!traceFile.empty()) {
+    // one line: instance, then iteration:value:time of every new best
+    FILE *fp = fopen(traceFile.c_str(), "w");
+    if (fp) {
+      fprintf(fp, "%s\t%d:%.0f:%.4f", name.c_str(), stats.lnsIterations, stats.work, stats.time);
+      for (size_t k = 0; k < stats.improvements.size(); k++)
+        fprintf(fp, "\t%d:%.6f:%.4f:%.0f", stats.improvements[k].iteration,
+          stats.improvements[k].value, stats.improvements[k].time, stats.improvements[k].work);
+      fprintf(fp, "\n");
+      fclose(fp);
+    }
+  }
   double check = grasp.evaluate(best);
   if (check == COIN_DBL_MAX || fabs(check - bestValue) > 1.0e-6 * (1.0 + fabs(bestValue))) {
     fprintf(stderr, "%s: invalid best solution (%g vs %g)\n", name.c_str(), check, bestValue);

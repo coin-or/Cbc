@@ -76,6 +76,8 @@ public:
     double conflictWeight;
     /// 0 none, 1 insert/eject with slack repair, 2 with greedy repair
     int localSearch;
+    /// greedy repair examines at most this many columns per freed row
+    int repairScan;
     Config()
       : rowRule(RowMaxRegret)
       , colRule(ColProfit)
@@ -86,6 +88,7 @@ public:
       , lpWeight(20.0)
       , conflictWeight(0.0)
       , localSearch(2)
+      , repairScan(64)
     {
     }
   };
@@ -115,7 +118,8 @@ public:
       returns its cost or COIN_DBL_MAX if construction hit a dead end.
       solution has one 0/1 entry per column. */
   double construct(const Config &config, std::vector< char > &solution,
-    const std::vector< char > *partial = NULL);
+    const std::vector< char > *partial = NULL,
+    const std::vector< char > *previous = NULL);
 
   struct RunParams {
     /// GRASP constructions (the first is deterministic)
@@ -139,29 +143,70 @@ public:
     int seedPool;
     /// probability that a seed row is any partitioning row, not a slack one
     double randomRowFraction;
+    /// LNS acceptance: AcceptThreshold (acceptRelative), AcceptLahc (late
+    /// acceptance hill climbing, history updated every iteration) or
+    /// AcceptLahcBetter (history entry only replaced by a better current)
+    int acceptMode;
+    /// LAHC history length
+    int lahcLength;
+    /// stop the LNS after this many iterations without a new best (0 never)
+    int maxNoImprove;
+    /// stop the LNS once this much work (a deterministic count of basic
+    /// operations, see CbcSppGrasp::work()) was done in run(); 0 never
+    double maxWork;
+    /// LNS repair overrides of Config (negative: keep config's)
+    double lnsColAlpha;
+    double lnsRowAlpha;
+    int lnsLocalSearch;
+    int lnsRowRule;
+    /// LNS local search starts only from rows changed by destroy/repair
+    bool lnsFocus;
     RunParams()
       : graspIterations(1)
       , lnsIterations(COIN_INT_MAX)
-      , timeLimit(2.0)
+      , timeLimit(60.0)
       , destroyRows(5)
-      , seedColumns(5)
+      , seedColumns(2)
       , destroyFraction(0.0)
       , acceptRelative(0.005)
       , stallIterations(200)
       , maxDestroyRows(40)
       , seedPool(1)
-      , randomRowFraction(0.1)
+      , randomRowFraction(0.2)
+      , acceptMode(AcceptThreshold)
+      , lahcLength(50)
+      , maxNoImprove(1000)
+      , maxWork(1.5e9)
+      , lnsColAlpha(-1.0)
+      , lnsRowAlpha(-1.0)
+      , lnsLocalSearch(-1)
+      , lnsRowRule(RowRandom)
+      , lnsFocus(true)
     {
     }
   };
+  enum AcceptMode {
+    AcceptThreshold = 0,
+    AcceptLahc = 1,
+    AcceptLahcBetter = 2
+  };
+  /// a new best found by run(): LNS iteration (0 = before LNS), cost, time
+  struct Improvement {
+    int iteration;
+    double value;
+    double time;
+    double work;
+  };
   struct RunStats {
-    double trivial, first, time, timeToBest;
+    double trivial, first, time, timeToBest, work;
     int graspIterations, lnsIterations;
+    std::vector< Improvement > improvements;
     RunStats()
       : trivial(COIN_DBL_MAX)
       , first(COIN_DBL_MAX)
       , time(0.0)
       , timeToBest(0.0)
+      , work(0.0)
       , graspIterations(0)
       , lnsIterations(0)
     {
@@ -176,15 +221,21 @@ public:
       partitioning rows left open with slacks, level 2 greedily re-covers
       them with the cheapest (per row) columns that fit, slacks last. */
   /** Insert/eject local search; with reference, starts only from rows not
-      covered by a column of reference. */
+      covered by a column of reference; with previous (a local optimum that
+      reference was cut from), only from rows whose covering column differs
+      from previous's. */
   double localSearch(std::vector< char > &solution, int level = 2,
-    const std::vector< char > *reference = NULL);
+    const std::vector< char > *reference = NULL, int repairScan = 64,
+    const std::vector< char > *previous = NULL);
   /// cost of the trivial solution (slacks only, plus forced columns)
   double trivialSolution(std::vector< char > &solution);
   /// cost of a 0/1 vector, COIN_DBL_MAX if infeasible
   double evaluate(const std::vector< char > &solution) const;
 
   int numberColumns() const { return numberColumns_; }
+  /** Basic operations (mostly matrix entries visited) done so far; a
+      deterministic, machine-independent proxy for running time. */
+  double work() const { return work_; }
   /// number of slack (singleton) columns at 1 in solution
   int numberSlacksUsed(const std::vector< char > &solution) const;
 
@@ -225,6 +276,7 @@ private:
   std::vector< char > alive_;
   std::vector< int > count_, pointer_, owner_, mark_;
   int markStamp_;
+  mutable double work_;
 };
 
 /** Cbc heuristic wrapper around CbcSppGrasp; does nothing (cheaply) on
@@ -253,6 +305,12 @@ public:
   inline const CbcSppGrasp::RunParams &runParams() const { return params_; }
   inline void setMaxTime(double t) { params_.timeLimit = t; }
   inline double maxTime() const { return params_.timeLimit; }
+  /// deterministic work limit per call (CbcSppGrasp::work() units), 0 none
+  inline void setMaxWork(double w) { params_.maxWork = w; }
+  inline double maxWork() const { return params_.maxWork; }
+  /// LNS iterations without a new best before a call stops, 0 none
+  inline void setMaxNoImprove(int n) { params_.maxNoImprove = n; }
+  inline int maxNoImprove() const { return params_.maxNoImprove; }
   inline void setConfig(const CbcSppGrasp::Config &c) { config_ = c; }
   inline const CbcSppGrasp::Config &config() const { return config_; }
   /// 1: only run if every partitioning row has a slack column

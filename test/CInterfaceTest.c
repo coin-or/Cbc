@@ -354,6 +354,7 @@ void testIntegerInfeasible() {
     
     assert(!Cbc_isProvenOptimal(model));
     assert(Cbc_isProvenInfeasible(model));
+    assert(Cbc_bestSolution(model) == NULL);
     
     Cbc_deleteModel(model);
 

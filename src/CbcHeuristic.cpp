@@ -690,8 +690,10 @@ static double sizeRatio(int numberRowsNow, int numberColumnsNow,
 // Do mini branch and bound (return 1 if solution)
 int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNodes,
   double *newSolution, double &newSolutionValue,
-  double cutoff, std::string name) const
+  double cutoff, std::string name, double *bestPossibleObjective) const
 {
+  if (bestPossibleObjective)
+    *bestPossibleObjective = -COIN_DBL_MAX;
   CbcEventHandler *eventHandler = model_->getEventHandler();
   // Save max nodes
   int saveMaxNodes = model_->getMaximumNodes();
@@ -1657,6 +1659,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 #endif
           model.setPreProcess(&process);
           model.branchAndBound();
+          if (bestPossibleObjective)
+            *bestPossibleObjective = model.getBestPossibleObjValue() * model.solver()->getObjSense();
           model_->setHeuristicModel(NULL);
           model_->setSpecialOptions(saveOptions);
 #ifdef ALWAYS_DUAL

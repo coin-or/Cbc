@@ -498,6 +498,13 @@ public:
     */
   void saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForRestart, bool *feasible);
   /**
+      After a restart (a small branch and bound on the problem with the
+      variables fixed by reduced cost) that ended the search: take over its
+      bound, and if it finished (not stopped on a limit) with that bound below
+      the cutoff, record that it stopped on the gap tolerance.
+    */
+  void useRestartBound(double restartBestPossible, bool restartFinished);
+  /**
       Flip direction of optimization on all models
     */
   void flipModel();

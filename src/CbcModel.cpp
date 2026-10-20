@@ -1450,9 +1450,10 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver,
         printf("%d rows added ZZZZZ\n",
           solver_->getNumRows() - continuousSolver_->getNumRows());
 #endif
+      double subBestPossible = -COIN_DBL_MAX;
       int returnCode = heuristic.smallBranchAndBound(
         solver2, -1, newSolution, objectiveValue, *checkCutoffForRestart,
-        "Reduce");
+        "Reduce", &subBestPossible);
       delete solver2;
       if (returnCode < 0) {
 #ifdef COIN_DEVELOP
@@ -1468,6 +1469,7 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver,
           setBestSolution(CBC_ROUNDING, objectiveValue, newSolution);
         }
         delete[] newSolution;
+        useRestartBound(subBestPossible, (returnCode & 2) != 0);
         *feasible = false; // stop search
       }
 #if 0 // probably not needed def CBC_THREAD
@@ -1488,6 +1490,23 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver,
             }
 #endif
     }
+  }
+}
+/*
+  The restart searches all solutions better than the cutoff, so its bound is
+  a bound for the whole problem. If it finished with the bound below the
+  cutoff, it stopped on the gap tolerance: record that, or the end of
+  branchAndBound takes the incumbent as the bound and reports the solution as
+  proven optimal, with a gap of 0. If it stopped on a limit (nodes, time),
+  which the main model also sees as its own, only the bound is taken over.
+*/
+void CbcModel::useRestartBound(double restartBestPossible, bool restartFinished)
+{
+  if (restartBestPossible > -COIN_DBL_MAX && restartBestPossible < getCutoff()) {
+    bestPossibleObjective_ = std::min(std::max(bestPossibleObjective_, restartBestPossible),
+      bestObjective_);
+    if (restartFinished)
+      stoppedOnGap_ = true;
   }
 }
 /*
@@ -5304,9 +5323,10 @@ void CbcModel::branchAndBound(int doStatistics)
             printf("%d rows added ZZZZZ\n",
               solver_->getNumRows() - continuousSolver_->getNumRows());
 #endif
+          double restartBestPossible = -COIN_DBL_MAX;
           int returnCode = heuristic.smallBranchAndBound(
             saveSolver, -1, newSolution, objectiveValue,
-            checkCutoffForRestart, "Reduce");
+            checkCutoffForRestart, "Reduce", &restartBestPossible);
           if (returnCode < 0) {
 #ifdef COIN_DEVELOP
             printf("Restart - not small enough to do search after fixing\n");
@@ -5346,6 +5366,7 @@ void CbcModel::branchAndBound(int doStatistics)
               double dummyBest;
               tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest);
             }
+            useRestartBound(restartBestPossible, (returnCode & 2) != 0);
             break;
           }
         }

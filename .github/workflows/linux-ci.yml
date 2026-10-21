@@ -6,6 +6,7 @@ on:
     branches:
       - 'master'
       - 'stable/*'
+      - 'next'
   pull_request:
     branches:
       - '**'

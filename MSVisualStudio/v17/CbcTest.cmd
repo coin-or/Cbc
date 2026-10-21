@@ -44,17 +44,10 @@ exit /b 1
 echo INFO: Starting Tests
 @echo on
 
-"%BINDIR%\gamsTest.exe"
-@if not %errorlevel%==0 goto :error
-
-"%BINDIR%\osiUnitTest.exe" -mpsDir=%SAMPLEDIR%
-@if not %errorlevel%==0 goto :error
-
-"%BINDIR%\cbc.exe" -dirMiplib %MIPLIBDIR% -unitTest
-@if not %errorlevel%==0 goto :error
-
-"%BINDIR%\CInterfaceTest.exe"
-@if not %errorlevel%==0 goto :error
+@REM The legacy test programs are gone on next. Like the quick make test,
+@REM solve p0033 from the sample data; the full regression suite is make sanity-test.
+"%BINDIR%\cbc.exe" %SAMPLEDIR%\p0033.mps -solve -quit
+@if not %errorlevel%==0 echo ERROR: cbc.exe exited with code %errorlevel% && goto :error
 
 @echo off
 echo INFO: Finished Tests successfully (%ERRORLEVEL%)

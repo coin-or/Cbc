@@ -22869,6 +22869,8 @@ void CbcModel::reportDualBound(double minObjValue, const char *source)
 
 void CbcModel::sampleParallelDualBound()
 {
+  // Without threads, there is no master_ and CbcBaseModel has no children.
+#ifdef CBC_THREAD
   if (parentModel_ || !master_ || parallelMode() <= 0 || (!progressCsv_ && !eventHandler_))
     return;
   const double now = getCurrentSeconds();
@@ -22883,6 +22885,7 @@ void CbcModel::sampleParallelDualBound()
     bound = std::min(bound, master_->child(i)->nodeObjectiveValue());
   unlockThread();
   reportDualBound(bound, "node");
+#endif
 }
 
 void CbcModel::sampleTreeDualBound()

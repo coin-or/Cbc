@@ -1834,7 +1834,12 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   // threads; it is a hard error to request it with a single thread).
   // The result is stored in `autoS` and applied in sections 3 and 5 below.
   // Skipped when racing is active — racing manages its own per-thread configs.
+#ifdef CBC_THREAD
   const int rawThreads = parameters_[CbcParam::THREADS]->intVal();
+#else
+  // Without threads, the threads parameter is not set up (not an int).
+  const int rawThreads = 0;
+#endif
   const int nThreads = std::max(1, rawThreads % 100);
   const CbcParameters::LPMethod lpMethodSetting = parameters_.getLpMethod();
 

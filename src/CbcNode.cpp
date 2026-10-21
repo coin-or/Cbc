@@ -533,7 +533,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
   char *cleanVariables = NULL;
   OsiClpSolverInterface *osiclp = getClpSolver(solver);
   int saveClpOptions = 0;
-  if (CBC_SKIP_CLP_TEST||osiclp) {
+  if (osiclp) {
     // for faster hot start
     saveClpOptions = osiclp->specialOptions();
     osiclp->setSpecialOptions(saveClpOptions | 8192);
@@ -1933,7 +1933,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   char *cleanVariables = NULL;
   OsiClpSolverInterface *osiclp = getClpSolver(solver);
   int saveClpOptions = 0;
-  if (CBC_SKIP_CLP_TEST||osiclp) {
+  if (osiclp) {
     if ((model->moreSpecialOptions2() & 32768) != 0) {
       cleanVariables = model->setupCleanVariables(); // for odd ints/sos etc
     }
@@ -5520,7 +5520,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
   OsiClpSolverInterface *osiclp = getClpSolver(solver);
   int saveClpOptions = 0;
   bool fastIterations = (model->specialOptions() & 8) != 0;
-  if (CBC_SKIP_CLP_TEST||osiclp) {
+  if (osiclp) {
     saveClpOptions = osiclp->specialOptions();
     // for faster hot start
     if (fastIterations)

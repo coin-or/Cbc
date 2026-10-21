@@ -163,7 +163,7 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
     OsiClpSolverInterface *clp = getClpSolver(newSolver);
-    if (CBC_SKIP_CLP_TEST||clp) {
+    if (clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())
@@ -598,7 +598,7 @@ int CbcHeuristicLocal::solutionImpl(double &solutionValue,
     int *integerVariable = CoinCopyOfArray(model_->integerVariable(), numberIntegers);
     OsiClpSolverInterface *clpSolver
       = getClpSolver(model_->solver());
-    if (CBC_SKIP_CLP_TEST||clpSolver) {
+    if (clpSolver) {
       // take out some integers
       int nn = numberIntegers;
       numberIntegers = 0;
@@ -1168,7 +1168,7 @@ int CbcHeuristicProximity::solutionImpl(double &solutionValue,
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
     OsiClpSolverInterface *clp = getClpSolver(newSolver);
-    if (CBC_SKIP_CLP_TEST||clp) {
+    if (clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())
@@ -1425,7 +1425,7 @@ int CbcHeuristicNaive::solution(double &solutionValue,
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
     OsiClpSolverInterface *clp = getClpSolver(newSolver);
-    if (CBC_SKIP_CLP_TEST||clp) {
+    if (clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())
@@ -1725,7 +1725,7 @@ int CbcHeuristicCrossover::solutionImpl(double &solutionValue,
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
     OsiClpSolverInterface *clp = getClpSolver(solver);
-    if (CBC_SKIP_CLP_TEST||clp) {
+    if (clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())

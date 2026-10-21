@@ -54,6 +54,7 @@ To recluster / retrain, see lp_tune_scripts/cluster_lp_params.py.
 """
 
 import os
+import re
 import sys
 import numpy as np
 import pandas as pd
@@ -171,6 +172,21 @@ print("Exporting model to C via m2cgen …")
 c_code = m2c.export_to_c(clf, function_name="cbcLpParamScore_impl")
 print(f"Generated C code: {len(c_code):,} chars, "
       f"{c_code.count(chr(10)):,} lines")
+
+# m2cgen writes each leaf's class vector as a C99 compound literal,
+#   memcpy(varN, (double[]){...}, K * sizeof(double));
+# which is not C++ (MSVC rejects it). Write it as a static array instead. It
+# must be static: as ordinary local arrays, the ~10,000 leaves give the scorer
+# a stack frame of about 1 MB with compilers that don't share stack slots
+# between scopes (MSVC), and cbc overflows MSVC's 1 MB default stack.
+c_code, n_leaves = re.subn(
+    r"memcpy\((\w+), \(double\[\]\)\{([^}]*)\}, (\d+) \* sizeof\(double\)\);",
+    r"{ static const double _lp_tmp_[] = {\2}; "
+    r"memcpy(\1, _lp_tmp_, \3 * sizeof(double)); }",
+    c_code)
+if "(double[])" in c_code:
+    sys.exit("Unconverted compound literal in the m2cgen output")
+print(f"Converted {n_leaves:,} leaf vectors to static arrays")
 
 # ---------------------------------------------------------------------------
 # Feature names (must match OsiFeatures::name(i) order)

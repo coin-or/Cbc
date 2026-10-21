@@ -222,7 +222,8 @@ case "$(uname -s)" in
   MINGW*|MSYS*|CYGWIN*) EXEEXT=".exe" ;;
   *) EXEEXT="" ;;
 esac
-JOBS="${CBC_TESTS_JOBS:-$(nproc)}"
+# nproc is GNU coreutils; macOS has sysctl instead.
+JOBS="${CBC_TESTS_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)}"
 PREFIX="${PREFIX:-$HOME/prog/cbc}"
 DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
 RESULTS_DIR="$SCRIPT_DIR/sanity-results"

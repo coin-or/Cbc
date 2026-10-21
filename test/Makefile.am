@@ -9,6 +9,29 @@ AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 AM_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
+#                       Quick tests (make test)                        #
+########################################################################
+#
+# `make test` runs quick tests that need neither the mip-sanity-data
+# submodule nor any tools beyond the build environment, so that it works in
+# any build, including out-of-source builds such as those of coinbrew and
+# the generic CI: the in-process tests that build their own fixtures
+# (also run by run-mip-sanity-tests, see below) and, if the Sample data is
+# available, a solve of p0033 with the cbc executable.
+
+QUICK_TESTS = lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
+	coefstr-test$(EXEEXT) row-activity-test$(EXEEXT)
+
+test: $(QUICK_TESTS)
+	@for t in $(QUICK_TESTS); do \
+	  echo "Running $$t" ; \
+	  ./$$t > $$t.log 2>&1 || { cat $$t.log ; echo "$$t failed" ; exit 1 ; } ; \
+	done
+if COIN_HAS_SAMPLE
+	../src/cbc$(EXEEXT) `$(CYGPATH_W) $(SAMPLE_DATA)/p0033.mps` -solve -quit
+endif
+
+########################################################################
 #              mip-sanity-data regression suite for Cbc                #
 ########################################################################
 #
@@ -18,14 +41,16 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 # GNU parallel) and validates each saved solution with cbc_validate_sol
 # (feasibility, integrality, objective, optimality/infeasibility vs the
 # best-known reference). See run-mip-sanity-tests for full documentation
-# and options (`./run-mip-sanity-tests --help`). `make test` builds the
-# validator and runs the whole suite; from cbc-workspace, `./test` is a
-# convenience symlink to run-mip-sanity-tests.
+# and options (`./run-mip-sanity-tests --help`). `make sanity-test` builds
+# the validator and runs the whole suite; from cbc-workspace, `./test` is a
+# convenience symlink to run-mip-sanity-tests. Besides the submodule, the
+# suite needs GNU parallel, flock, GNU timeout, and bash 4.4 or later, and
+# it looks for its test programs next to the script (in-tree build).
 
-test: cbc_validate_sol$(EXEEXT)
+sanity-test: cbc_validate_sol$(EXEEXT)
 	$(srcdir)/run-mip-sanity-tests
 
-.PHONY: test
+.PHONY: test sanity-test
 
 ########################################################################
 #                    Manual C-interface solve utility                  #

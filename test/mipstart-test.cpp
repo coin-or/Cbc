@@ -67,9 +67,44 @@
 #include <string>
 #include <vector>
 #include <fcntl.h>
+#ifdef _MSC_VER
+#include <io.h>
+#include <sys/stat.h>
+#else
 #include <unistd.h>
+#endif
 
 namespace {
+
+/* The file-descriptor calls LogCapture needs. MSVC has no <unistd.h> and no
+ * mkstemp(), and its versions of the others have a leading underscore (the
+ * POSIX names are deprecated aliases, an error with /sdl). */
+#ifdef _MSC_VER
+const int stdoutFd = 1;
+const int stderrFd = 2;
+int fdMakeTemp(char *tmpl)
+{
+  if (_mktemp_s(tmpl, std::strlen(tmpl) + 1) != 0)
+    return -1;
+  return _open(tmpl, _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY, _S_IREAD | _S_IWRITE);
+}
+int fdDup(int fd) { return _dup(fd); }
+int fdDup2(int fd, int fd2) { return _dup2(fd, fd2); }
+int fdClose(int fd) { return _close(fd); }
+void fdRewind(int fd) { _lseek(fd, 0, SEEK_SET); }
+long fdRead(int fd, char *buf, unsigned int size) { return _read(fd, buf, size); }
+void fileRemove(const char *path) { _unlink(path); }
+#else
+const int stdoutFd = STDOUT_FILENO;
+const int stderrFd = STDERR_FILENO;
+int fdMakeTemp(char *tmpl) { return mkstemp(tmpl); }
+int fdDup(int fd) { return dup(fd); }
+int fdDup2(int fd, int fd2) { return dup2(fd, fd2); }
+int fdClose(int fd) { return close(fd); }
+void fdRewind(int fd) { lseek(fd, 0, SEEK_SET); }
+long fdRead(int fd, char *buf, unsigned int size) { return static_cast< long >(read(fd, buf, size)); }
+void fileRemove(const char *path) { unlink(path); }
+#endif
 
 int g_failures = 0;
 
@@ -118,16 +153,16 @@ public:
      * below would pass against an empty string. A relative template creates
      * the file in the current working directory on every platform. */
     char tmpl[] = "mipstart-test-log-XXXXXX";
-    fd_ = mkstemp(tmpl);
+    fd_ = fdMakeTemp(tmpl);
     if (fd_ < 0)
       return;
     path_ = tmpl;
     fflush(stdout);
     fflush(stderr);
-    savedOut_ = dup(STDOUT_FILENO);
-    savedErr_ = dup(STDERR_FILENO);
-    dup2(fd_, STDOUT_FILENO);
-    dup2(fd_, STDERR_FILENO);
+    savedOut_ = fdDup(stdoutFd);
+    savedErr_ = fdDup(stderrFd);
+    fdDup2(fd_, stdoutFd);
+    fdDup2(fd_, stderrFd);
   }
 
   /* Restores the real streams and returns everything that was written. */
@@ -137,21 +172,21 @@ public:
       return std::string();
     fflush(stdout);
     fflush(stderr);
-    dup2(savedOut_, STDOUT_FILENO);
-    dup2(savedErr_, STDERR_FILENO);
-    close(savedOut_);
-    close(savedErr_);
+    fdDup2(savedOut_, stdoutFd);
+    fdDup2(savedErr_, stderrFd);
+    fdClose(savedOut_);
+    fdClose(savedErr_);
     savedOut_ = savedErr_ = -1;
 
     std::string out;
-    lseek(fd_, 0, SEEK_SET);
+    fdRewind(fd_);
     char buf[4096];
-    ssize_t n;
-    while ((n = ::read(fd_, buf, sizeof(buf))) > 0)
+    long n;
+    while ((n = fdRead(fd_, buf, sizeof(buf))) > 0)
       out.append(buf, static_cast< size_t >(n));
-    close(fd_);
+    fdClose(fd_);
     fd_ = -1;
-    unlink(path_.c_str());
+    fileRemove(path_.c_str());
     return out;
   }
 

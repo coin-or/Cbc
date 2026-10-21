@@ -83,10 +83,10 @@ jobs:
           docker run --rm -v "$PWD/work:/work" -w /work quay.io/pypa/manylinux_2_34_x86_64 bash -c '
             set -euo pipefail
             source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
-            dnf install -y --setopt=install_weak_deps=False \
+            Cbc/.github/scripts/dnf-install \
               openblas-devel suitesparse-devel zlib-devel gcc-gfortran \
-              patchelf rsync pkgconfig epel-release >/dev/null
-            dnf install -y --setopt=install_weak_deps=False parallel >/dev/null
+              patchelf rsync pkgconfig epel-release
+            Cbc/.github/scripts/dnf-install parallel
             ./config --opt --arch=generic --install --prefix=/work/install --jobs="$(nproc)" \
               --lapack --amd --zlib --no-bz2 --no-nauty
             ./package --prefix=/work/install --name=cbc-linux-x86_64-next --out=/work/dist
@@ -130,9 +130,9 @@ jobs:
           docker run --rm -v "$PWD/work:/work" -w /work quay.io/pypa/manylinux_2_34_x86_64 bash -c '
             set -uo pipefail
             source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
-            dnf install -y --setopt=install_weak_deps=False \
+            Cbc/.github/scripts/dnf-install \
               openblas-devel suitesparse-devel zlib-devel gcc-gfortran \
-              pkgconfig epel-release >/dev/null
+              pkgconfig epel-release
             export PKG_CONFIG_PATH=/work/install/lib/pkgconfig:$PKG_CONFIG_PATH
             cd Cbc/test
             make mip-debug-cuts >/work/Cbc/test/sanity-results/mip-debug-cuts/build.log 2>&1
@@ -182,10 +182,10 @@ jobs:
           docker run --rm -v "$PWD/work:/work" -w /work quay.io/pypa/manylinux_2_34_aarch64 bash -c '
             set -euo pipefail
             source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
-            dnf install -y --setopt=install_weak_deps=False \
+            Cbc/.github/scripts/dnf-install \
               openblas-devel suitesparse-devel zlib-devel gcc-gfortran \
-              patchelf rsync pkgconfig epel-release >/dev/null
-            dnf install -y --setopt=install_weak_deps=False parallel >/dev/null
+              patchelf rsync pkgconfig epel-release
+            Cbc/.github/scripts/dnf-install parallel
             ./config --opt --arch=generic --install --prefix=/work/install --jobs="$(nproc)" \
               --lapack --amd --zlib --no-bz2 --no-nauty
             ./package --prefix=/work/install --name=cbc-linux-aarch64-next --out=/work/dist

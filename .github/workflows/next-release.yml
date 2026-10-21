@@ -59,9 +59,9 @@ jobs:
           docker run --rm -v "$PWD/work:/work" -w /work quay.io/pypa/manylinux_2_34_x86_64 bash -c '
             set -euo pipefail
             source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
-            dnf install -y --setopt=install_weak_deps=False \
+            Cbc/.github/scripts/dnf-install \
               openblas-devel suitesparse-devel zlib-devel gcc-gfortran \
-              patchelf rsync pkgconfig >/dev/null
+              patchelf rsync pkgconfig
             ./config --opt --arch=generic --install --prefix=/work/install --jobs="$(nproc)" \
               --lapack --amd --zlib --no-bz2 --no-nauty
             ./package --prefix=/work/install --name=cbc-linux-x86_64-next --out=/work/dist
@@ -99,9 +99,9 @@ jobs:
           docker run --rm -v "$PWD/work:/work" -w /work quay.io/pypa/manylinux_2_34_aarch64 bash -c '
             set -euo pipefail
             source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
-            dnf install -y --setopt=install_weak_deps=False \
+            Cbc/.github/scripts/dnf-install \
               openblas-devel suitesparse-devel zlib-devel gcc-gfortran \
-              patchelf rsync pkgconfig >/dev/null
+              patchelf rsync pkgconfig
             ./config --opt --arch=generic --install --prefix=/work/install --jobs="$(nproc)" \
               --lapack --amd --zlib --no-bz2 --no-nauty
             ./package --prefix=/work/install --name=cbc-linux-aarch64-next --out=/work/dist

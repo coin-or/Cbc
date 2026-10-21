@@ -369,7 +369,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   OsiSolverInterface *solver = cloneBut(6); // was model_->solver()->clone();
   OsiClpSolverInterface *clpSolver
     = getClpSolver(solver);
-  if (CBC_SKIP_CLP_TEST||clpSolver) {
+  if (clpSolver) {
     ClpSimplex *clpSimplex = clpSolver->getModelPtr();
 #ifndef CLP_OLD_STYLE
     // Attach abort handler for parallel cancellation
@@ -1811,7 +1811,7 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
   OsiClpSolverInterface *clpSolver
     = getClpSolver(solver);
   ClpSimplex *clpSimplex = NULL;
-  if (CBC_SKIP_CLP_TEST||clpSolver)
+  if (clpSolver)
     clpSimplex = clpSolver->getModelPtr();
   for (int i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];

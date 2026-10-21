@@ -101,10 +101,11 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
 	coefstr-test$(EXEEXT) rowred-test$(EXEEXT) \
 	row-activity-test$(EXEEXT) final-bound-test$(EXEEXT) \
-	bkclique-bench$(EXEEXT) clqext-bench$(EXEEXT) \
-	zerohalf-bench$(EXEEXT) probing-bench$(EXEEXT) \
-	gomory-bench$(EXEEXT) lagomory-bench$(EXEEXT) \
-	landp-bench$(EXEEXT) twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
+	progress-callback-test$(EXEEXT) bkclique-bench$(EXEEXT) \
+	clqext-bench$(EXEEXT) zerohalf-bench$(EXEEXT) \
+	probing-bench$(EXEEXT) gomory-bench$(EXEEXT) \
+	lagomory-bench$(EXEEXT) landp-bench$(EXEEXT) \
+	twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
 	impclique-explore$(EXEEXT) impclique-bench$(EXEEXT) \
 	impclique-vs-clique-bench$(EXEEXT) \
 	impclique-real-bench$(EXEEXT) mip-root-replay$(EXEEXT) \
@@ -191,6 +192,9 @@ oddwheel_bench_DEPENDENCIES = ../src/libCbc.la
 am_probing_bench_OBJECTS = probing-bench.$(OBJEXT)
 probing_bench_OBJECTS = $(am_probing_bench_OBJECTS)
 probing_bench_DEPENDENCIES = ../src/libCbc.la
+am_progress_callback_test_OBJECTS = progress-callback-test.$(OBJEXT)
+progress_callback_test_OBJECTS = $(am_progress_callback_test_OBJECTS)
+progress_callback_test_DEPENDENCIES = ../src/libCbc.la
 am_rins_bench_OBJECTS = rins-bench.$(OBJEXT)
 rins_bench_OBJECTS = $(am_rins_bench_OBJECTS)
 rins_bench_DEPENDENCIES = ../src/libCbc.la
@@ -234,6 +238,7 @@ am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
 	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mip-root-replay.Po \
 	./$(DEPDIR)/mipstart-test.Po ./$(DEPDIR)/mir2-bench.Po \
 	./$(DEPDIR)/oddwheel-bench.Po ./$(DEPDIR)/probing-bench.Po \
+	./$(DEPDIR)/progress-callback-test.Po \
 	./$(DEPDIR)/rins-bench.Po ./$(DEPDIR)/row-activity-test.Po \
 	./$(DEPDIR)/rowred-test.Po ./$(DEPDIR)/twomir-bench.Po \
 	./$(DEPDIR)/zerohalf-bench.Po
@@ -267,9 +272,9 @@ SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
 	$(mip_debug_cuts_SOURCES) $(mip_root_replay_SOURCES) \
 	$(mipstart_test_SOURCES) $(mir2_bench_SOURCES) \
 	$(oddwheel_bench_SOURCES) $(probing_bench_SOURCES) \
-	$(rins_bench_SOURCES) $(row_activity_test_SOURCES) \
-	$(rowred_test_SOURCES) $(twomir_bench_SOURCES) \
-	$(zerohalf_bench_SOURCES)
+	$(progress_callback_test_SOURCES) $(rins_bench_SOURCES) \
+	$(row_activity_test_SOURCES) $(rowred_test_SOURCES) \
+	$(twomir_bench_SOURCES) $(zerohalf_bench_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -465,6 +470,8 @@ mip_c_solve_SOURCES = mip-c-solve.cpp
 mip_c_solve_LDADD = ../src/libCbc.la
 final_bound_test_SOURCES = final-bound-test.cpp
 final_bound_test_LDADD = ../src/libCbc.la
+progress_callback_test_SOURCES = progress-callback-test.cpp
+progress_callback_test_LDADD = ../src/libCbc.la
 
 ########################################################################
 #           Row-cut-debugger diagnostic for wrong-answer bugs          #
@@ -1411,6 +1418,10 @@ probing-bench$(EXEEXT): $(probing_bench_OBJECTS) $(probing_bench_DEPENDENCIES) $
 	@rm -f probing-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(probing_bench_OBJECTS) $(probing_bench_LDADD) $(LIBS)
 
+progress-callback-test$(EXEEXT): $(progress_callback_test_OBJECTS) $(progress_callback_test_DEPENDENCIES) $(EXTRA_progress_callback_test_DEPENDENCIES) 
+	@rm -f progress-callback-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(progress_callback_test_OBJECTS) $(progress_callback_test_LDADD) $(LIBS)
+
 rins-bench$(EXEEXT): $(rins_bench_OBJECTS) $(rins_bench_DEPENDENCIES) $(EXTRA_rins_bench_DEPENDENCIES) 
 	@rm -f rins-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(rins_bench_OBJECTS) $(rins_bench_LDADD) $(LIBS)
@@ -1458,6 +1469,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mir2-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oddwheel-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/probing-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/progress-callback-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rins-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/row-activity-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rowred-test.Po@am__quote@ # am--include-marker
@@ -1612,6 +1624,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/mir2-bench.Po
 	-rm -f ./$(DEPDIR)/oddwheel-bench.Po
 	-rm -f ./$(DEPDIR)/probing-bench.Po
+	-rm -f ./$(DEPDIR)/progress-callback-test.Po
 	-rm -f ./$(DEPDIR)/rins-bench.Po
 	-rm -f ./$(DEPDIR)/row-activity-test.Po
 	-rm -f ./$(DEPDIR)/rowred-test.Po
@@ -1683,6 +1696,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/mir2-bench.Po
 	-rm -f ./$(DEPDIR)/oddwheel-bench.Po
 	-rm -f ./$(DEPDIR)/probing-bench.Po
+	-rm -f ./$(DEPDIR)/progress-callback-test.Po
 	-rm -f ./$(DEPDIR)/rins-bench.Po
 	-rm -f ./$(DEPDIR)/row-activity-test.Po
 	-rm -f ./$(DEPDIR)/rowred-test.Po

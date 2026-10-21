@@ -567,8 +567,8 @@ static int applyConflictGraphBoundUpdates(const CoinStaticConflictGraph *cgraph,
   // getRowCutDebuggerAlways() (not getRowCutDebugger(), which relies on the
   // unreliable OsiRowCutDebugger::onOptimalPath()) and fall back to the
   // -debugCuts debugSolution global when no debugger is attached yet.
-  extern double *debugSolution;
-  extern int debugNumberColumns;
+  extern OSILIB_EXPORT double *debugSolution;
+  extern OSILIB_EXPORT int debugNumberColumns;
   const OsiRowCutDebugger *cgDebugger = solver->getRowCutDebuggerAlways();
   const double *cgOptSol = cgDebugger
     ? cgDebugger->optimalSolution()
@@ -768,8 +768,8 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
   // reference solution is available, re-check every row's activity against
   // its current bounds. This is only ever run under a debugger/-debugCuts,
   // so the extra O(nz) pass is not a concern for normal use.
-  extern double *debugSolution;
-  extern int debugNumberColumns;
+  extern OSILIB_EXPORT double *debugSolution;
+  extern OSILIB_EXPORT int debugNumberColumns;
   const OsiRowCutDebugger *clqDebugger = solver->getRowCutDebuggerAlways();
   const double *clqOptSol = clqDebugger
     ? clqDebugger->optimalSolution()
@@ -1307,8 +1307,8 @@ static int initialPumpTune = -1;
 // the matching #define in Cgl/src/CglPreProcess/CglPreProcess.cpp and
 // Osi/src/Osi/OsiPresolve.cpp.
 // #define DEBUG_PREPROCESS 2 -- disabled, see OsiPresolve.cpp comment
-extern double *debugSolution;
-extern int debugNumberColumns;
+extern OSILIB_EXPORT double *debugSolution;
+extern OSILIB_EXPORT int debugNumberColumns;
 
 static CbcModel *currentBranchModel = NULL;
 
@@ -1675,6 +1675,11 @@ void CbcSolver::strengthenCoefficients(OsiSolverInterface *solverIn)
              " (total slack reduction %d, %.2fs)\n",
         cs.nCliqueCoverRows(), cs.cliqueCoverReduction(),
         cs.cliqueCoverTimeUsed());
+    if (logLevel >= 2 && cs.cliqueCoverCandidates())
+      printf("  Coefficient strengthening: clique cover candidates %d, pruned %d,"
+             " skipped by work budget %d, work %.3g\n",
+        cs.cliqueCoverCandidates(), cs.cliqueCoverPruned(),
+        cs.cliqueCoverBudgetSkipped(), static_cast< double >(cs.cliqueCoverWork()));
   }
 }
 
@@ -2384,7 +2389,7 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
         "Optimal solution found",
         "Linear relaxation infeasible",
         "Optimal solution found (within gap tolerance)",
-        "node limit", "time limit", "user ctrl-c", "solution limit",
+        "node limit", "time limit", "user event", "solution limit",
         "Linear relaxation unbounded", "iterations limit",
         "Problem proven infeasible"
       };
@@ -5389,7 +5394,7 @@ int CbcSolver::postprocess(
 #ifdef JJF_ZERO
         // See if sos so we can fix
         OsiClpSolverInterface *osiclp = getClpSolver(saveSolver_);
-        if ((CBC_SKIP_CLP_TEST || osiclp) && osiclp->numberSOS()) {
+        if (osiclp && osiclp->numberSOS()) {
           // SOS
           numberSOS_ = osiclp->numberSOS();
           const CoinSet *setInfo = osiclp->setInfo();
@@ -5519,7 +5524,7 @@ int CbcSolver::postprocess(
           delete basis;
           originalSolver->initialSolve();
           OsiClpSolverInterface *osiclp = getClpSolver(originalSolver);
-          if (CBC_SKIP_CLP_TEST || osiclp)
+          if (osiclp)
             osiclp->getModelPtr()->checkUnscaledSolution();
         }
         // assert(originalSolver->isProvenOptimal());
@@ -5704,7 +5709,7 @@ int CbcSolver::postprocess(
       "Optimal solution found (within gap tolerance)",
       "node limit",
       "time limit",
-      "user ctrl-c",
+      "user event",
       "solution limit",
       "Linear relaxation unbounded",
       "Problem proven infeasible",
@@ -5997,7 +6002,7 @@ int CbcSolver::solveInitialLp(
     return 2;
 #else
 #ifndef CBC_OTHER_SOLVER
-  if (CBC_SKIP_CLP_TEST || si)
+  if (si)
     si->setSpecialOptions(si->specialOptions() | 1024);
 #endif
   // ------ root LP progress output ------
@@ -6343,7 +6348,7 @@ int CbcSolver::solveInitialLp(
   // it cannot run past the CBC time limit on large instances.
   {
     OsiClpSolverInterface *siClp = getClpSolver(si);
-    if (CBC_SKIP_CLP_TEST || siClp) {
+    if (siClp) {
       applyClpTimeLimit(model_, siClp->getModelPtr());
     }
   }
@@ -7378,7 +7383,8 @@ public:
     : babModel_(babModel)
   {
     babModel_.setProgressCsv(parameters[CbcParam::PROGRESSCSVFILE]->fileName(),
-      parameters[CbcParam::PROGRESSMINCHANGE]->dblVal());
+      parameters[CbcParam::PROGRESSMINCHANGE]->dblVal(),
+      parameters[CbcParam::PROGRESSINTERVAL]->dblVal());
     // FPump progress output
     int fpumpPassFreq = parameters[CbcParam::FPUMPPASSFREQ]->intVal();
     double fpumpTimeFreq = parameters[CbcParam::FPUMPTIMEFREQ]->dblVal();
@@ -7421,10 +7427,11 @@ public:
     if (cbcLogLevel >= 1 && babModel_.numberIntegers() > 0) {
       // for now only one event so use default constructor
       // while somebody thinks
-      CbcEventHandler handler(&babModel_);
-      // CbcAction action();
-      // handler.setAction(handler.CbcEvent::endSearch,action);
-      babModel_.passInEventHandler(&handler);
+      // keep a handler already installed (e.g. by the C interface) so its callbacks still run
+      if (!babModel_.getEventHandler()) {
+        CbcEventHandler handler(&babModel_);
+        babModel_.passInEventHandler(&handler);
+      }
       FILE *outfp = babModel_.messageHandler()->filePointer();
       if (!outfp)
         outfp = stdout;

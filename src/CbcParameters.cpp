@@ -687,6 +687,7 @@ void CbcParameters::addCbcParams()
   parameters_[CbcParam::LPTIMEFREQ]->setTopic("Output");
   parameters_[CbcParam::FPUMPTIMEFREQ]->setTopic("Output");
   parameters_[CbcParam::PROGRESSMINCHANGE]->setTopic("Output");
+  parameters_[CbcParam::PROGRESSINTERVAL]->setTopic("Output");
   parameters_[CbcParam::RINSCLOSEMAXDIST]->setTopic("Heuristics");
 
   // Integer params — Cuts
@@ -895,6 +896,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::LPTIMEFREQ]->setDefault(5.0);
     parameters_[CbcParam::FPUMPTIMEFREQ]->setDefault(5.0);
     parameters_[CbcParam::PROGRESSMINCHANGE]->setDefault(1.0e-4);
+    parameters_[CbcParam::PROGRESSINTERVAL]->setDefault(1.0);
     parameters_[CbcParam::AGGREGATEMIXED]->setDefault(1);
     parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setDefault(3);
     parameters_[CbcParam::BKMAXCALLS]->setDefault(1000);
@@ -2367,6 +2369,17 @@ void CbcParameters::addCbcSolverDblParams()
     "improved by at least this fraction of max(1,|bound|) since the last "
     "recorded one. Incumbents, the start and the final state are always "
     "recorded. 0 records every improvement. Default 1e-4.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::PROGRESSINTERVAL]->setup(
+    "progressInt!erval",
+    "Seconds without a progress event after which a heartbeat is sent",
+    0.0, 1.0e10,
+    "The progress event (progressCsv, the C progress callbacks) fires on every "
+    "incumbent and on every dual bound improvement of at least progressMinChange. "
+    "If neither happens for this many seconds a heartbeat (source \"tick\") is "
+    "sent, so a monitor sees the search is alive. Heartbeats are not written to "
+    "the progressCsv file. 0 disables them. Default 1.",
     CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::MINIMUMDROP]->setup(

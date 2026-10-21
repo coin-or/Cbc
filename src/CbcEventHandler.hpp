@@ -112,10 +112,13 @@ public:
     startUp,
     /*! Just before starting branching i.e. after root cuts. */
     afterRootCuts,
-    /*! The global dual bound has improved (root LP, a root cut pass, or the
-        best bound over the open nodes). Informational: the action returned
-        is ignored. Read it with model->getBestPossibleObjValue(). */
-    dualBound
+    /*! Search progress. Fired, always on the base model's handler and never
+        concurrently, when the incumbent improves, when the global dual bound
+        improves significantly (see -progressMinChange), and as a heartbeat
+        (source "tick") when neither has happened for about a second. It is
+        informational: the action returned is ignored. Read the snapshot with
+        model->progressInfo(). */
+    progress
   };
 
   /*! \brief Action codes returned by the event handler.

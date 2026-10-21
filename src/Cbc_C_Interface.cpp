@@ -230,7 +230,8 @@ struct Cbc_Model {
   void *rowNameIndex;
 
   cbc_incumbent_callback inc_callback;
-  cbc_progress_callback progr_callback;
+  cbc_progress_info_callback progress_info_callback;
+  void *progressInfoData;
   cbc_callback userCallBack;
 
   cbc_cut_callback cut_callback;
@@ -249,7 +250,6 @@ struct Cbc_Model {
   /**
    * Progress callback callback data
    **/
-  void *pgrAppData;
 
 #ifdef CBC_THREAD
   pthread_mutex_t cbcMutexCG;
@@ -446,9 +446,10 @@ public:
   double bestCost;
   double bestBound;
   cbc_incumbent_callback inc_callback;
-  cbc_progress_callback progr_callback;
+  cbc_progress_info_callback info_callback;
+  void *infoData;
+  Cbc_Model *cModel;
   void *appData;
-  void *pgAppData;
 #ifdef CBC_THREAD
   pthread_mutex_t *cbcMutex;
 #endif
@@ -459,9 +460,10 @@ Cbc_EventHandler::Cbc_EventHandler()
   , bestCost(COIN_DBL_MAX)
   , bestBound(COIN_DBL_MIN)
   , inc_callback(NULL)
-  , progr_callback(NULL)
+  , info_callback(NULL)
+  , infoData(NULL)
+  , cModel(NULL)
   , appData(NULL)
-  , pgAppData(NULL)
 #ifdef CBC_THREAD
   , cbcMutex(NULL)
 #endif
@@ -473,9 +475,10 @@ Cbc_EventHandler::Cbc_EventHandler(const Cbc_EventHandler &rhs)
   , bestCost(rhs.bestCost)
   , bestBound(rhs.bestBound)
   , inc_callback(rhs.inc_callback)
-  , progr_callback(rhs.progr_callback)
+  , info_callback(rhs.info_callback)
+  , infoData(rhs.infoData)
+  , cModel(rhs.cModel)
   , appData(rhs.appData)
-  , pgAppData(rhs.pgAppData)
 #ifdef CBC_THREAD
   , cbcMutex(rhs.cbcMutex)
 #endif
@@ -488,9 +491,10 @@ Cbc_EventHandler::Cbc_EventHandler(CbcModel *model)
   , bestCost(COIN_DBL_MAX)
   , bestBound(COIN_DBL_MIN)
   , inc_callback(NULL)
-  , progr_callback(NULL)
+  , info_callback(NULL)
+  , infoData(NULL)
+  , cModel(NULL)
   , appData(NULL)
-  , pgAppData(NULL)
 #ifdef CBC_THREAD
   , cbcMutex(NULL)
 #endif
@@ -509,9 +513,10 @@ Cbc_EventHandler &Cbc_EventHandler::operator=(const Cbc_EventHandler &rhs)
     this->bestCost = rhs.bestCost;
     this->bestBound = rhs.bestBound;
     this->inc_callback = rhs.inc_callback;
-    this->progr_callback = rhs.progr_callback;
+    this->info_callback = rhs.info_callback;
+    this->infoData = rhs.infoData;
+    this->cModel = rhs.cModel;
     this->appData = rhs.appData;
-    this->pgAppData = rhs.pgAppData;
 #ifdef CBC_THREAD
     this->cbcMutex = rhs.cbcMutex;
 #endif
@@ -526,6 +531,7 @@ CbcEventHandler *Cbc_EventHandler::clone() const
 
 CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
 {
+  CbcAction action = noAction;
   // if in sub tree carry on
   if ((model_->specialOptions() & 2048) == 0) {
     if ((whichEvent == solution || whichEvent == heuristicSolution)) {
@@ -569,12 +575,6 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
           delete[] cnames[0];
           delete[] cnames;
         } // incumbent callback
-        if (this->progr_callback) {
-          const CbcModel *model = this->getModel();
-          double secs = model->getCurrentSeconds();
-          double lb = model->getBestPossibleObjValue();
-          this->progr_callback((void *) model, 0, model->getNodeCount(), "sol", secs, lb, bestCost, 0, NULL, this->pgAppData);
-        } // incumbent callback
       } // improved cost
 #ifdef CBC_THREAD
     assert(this->cbcMutex);
@@ -582,27 +582,39 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
 #endif
     } // solution found
 
-    if (this->progr_callback)
-    {
+    if (whichEvent == progress && this->info_callback) {
+      const CbcModel *model = this->getModel();
+      const CbcProgressInfo &info = model->progressInfo();
+      Cbc_ProgressInfo out;
+      out.struct_size = (int)sizeof(Cbc_ProgressInfo);
+      out.kind = (int)info.kind;
+      out.seconds = info.seconds;
+      out.has_incumbent = info.primal < 1.0e49;
+      out.has_bound = info.dual > -1.0e49;
+      out.primal = out.has_incumbent ? info.primal : COIN_DBL_MAX;
+      out.dual = out.has_bound ? info.dual : -COIN_DBL_MAX;
+      out.gap = 1.0;
+      if (out.has_incumbent && out.has_bound) {
+        const double den = std::max(fabs(out.primal), fabs(out.dual));
+        out.gap = den > 0.0 && out.primal * out.dual > 0.0 ? fabs(out.primal - out.dual) / den : (out.primal == out.dual ? 0.0 : 1.0);
+      }
+      out.nodes = info.nodes;
+      out.source = info.source;
+      // same lock as the incumbent callback: user code never runs in two threads at once
 #ifdef CBC_THREAD
-    assert(this->cbcMutex);
-    pthread_mutex_lock((this->cbcMutex));
+      assert(this->cbcMutex);
+      pthread_mutex_lock((this->cbcMutex));
 #endif
-      if (this->getModel()->getBestPossibleObjValue() >= this->bestBound+1e-5)
-      {
-        this->bestBound = this->getModel()->getBestPossibleObjValue();
-        const CbcModel *model = this->getModel();
-        double secs = model->getCurrentSeconds();
-        this->progr_callback((void *) model, 0, model->getNodeCount(), "bnd", secs, bestBound, bestCost, 0, NULL, this->pgAppData);
-      } // improved lower bound
+      // the model is the C++ one; the C caller expects its own Cbc_Model handle
+      if (this->info_callback(this->cModel, &out, this->infoData))
+        action = stop;
 #ifdef CBC_THREAD
-    assert(this->cbcMutex);
-    pthread_mutex_unlock((this->cbcMutex));
+      pthread_mutex_unlock((this->cbcMutex));
 #endif
-    } // has progress callback
+    }
   } // not in subtree
 
-  return noAction;
+  return action;
 }
 
 
@@ -1213,7 +1225,8 @@ Cbc_newModel()
   model->obj_value = COIN_DBL_MAX;
 
   model->inc_callback = NULL;
-  model->progr_callback = NULL;
+  model->progress_info_callback = NULL;
+  model->progressInfoData = NULL;
   model->userCallBack = NULL;
 
   model->cut_callback = NULL;
@@ -1224,7 +1237,6 @@ Cbc_newModel()
   model->lastOptimization = ModelNotOptimized;
 
   model->icAppData = NULL;
-  model->pgrAppData = NULL;
 
   model->colNameIndex = NULL;
   model->rowNameIndex = NULL;
@@ -1893,24 +1905,7 @@ static int cbc_callb(CbcModel *cbcModel, int whereFrom) {
   }
 #endif
 
-  Cbc_EventHandler *cbc_eh = dynamic_cast<Cbc_EventHandler *>(cbcModel->getEventHandler());
-  if (cbc_eh == NULL)
-    return 0;
-
-  if (cbc_eh->progr_callback != NULL)
-  {
-    switch (whereFrom)
-    {
-      case 1:
-        cbc_eh->progr_callback(cbcModel, 0, 0, "root lp relax", cbcModel->getCurrentSeconds(),
-                               cbcModel->getBestPossibleObjValue(), DBL_MAX, 0, NULL, cbc_eh->pgAppData);
-        break;
-      case 2:
-        cbc_eh->progr_callback(cbcModel, 0, 0, "pre-proc", cbcModel->getCurrentSeconds(),
-                               cbcModel->getBestPossibleObjValue(), cbcModel->getObjValue(), 0, NULL, cbc_eh->pgAppData);
-        break;
-    } // where from
-  } // has progress callback
+  (void)cbcModel;
 
   return 0;
 }
@@ -2734,7 +2729,7 @@ Cbc_solve(Cbc_Model *model)
     }
 
     Cbc_EventHandler *cbc_eh = NULL;
-    if (model->inc_callback!=NULL || model->progr_callback!=NULL)
+    if (model->inc_callback!=NULL || model->progress_info_callback!=NULL)
     {
       cbc_eh = new Cbc_EventHandler(&cbcModel);
 #ifdef CBC_THREAD
@@ -2745,10 +2740,9 @@ Cbc_solve(Cbc_Model *model)
         cbc_eh->inc_callback = model->inc_callback;
         cbc_eh->appData = model->icAppData;
       }
-      if (model->progr_callback) {
-        cbc_eh->progr_callback = model->progr_callback;
-        cbc_eh->pgAppData = model->pgrAppData;
-      }
+      cbc_eh->cModel = model;
+      cbc_eh->info_callback = model->progress_info_callback;
+      cbc_eh->infoData = model->progressInfoData;
 
       cbcModel.passInEventHandler(cbc_eh);
     } // callbacks
@@ -2992,12 +2986,11 @@ void CBC_LINKAGE Cbc_addIncCallback(
   model->icAppData = appData;
 }
 
-void CBC_LINKAGE Cbc_addProgrCallback(
-  Cbc_Model *model, cbc_progress_callback prgcbc,
-  void *appData)
+void CBC_LINKAGE Cbc_setProgressCallback(
+  Cbc_Model *model, cbc_progress_info_callback cb, void *appData)
 {
-  model->progr_callback = prgcbc;
-  model->pgrAppData = appData;
+  model->progress_info_callback = cb;
+  model->progressInfoData = appData;
 }
 
 void CBC_LINKAGE Cbc_addCutCallback(
@@ -3829,7 +3822,8 @@ Cbc_clone(Cbc_Model *model)
   result->relax_ = model->relax_;
 
   result->inc_callback = model->inc_callback;
-  result->progr_callback = model->progr_callback;
+  result->progress_info_callback = model->progress_info_callback;
+  result->progressInfoData = model->progressInfoData;
   result->userCallBack = model->userCallBack;
 
   result->cut_callback = model->cut_callback;
@@ -3859,7 +3853,6 @@ Cbc_clone(Cbc_Model *model)
   }
 
   result->icAppData = model->icAppData;
-  result->pgrAppData = model->pgrAppData;
 
   if (model->colNameIndex) {
     Cbc_storeNameIndexes(result, 1);

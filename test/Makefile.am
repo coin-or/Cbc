@@ -69,7 +69,7 @@ sanity-test: cbc_validate_sol$(EXEEXT)
 # command line for any instance. See `mip-c-solve --help` for usage.
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
-	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test final-bound-test \
+	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test final-bound-test progress-callback-test \
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
 	lagomory-bench landp-bench \
 	twomir-bench mir2-bench impclique-explore impclique-bench impclique-vs-clique-bench \
@@ -86,6 +86,10 @@ mip_c_solve_LDADD = ../src/libCbc.la
 final_bound_test_SOURCES = final-bound-test.cpp
 
 final_bound_test_LDADD = ../src/libCbc.la
+
+progress_callback_test_SOURCES = progress-callback-test.cpp
+
+progress_callback_test_LDADD = ../src/libCbc.la
 
 ########################################################################
 #           Row-cut-debugger diagnostic for wrong-answer bugs          #

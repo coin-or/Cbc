@@ -2296,6 +2296,7 @@ void CbcModel::branchAndBound(int doStatistics)
     strategy_->setupPrinting(*this, handler_->logLevel());
   }
   eventHappened_ = false;
+  progressStopRequested_ = false;
   CbcEventHandler *eventHandler = getEventHandler();
   if (eventHandler) {
     eventHandler->setModel(this);
@@ -5578,6 +5579,8 @@ void CbcModel::branchAndBound(int doStatistics)
       tree_->setComparison(*nodeCompare_);
       unlockThread();
     }
+    sampleParallelDualBound();
+    sampleTreeDualBound();
     if ((numberNodes_ >= lastPrintEvery && CoinWallclockTime() - lastSecPrintProgress_ > secsPrintFrequency_)||!numberNodes_) {
       lastPrintEvery = numberNodes_ + printFrequency_;
       lockThread();
@@ -5968,6 +5971,10 @@ void CbcModel::branchAndBound(int doStatistics)
       handler_->message(CBC_MAXITERS, messages_) << CoinMessageEol;
       secondaryStatus_ = 8;
       status_ = 1;
+    } else if (progressStopRequested_) {
+      handler_->message(CBC_EVENT, messages_) << CoinMessageEol;
+      secondaryStatus_ = 5;
+      status_ = 1;
     } else {
       handler_->message(CBC_EVENT, messages_) << CoinMessageEol;
       secondaryStatus_ = 5;
@@ -6020,10 +6027,16 @@ void CbcModel::branchAndBound(int doStatistics)
       << trueBestObjValue() << trueObjValue(bestPossibleObjective_) << numberIterations_
       << numberNodes_+numberExtraNodes_ << getCurrentSeconds() << CoinMessageEol;
   }
-  if (progressCsv_ && !parentModel_) {
+  if ((progressCsv_ || eventHandler_) && !parentModel_) {
     // final state
-    progressLastDual_ = std::min(bestPossibleObjective_, bestObjective_);
-    writeProgressCsv("final");
+    {
+      std::unique_lock< std::mutex > lock;
+      if (progressMutex_)
+        lock = std::unique_lock< std::mutex >(*progressMutex_);
+      progressDualSeen_ = std::max(progressDualSeen_, std::min(bestPossibleObjective_, bestObjective_));
+      progressLastPrimal_ = std::min(progressLastPrimal_, bestObjective_);
+      publishProgress("final", CbcProgressInfo::final, true);
+    }
   }
   if ((moreSpecialOptions_ & 4194304) != 0) {
     // Conflict cuts
@@ -19485,7 +19498,6 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         */
     // Set currentNode_ so can be used in handler
     currentNode_ = newNode;
-    sampleTreeDualBound(newNode);
     if (eventHandler_ && !eventHandler_->event(CbcEventHandler::node)) {
       eventHappened_ = true; // exit
     }
@@ -22762,10 +22774,11 @@ void CbcModel::fixFromGlobalCuts()
 }
 #endif
 
-void CbcModel::setProgressCsv(const std::string &fileName, double minRelChange)
+void CbcModel::setProgressCsv(const std::string &fileName, double minRelChange, double heartbeatSeconds)
 {
   progressCsv_.reset();
   progressMinChange_ = minRelChange;
+  progressHeartbeat_ = heartbeatSeconds > 0.0 ? heartbeatSeconds : COIN_DBL_MAX;
   if (fileName.empty())
     return;
   FILE *fp = fopen(fileName.c_str(), "w");
@@ -22778,48 +22791,111 @@ void CbcModel::setProgressCsv(const std::string &fileName, double minRelChange)
   fflush(fp);
 }
 
+void CbcModel::shareProgressCsv(CbcModel &owner)
+{
+  if (!owner.progressMutex_)
+    owner.progressMutex_ = std::make_shared< std::mutex >();
+  progressCsv_ = owner.progressCsv_;
+  progressMutex_ = owner.progressMutex_;
+  progressOwner_ = &owner;
+}
+
+// Caller holds *progressMutex_ (when there is one). Delivery is serialised and
+// always goes through the base model, so handlers need not be thread safe.
+void CbcModel::publishProgress(const char *source, CbcProgressInfo::Kind kind, bool writeRow)
+{
+  CbcModel *owner = progressOwner_ ? progressOwner_ : this;
+  CbcProgressInfo &info = owner->progressInfo_;
+  info.seconds = owner->getCurrentSeconds();
+  info.primal = owner->progressLastPrimal_ < 1.0e30 ? trueObjValue(owner->progressLastPrimal_) : 1.0e50;
+  info.dual = owner->progressDualSeen_ > -1.0e30 ? trueObjValue(owner->progressDualSeen_) : -1.0e50;
+  info.nodes = owner->numberNodes_ + owner->numberExtraNodes_;
+  info.source = source;
+  info.kind = kind;
+  owner->progressLastNotify_ = info.seconds;
+  if (writeRow && progressCsv_) {
+    fprintf(progressCsv_.get(), "%.3f,%.10g,%.10g,%s,%d\n", info.seconds, info.primal, info.dual,
+      source, info.nodes);
+    fflush(progressCsv_.get());
+  }
+  if (owner->eventHandler_ && owner->eventHandler_->event(CbcEventHandler::progress) == CbcEventHandler::stop)
+  {
+    owner->progressStopRequested_ = true;
+    owner->sayEventHappened(); // worker threads notice it through the base model
+  }
+}
+
 void CbcModel::writeProgressCsv(const char *source)
 {
-  if (!progressCsv_ || parentModel_)
+  if (parentModel_ && !progressOwner_)
     return;
-  const double primal = bestObjective_ < 1.0e30 ? trueObjValue(bestObjective_) : 1.0e50;
-  fprintf(progressCsv_.get(), "%.3f,%.10g,%.10g,%s,%d\n", getCurrentSeconds(), primal,
-    progressLastDual_ > -1.0e30 ? trueObjValue(progressLastDual_) : trueObjValue(bestPossibleObjective_),
-    source, numberNodes_ + numberExtraNodes_);
-  fflush(progressCsv_.get());
+  CbcModel *owner = progressOwner_ ? progressOwner_ : this;
+  if (!progressCsv_ && !owner->eventHandler_)
+    return;
+  std::unique_lock< std::mutex > lock;
+  if (progressMutex_)
+    lock = std::unique_lock< std::mutex >(*progressMutex_);
+  // a thread clone may hold a stale cutoff: only report real improvements
+  if (progressOwner_) {
+    if (bestObjective_ >= owner->progressLastPrimal_)
+      return;
+    owner->progressLastPrimal_ = bestObjective_;
+  } else if (bestObjective_ < progressLastPrimal_) {
+    progressLastPrimal_ = bestObjective_;
+  }
+  publishProgress(source, CbcProgressInfo::incumbent, true);
 }
 
 void CbcModel::reportDualBound(double minObjValue, const char *source)
 {
-  if (parentModel_ || minObjValue >= 1.0e30)
+  if (parentModel_ || minObjValue >= 1.0e30 || (!progressCsv_ && !eventHandler_))
     return;
+  std::unique_lock< std::mutex > lock;
+  if (progressMutex_)
+    lock = std::unique_lock< std::mutex >(*progressMutex_);
   minObjValue = std::min(minObjValue, bestObjective_);
   const double scale = std::max(1.0, fabs(minObjValue));
-  if (minObjValue <= progressLastDual_ + 1.0e-9 * scale)
-    return;
-  const bool record = progressLastDual_ < -1.0e30 || minObjValue >= progressLastDual_ + progressMinChange_ * scale;
-  if (record) {
-    progressLastDual_ = minObjValue;
-    writeProgressCsv(source);
-  }
+  if (minObjValue > progressDualSeen_)
+    progressDualSeen_ = minObjValue;
   bestPossibleObjective_ = std::max(bestPossibleObjective_, minObjValue);
-  if (eventHandler_)
-    eventHandler_->event(CbcEventHandler::dualBound);
+  const bool significant = progressLastDual_ < -1.0e30 || minObjValue >= progressLastDual_ + progressMinChange_ * scale;
+  if (significant && minObjValue > progressLastDual_ + 1.0e-9 * scale) {
+    progressLastDual_ = minObjValue;
+    publishProgress(source, CbcProgressInfo::bound, true);
+  } else if (getCurrentSeconds() - progressLastNotify_ >= progressHeartbeat_) {
+    publishProgress("tick", CbcProgressInfo::tick, false);
+  }
 }
 
-void CbcModel::sampleTreeDualBound(const CbcNode *current)
+void CbcModel::sampleParallelDualBound()
+{
+  if (parentModel_ || !master_ || parallelMode() <= 0 || (!progressCsv_ && !eventHandler_))
+    return;
+  const double now = getCurrentSeconds();
+  if (now - progressLastSample_ < 0.1)
+    return;
+  progressLastSample_ = now;
+  // Only the master dispatches nodes, so none can be between the tree and a
+  // worker while it samples; the open nodes plus those being processed bound the optimum.
+  lockThread();
+  double bound = tree_->getBestPossibleObjective();
+  for (int i = 0; i < master_->numberThreads(); i++)
+    bound = std::min(bound, master_->child(i)->nodeObjectiveValue());
+  unlockThread();
+  reportDualBound(bound, "node");
+}
+
+void CbcModel::sampleTreeDualBound()
 {
   if (parentModel_ || !tree_ || parallelMode() > 0 || (!progressCsv_ && !eventHandler_))
     return;
-  // Scanning the open nodes is linear in the tree size: do it at every node
-  // while the tree is small, otherwise at most every 0.1 s.
+  // Called between nodes, where the tree holds every open node (the same point
+  // at which the periodic printout refreshes bestPossibleObjective_). Scanning
+  // it is linear in the tree size: do it at every node while the tree is
+  // small, otherwise at most every 0.1 s.
   const double now = getCurrentSeconds();
   if (tree_->size() >= 1000 && now - progressLastSample_ < 0.1)
     return;
   progressLastSample_ = now;
-  double bound = tree_->getBestPossibleObjective();
-  // the node being processed is no longer on the tree but still bounds the optimum
-  if (current)
-    bound = std::min(bound, current->objectiveValue());
-  reportDualBound(bound, "node");
+  reportDualBound(tree_->getBestPossibleObjective(), "node");
 }

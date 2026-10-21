@@ -1256,11 +1256,32 @@ else
   fi
 fi
 
+progress_tests_failed=0
+if [[ $NO_FINAL_BOUND_TESTS -eq 0 ]]; then
+  PROGRESS_TEST="$SCRIPT_DIR/progress-callback-test$EXEEXT"
+  if [[ ! -x "$PROGRESS_TEST" ]]; then
+    make -C "$SCRIPT_DIR" "progress-callback-test$EXEEXT" || {
+      echo "${RED}Error: failed to build progress-callback-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+  echo
+  echo "${BOLD}=== Search-progress callback tests ===${RESET}"
+  progress_log="$RESULTS_DIR/progress-callback-test.log"
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$PROGRESS_TEST" >"$progress_log" 2>&1; then
+    echo "  ${GREEN}✔ progress callback tests passed${RESET}  ${DIM}($progress_log)${RESET}"
+  else
+    progress_tests_failed=1
+    echo "  ${RED}✗ progress callback tests failed${RESET}" >&2
+    cat "$progress_log"
+  fi
+fi
+
 if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 \
       || ${#capi_fail_list[@]} -gt 0 || $lp_tests_failed -ne 0 \
       || $lazy_tests_failed -ne 0 || $mipstart_tests_failed -ne 0 \
       || $coefstr_tests_failed -ne 0 || $row_activity_tests_failed -ne 0 \
-      || $final_bound_tests_failed -ne 0 ]]; then
+      || $final_bound_tests_failed -ne 0 || $progress_tests_failed -ne 0 ]]; then
   exit 1
 fi
 exit 0

@@ -123,6 +123,16 @@ public:
   /// Wall-clock seconds spent computing clique covers (subset of timeUsed()).
   double cliqueCoverTimeUsed() const { return cliqueCoverTimeUsed_; }
 
+  /// Rows where a clique cover could change something (after the cheap
+  /// eligibility filters), how many of those were abandoned because the
+  /// cover could no longer end small enough to matter, how many were left
+  /// uncovered because the work budget ran out, and the total work spent
+  /// (elements touched; deterministic, unlike the time).
+  int cliqueCoverCandidates() const { return cliqueCoverCandidates_; }
+  int cliqueCoverPruned() const { return cliqueCoverPruned_; }
+  int cliqueCoverBudgetSkipped() const { return cliqueCoverBudgetSkipped_; }
+  unsigned long long cliqueCoverWork() const { return cliqueCoverWork_; }
+
 private:
   int nCoefficients_;
   int nRows_;
@@ -130,6 +140,10 @@ private:
   int nCliqueCoverRows_;
   int cliqueCoverReduction_;
   double cliqueCoverTimeUsed_;
+  int cliqueCoverCandidates_;
+  int cliqueCoverPruned_;
+  int cliqueCoverBudgetSkipped_;
+  unsigned long long cliqueCoverWork_;
 };
 
 #endif // CbcCoefficientStrengthening_hpp

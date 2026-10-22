@@ -882,6 +882,10 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 	smallValue2 = 1.0e-4;
       }
       //largeRatio = 1.0e8;
+      // Leave the cuts alone if some branching objects come from another
+      // solver (e.g., Couenne's spatial branching): its relaxation relies
+      // on cuts that are only slightly violated.
+      const bool adjustCuts = !model_->hasNonCbcObjects();
 #define ALLOW_INEFFECTIVE
 #ifdef ALLOW_INEFFECTIVE
       // allow ineffective cuts at root
@@ -994,7 +998,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 #endif
         thisCut->mutableRow().setTestForDuplicateIndex(false);
 #ifdef ADJUST_CUTS
-	{
+	if (adjustCuts) {
 	  CoinPackedVector rpv = thisCut->row();
 	  int n = rpv.getNumElements();
 	  int *indices = rpv.getIndices();

@@ -2474,12 +2474,15 @@ void CbcModel::branchAndBound(int doStatistics)
     moreSpecialOptions2_ &= ~65536; // say no lazy constraints
     // check
     int numberSOS = 0;
+    hasNonCbcObjects_ = false;
     for (int i = 0; i < numberObjects_; i++) {
       CbcSimpleInteger *obj = dynamic_cast< CbcSimpleInteger * >(object_[i]);
       if (!obj) {
         numberOdd++;
         if (dynamic_cast< CbcSOS * >(object_[i]))
           numberSOS++;
+        if (!dynamic_cast< CbcObject * >(object_[i]))
+          hasNonCbcObjects_ = true;
       }
     }
     if (numberOdd) {
@@ -6731,6 +6734,7 @@ CbcModel::CbcModel()
   , specialOptions_(0)
   , moreSpecialOptions_(0)
   , moreSpecialOptions2_(0)
+  , hasNonCbcObjects_(false)
   , topOfTree_(nullptr)
   , subTreeModel_(nullptr)
   , heuristicModel_(nullptr)
@@ -7082,6 +7086,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , specialOptions_(rhs.specialOptions_)
   , moreSpecialOptions_(rhs.moreSpecialOptions_)
   , moreSpecialOptions2_(rhs.moreSpecialOptions2_)
+  , hasNonCbcObjects_(rhs.hasNonCbcObjects_)
   , topOfTree_(nullptr)
   , subTreeModel_(rhs.subTreeModel_)
   , heuristicModel_(nullptr)
@@ -7500,6 +7505,7 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     specialOptions_ = rhs.specialOptions_;
     moreSpecialOptions_ = rhs.moreSpecialOptions_;
     moreSpecialOptions2_ = rhs.moreSpecialOptions2_;
+    hasNonCbcObjects_ = rhs.hasNonCbcObjects_;
     subTreeModel_ = rhs.subTreeModel_;
     heuristicModel_ = nullptr;
     numberStoppedSubTrees_ = rhs.numberStoppedSubTrees_;
@@ -8021,6 +8027,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   specialOptions_ = rhs.specialOptions_;
   moreSpecialOptions_ = rhs.moreSpecialOptions_;
   moreSpecialOptions2_ = rhs.moreSpecialOptions2_;
+  hasNonCbcObjects_ = rhs.hasNonCbcObjects_;
   numberStrong_ = rhs.numberStrong_;
   numberBeforeTrust_ = rhs.numberBeforeTrust_;
   numberPenalties_ = rhs.numberPenalties_;
@@ -9037,7 +9044,9 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 {
 #define STOP_CUTS_NOW 6
 #define START_FATHOM 6
-  if ((specialOptions_ & 2048) == 0 && STOP_CUTS_NOW > 0) {
+  // Not if some branching objects come from another solver (e.g.,
+  // Couenne's spatial branching): it relies on cuts deep in the tree.
+  if ((specialOptions_ & 2048) == 0 && STOP_CUTS_NOW > 0 && !hasNonCbcObjects_) {
     if (node && numberTries > 1) {
       // in main model
       if (currentDepth_ == 0) {

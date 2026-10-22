@@ -7980,9 +7980,12 @@ int CbcMain1(int argc, const char *argv[],
                 statistics_result = statusName[iStat];
                 ;
                 if (!noPrinting_) {
+                  // status 5 is a user event (ctrl-c); statusName[5] names it
+                  // on its own, and any minor[] appended to it garbles the
+                  // line
                   sprintf(generalPrint, "\nResult - %s%s\n",
                     statusName[iStat].c_str(),
-                    minor[iStat2].c_str());
+                    iStat == 5 ? "" : minor[iStat2].c_str());
                   generalMessageHandler->message(CLP_GENERAL, generalMessages)
                     << generalPrint
                     << CoinMessageEol;

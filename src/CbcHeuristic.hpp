@@ -339,10 +339,15 @@ public:
         (could add global cut if finished)
         -1 returned on size
         -2 time or user event
+        If bestPossibleObjective is given, it is set to the best possible
+        (minimization) objective of the sub branch and bound when one was
+        done, otherwise to -COIN_DBL_MAX. A finished search may have stopped
+        on the gap tolerance with this bound below the solution value.
     */
   int smallBranchAndBound(OsiSolverInterface *solver, int numberNodes,
     double *newSolution, double &newSolutionValue,
-    double cutoff, std::string name) const;
+    double cutoff, std::string name,
+    double *bestPossibleObjective = NULL) const;
   /// Create C++ lines to get to current state
   virtual void generateCpp(FILE *) {}
   /// Create C++ lines to get to current state - does work for base class

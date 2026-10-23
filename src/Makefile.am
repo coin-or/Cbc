@@ -238,6 +238,7 @@ includecoin_HEADERS = \
 	CbcSimpleIntegerPseudoCost.hpp \
 	CbcStrategy.hpp \
 	CbcSolver.hpp \
+	CbcSolverCutSetup.hpp \
 	CbcMipStart.hpp \
 	CbcSOS.hpp \
 	CbcPostprocessRepair.hpp \

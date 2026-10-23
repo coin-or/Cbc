@@ -568,7 +568,7 @@ int CbcParameters::matches(std::string field, int &numberMatches)
   "'root' lets CBC run the cut generator generate only at the root node. "    \
   "Value 'ifmove' lets CBC use the cut generator in the tree if it looks as " \
   "if it is doing some good and moves the objective value. Value 'forceon' "  \
-  "turns on the cut generator and forces CBC to use it at every node. Value "  \
+  "turns on the cut generator and forces CBC to use it at every node. Value " \
   "'auto' (the default) keeps the built-in setting unless autoTuneCuts "      \
   "recognises the problem class and picks a better one; any value given "     \
   "explicitly always overrides the automatic choice.\n"
@@ -691,7 +691,20 @@ void CbcParameters::addCbcParams()
   parameters_[CbcParam::RINSCLOSEMAXDIST]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPTIME]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPWORK]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPARTIFICIAL]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPNOIMPROVE]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPSTAGEFIRSTPERCENT]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPDESTROYROWS]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPSTALL]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPDESTROYGROW]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPRELATEDROWS]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPREALSTALLWORK]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPMINNATIVECOVERAGE]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPTUNINGPROFILE]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPFPUMP]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPROOTKEEPORIGINAL]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPNATIVEPRELP]->setTopic("Heuristics");
 
   // Integer params — Cuts
   for (int code : { CbcParam::CUTDEPTH, CbcParam::CUTLENGTH,
@@ -857,6 +870,7 @@ void CbcParameters::setDefaults(int strategy)
   parameters_[CbcParam::MAXMEMORY]->setDefault("");
   parameters_[CbcParam::OUTPUTPRECISION]->setDefault("%15.15g");
   parameters_[CbcParam::PUMPROOTPLACES]->setDefault("");
+  parameters_[CbcParam::SPPGRASPTUNINGPROFILE]->setDefault("");
   parameters_[CbcParam::JUMPROOTPLACES]->setDefault("");
   parameters_[CbcParam::PRIORITYFILE]->setDefault(std::string("priorities.txt"));
   parameters_[CbcParam::SOLUTIONFILE]->setDefault(std::string("opt.sol"));
@@ -898,6 +912,15 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::RINSCLOSEMAXDIST]->setDefault(0.4);
     parameters_[CbcParam::SPPGRASPTIME]->setDefault(60.0);
     parameters_[CbcParam::SPPGRASPWORK]->setDefault(1500.0);
+    parameters_[CbcParam::SPPGRASPARTIFICIAL]->setDefault(1.1);
+    parameters_[CbcParam::SPPGRASPDESTROYROWS]->setDefault(5);
+    parameters_[CbcParam::SPPGRASPSTALL]->setDefault(200);
+    parameters_[CbcParam::SPPGRASPSTAGEFIRSTPERCENT]->setDefault(25);
+    parameters_[CbcParam::SPPGRASPDESTROYGROW]->setDefault(0.0);
+    parameters_[CbcParam::SPPGRASPRELATEDROWS]->setDefault(0.0);
+    parameters_[CbcParam::SPPGRASPREALSTALLWORK]->setDefault(0.0);
+    parameters_[CbcParam::SPPGRASPMINNATIVECOVERAGE]->setDefault(0.0);
+    parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->setDefault("legacy");
     parameters_[CbcParam::LPTIMEFREQ]->setDefault(5.0);
     parameters_[CbcParam::FPUMPTIMEFREQ]->setDefault(5.0);
     parameters_[CbcParam::PROGRESSMINCHANGE]->setDefault(1.0e-4);
@@ -1033,6 +1056,8 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::SINGLETONBOUNDS]->setDefault("on");
     parameters_[CbcParam::SOS]->setDefault("off");
     parameters_[CbcParam::USESOLUTION]->setDefault("off");
+    parameters_[CbcParam::SPPGRASPROOTKEEPORIGINAL]->setDefault("off");
+    parameters_[CbcParam::SPPGRASPNATIVEPRELP]->setDefault("auto");
     parameters_[CbcParam::CUTSTRATEGY]->setDefault("off");
     parameters_[CbcParam::CLIQUECUTS]->setDefault("ifmove");
     parameters_[CbcParam::FLOWCUTS]->setDefault("ifmove");
@@ -1690,6 +1715,14 @@ void CbcParameters::addCbcSolverDirParams()
     "the netlib problems from this directory. If cbc is built without zlib "
     "support then the problems must be uncompressed.",
     CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPSTAGEFIRSTPERCENT]->setup(
+    "sppGraspStageFirstPercent",
+    "Share of sppGraspWork allocated to the initial staged pass",
+    1, 99,
+    "Used by spp-fpump-short and spp-fpump-staged. The staged mode makes "
+    "the remaining work budget available to one post-cuts SppGrasp pass.",
+    CoinParam::displayPriorityLow);
   parameters_[CbcParam::DIRNETLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 }
 
@@ -1885,8 +1918,11 @@ void CbcParameters::addCbcSolverStrParams()
     "after cuts. Default is '' (unset), which reproduces the classic "
     "behavior controlled by pumpTune/moreTune's cryptic numeric "
     "encoding (root-before-cuts only, unless moreTune's '/1000' digit "
-    "says otherwise). Setting this option takes over that decision "
-    "entirely, in an intuitive way, instead of pumpTune/moreTune.",
+    "says otherwise). The experimental SppGrasp root-sequence modes "
+    "select 'LC' automatically unless this option is explicitly set, so "
+    "an ordered FPump attempt can run after an incumbent exists; ordinary "
+    "heuristic scheduling is unchanged. Setting this option takes over "
+    "root placement entirely, instead of pumpTune/moreTune.",
     CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::JUMPROOTPLACES]->setup(
@@ -1916,22 +1952,22 @@ void CbcParameters::addCbcSolverKwdParams()
   // Heuristic invocation control: see CBC_HEUR_CONTROL_LIST and
   // CbcHeuristicControl. All of these default to `auto`, which keeps the
   // heuristic's built-in setting.
-#define CBC_HC_KWD_SETUP(ID, N) \
-  parameters_[CbcParam::HC_##ID##_SCHEDULE]->setup(N "Schedule", \
-    "When the " N " heuristic is attempted in the tree", \
-    "auto: the heuristic's built-in schedule (default).\n" \
-    "  legacy:    the heuristic's historical node-count gating.\n" \
-    "  depth:     only at depths that are a multiple of " N "Every.\n" \
-    "  nodes:     once every " N "Every nodes.\n" \
-    "  noimprove: every " N "Every nodes, and straight after each new incumbent.\n" \
+#define CBC_HC_KWD_SETUP(ID, N)                                                                                           \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->setup(N "Schedule",                                                          \
+    "When the " N " heuristic is attempted in the tree",                                                                  \
+    "auto: the heuristic's built-in schedule (default).\n"                                                                \
+    "  legacy:    the heuristic's historical node-count gating.\n"                                                        \
+    "  depth:     only at depths that are a multiple of " N "Every.\n"                                                    \
+    "  nodes:     once every " N "Every nodes.\n"                                                                         \
+    "  noimprove: every " N "Every nodes, and straight after each new incumbent.\n"                                       \
     "Back-off (" N "Decay, " N "Window, " N "MinSuccess), " N "MaxFail and " N "TimeShare apply on top of any schedule.", \
-    CoinParam::displayPriorityLow); \
-  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("auto", 0); \
-  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("legacy", 1); \
-  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("depth", 2); \
-  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("nodes", 3); \
-  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("noimprove", 4); \
-  parameters_[CbcParam::HC_##ID##_SCHEDULE]->setDefault("auto"); \
+    CoinParam::displayPriorityLow);                                                                                       \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("auto", 0);                                                        \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("legacy", 1);                                                      \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("depth", 2);                                                       \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("nodes", 3);                                                       \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->appendKwd("noimprove", 4);                                                   \
+  parameters_[CbcParam::HC_##ID##_SCHEDULE]->setDefault("auto");                                                          \
   parameters_[CbcParam::HC_##ID##_SCHEDULE]->setTopic("Heuristics");
   CBC_HEUR_CONTROL_LIST(CBC_HC_KWD_SETUP)
 
@@ -2271,23 +2307,25 @@ void CbcParameters::addCbcSolverDblParams()
     getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverDblParam);
   }
 
-#define CBC_HC_DBL_SETUP(ID, N) \
-  parameters_[CbcParam::HC_##ID##_DECAY]->setup(N "Decay", \
-    "Back-off growth of the " N " interval after unproductive runs", 0.0, 1.0e6, \
-    "Every " N "Window runs, if fewer than " N "MinSuccess of them improved the incumbent, " \
-    "the interval between runs is multiplied by (1 + this). 0 switches the back-off off. " \
-    "auto: the heuristic's built-in value.", CoinParam::displayPriorityLow); \
-  parameters_[CbcParam::HC_##ID##_MINSUCCESS]->setup(N "MinSuccess", \
-    "Success rate below which " N " backs off", 0.0, 1.0, \
-    "See " N "Decay. auto: the heuristic's built-in value (1/3).", CoinParam::displayPriorityLow); \
-  parameters_[CbcParam::HC_##ID##_TIMESHARE]->setup(N "TimeShare", \
-    "Largest fraction of the elapsed time " N " may use", 0.0, 1.0, \
-    "Once the heuristic has used more than this fraction of the elapsed solve time it is not started " \
-    "again until the fraction drops. 0 means no limit. auto: no limit.", CoinParam::displayPriorityLow); \
+#define CBC_HC_DBL_SETUP(ID, N)                                                                                \
+  parameters_[CbcParam::HC_##ID##_DECAY]->setup(N "Decay",                                                     \
+    "Back-off growth of the " N " interval after unproductive runs", 0.0, 1.0e6,                               \
+    "Every " N "Window runs, if fewer than " N "MinSuccess of them improved the incumbent, "                   \
+    "the interval between runs is multiplied by (1 + this). 0 switches the back-off off. "                     \
+    "auto: the heuristic's built-in value.",                                                                   \
+    CoinParam::displayPriorityLow);                                                                            \
+  parameters_[CbcParam::HC_##ID##_MINSUCCESS]->setup(N "MinSuccess",                                           \
+    "Success rate below which " N " backs off", 0.0, 1.0,                                                      \
+    "See " N "Decay. auto: the heuristic's built-in value (1/3).", CoinParam::displayPriorityLow);             \
+  parameters_[CbcParam::HC_##ID##_TIMESHARE]->setup(N "TimeShare",                                             \
+    "Largest fraction of the elapsed time " N " may use", 0.0, 1.0,                                            \
+    "Once the heuristic has used more than this fraction of the elapsed solve time it is not started "         \
+    "again until the fraction drops. 0 means no limit. auto: no limit.",                                       \
+    CoinParam::displayPriorityLow);                                                                            \
   for (int c : { CbcParam::HC_##ID##_DECAY, CbcParam::HC_##ID##_MINSUCCESS, CbcParam::HC_##ID##_TIMESHARE }) { \
-    parameters_[c]->setAutoAllowed(); \
-    parameters_[c]->setDefault(CoinParam::autoDblValue()); \
-    parameters_[c]->setTopic("Heuristics"); \
+    parameters_[c]->setAutoAllowed();                                                                          \
+    parameters_[c]->setDefault(CoinParam::autoDblValue());                                                     \
+    parameters_[c]->setTopic("Heuristics");                                                                    \
   }
   CBC_HEUR_CONTROL_LIST(CBC_HC_DBL_SETUP)
 
@@ -2348,6 +2386,89 @@ void CbcParameters::addCbcSolverDblParams()
     "millions of basic operations (mostly matrix entries visited); roughly "
     "500-1000 per second on a current machine. 0 means no limit. See also "
     "sppGraspNoImprove and sppGraspTime.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPARTIFICIAL]->setup(
+    "sppGraspArtificial",
+    "Artificial slack penalty factor of the sppGrasp heuristic",
+    0.0, 1.0e10,
+    "Lets the sppGrasp heuristic run on set partitioning/packing problems "
+    "where some partitioning rows have no singleton (slack) column: it adds "
+    "temporary artificial slacks to those rows, costing the row's most "
+    "expensive column plus (this factor - 1) times the largest cost, and "
+    "multiplies that penalty while the best solution still uses one. Only "
+    "solutions without artificials are kept. The feasibility pump stays on "
+    "for these problems. 0 switches this off.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPDESTROYROWS]->setup(
+    "sppGraspDestroyRows",
+    "Initial number of rows destroyed by sppGrasp LNS",
+    1, COIN_INT_MAX,
+    "The legacy default is 5; decrease this for a smaller starting neighborhood.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPSTALL]->setup(
+    "sppGraspStall", "SppGrasp LNS iterations before destroy size grows",
+    0, COIN_INT_MAX,
+    "Experimental neighborhood control. 0 disables stall-based growth; "
+    "the legacy default is 200.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPDESTROYGROW]->setup(
+    "sppGraspDestroyGrow",
+    "Probability of growing sppGrasp destroy size",
+    0.0, 1.0,
+    "Experimental neighborhood control. At each LNS iteration, the "
+    "destroyed-row count may geometrically grow up to its maximum. The "
+    "legacy default is 0.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPRELATEDROWS]->setup(
+    "sppGraspRelatedRows",
+    "Probability of selecting related sppGrasp rows",
+    0.0, 1.0,
+    "Experimental neighborhood control. Related rows are drawn from rows "
+    "freed by earlier seeds in the same LNS iteration. The legacy default "
+    "is 0.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPREALSTALLWORK]->setup(
+    "sppGraspRealStallWork",
+    "SppGrasp work without a better real-feasible solution",
+    0.0, 1.0e10,
+    "Optional deterministic continuation gate, in millions of work units. "
+    "After SppGrasp has found a real-feasible solution, stop its LNS call "
+    "when this much work has elapsed without a better real-feasible "
+    "incumbent. A missing real solution never triggers this gate; "
+    "sppGraspWork and sppGraspNoImprove remain independent safety limits. "
+    "0 disables the gate (default).",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPMINNATIVECOVERAGE]->setup(
+    "sppGraspMinNativeCoverage",
+    "Minimum fraction of partitioning rows with native private columns",
+    0.0, 1.0,
+    "Experimental opt-in structural activation policy. 0 preserves legacy "
+    "behavior (default). A positive threshold is checked separately on the "
+    "original model and the current active root/cut model, after bounds and "
+    "complement normalization. Only usable real degree-one columns count; "
+    "artificial columns never count. Forced columns conservatively fail the "
+    "gate. 1 requires full native coverage; 0.5 requires at least half. "
+    "Skipped SppGrasp does not automatically suppress feasibility pump. "
+    "Explicit sppGrasp off and feas on/off remain respected.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPTUNINGPROFILE]->setup(
+    "sppGraspTuningProfile",
+    "Experimental conditional SppGrasp parameter file",
+    "A plain text file of benchmark-option-name value pairs, one per line. "
+    "Only forced-free active models with at least 50% real private-column "
+    "coverage receive these parameters. Lower-coverage or unsupported active "
+    "models retain the current legacy/user settings; they are not disabled. "
+    "Artificial columns do not count. Existing explicit SppGrasp parameter "
+    "overrides take precedence. No profile is loaded by default. This does "
+    "not change SppGrasp ON/OFF, FPump settings or global time/node limits.",
     CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::SMALLBAB]->setup(
@@ -2576,24 +2697,24 @@ void CbcParameters::addCbcSolverIntParams()
     getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverIntParam);
   }
 
-#define CBC_HC_INT_SETUP(ID, N) \
-  parameters_[CbcParam::HC_##ID##_EVERY]->setup(N "Every", \
-    "Interval (nodes or depth) between " N " attempts", 1, COIN_INT_MAX, \
-    "The K of " N "Schedule. auto: the heuristic's built-in value.", CoinParam::displayPriorityLow); \
-  parameters_[CbcParam::HC_##ID##_WINDOW]->setup(N "Window", \
-    "Runs between success-rate checks for " N, 1, COIN_INT_MAX, \
-    "See " N "Decay. auto: the heuristic's built-in value (10).", CoinParam::displayPriorityLow); \
-  parameters_[CbcParam::HC_##ID##_MAXFAIL]->setup(N "MaxFail", \
-    "Pause " N " after this many failed runs on the same incumbent", 0, COIN_INT_MAX, \
-    "The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.", \
-    CoinParam::displayPriorityLow); \
-  parameters_[CbcParam::HC_##ID##_NODES]->setup(N "Nodes", \
-    "Node limit of the sub-MIP solved by " N, 1, COIN_INT_MAX, \
-    "auto: the heuristic's built-in value.", CoinParam::displayPriorityLow); \
+#define CBC_HC_INT_SETUP(ID, N)                                                                                                     \
+  parameters_[CbcParam::HC_##ID##_EVERY]->setup(N "Every",                                                                          \
+    "Interval (nodes or depth) between " N " attempts", 1, COIN_INT_MAX,                                                            \
+    "The K of " N "Schedule. auto: the heuristic's built-in value.", CoinParam::displayPriorityLow);                                \
+  parameters_[CbcParam::HC_##ID##_WINDOW]->setup(N "Window",                                                                        \
+    "Runs between success-rate checks for " N, 1, COIN_INT_MAX,                                                                     \
+    "See " N "Decay. auto: the heuristic's built-in value (10).", CoinParam::displayPriorityLow);                                   \
+  parameters_[CbcParam::HC_##ID##_MAXFAIL]->setup(N "MaxFail",                                                                      \
+    "Pause " N " after this many failed runs on the same incumbent", 0, COIN_INT_MAX,                                               \
+    "The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.",                                 \
+    CoinParam::displayPriorityLow);                                                                                                 \
+  parameters_[CbcParam::HC_##ID##_NODES]->setup(N "Nodes",                                                                          \
+    "Node limit of the sub-MIP solved by " N, 1, COIN_INT_MAX,                                                                      \
+    "auto: the heuristic's built-in value.", CoinParam::displayPriorityLow);                                                        \
   for (int c : { CbcParam::HC_##ID##_EVERY, CbcParam::HC_##ID##_WINDOW, CbcParam::HC_##ID##_MAXFAIL, CbcParam::HC_##ID##_NODES }) { \
-    parameters_[c]->setAutoAllowed(); \
-    parameters_[c]->setDefault(CoinParam::autoIntValue()); \
-    parameters_[c]->setTopic("Heuristics"); \
+    parameters_[c]->setAutoAllowed();                                                                                               \
+    parameters_[c]->setDefault(CoinParam::autoIntValue());                                                                          \
+    parameters_[c]->setTopic("Heuristics");                                                                                         \
   }
   CBC_HEUR_CONTROL_LIST(CBC_HC_INT_SETUP)
 
@@ -3491,6 +3612,80 @@ void CbcParameters::addCbcSolverIntParams()
     "sppGraspWork). 0 means no limit.",
     CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::SPPGRASPFPUMP]->setup(
+    "sppGraspFpump", "Feasibility Pump policy when SppGrasp applies",
+    "auto: preserve the current behavior (switch FPump off for native "
+    "singleton-slack SPP unless explicitly set by the user).\n"
+    "  on: keep the configured FPump setting; do not disable it automatically.\n"
+    "  after: disable FPump only after original-model SppGrasp returns a "
+    "real-feasible improving solution. Explicit -feas always takes precedence.",
+    CoinParam::displayPriorityLow);
+  parameters_[CbcParam::SPPGRASPFPUMP]->appendKwd("auto", 0);
+  parameters_[CbcParam::SPPGRASPFPUMP]->appendKwd("on", 1);
+  parameters_[CbcParam::SPPGRASPFPUMP]->appendKwd("after", 2);
+  parameters_[CbcParam::SPPGRASPFPUMP]->setDefault("auto");
+
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->setup(
+    "sppGraspRootSequence", "Experimental root ordering for SppGrasp and FPump",
+    "legacy: preserve the original-model SppGrasp path and existing FPump policy.\n"
+    "  spp-fpump: at root, try SppGrasp, then FPump even if a solution exists.\n"
+    "  spp-fpump-if-no-feasible: at root, try SppGrasp, then FPump only if "
+    "no feasible incumbent exists.\n"
+    "  fpump-spp: at root, try FPump first, then SppGrasp seeded from the "
+    "best incumbent, if any.\n"
+    "  fpump-spp-guide: like fpump-spp, but if no incumbent exists, use "
+    "FPump's retained least-fractional rounded attempt as a soft SppGrasp "
+    "LP-value guide only when its source LP point was less fractional than "
+    "the captured root LP point.\n"
+    "  spp-fpump-staged: run a short original-model SppGrasp pass, let the "
+    "root LP/cuts and configured FPump calls proceed, then run one SppGrasp "
+    "improvement pass after root cuts using the remaining sppGraspWork "
+    "budget.\n"
+    "  spp-fpump-upfront: cap the original-model pass at sppGraspWork and "
+    "do not register another root SppGrasp call.\n"
+    "  spp-fpump-short: cap the original-model pass at the configured "
+    "sppGraspStageFirstPercent share and do not register another root "
+    "SppGrasp call.\n"
+    "The staged, upfront, and short-effort modes keep the original-model "
+    "pass; other explicit root orderings skip it unless "
+    "-sppGraspRootKeepOriginal is on. Explicit -feas settings are honored.",
+    CoinParam::displayPriorityLow);
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->appendKwd("legacy", 0);
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->appendKwd("spp-fpump", 1);
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->appendKwd(
+    "spp-fpump-if-no-feasible", 2);
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->appendKwd("fpump-spp", 3);
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->appendKwd(
+    "fpump-spp-guide", 4);
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->appendKwd(
+    "spp-fpump-staged", 5);
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->appendKwd(
+    "spp-fpump-upfront", 6);
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->appendKwd(
+    "spp-fpump-short", 7);
+  parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->setDefault("legacy");
+
+  parameters_[CbcParam::SPPGRASPNATIVEPRELP]->setup(
+    "sppGraspNativePreLp",
+    "Automatically try a strictly private singleton solution before the initial LP",
+    "Default auto: for supported binary minimization models, try a deterministic "
+    "real-singleton completion before the initial LP. Every partitioning row "
+    "must have an available column private across ALL active constraints. "
+    "Validate every actual row, bound and integer value before accepting. "
+    "No LP solve, artificial variables, GRASP or LNS are used in this pass. "
+    "Its time counts toward the solve limit; an accepted incumbent survives "
+    "an initial-LP timeout. Existing search settings are unchanged. "
+    "Requires sppGrasp on; custom callbacks, event handlers, cut generators, "
+    "SOS/noninteger objects, pending MIP starts/hot starts, maximization and "
+    "nonlegacy root sequences are conservatively skipped. "
+    "Off disables completion; on is an alias for auto with the same safety "
+    "checks, never a force-through override. Log level 2 reports skip reasons.",
+    CoinParam::displayPriorityLow);
+  parameters_[CbcParam::SPPGRASPNATIVEPRELP]->appendKwd("off", 0);
+  parameters_[CbcParam::SPPGRASPNATIVEPRELP]->appendKwd("on", 1);
+  parameters_[CbcParam::SPPGRASPNATIVEPRELP]->appendKwd("auto", 2);
+  parameters_[CbcParam::SPPGRASPNATIVEPRELP]->setDefault("auto");
+
   parameters_[CbcParam::CUTSKIPMINCOLS]->setup(
     "cutSkipMinC!ols",
     "Fewest columns for which idle cut generators are skipped",
@@ -3646,6 +3841,14 @@ void CbcParameters::addCbcSolverBoolParams()
     "including 'gomoryCuts ifmove', is never touched. The class found and each "
     "parameter changed are logged. See problemClass to force a class, and "
     "cutPassRatio/minDropRatio to scale effort relative to the resolved values.");
+
+  parameters_[CbcParam::SPPGRASPROOTKEEPORIGINAL]->setup(
+    "sppGraspRootKeepOriginal",
+    "Keep the original-model SppGrasp call before an experimental root sequence",
+    "Experimental. When on, retain the pre-preprocessing SppGrasp call even "
+    "when sppGraspRootSequence requests an explicit root order. The ordered "
+    "root calls still run afterward. Default off preserves the existing "
+    "experimental sequence behavior.");
 
   parameters_[CbcParam::PREROOTLPSTRENGTHENING]->setup(
     "preRootLPStr!enghtening",

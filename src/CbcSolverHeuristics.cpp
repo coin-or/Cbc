@@ -40,6 +40,34 @@
 #include "CbcProblemClassifier.hpp"
 #include "CbcStrategy.hpp"
 
+void configureSppGraspCoverageTuning(CbcHeuristicSppGrasp &heuristic, CbcParameters &parameters,
+  const std::string &stage)
+{
+  const std::string path = parameters[CbcParam::SPPGRASPTUNINGPROFILE]->strVal();
+  if (path.empty()) {
+    heuristic.setCoverageTuningProfile(path, std::vector< std::string >(), NULL, stage);
+    return;
+  }
+  const std::pair< CbcParam::CbcParamCode, const char * > options[] = {
+    { CbcParam::SPPGRASPWORK, "maxwork" },
+    { CbcParam::SPPGRASPWORK, "totalwork" },
+    { CbcParam::SPPGRASPNOIMPROVE, "noimp" },
+    { CbcParam::SPPGRASPARTIFICIAL, "artificial" },
+    { CbcParam::SPPGRASPDESTROYROWS, "drows" },
+    { CbcParam::SPPGRASPSTALL, "stall" },
+    { CbcParam::SPPGRASPDESTROYGROW, "dgrow" },
+    { CbcParam::SPPGRASPRELATEDROWS, "related" },
+    { CbcParam::SPPGRASPREALSTALLWORK, "realstallwork" }
+  };
+  std::vector< std::string > explicitOverrides;
+  for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); ++i)
+    if (parameters[options[i].first]->isUserSet())
+      explicitOverrides.push_back(options[i].second);
+  std::string reason;
+  if (!heuristic.setCoverageTuningProfile(path, explicitOverrides, &reason, stage))
+    fprintf(stderr, "%s; retaining legacy SppGrasp parameters\n", reason.c_str());
+}
+
 // Crunch down model
 void crunchIt(ClpSimplex *model)
 {
@@ -1172,9 +1200,9 @@ namespace {
 struct HeuristicControlIds {
   int schedule, every, decay, window, minSuccess, maxFail, timeShare, nodes;
 };
-#define CBC_HC_IDS(ID, N) \
+#define CBC_HC_IDS(ID, N)                                                                          \
   const HeuristicControlIds hcIds##ID = { CbcParam::HC_##ID##_SCHEDULE, CbcParam::HC_##ID##_EVERY, \
-    CbcParam::HC_##ID##_DECAY, CbcParam::HC_##ID##_WINDOW, CbcParam::HC_##ID##_MINSUCCESS, \
+    CbcParam::HC_##ID##_DECAY, CbcParam::HC_##ID##_WINDOW, CbcParam::HC_##ID##_MINSUCCESS,         \
     CbcParam::HC_##ID##_MAXFAIL, CbcParam::HC_##ID##_TIMESHARE, CbcParam::HC_##ID##_NODES };
 CBC_HEUR_CONTROL_LIST(CBC_HC_IDS)
 
@@ -1212,7 +1240,8 @@ void applyHeuristicControl(CbcHeuristic &h, CbcParameters &parameters, const Heu
 } // namespace
 
 int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
-  int noPrinting_, int initialPumpTune, int sppGraspOriginal)
+  int noPrinting_, int initialPumpTune, int sppGraspOriginal,
+  bool sppGraspOriginalSolution)
 {
 #ifdef JJF_ZERO // NEW_STYLE_SOLVER==0
   CbcParam *parameters_ = parameters;
@@ -1244,6 +1273,15 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   int useDW = parameters[CbcParam::DW]->modeVal();
   int useFeasibilityJump = parameters[CbcParam::FEASIBILITYJUMP]->modeVal();
   int useSppGrasp = parameters[CbcParam::SPPGRASP]->modeVal();
+  const int sppRootSequence = parameters[CbcParam::SPPGRASPROOTSEQUENCE]->modeVal();
+  const double sppTotalWork = 1.0e6 * parameters[CbcParam::SPPGRASPWORK]->dblVal();
+  const bool effortPolicyRequested = sppRootSequence >= 5 && sppRootSequence <= 7;
+  const bool effortPolicyConfigured = effortPolicyRequested && sppTotalWork > 0.0;
+  const bool stagedSppConfigured = sppRootSequence == 5 && effortPolicyConfigured;
+  const bool originalOnlySpp = (sppRootSequence == 6 || sppRootSequence == 7)
+    && effortPolicyConfigured;
+  const bool experimentalSppRootSequence = sppRootSequence != 0
+    && (!effortPolicyRequested || effortPolicyConfigured);
   int kType = (type < 10) ? type : 1;
   assert(kType == 1 || kType == 2);
   // Set partitioning/packing with a slack column on every partitioning row:
@@ -1251,27 +1289,99 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   // (normally on the original model, before preprocessing, see
   // CbcSolver::babRunSppGraspOriginal), so it replaces the (expensive)
   // feasibility pump unless the user asked for the pump.
+  // With artificial slacks (partitioning rows without a slack column) it
+  // also runs, but the pump stays: feasibility is the hard part there.
   bool sppGraspDisablesFpump = false;
   bool sppOn = useSppGrasp >= kType && useSppGrasp <= kType + 1;
   std::string sppReason;
-  bool sppApplicable = sppOn
-    && CbcHeuristicSppGrasp::isApplicable(*model->solver(), true, &sppReason);
+  const double sppArtificial = parameters[CbcParam::SPPGRASPARTIFICIAL]->dblVal();
+  const int sppFpumpPolicy = parameters[CbcParam::SPPGRASPFPUMP]->modeVal();
+  const double minimumNativeCoverage = parameters[CbcParam::SPPGRASPMINNATIVECOVERAGE]->dblVal();
+  const int sppApplicability = sppOn
+    ? CbcHeuristicSppGrasp::applicability(
+        *model->solver(), sppArtificial, &sppReason, minimumNativeCoverage)
+    : 0;
+  if (sppOn && minimumNativeCoverage > 0.0 && generalMessageHandler->logLevel() > 1 && !noPrinting_)
+    generalMessageHandler->message(CBC_GENERAL, generalMessages)
+      << "SppGrasp root-entry " + sppReason << CoinMessageEol;
+  bool sppApplicable = sppApplicability > 0;
+  const bool fpumpEnabled = useFpump >= kType && useFpump <= kType + 1;
+  model->setSppGraspRootSequence(
+    experimentalSppRootSequence && !originalOnlySpp && sppApplicable
+    && (fpumpEnabled || stagedSppConfigured));
+  if (effortPolicyRequested && !effortPolicyConfigured
+    && generalMessageHandler->logLevel() > 0 && !noPrinting_) {
+    generalMessageHandler->message(CBC_GENERAL, generalMessages)
+      << "SppGrasp effort policy requires a positive sppGraspWork limit; "
+         "using legacy heuristic scheduling"
+      << CoinMessageEol;
+  }
+  model->setSppGraspPumpGuide(
+    sppRootSequence == 4 && sppApplicable && fpumpEnabled);
+  model->setSppGraspFpumpOnlyWithoutIncumbent(
+    sppRootSequence == 2 && sppApplicable && fpumpEnabled);
   if (sppOn && !sppApplicable && !sppGraspOriginal
     && generalMessageHandler->logLevel() > 1 && !noPrinting_) {
     generalMessageHandler->message(CBC_GENERAL, generalMessages)
       << "SppGrasp not applicable: " + sppReason << CoinMessageEol;
   }
-  if (sppApplicable) {
+  if (experimentalSppRootSequence && sppApplicable && kType == 1
+    && generalMessageHandler->logLevel() > 1 && !noPrinting_) {
+    const char *sequenceName = sppRootSequence == 1
+      ? "SppGrasp then FPump"
+      : sppRootSequence == 2
+      ? "SppGrasp then FPump only without an incumbent"
+      : sppRootSequence == 3
+      ? "FPump then SppGrasp seeded from the incumbent"
+      : sppRootSequence == 4
+      ? "FPump then SppGrasp with an optional less-fractional pump guide"
+      : sppRootSequence == 5
+      ? "staged SppGrasp with a post-cuts improvement pass"
+      : sppRootSequence == 6
+      ? "upfront original-model SppGrasp pass with a total-work cap"
+      : "short original-model SppGrasp pass with no root repeat";
+    const char *sequenceLabel = sppRootSequence >= 5
+      ? "SppGrasp effort policy: "
+      : "SppGrasp root sequence: ";
+    generalMessageHandler->message(CBC_GENERAL, generalMessages)
+      << sequenceLabel << sequenceName << CoinMessageEol;
+    if (sppRootSequence >= 1 && sppRootSequence <= 4 && fpumpEnabled
+      && parameters[CbcParam::PUMPROOTPLACES]->strVal().empty()) {
+      generalMessageHandler->message(CBC_GENERAL, generalMessages)
+        << "  Ordered sequence FPump root placements: LC (improvement "
+           "attempts allowed with an incumbent)"
+        << CoinMessageEol;
+    }
+  }
+  if (sppApplicable && !originalOnlySpp) {
     anyToDo = true;
     CbcHeuristicSppGrasp heuristicSpp(*model);
+    heuristicSpp.setMinimumNativeCoverage(minimumNativeCoverage);
     heuristicSpp.setMaxTime(parameters[CbcParam::SPPGRASPTIME]->dblVal());
     heuristicSpp.setMaxWork(1.0e6 * parameters[CbcParam::SPPGRASPWORK]->dblVal());
     heuristicSpp.setMaxNoImprove(parameters[CbcParam::SPPGRASPNOIMPROVE]->intVal());
-    heuristicSpp.setOrder(-100);
-    heuristicSpp.setRootHooks("LC");
+    CbcSppGrasp::RunParams sppParams = heuristicSpp.runParams();
+    sppParams.destroyRows = parameters[CbcParam::SPPGRASPDESTROYROWS]->intVal();
+    sppParams.stallIterations = parameters[CbcParam::SPPGRASPSTALL]->intVal();
+    sppParams.destroyGrowProbability = parameters[CbcParam::SPPGRASPDESTROYGROW]->dblVal();
+    sppParams.relatedRowProbability = parameters[CbcParam::SPPGRASPRELATEDROWS]->dblVal();
+    sppParams.maxRealStallWork = 1.0e6 * parameters[CbcParam::SPPGRASPREALSTALLWORK]->dblVal();
+    sppParams.relatedAfterFeasible = true;
+    heuristicSpp.setRunParams(sppParams);
+    configureSppGraspCoverageTuning(heuristicSpp, parameters, "root");
+    if (sppApplicability == 2)
+      heuristicSpp.setArtificialSlacks(sppArtificial);
+    heuristicSpp.setOrder(sppRootSequence >= 3 ? -100 : -200);
+    heuristicSpp.setRootHooks(stagedSppConfigured ? "C" : "LC");
     model->addHeuristic(&heuristicSpp);
   }
-  if (useSppGrasp && (sppGraspOriginal > 0 || (!sppGraspOriginal && sppApplicable))
+  bool sppShouldDisableFpump = false;
+  if (!experimentalSppRootSequence && sppFpumpPolicy == 0)
+    sppShouldDisableFpump = sppGraspOriginal == 1
+      || (!sppGraspOriginal && sppApplicability == 1);
+  else if (!experimentalSppRootSequence && sppFpumpPolicy == 2)
+    sppShouldDisableFpump = sppGraspOriginalSolution;
+  if (useSppGrasp && sppShouldDisableFpump
     && !parameters[CbcParam::FPUMP]->isUserSet() && useFpump != CbcParameters::CGOff) {
     sppGraspDisablesFpump = true;
     if (!noPrinting_ && kType == 1) {
@@ -1332,8 +1442,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     // arithmetic; it only affects the standard sequential root-heuristic
     // loops (doHeuristicsAtRoot()/doRootHeuristicsAfterCuts()) via
     // runsAtRootHook(), not tree execution or the FPump-failure fallback.
-    const std::string &jumpRootPlaces =
-      parameters[CbcParam::JUMPROOTPLACES]->strVal();
+    const std::string &jumpRootPlaces = parameters[CbcParam::JUMPROOTPLACES]->strVal();
     if (!jumpRootPlaces.empty())
       heuristicFJ.setRootHooks(jumpRootPlaces);
     if (fjFallbackOnly)
@@ -1348,7 +1457,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     fjCloneIndex = model->numberHeuristics() - 1;
   }
   // FPump done first as it only works if no solution
-  if (useFpump >= kType && useFpump <= kType + 1 && !sppGraspDisablesFpump) {
+  if (fpumpEnabled && !sppGraspDisablesFpump) {
     anyToDo = true;
     CbcHeuristicFPump heuristic4(*model);
     double dextra3 = parameters[CbcParam::SMALLBAB]->dblVal();
@@ -1510,14 +1619,19 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       }
     }
     heuristic4.setHeuristicName("feasibility pump");
+    if (sppRootSequence > 0 && sppRootSequence < 5) {
+      heuristic4.setOrder(sppRootSequence >= 3 ? -200 : -100);
+    }
     // pumpRootPlaces (see CbcParameters.cpp) is an intuitive letter-coded
-    // replacement for pumpTune/moreTune's cryptic kOption digit; only takes
-    // effect when explicitly set (default "" leaves the classic
-    // feasibilityPumpOptions()-driven behavior fully intact).
-    const std::string &pumpRootPlaces =
-      parameters[CbcParam::PUMPROOTPLACES]->strVal();
+    // replacement for pumpTune/moreTune's cryptic kOption digit. Ordered
+    // SppGrasp/FPump experiments default to "LC" so FPump can attempt
+    // improvement with an incumbent; outside those experimental sequences,
+    // an empty value preserves the classic behavior.
+    const std::string &pumpRootPlaces = parameters[CbcParam::PUMPROOTPLACES]->strVal();
     if (!pumpRootPlaces.empty())
       heuristic4.setRootPlacesOverride(pumpRootPlaces);
+    else if (sppRootSequence >= 1 && sppRootSequence <= 4)
+      heuristic4.setRootPlacesOverride("LC");
     // #define ROLF
 #ifdef ROLF
     CbcHeuristicFPump pump(*model);
@@ -1539,10 +1653,8 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     // clones its argument, so pointing at the local stack objects here
     // would dangle once this function returns.
     if (fjCloneIndex >= 0 && fjAfterFPump != 0) {
-      CbcHeuristicFeasibilityJump *fjClone =
-        dynamic_cast< CbcHeuristicFeasibilityJump * >(model->heuristic(fjCloneIndex));
-      CbcHeuristicFPump *fpumpClone =
-        dynamic_cast< CbcHeuristicFPump * >(model->heuristic(model->numberHeuristics() - 1));
+      CbcHeuristicFeasibilityJump *fjClone = dynamic_cast< CbcHeuristicFeasibilityJump * >(model->heuristic(fjCloneIndex));
+      CbcHeuristicFPump *fpumpClone = dynamic_cast< CbcHeuristicFPump * >(model->heuristic(model->numberHeuristics() - 1));
       if (fjClone && fpumpClone)
         fpumpClone->setFeasibilityJumpFallback(fjClone);
     }

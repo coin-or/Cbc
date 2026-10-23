@@ -1,6 +1,6 @@
 # CBC Parameter Reference
 
-*CBC devel — May 2026*
+*CBC v2.933-140-g6c69fc09-dirty — October 2026*
 
 Parameters are specified on the command line **before** `-solve`:
 ```
@@ -11,35 +11,42 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 
 ## Contents
 
-- [Stopping](#stopping) (9 parameters)
-- [Cuts](#cuts) (26 parameters)
-- [Heuristics](#heuristics) (34 parameters)
-- [Branching](#branching) (6 parameters)
+- [Stopping](#stopping) (10 parameters)
+- [MIP Preprocessing](#mip-preprocessing) (13 parameters)
+- [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (9 parameters)
+- [LP Presolve](#lp-presolve) (3 parameters)
+- [Cuts](#cuts) (66 parameters)
+- [Heuristics](#heuristics) (85 parameters)
+- [Branching](#branching) (8 parameters)
 - [Tolerances](#tolerances) (6 parameters)
 - [Conflict Graph](#conflict-graph) (5 parameters)
 - [Strategy](#strategy) (9 parameters)
-- [Solving](#solving) (26 parameters)
+- [Solving](#solving) (25 parameters)
 - [Simplex](#simplex) (19 parameters)
 - [Barrier](#barrier) (3 parameters)
 - [Scaling](#scaling) (4 parameters)
-- [Output](#output) (23 parameters)
+- [Output](#output) (24 parameters)
 - [I/O](#i/o) (37 parameters)
 - [Parallelism](#parallelism) (1 parameters)
-- [MIP Preprocessing — Fast](#mip-preprocessing-—-fast) (4 parameters)
-- [MIP Preprocessing](#mip-preprocessing) (9 parameters)
-- [LP Presolve](#lp-presolve) (3 parameters)
+- [General](#general) (51 parameters)
 
 ---
 
 ## Stopping
 
+### `-maxMemory`
+
+Maximum amount of memory to use during branch and bound
+
+This limits the resident memory this process may use once branch and bound has started; the search is stopped (much like hitting the node or time limit) if it is exceeded. It is not checked outside of branch and bound (e.g. during preprocessing or the initial LP solve). Accepts a plain number of bytes, or a number followed by a unit suffix: b (bytes, the default), k or kb (KiB), m or mb (MiB), g or gb (GiB), t or tb (TiB) -- e.g. '10gb' or '500m'. The keywords 'unlimited', 'off' and 'none' disable the check, and 'all' explicitly requests the default of using all installed physical memory as the limit. By default, the limit is the total physical memory installed on the machine (i.e. 'all the memory'), if it can be determined; otherwise the check is disabled by default.
+
 ### `-allowableGap`
 
 Stop when gap between best possible and incumbent is less than this
 
-If the gap between best solution and best possible solution is less than this then the search will be terminated. Also see ratioGap.
+If the gap between best solution and best possible solution is less than this then the search will be terminated. Default is 1.0e-6, matching HiGHS' mip_abs_gap default. Also see ratioGap.
 
-**Range:** 0 to ∞ (default: 1e-12)
+**Range:** 0 to ∞ (default: 1e-06)
 
 ### `-cutoff`
 
@@ -53,9 +60,9 @@ All solutions must be better than this value (in a minimization sense).  This is
 
 Stop when the gap between the best possible solution and the incumbent is less than this fraction of the larger of the two
 
-If the gap between the best solution and the best possible solution is less than this fraction of the objective value at the root node then the search will terminate.  See 'allowableGap' for a way of using absolute value rather than fraction.
+If the gap between the best solution and the best possible solution is less than this fraction of the objective value at the root node then the search will terminate. Default is 1.0e-4 (0.01%), matching HiGHS' mip_rel_gap default.  See 'allowableGap' for a way of using absolute value rather than fraction.
 
-**Range:** 0 to ∞ (default: 0)
+**Range:** 0 to ∞ (default: 0.0001)
 
 ### `-maxNodes`
 
@@ -63,7 +70,7 @@ Maximum number of nodes to evaluate
 
 This is a repeatable way to limit search.  Normally using time is easier but then the results may not be repeatable.
 
-**Range:** 1 to INT_MAX (default: 2147483647)
+**Range:** 0 to INT_MAX (default: 2147483647)
 
 ### `-maxNNIFS`
 
@@ -77,7 +84,7 @@ This criterion specifies that when a feasible solution is available, the search 
 
 maximum seconds without improving the incumbent solution
 
-With this stopping criterion, after a feasible solution is found, the search should continue only if the incumbent solution was updated recently, the tolerance is specified here. A discussion on why this criterion can be useful is included here: https://yetanothermathprogrammingconsultant.blogspot.com/2019/11/mip-solver-stopping-criteria.html .
+With this stopping criterion, after a feasible solution is found, the search should continue only if the incumbent solution was updated recently, the tolerance is specified here.
 
 **Range:** -1 to inf (default: inf)
 
@@ -105,6 +112,225 @@ After this many seconds clp will act as if maximum iterations had been reached (
 
 **Range:** -1 to inf (default: -1)
 
+## MIP Preprocessing
+
+### `-doCliqueStrengthening`
+
+Run clique strengthening on the loaded model
+
+Immediately builds the conflict graph of the currently loaded model and strengthens set-packing/partitioning cliques against it (extending/dominating constraints) in place, without resolving the LP afterwards. Previously only reachable indirectly through -solve's automatic preRootLPStrenghtening phase; exposed here so it can be triggered manually, mirroring doBoundPropagation. After running, use writeModel to save the strengthened problem.
+
+### `-coefStrengthening`
+
+Whether to tighten oversized integer coefficients before the root LP
+
+When on (the default), the last step of the pre-root-LP strengthening phase shrinks integer coefficients that are larger than their row's slack, adjusting the right-hand side to compensate. This is the classic "big-M" strengthening: the LP relaxation gets tighter while the integer-feasible set is unchanged. It needs no LP information and removes no variable, so it runs before the first relaxation is solved and leaves the model callbacks see intact. Requires -preRootLPStrenghtening to be on (or one of the LP-only commands, which run the phase unconditionally).
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-PrepNames`
+
+If column names will be kept in pre-processed model
+
+Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-preprocTimes`
+
+Whether to report where preprocessing spent its time
+
+When on, preprocessing ends with a table of wall-clock time per phase (presolve, LP solves, probing, ...) and one row per preprocessing pass, and postprocessing reports its own breakdown.  Times include every preprocessing attempt, e.g. the simpler retry after a failed first one.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-rowReductions`
+
+Whether to remove redundant rows before the root LP
+
+When on (the default), the pre-root-LP strengthening phase removes rows that cannot constrain the problem: rows all of whose columns are fixed, and rows that are duplicates or scalar multiples of another row (the survivor inherits the intersection of the two rows' bounds). Candidates are found with a scale-invariant row hash, so the cost is one pass over the nonzeros plus one sort of the rows, and every candidate pair is verified coefficient by coefficient before anything is deleted. The smaller model is then seen by the root LP, the conflict graph and every cut round. Unlike the phase's other steps this one applies to MIPs only: it deletes rows, a deleted row has no dual value, and there is no postsolve at this point to recover one. Cbc reports no duals for a MIP, so this is free on the branch-and-bound path, but it is skipped for the LP-only commands (-solveContinuous, -dualSimplex, -primalSimplex, -barrier) unless this parameter is set to force. force: like on, but also removes rows on the LP-only commands, so that e.g. -initialSolve solves exactly the LP the branch-and-bound root sees (useful for benchmarking root LP methods); dual values are then not available for removed rows. Requires -preRootLPStrenghtening to be on for -solve.
+
+**Values:** `off`, `on`, `force` (default: `on`)
+
+### `-sosOptions`
+
+Whether to use SOS from AMPL
+
+Normally if AMPL says there are SOS variables they should be used, but sometimes they should be turned off - this does so.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-clqstrengthen`
+
+Whether and when to perform Clique Strengthening preprocessing routine
+
+**Values:** `off`, `before`, `after`, `both` (default: `both`)
+
+### `-preprocess`
+
+Whether to use integer preprocessing
+
+This tries to reduce size of the model in a similar way to presolve and it also tries to strengthen the model. This can be very useful and is worth trying.  save option saves on file presolved.mps.  equal will turn <= cliques into ==.  sos will create sos sets if all 0-1 in sets (well one extra is allowed) and no overlaps.  trysos is same but allows any number extra. equalall will turn all valid inequalities into equalities with integer slacks. strategy is as on but uses CbcStrategy.
+
+**Values:** `off`, `on`, `save`, `equal`, `sos`, `trysos`, `equalall`, `strategy`, `aggregate`, `forcesos`, `stop!aftersaving`, `equalallstop` (default: `sos`)
+
+### `-cppGenerate`
+
+Generates C++ code
+
+Once you like what the stand-alone solver does then this allows you to generate user_driver.cpp which approximates the code.  0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values.
+
+**Range:** 0 to 4 (default: 0)
+
+### `-extraVariables`
+
+Allow creation of extra integer variables
+
+Switches on a trivial re-formulation that introduces extra integer variables to group together variables with same cost.
+
+**Range:** -INT_MAX to INT_MAX (default: 0)
+
+### `-tunePreProcess`
+
+Dubious tuning parameters for preprocessing
+
+Format aabbcccc - 
+ If aa then this is number of major passes (i.e. with presolve) 
+ If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) 
+ cccc is bit set 
+ 0 - 1 Heavy probing 
+ 1 - 2 Make variables integer if possible (if obj value)
+ 2 - 4 As above but even if zero objective value
+ 7 - 128 Try and create cliques
+ 8 - 256 If all +1 try hard for dominated rows
+ 9 - 512 Even heavier probing 
+ 10 - 1024 Use a larger feasibility tolerance in presolve
+ 11 - 2048 Try probing before creating cliques
+ 12 - 4096 Switch off duplicate column checking for integers 
+ 13 - 8192 Allow scaled duplicate column checking 
+ 
+     Now aa 99 has special meaning i.e. just one simple presolve.
+
+**Range:** 0 to INT_MAX (default: 7)
+
+### `-fixOnDj`
+
+Try heuristic that fixes variables based on reduced costs
+
+If set, integer variables with reduced costs greater than the specified value will be fixed before branch and bound - use with extreme caution!
+
+**Range:** -∞ to ∞ (default: 0)
+
+### `-tightenFactor`
+
+Tighten bounds using value times largest activity at continuous solution
+
+This sleazy trick can help on some problems.
+
+**Range:** 0 to inf (default: 0)
+
+## MIP Preprocessing — Bound Propagation
+
+### `-doBoundPropagation`
+
+Run bound propagation on the loaded model
+
+Immediately runs bound propagation on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by boundPropLevel. After running, use writeModel to save the tightened problem.
+
+### `-preRootLPStrenghtening`
+
+Whether to run the pre-root-LP strengthening phase before -solve
+
+When on (the default), the first step of -solve/BAB runs bound propagation and, if configured, clique strengthening "before" on the model, ahead of the root LP relaxation solve. Turning this off skips the whole phase in one shot -- the individual sub-steps can still be controlled independently via -boundPropLevel/-singletonBounds and -clqStrengthening.
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-singletonBounds`
+
+Whether to tighten variable bounds from singleton rows before solve
+
+When on, singleton rows (rows with a single nonzero) are used to tighten variable bounds before the initial LP solve and conflict graph construction. This is a cheap preprocessing step that can fix variables and reduce the problem size.
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-boundPropLevel`
+
+Aggression level for bound propagation before solve
+
+Controls how aggressively bound propagation tightens variable bounds before the initial LP solve.
+  off:       disabled (falls back to singletonBounds setting).
+  singletons: singleton rows only — same as singletonBounds on.
+  milpbt:    singletons then knapsack-based bound propagation for up to boundPropMaxRounds rounds (default 100, effectively fixpoint).
+  fixpoint:  singletons then bound propagation until no new fixings are found, regardless of boundPropMaxRounds.
+
+**Values:** `off`, `singletons`, `milpbt`, `fixpoint` (default: `milpbt`)
+
+### `-nodeBoundProp`
+
+Run bound propagation at B&B nodes
+
+When enabled, runs knapsack-based bound propagation after branching decisions are applied at each node (subject to depth constraints), before the LP is solved. Can detect infeasibility earlier and fix additional variables. Controlled by nodeBoundPropMaxDepth and nodeBoundPropDepthInterval.
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-boundPropMaxRounds`
+
+Maximum number of bound propagation rounds
+
+Maximum number of CoinBoundPropagation rounds when boundPropLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when boundPropLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
+
+**Range:** 1 to INT_MAX (default: 100)
+
+### `-nodeBoundPropMaxDepth`
+
+Maximum tree depth at which node bound propagation is applied
+
+Node bound propagation is only applied at depths up to this value. Deeper nodes skip bound propagation to reduce overhead.
+
+**Range:** 0 to INT_MAX (default: 50)
+
+### `-nodeBoundPropMinDepth`
+
+Minimum tree depth at which node bound propagation is applied
+
+Node bound propagation is only applied at depths at or above this value. Shallower nodes skip bound propagation.
+
+**Range:** 0 to INT_MAX (default: 5)
+
+### `-nodeBoundPropDepthInterval`
+
+Depth interval for node bound propagation
+
+Node bound propagation is applied at depths that are multiples of this interval (0, interval, 2*interval, ...). For example, with interval 3 bound propagation runs at depths 0, 3, 6, 9, etc.
+
+**Range:** 1 to INT_MAX (default: 6)
+
+## LP Presolve
+
+### `-presolve`
+
+Whether to presolve problem
+
+Presolve analyzes the model to find such things as redundant equations, equations which fix some variables, equations which can be transformed into bounds, etc. For the initial solve of any problem this is worth doing unless one knows that it will have no effect. Option 'on' will normally do 5 passes, while using 'more' will do 10.  If the problem is very large one can let CLP write the original problem to file by using 'file'.
+
+**Values:** `on`, `off`, `more`, `file` (default: `on`)
+
+### `-passPresolve`
+
+How many passes in presolve
+
+Normally Presolve does 10 passes but you may want to do less to make it more lightweight or do more if improvements are still being made.  As Presolve will return if nothing is being taken out, you should not normally need to use this fine tuning.
+
+**Range:** -200 to 100 (default: 5)
+
+### `-preTolerance`
+
+Tolerance to use in presolve
+
+One may want to increase this tolerance if presolve says the problem is infeasible and one has awkward numbers and is sure that the problem is really feasible.
+
+**Range:** 1e-20 to inf (default: 1e-08)
+
 ## Cuts
 
 ### `-cliqueCuts`
@@ -127,7 +353,7 @@ This can be used to switch on or off all cuts (apart from Reduce and Split).  Th
 
 Whether to use Flow Cover cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglFlowCover
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `onglobal` (default: `ifmove`)
@@ -136,25 +362,33 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 Whether to use alternative Gomory cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  This version is by Giacomo Nannicini and may be more robust than gomoryCuts.
 
-**Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `endonly`, `long`, `longroot`, `longifmove`, `forcelongon`, `longendonly` (default: `off`)
+**Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `endonly`, `long`, `longroot`, `longifmove`, `forcelongon`, `longendonly` (default: `root`)
 
 ### `-gomoryCuts`
 
 Whether to use Gomory cuts
 
-The original cuts - beware of imitations!  Having gone out of favor, they are now more fashionable as LP solvers are more robust and they interact well with other cuts.  They will almost always give cuts (although in this executable they are limited as to number of variables in cut).  However the cuts may be dense so it is worth experimenting (Long allows any length). Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+The original cuts - beware of imitations!  Having gone out of favor, they are now more fashionable as LP solvers are more robust and they interact well with other cuts.  They will almost always give cuts (although in this executable they are limited as to number of variables in cut).  However the cuts may be dense so it is worth experimenting (Long allows any length). Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglGomory
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `forceandglobal`, `forcelongon`, `onglobal`, `longer`, `shorter` (default: `ifmove`)
+
+### `-impliedCliqueCuts`
+
+Whether to use implied-clique cuts
+
+Strengthens rows shaped like x1 + x2 + ... + xk <= M*y (all binary; typically modelling 'x1 OR x2 OR ... -> y') by rooting a clique search at the complement of every binary variable y in the conflict graph and greedily growing it with conflicting literals (including complemented ones, e.g. (1-xj) <= y), producing a disaggregated cut that dominates the original row. Distinct from cliqueCuts (CglBKClique): that runs a general Bron-Kerbosch search over the whole fractional-vertex induced subgraph, while this generator does one cheap hub-rooted greedy extension per binary variable using the same conflict graph, no row parsing required. Benchmarking found most of the same cliques are eventually rediscovered by cliqueCuts given enough rounds, but a few instances show a large, durable bound improvement that cliqueCuts does not reach, and several more reach the same final bound strictly sooner when both run together -- useful since CBC's cut loop and node budget both reward faster bound convergence. Requires the conflict graph (see cgraph).
+
+**Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `onglobal` (default: `ifmove`)
 
 ### `-knapsackCuts`
 
 Whether to use Knapsack cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglKnapsackCover
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `forceandglobal`, `onglobal` (default: `ifmove`)
@@ -171,10 +405,10 @@ This is a gross simplification of 'A Relax-and-Cut Framework for Gomory's Mixed-
 
 Whether to use lift-and-project cuts
 
-These cuts may be expensive to compute. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+These cuts may be expensive to compute. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglLandP
 
-**Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `iflongon` (default: `off`)
+**Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `iflongon` (default: `root`)
 
 ### `-latwomirCuts`
 
@@ -188,7 +422,7 @@ This is a Lagrangean relaxation for Twomir cuts.  See lagomoryCuts for descripti
 
 Whether to use Mixed Integer Rounding cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglMixedIntegerRounding2
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `onglobal` (default: `ifmove`)
@@ -199,7 +433,7 @@ Whether to use odd wheel cuts
 
 This switches on odd-wheel inequalities (either at root or in entire tree).
 
-**Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `onglobal` (default: `off`)
+**Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `onglobal` (default: `ifmove`)
 
 ### `-probingCuts`
 
@@ -213,7 +447,7 @@ Value 'forceOnBut' turns on probing and forces CBC to do probing at every node, 
 
 Whether to use Reduce-and-Split cuts
 
-These cuts may be expensive to generate. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+These cuts may be expensive to generate. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglRedSplit
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon` (default: `off`)
@@ -224,13 +458,13 @@ Whether to use Reduce-and-Split cuts - style 2
 
 This switches on reduce and split cuts (either at root or in entire tree). This version is by Giacomo Nannicini based on Francois Margot's version. Standard setting only uses rows in tableau <= 256, long uses all. These cuts may be expensive to generate. See option cuts for more information on the possible values.
 
-**Values:** `off`, `on`, `root`, `longon`, `longroot` (default: `off`)
+**Values:** `off`, `on`, `root`, `longon`, `longroot` (default: `root`)
 
 ### `-residualCapacityCuts`
 
 Whether to use Residual Capacity cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglResidualCapacity
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon` (default: `off`)
@@ -239,7 +473,7 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 Whether to use Two phase Mixed Integer Rounding cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  Reference: https://github.com/coin-or/Cgl/wiki/CglTwomir
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `forceandglobal`, `forcelongon`, `onglobal` (default: `ifmove`)
@@ -248,10 +482,60 @@ Value 'on' enables the cut generator and CBC will try it in the branch and cut t
 
 Whether to use zero half cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Value 'auto' (the default) keeps the built-in setting unless autoTuneCuts recognises the problem class and picks a better one; any value given explicitly always overrides the automatic choice.
  This implementation was written by Alberto Caprara.
 
 **Values:** `off`, `on`, `root`, `ifmove`, `forceon`, `onglobal` (default: `ifmove`)
+
+### `-cutFilterAlways`
+
+Whether to filter new cuts regardless of problem and round size
+
+When on, the cut parallelism filter ignores cutFilterMinCols, cutFilterMinElements and cutFilterMinCandidates and filters every round.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-cliqueFilterAlways`
+
+Whether to filter clique cuts regardless of problem and cut count
+
+When on, the clique, odd-wheel and implied-clique cut generators ignore cliqueFilterMinCols and cliqueFilterMinCandidates and always filter their cuts.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-impliedCliqueFilter`
+
+Whether the implied-clique cut generator filters its cuts
+
+The implied-clique cut generator normally only removes duplicate cuts, since the per-column filter used for clique cuts was measured to remove almost nothing here. When on, it applies that filter too. cliqueFilterAlways also turns it on.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-autoTuneCuts`
+
+Whether to auto-tune cut generators based on problem class
+
+When on, CBC analyzes instance features to classify the problem (pure set partitioning, set packing, set covering, mixed SPP, etc.) and tailors cut generator selection, effort, and filtering automatically, disabling ineffective generators that waste time. Only parameters still at 'auto' (the default of the individual cut generators, e.g. gomoryCuts, cliqueCuts, zeroHalfCuts, ...) are changed; anything set explicitly, including 'gomoryCuts ifmove', is never touched. The class found and each parameter changed are logged. See problemClass to force a class, and cutPassRatio/minDropRatio to scale effort relative to the resolved values.
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-problemClass`
+
+Problem class override for auto-tuning
+
+Overrides problem classification for algorithm and cut tuning.
+  auto:         automatic detection using instance features (default)
+  general:      general MIP (disables special class auto-tuning)
+  partitioning: pure set partitioning (all rows sum x_j = 1)
+  packing:      pure set packing (all rows sum x_j <= 1)
+  partpack:     set partitioning and packing (sum x_j = 1 or <= 1, like rmp11)
+  covering:     pure set covering (all rows sum x_j >= 1)
+  mixedspp:     mixed SPP (100% of rows are partitioning/packing/covering)
+  mostlyspp:    mostly SPP (>= 85% of rows are SPP)
+  knapsack:     0-1 knapsack problem
+  general01:    general 0-1 MIP
+
+**Values:** `auto`, `general`, `partitioning`, `packing`, `partpack`, `covering`, `mixedspp`, `mostlyspp`, `knapsack`, `general01` (default: `auto`)
 
 ### `-aggregatelevel`
 
@@ -281,9 +565,49 @@ At present this only applies to Gomory cuts. -1 (default) leaves as is. Any valu
 
 Number of rounds that cut generators are applied in the tree
 
-The default is to do one pass. A negative value -n means that n passes are also applied if the objective does not drop.
+The default is 4 passes at each node, stopping early once the objective stops dropping. A negative value -n means that n passes are also applied if the objective does not drop.
 
-**Range:** -INT_MAX to INT_MAX (default: 10)
+**Range:** -INT_MAX to INT_MAX (default: 4)
+
+### `-rootCutDropPatience`
+
+Consecutive below-minDrop rounds before stopping root cuts
+
+The default 2 requires two consecutive weak rounds; 1 restores the previous stopping rule. Values above 1 require this many consecutive root rounds with objective improvement below minDrop before stopping for insufficient progress; a successful round resets the counter. Existing progress-history exceptions still apply. This also delays stopping on empty or zero-iteration root rounds. The pass and time budgets still apply. Ignored for negative passCuts, nonpositive minDrop, tree nodes and heuristic subproblems.
+
+**Range:** 1 to INT_MAX (default: 2)
+
+### `-rootCutFilterScore`
+
+Root cut score: legacy, efficacy or sparse efficacy
+
+Root-only selection score (default 1). 0 preserves legacy fitness; 1 uses violation divided by the coefficient Euclidean norm; 2 also divides by total cut nonzeros. Modes 3 and 4 use the scores of 1 and 2 respectively but omit the best-per-column contest. All apply cutFilterMaxParallelism greedily in score order. Ranged, equality and mandatory cuts are retained. No tree/subproblem change.
+
+**Range:** 0 to 4 (default: 1)
+
+### `-rootCutFilterScope`
+
+Root selection: 0 local, 1 global, 2 both
+
+Combined-round selection using rootCutFilterScore (default 1: global). Score must be nonzero for global selection; 0 restores the per-generator filters only. Mode 1 bypasses the generic per-generator filter at root; mode 2 retains it. Generator-internal filters remain active. Mandatory/branch cuts are protected. Existing cutFilter eligibility and parallelism settings apply. Tree and subproblem selection are unchanged.
+
+**Range:** 0 to 2 (default: 1)
+
+### `-rootCutReusePeriod`
+
+Scan removed root cuts every k rounds (0 = legacy)
+
+0 preserves reuse only when generators produce no new cuts. Positive k also scans the existing removed-root-cut collection on rounds divisible by k, even with new cuts present. Violated cuts are ranked by normalized violation and capped by rootCutReuseMaxCuts. No new persistent pool is created; rejected generator candidates are not retained. Tree/subproblem behavior is unchanged.
+
+**Range:** 0 to INT_MAX (default: 0)
+
+### `-rootCutReuseMaxCuts`
+
+Most removed cuts reactivated on a scheduled scan
+
+Limits additional root reactivation when rootCutReusePeriod is positive. The existing no-new-cuts fallback is unchanged.
+
+**Range:** 1 to INT_MAX (default: 20)
 
 ### `-slowcutpasses`
 
@@ -292,6 +616,22 @@ Maximum number of rounds for slower cut generators
 Some cut generators are fairly slow - this limits the number of times they are tried. The cut generators identified as 'may be slow' at present are Lift and project cuts and both versions of Reduce and Split cuts.
 
 **Range:** -1 to INT_MAX (default: 10)
+
+### `-twoMirLength`
+
+Maximum length of a TwoMir cut
+
+A hard ceiling on the number of nonzeros in a TwoMir cut (including the Lagrangean variants). A tableau row longer than this is not used to derive cuts, and a longer cut is discarded. It applies at the root and in the tree, on top of the generator's own limits: in the tree those are normally tighter (250), so in practice this caps root cuts. On the first root pass the limit is also bounded by the number of columns. The default, 500, is the value CglTwomir has always used.
+
+**Range:** 1 to INT_MAX (default: 500)
+
+### `-gomoryLimitRoot`
+
+Maximum length of a Gomory cut at the root
+
+The longest Gomory cut (including the Lagrangean variants) generated at the root node. 0 lets the generator choose a length from the problem. The default, auto, uses 1000, or 2000 when the preprocessed problem has more than 5000 columns. An explicit value is used as it is, and also replaces the root part of cutLength.
+
+**Range:** 0 to INT_MAX (default: auto)
 
 ### `-zeroHalfRowMaxFractionalCount`
 
@@ -317,13 +657,229 @@ If positive, ZeroHalf will use the sparse separation-graph implementation when t
 
 **Range:** -1 to INT_MAX (default: 8000)
 
+### `-zeroHalfRootPeriod`
+
+Root round interval for ZeroHalf (0 = adaptive)
+
+0 preserves existing scheduling. A positive k tries ZeroHalf at root rounds 1, 1+k, 1+2k, bypassing adaptive backoff for this generator. Shutdown rules still apply: use cutSwitchOff zeroHalf:0 to retain it after barren calls. Tree and subproblem scheduling are unchanged. Root patience, pass and time budgets still apply; the solver need not continue until the next scheduled call.
+
+**Range:** 0 to INT_MAX (default: 0)
+
+### `-cutGateMinCols`
+
+Fewest columns for which GMI, lift-and-project and reduce2 run by default
+
+GMICuts, liftAndProjectCuts and reduce2AndSplitCuts default to root. That default is turned off when the preprocessed problem has fewer than this many columns, or at least cutGateMaxCols columns. Setting one of those generators explicitly (for example on or ifmove) is not affected.
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-cutGateMaxCols`
+
+Column count from which GMI, lift-and-project and reduce2 are off by default
+
+See cutGateMinCols: the root default of GMICuts, liftAndProjectCuts and reduce2AndSplitCuts is turned off when the preprocessed problem has at least this many columns.
+
+**Range:** 0 to INT_MAX (default: 50000)
+
+### `-reduce2MaxRows`
+
+Row count from which reduce2 cuts are not used
+
+reduce2AndSplitCuts is turned off, whatever its setting, when the preprocessed problem has at least this many rows. Its work array grows with the number of rows; see also reduce2MaxBuffer.
+
+**Range:** 0 to INT_MAX (default: 200000)
+
+### `-reduce2MaxCuts`
+
+Most reduce2 cuts kept per round
+
+The number of cuts reduce2AndSplitCuts may return from one call. Never more than the number computed (reduce2MaxComputed, after the reduce2MaxBuffer cap).
+
+**Range:** 1 to INT_MAX (default: 10000)
+
+### `-reduce2MaxComputed`
+
+Most reduce2 cuts computed per round
+
+The number of candidate cuts reduce2AndSplitCuts computes in one call, before choosing which to keep. Lowered further when needed so that this times the number of rows stays within reduce2MaxBuffer.
+
+**Range:** 1 to INT_MAX (default: 10000)
+
+### `-reduce2MaxBuffer`
+
+Memory cap for reduce2, in integers (computed cuts times rows)
+
+reduce2AndSplitCuts allocates a work array of (cuts computed) times (rows) integers. The number computed is lowered so that this product stays within this value, whatever the generator's setting. The default is about 200 MB.
+
+**Range:** 1 to INT_MAX (default: 50000000)
+
+### `-reduce2MaxTabElements`
+
+Memory cap for reduce2, in tableau elements
+
+reduce2AndSplitCuts builds reduced tableaux of (basic integer variables) times (nonbasic continuous variables) doubles. A call that would need a larger one generates no cuts. The default is about 200 MB.
+
+**Range:** 1 to INT_MAX (default: 25000000)
+
+### `-GMIHowOften`
+
+How often GMI cuts are tried in the tree
+
+The node interval given to GMICuts unless it is set to on or global. k > 0 tries every k-th node; a negative k starts at every |k|-th node and lets Cbc adjust it; -99 is root only and -100 is off. The number of tries is also limited by slowcutpasses.
+
+**Range:** -100 to INT_MAX (default: 1)
+
+### `-liftMaxCutsPerRound`
+
+Most lift-and-project cuts per round
+
+The number of cuts liftAndProjectCuts may generate in one call.
+
+**Range:** 1 to INT_MAX (default: 5000)
+
+### `-cutFilterMinCols`
+
+Fewest columns for which new cuts are filtered for parallelism
+
+Each round of Gomory, MIR, TwoMir, GMI, lift-and-project, reduce2 and probing cuts is passed through a cut pool that drops a cut too parallel to a stronger one (see cutFilterMaxParallelism). The filter is skipped on problems with fewer than this many columns, where the extra LP rows are cheap.
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-cutFilterMinElements`
+
+Most matrix nonzeroes for which new cuts are not filtered
+
+Like cutFilterMinCols, but by matrix size: the cut filter is skipped when the problem has at most this many nonzeroes. The default, 0, disables this test.
+
+**Range:** 0 to INT_MAX (default: 0)
+
+### `-cutFilterMinCandidates`
+
+Fewest new cuts in a round for which they are filtered
+
+A round of cuts from one generator is only filtered for parallelism if it produced at least this many cuts.
+
+**Range:** 0 to INT_MAX (default: 10)
+
+### `-cliqueFilterMinCols`
+
+Fewest columns for which clique cuts are filtered
+
+The clique, odd-wheel and implied-clique cut generators pass their cuts through a cut pool that keeps, for each column, only the best-scoring cuts containing it (and, see cliqueFilterMaxParallelism, can also drop near-parallel cuts). Both filters are skipped on problems with fewer than this many columns, where the extra LP rows are cheap. Exact duplicates are always removed. This is separate from the cutFilter* parameters, which apply to the other generators.
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-cliqueFilterMinCandidates`
+
+Fewest clique cuts in a call for which they are filtered
+
+A call of the clique or odd-wheel cut generator only filters its cuts if it found at least this many. With fewer, the filter almost never removes anything but still costs the scoring. Not used by impliedCliqueCuts, which does not know its cut count in advance.
+
+**Range:** 0 to INT_MAX (default: 20)
+
+### `-cutSkipMinTries`
+
+Root passes before an idle cut generator may be skipped
+
+With the adaptive root cut-generator skip on (more2MipOptions keyword adaptiveCutSkip, the default), a generator that keeps producing no cuts at the root is skipped for a while and then retried. It is only considered for skipping from this root pass on.
+
+**Range:** 1 to INT_MAX (default: 3)
+
+### `-cutSkipMissThreshold`
+
+Consecutive barren root passes before a cut generator is skipped
+
+See cutSkipMinTries: a generator is skipped once this many of its consecutive root calls have produced no cut. Any cut resets the count and the backoff.
+
+**Range:** 1 to INT_MAX (default: 3)
+
+### `-cutSkipInitialPeriod`
+
+Root passes an idle cut generator is first skipped for
+
+See cutSkipMinTries: the first backoff lasts this many passes. Each further barren retry doubles it, up to cutSkipMaxPeriod.
+
+**Range:** 1 to INT_MAX (default: 5)
+
+### `-cutSkipMaxPeriod`
+
+Most root passes an idle cut generator is skipped for
+
+See cutSkipInitialPeriod.
+
+**Range:** 1 to INT_MAX (default: 20)
+
+### `-cutSkipMinCols`
+
+Fewest columns for which idle cut generators are skipped
+
+See cutSkipMinTries: on problems with fewer columns than this, every generator is called on every root pass, since the extra LP solves are cheap there.
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-reduce2TimeLimit`
+
+Time limit for one reduce2 call, in seconds
+
+Each call of reduce2AndSplitCuts stops after this much CPU time. The limit restarts on every call.
+
+**Range:** 0 to inf (default: 60)
+
+### `-liftTimeLimit`
+
+Total time budget for lift-and-project cuts, in seconds
+
+A cumulative CPU-time budget for liftAndProjectCuts over the whole solve, not per call. Once it is spent the generator stops pivoting for the rest of the solve. The default, 1e30, is unlimited.
+
+**Range:** 0 to inf (default: 1e+30)
+
+### `-liftCutTimeLimit`
+
+Time limit for one lift-and-project cut, in seconds
+
+Caps the pivot search for a single liftAndProjectCuts cut, so that one candidate cannot use the whole of liftTimeLimit. The default, 1e30, is unlimited.
+
+**Range:** 0 to inf (default: 1e+30)
+
+### `-cutFilterMaxParallelism`
+
+Parallelism above which the cut filter drops the weaker cut
+
+Two cuts whose normalised coefficient vectors have a dot product above this value are treated as parallel, and only the one that is more violated by the LP solution is kept. 1 keeps everything but exact duplicates; lower values filter more aggressively.
+
+**Range:** 0 to 1 (default: 0.9)
+
+### `-cliqueFilterMaxParallelism`
+
+Parallelism above which the clique cut filter drops the weaker cut
+
+Like cutFilterMaxParallelism, for the clique, odd-wheel and implied-clique cut generators. The default, 1, turns this filter off: a sweep of 0.1 to 0.9 found no value that paid off for these cuts.
+
+**Range:** 0 to 1 (default: 1)
+
+### `-cutPassRatio`
+
+Relative multiplier for the root cut passes budget
+
+Scales the resolved root cut pass budget by this factor (e.g. 1.5 runs 1.5x passes, 0.8 runs 0.8x passes).
+
+**Range:** 0 to 100 (default: 1)
+
+### `-minDropRatio`
+
+Relative multiplier for the minimum drop threshold
+
+Scales the minimum drop threshold by this factor (e.g. 0.5 lowers minDrop to allow more passes).
+
+**Range:** 0 to 10000000000 (default: 1)
+
 ### `-passCuts`
 
 Number of cut passes at root node
 
-The default is 100 passes if less than 500 columns, 100 passes (but stop if the drop is small) if less than 5000 columns, 20 otherwise.
+A positive value n means up to n passes, stopping once a pass improves the objective by less than minDrop; a negative value -n means up to n passes, ignoring minDrop. The default, auto, chooses by problem size: cutPassSmall if the problem has fewer rows than sizeSmallRows or fewer columns than sizeSmallCols, otherwise cutPassMedium if it has fewer columns than sizeLargeCols, otherwise cutPassLarge. The choice is logged.
 
-**Range:** -INT_MAX to INT_MAX (default: 100)
+**Range:** -INT_MAX to INT_MAX (default: auto)
 
 ## Heuristics
 
@@ -493,7 +1049,7 @@ Whether to try Variable Neighborhood Search
 
 Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-**Values:** `off`, `on`, `both`, `before`, `intree` (default: `off`)
+**Values:** `off`, `on`, `both`, `before`, `intree` (default: `on`)
 
 ### Improvement Heuristics (2+ solutions)
 
@@ -516,6 +1072,14 @@ This heuristic does branch and cut on the problem given by fixing variables whic
 **Values:** `off`, `on`, `both`, `before` (default: `off`)
 
 ### General Heuristic Settings
+
+#### `-feasibilityJump`
+
+Whether to use the Feasibility Jump heuristic
+
+Feasibility Jump is a primal heuristic that searches for integer-feasible solutions without LP solves. It maintains a weighted score over constraints and iteratively flips integer variables toward feasibility. Effective especially early in the search, when no incumbent solution exists yet -- getting *some* feasible solution as early as possible matters on its own, since without one no primal bound (and hence no gap, no objective-based fixing) is available at all. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
+
+**Values:** `off`, `on`, `both`, `before` (default: `on`)
 
 #### `-heuristicsOnOff`
 
@@ -541,13 +1105,91 @@ If on then tries to branch to solution given by AMPL or priorities file.
 
 **Values:** `off`, `on` (default: `off`)
 
+#### `-rinsSchedule`
+
+When the rins heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of rinsEvery.
+  nodes:     once every rinsEvery nodes.
+  noimprove: every rinsEvery nodes, and straight after each new incumbent.
+Back-off (rinsDecay, rinsWindow, rinsMinSuccess), rinsMaxFail and rinsTimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
+#### `-vndSchedule`
+
+When the vnd heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of vndEvery.
+  nodes:     once every vndEvery nodes.
+  noimprove: every vndEvery nodes, and straight after each new incumbent.
+Back-off (vndDecay, vndWindow, vndMinSuccess), vndMaxFail and vndTimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
+#### `-dinsSchedule`
+
+When the dins heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of dinsEvery.
+  nodes:     once every dinsEvery nodes.
+  noimprove: every dinsEvery nodes, and straight after each new incumbent.
+Back-off (dinsDecay, dinsWindow, dinsMinSuccess), dinsMaxFail and dinsTimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
+#### `-combineSchedule`
+
+When the combine heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of combineEvery.
+  nodes:     once every combineEvery nodes.
+  noimprove: every combineEvery nodes, and straight after each new incumbent.
+Back-off (combineDecay, combineWindow, combineMinSuccess), combineMaxFail and combineTimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
+#### `-combine2Schedule`
+
+When the combine2 heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of combine2Every.
+  nodes:     once every combine2Every nodes.
+  noimprove: every combine2Every nodes, and straight after each new incumbent.
+Back-off (combine2Decay, combine2Window, combine2MinSuccess), combine2MaxFail and combine2TimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
+#### `-proximitySchedule`
+
+When the proximity heuristic is attempted in the tree
+
+auto: the heuristic's built-in schedule (default).
+  legacy:    the heuristic's historical node-count gating.
+  depth:     only at depths that are a multiple of proximityEvery.
+  nodes:     once every proximityEvery nodes.
+  noimprove: every proximityEvery nodes, and straight after each new incumbent.
+Back-off (proximityDecay, proximityWindow, proximityMinSuccess), proximityMaxFail and proximityTimeShare apply on top of any schedule.
+
+**Values:** `auto`, `legacy`, `depth`, `nodes`, `noimprove` (default: `auto`)
+
 #### `-depthMiniBab`
 
 Depth at which to try mini branch-and-bound
 
-Rather a complicated parameter but can be useful. -1 means off for large problems but on as if -12 for problems where rows+columns<500, -2 means use Cplex if it is linked in.  Otherwise if negative then go into depth first complete search fast branch and bound when depth>= -value-2 (so -3 will use this at depth>=1).  This mode is only switched on after 500 nodes.  If you really want to switch it off for small problems then set this to -999.  If >=0 the value doesn't matter very much.  The code will do approximately 100 nodes of fast branch and bound every now and then at depth>=5. The actual logic is too twisted to describe here. The default has been changed from -1 to +1.  This uses Clp and saves factorizations etc to be faster.
+Rather a complicated parameter but can be useful. If >=0 the code does approximately 100 nodes of fast branch and bound (using Clp, saving factorizations etc.) every now and then at depth>=value. If negative, -2 means use Cplex if it is linked in; otherwise go into depth first complete search fast branch and bound when depth>= -value-2 (so -3 will use this at depth>=1), switched on only after 500 nodes. -1 means off, except for a small problem (see sizeMiniBab) where it acts as -12. -999 means off for every problem. The default, auto, uses 5 for a small problem and 8 otherwise (1 with strategy easy). The actual logic is too twisted to describe here. The value chosen for auto or -1 is logged.
 
-**Range:** -INT_MAX to INT_MAX (default: 1)
+**Range:** -INT_MAX to INT_MAX (default: auto)
 
 #### `-diveOpt`
 
@@ -609,6 +1251,214 @@ Print feasibility pump progress every N passes (0 = disabled).
 
 **Range:** 0 to 1000000 (default: 0)
 
+#### `-diveMaxIterTree`
+
+Simplex iteration limit for a dive in the tree
+
+Each diving heuristic stops a dive in the tree after this many simplex iterations. The default, auto, uses max(10000, 2*rows+columns) of the preprocessed problem. Not applied with rootHeurSchedule. The value used is logged.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-diveMaxIterRoot`
+
+Simplex iteration limit for a dive at the root
+
+Each diving heuristic stops a dive at the root after this many simplex iterations. The default, auto, uses max(40000, 8*rows+4*columns) of the preprocessed problem. Not applied with rootHeurSchedule. The value used is logged.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-rinsEvery`
+
+Interval (nodes or depth) between rins attempts
+
+The K of rinsSchedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-rinsWindow`
+
+Runs between success-rate checks for rins
+
+See rinsDecay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-rinsMaxFail`
+
+Pause rins after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-rinsNodes`
+
+Node limit of the sub-MIP solved by rins
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-vndEvery`
+
+Interval (nodes or depth) between vnd attempts
+
+The K of vndSchedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-vndWindow`
+
+Runs between success-rate checks for vnd
+
+See vndDecay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-vndMaxFail`
+
+Pause vnd after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-vndNodes`
+
+Node limit of the sub-MIP solved by vnd
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-dinsEvery`
+
+Interval (nodes or depth) between dins attempts
+
+The K of dinsSchedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-dinsWindow`
+
+Runs between success-rate checks for dins
+
+See dinsDecay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-dinsMaxFail`
+
+Pause dins after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-dinsNodes`
+
+Node limit of the sub-MIP solved by dins
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combineEvery`
+
+Interval (nodes or depth) between combine attempts
+
+The K of combineSchedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combineWindow`
+
+Runs between success-rate checks for combine
+
+See combineDecay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combineMaxFail`
+
+Pause combine after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-combineNodes`
+
+Node limit of the sub-MIP solved by combine
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combine2Every`
+
+Interval (nodes or depth) between combine2 attempts
+
+The K of combine2Schedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combine2Window`
+
+Runs between success-rate checks for combine2
+
+See combine2Decay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-combine2MaxFail`
+
+Pause combine2 after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-combine2Nodes`
+
+Node limit of the sub-MIP solved by combine2
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-proximityEvery`
+
+Interval (nodes or depth) between proximity attempts
+
+The K of proximitySchedule. auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-proximityWindow`
+
+Runs between success-rate checks for proximity
+
+See proximityDecay. auto: the heuristic's built-in value (10).
+
+**Range:** 1 to INT_MAX (default: auto)
+
+#### `-proximityMaxFail`
+
+Pause proximity after this many failed runs on the same incumbent
+
+The heuristic resumes as soon as the incumbent improves. 0 never pauses. auto: never pauses.
+
+**Range:** 0 to INT_MAX (default: auto)
+
+#### `-proximityNodes`
+
+Node limit of the sub-MIP solved by proximity
+
+auto: the heuristic's built-in value.
+
+**Range:** 1 to INT_MAX (default: auto)
+
 #### `-artificialCost`
 
 Costs >= this treated as artificials in feasibility pump
@@ -622,6 +1472,150 @@ Maximum fractional distance for RINS close-fixing fallback
 When the standard RINS fix-count threshold (>20%% of integers must agree between LP and best solution) is not met, integer variables whose current LP value is within this distance of the corresponding best-solution integer value are sorted by closeness and greedily fixed (closest first) until the threshold is satisfied. A value of 0.0 disables the fallback. Default: 0.4. Typical useful values: 0.2-0.5.
 
 **Range:** 0 to 0.5 (default: 0.4)
+
+#### `-rinsDecay`
+
+Back-off growth of the rins interval after unproductive runs
+
+Every rinsWindow runs, if fewer than rinsMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-rinsMinSuccess`
+
+Success rate below which rins backs off
+
+See rinsDecay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-rinsTimeShare`
+
+Largest fraction of the elapsed time rins may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-vndDecay`
+
+Back-off growth of the vnd interval after unproductive runs
+
+Every vndWindow runs, if fewer than vndMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-vndMinSuccess`
+
+Success rate below which vnd backs off
+
+See vndDecay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-vndTimeShare`
+
+Largest fraction of the elapsed time vnd may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-dinsDecay`
+
+Back-off growth of the dins interval after unproductive runs
+
+Every dinsWindow runs, if fewer than dinsMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-dinsMinSuccess`
+
+Success rate below which dins backs off
+
+See dinsDecay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-dinsTimeShare`
+
+Largest fraction of the elapsed time dins may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-combineDecay`
+
+Back-off growth of the combine interval after unproductive runs
+
+Every combineWindow runs, if fewer than combineMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-combineMinSuccess`
+
+Success rate below which combine backs off
+
+See combineDecay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-combineTimeShare`
+
+Largest fraction of the elapsed time combine may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-combine2Decay`
+
+Back-off growth of the combine2 interval after unproductive runs
+
+Every combine2Window runs, if fewer than combine2MinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-combine2MinSuccess`
+
+Success rate below which combine2 backs off
+
+See combine2Decay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-combine2TimeShare`
+
+Largest fraction of the elapsed time combine2 may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-proximityDecay`
+
+Back-off growth of the proximity interval after unproductive runs
+
+Every proximityWindow runs, if fewer than proximityMinSuccess of them improved the incumbent, the interval between runs is multiplied by (1 + this). 0 switches the back-off off. auto: the heuristic's built-in value.
+
+**Range:** 0 to 1000000 (default: auto)
+
+#### `-proximityMinSuccess`
+
+Success rate below which proximity backs off
+
+See proximityDecay. auto: the heuristic's built-in value (1/3).
+
+**Range:** 0 to 1 (default: auto)
+
+#### `-proximityTimeShare`
+
+Largest fraction of the elapsed time proximity may use
+
+Once the heuristic has used more than this fraction of the elapsed solve time it is not started again until the fraction drops. 0 means no limit. auto: no limit.
+
+**Range:** 0 to 1 (default: auto)
 
 ## Branching
 
@@ -662,6 +1656,22 @@ How to deal with SOS priorities
 This sets priorities for SOS.  Values 'high' and 'low' just set a priority relative to the for integer variables.  Value 'orderhigh' gives first highest priority to the first SOS and integer variables a low priority.  Value 'orderlow' gives integer variables a high priority then SOS in order.
 
 **Values:** `off`, `high`, `low`, `orderhigh`, `orderlow` (default: `off`)
+
+### `-strongBoostRows`
+
+Row count below which strong branching is boosted
+
+In the top few levels of the tree, strong branching looks at 3 times as many candidates, and at the root 18 times as many, when the problem has fewer than this many rows or fewer than strongBoostSize rows plus columns. 0 for both turns the boost off; a very large value applies it always.
+
+**Range:** 0 to INT_MAX (default: 300)
+
+### `-strongBoostSize`
+
+Rows plus columns below which strong branching is boosted
+
+See strongBoostRows: the boost applies when rows < strongBoostRows or rows+columns < this value.
+
+**Range:** 0 to INT_MAX (default: 2500)
 
 ### `-trustPseudocosts`
 
@@ -860,12 +1870,6 @@ Solve to continuous optimum
 
 This just solves the problem to the continuous optimum, without adding any cuts.
 
-### `-strengthen`
-
-Create strengthened problem
-
-This creates a new problem by applying the root node cuts. All tight constraints will be in resulting problem.
-
 ### `-constraintfromCutoff`
 
 Whether to use cutoff as constraint
@@ -879,11 +1883,14 @@ For some problems, cut generators and general branching work better if the probl
 Which LP algorithm to use for the initial LP relaxation solve
 
 Controls which LP algorithm is used when -solve or -initialSolve triggers the root LP relaxation.
-  dual:    dual simplex (default).
-  primal:  primal simplex.
-  barrier: interior-point (barrier) method.
+  dual:      dual simplex.
+  primal:    primal simplex.
+  barrier:   interior-point (barrier) method.
+  racing:    opportunistic parallel LP racing -- multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) are run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (-threads).
+  recommend: ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features (see CbcLpParamScorer) to pick the settings expected to solve fastest. Runs sequentially.
+  auto:      picks racing when running in parallel (threads >= 2) or recommend when running sequentially (threads == 1). (default)
 
-**Values:** `dual`, `primal`, `barrier` (default: `dual`)
+**Values:** `dual`, `primal`, `barrier`, `auto`, `racing`, `recommend` (default: `auto`)
 
 ### `-maxSavedSolutions`
 
@@ -999,11 +2006,11 @@ The default is minimize - use 'direction maximize' for maximization.
 
 ### `-vector`
 
-Whether to use vector? Form of matrix in simplex
+Try and use vector instructions in simplex
 
-If this is on ClpPackedMatrix uses extra column copy in odd format.
+At present only for Intel architectures - but could be extended. Uses avx2 or avx512 instructions. Uses different storage for matrix - can be of benefit without instruction set on some problems. I may add pool to switch on a pool matrix
 
-**Values:** `off`, `on` (default: `off`)
+**Values:** `off`, `on`, `ones` (default: `off`)
 
 ### `-decompose`
 
@@ -1019,7 +2026,7 @@ Solves dual reformulation
 
 Don't even think about it.
 
-**Range:** 0 to 4 (default: 3)
+**Range:** 0 to 4 (default: 0)
 
 ### `-randomSeed`
 
@@ -1097,9 +2104,9 @@ This is a type of 'crash' which works well on some homogeneous problems. It work
 
 Maximum number of iterations between refactorizations
 
-If this is left at its default value of 200 then CLP will guess a  value to use.  CLP may decide to re-factorize earlier for accuracy.
+The default, auto, lets CLP guess a value from the number of rows; a number, 200 included, is used as given.  CLP may decide to re-factorize earlier for accuracy.
 
-**Range:** 1 to INT_MAX (default: 200)
+**Range:** 1 to INT_MAX (default: auto)
 
 ### `-maxIterations`
 
@@ -1159,9 +2166,9 @@ Dubious options for Simplex - see ClpSimplex.hpp
 
 Initially algorithm acts as if no gap between bounds exceeds this value
 
-The dual algorithm in Clp is a single phase algorithm as opposed to a two phase algorithm where you first get feasible then optimal.  If a problem has both upper and lower bounds then it is trivial to get dual feasible by setting non basic variables to correct bound.  If the gap between the upper and lower bounds of a variable is more than the value of dualBound Clp introduces fake bounds so that it can make the problem dual feasible.  This has the same effect as a composite objective function in the primal algorithm.  Too high a value may mean more iterations, while too low a bound means the code may go all the way and then have to increase the bounds.  OSL had a heuristic to adjust bounds, maybe we need that here.
+The dual algorithm in Clp is a single phase algorithm as opposed to a two phase algorithm where you first get feasible then optimal.  If a problem has both upper and lower bounds then it is trivial to get dual feasible by setting non basic variables to correct bound.  If the gap between the upper and lower bounds of a variable is more than the value of dualBound Clp introduces fake bounds so that it can make the problem dual feasible.  This has the same effect as a composite objective function in the primal algorithm.  Too high a value may mean more iterations, while too low a bound means the code may go all the way and then have to increase the bounds.  OSL had a heuristic to adjust bounds, maybe we need that here.  The default, auto, starts from 1.0e10 and lets the code replace it from the problem's bounds (Cbc does so before branch and bound); a number, 1.0e10 included, is used as given.
 
-**Range:** 1e-20 to ∞ (default: 10000000000)
+**Range:** 1e-20 to ∞ (default: auto)
 
 ### `-primalWeight`
 
@@ -1187,7 +2194,7 @@ Which cholesky algorithm
 
 For a barrier code to be effective it needs a good Cholesky ordering and factorization. The native ordering and factorization is not state of the art, although acceptable. You may want to link in one from another source.  See Makefile.locations for some possibilities.
 
-**Values:** `native`, `dense`, `fudge!Long_dummy`, `wssmp_dummy`, `Uni!versityOfFlorida_dummy`, `Taucs_dummy`, `Mumps_dummy`, `Pardiso_dummy` (default: `native`)
+**Values:** `native`, `dense`, `fudge!Long_dummy`, `wssmp_dummy`, `Uni!versityOfFlorida`, `Taucs_dummy`, `Mumps_dummy`, `Pardiso_dummy` (default: `native`)
 
 ### `-crossover`
 
@@ -1379,6 +2386,22 @@ Print feasibility pump progress every N seconds (0 = disabled, default 5).
 
 **Range:** 0 to 10000000000 (default: 5)
 
+### `-progressMinChange`
+
+Minimum relative dual bound improvement recorded by progressCsv
+
+A dual bound row is appended to the progressCsv file only if the bound improved by at least this fraction of max(1,|bound|) since the last recorded one. Incumbents, the start and the final state are always recorded. 0 records every improvement. Default 1e-4.
+
+**Range:** 0 to 1 (default: 0.0001)
+
+### `-progressInterval`
+
+Seconds without a progress event before a heartbeat is sent
+
+The search-progress event (also the C callback Cbc_setProgressCallback) is always sent on a new incumbent and on a significant dual bound improvement (see progressMinChange). If neither happens for this many seconds, a heartbeat ("tick") is sent so consumers see the node count advance. Ticks are not written to progressCsv. 0 disables heartbeats. Default 1.
+
+**Range:** 0 to 10000000000 (default: 1)
+
 ### `-bufferedMode`
 
 Whether to flush print buffer
@@ -1536,14 +2559,14 @@ This writes the statistics gathered so far to the file designated by csvStatisti
 
 writes instance features to CSV file
 
-This extracts all OsiFeatures from the current MIP instance and appends them as a single row to the file designated by csvFeatures (default 'features.csv'). If no file name is supplied the previous value is used. The header row is written automatically when the file is new or empty. A total of 207 numeric features are extracted, covering:
+This extracts all OsiFeatures from the current MIP instance and appends them as a single row to the file designated by csvFeatures (default 'features.csv'). If no file name is supplied the previous value is used. The header row is written automatically when the file is new or empty. A total of 211 numeric features are extracted, covering:
   - Problem size: number of columns (variables) and rows (constraints),
     non-zeros, matrix density, columns-per-row ratio.
   - Variable types: counts and percentages of binary, general integer
     and continuous variables; unbounded variables.
   - Constraint classes: partitioning, packing, covering, cardinality,
     knapsack, integer knapsack, invariant knapsack, singleton, aggregation,
-    precedence, variable-bound and bin-packing rows.
+    precedence, variable-bound, bin-packing and hub-implication rows.
   - Objective and matrix statistics: min/max/mean/std-dev of non-zero
     coefficients, objective coefficients and right-hand-side values;
     column non-zero distribution (fraction of columns with >= k non-zeros
@@ -1554,13 +2577,13 @@ All features are computed in O(nz) time.
 
 Check LP/MIP solution feasibility and write validation report
 
-Recomputes constraint and bound violations from scratch and writes a machine-readable report to the specified file (default 'sol_validation.txt'). Reports feasibility status, largest primal and dual errors, and identifies the constraint/variable with the largest violation.
+Recomputes, on the unscaled model and without modifying the solver, row activities, row/column bound violations and (for continuous solutions) reduced-cost sign/complementarity violations, and writes a machine-readable report to the specified file (default 'sol_validation.txt'). Violations are judged relative to the magnitude of the bounds/terms they are computed from, so rounding noise on badly scaled models is not reported. Reports lp_feasible, lp_optimal (continuous only), largest (relative and absolute)/sum/count of primal and dual violations, the recomputed objective vs the solver's, and the constraints/variables with the largest violations.
 
 ### `-csvFeatures`
 
 sets file name for writing out instance features
 
-Sets the file name used by writeFeatures. If name is not specified the previous value is used. Initialized to 'features.csv'. The header row listing all 207 feature names is written automatically when the file is new or empty; subsequent calls append a new row.
+Sets the file name used by writeFeatures. If name is not specified the previous value is used. Initialized to 'features.csv'. The header row listing all 211 feature names is written automatically when the file is new or empty; subsequent calls append a new row.
 
 ### `-csvStatistics`
 
@@ -1604,6 +2627,12 @@ sets name for file to store suboptimal solutions in
 
 This will set the name solutions will be written to and read from. This is initialized to 'next.sol'. 
 
+### `-progressCsv`
+
+writes the primal/dual bound evolution to a CSV file
+
+Writes a CSV with columns time,primal,dual,source,nodes: one row per new incumbent (source = the heuristic that found it, or 'tree') and one row per tree progress line (source = 'bound'). Times are seconds since the start of the branch-and-bound model, values are those of the preprocessed problem. Used by test/cbc_pdi.py for exact primal-dual integral computation. Empty (default) disables it.
+
 ### `-priorityFile`
 
 Name of file to import priorities from
@@ -1628,23 +2657,11 @@ Set Default directory for import etc.
 
 This sets the directory which import, export, saveModel, restoreModel etc. will use. It is initialized to the current directory.
 
-### `-dirSample`
-
-Set directory where the COIN-OR sample problems are.
-
-This sets the directory where the COIN-OR sample problems reside. It is used only when -unitTest is passed to cbc. cbc will pick up the test problems from this directory.
-
 ### `-dirNetlib`
 
 Set directory where the netlib problems are.
 
 This sets the directory where the netlib problems reside. One can get the netlib problems from COIN-OR or from the main netlib site. This parameter is used only when -netlib is passed to cbc. cbc will pick up the netlib problems from this directory. If cbc is built without zlib support then the problems must be uncompressed.
-
-### `-dirMiplib`
-
-Set directory where the miplib 2003 problems are.
-
-This sets the directory where the miplib 2003 problems reside. One can get the miplib problems from COIN-OR or from the main miplib site. This parameter is used only when -miplib is passed to cbc. cbc will pick up the miplib problems from this directory. If cbc is built without zlib support then the problems must be uncompressed.
 
 ### `-errorsAllowed`
 
@@ -1653,6 +2670,17 @@ Whether to allow import errors
 The default is not to use any model which had errors when reading the mps file.  Setting this to 'on' will allow all errors from which the code can recover simply by ignoring the error.  There are some errors from which the code can not recover, e.g., no ENDATA.  This has to be set before import, i.e., -errorsAllowed on -import xxxxxx.mps.
 
 **Values:** `off`, `on` (default: `off`)
+
+### `-mipStartFix`
+
+Which columns a mip start fixes before its LP is re-solved
+
+A mip start normally names the integer variables and leaves the continuous ones to be recovered by solving the LP with those fixed.
+  integerZero: fix integers only, and take every integer the start does not mention to be zero -- which is what a start listing just the nonzero integers means.
+  integer:     fix integers only, leaving unmentioned ones free between their own bounds.
+  all:         fix supplied continuous values too. This pins down more of the solution, but a rounding error in a supplied value can make the LP infeasible; when that happens the continuous columns are released and the LP is retried with just the integers fixed.
+
+**Values:** `integerZero`, `integer`, `all` (default: `integerZero`)
 
 ### `-basisIn`
 
@@ -1704,152 +2732,378 @@ To use multiple threads, set threads to number wanted.  It may be better to use 
 
 **Range:** -100 to 100000 (default: 0)
 
-## MIP Preprocessing — Fast
+## General
 
-### `-fastPreProcess`
+### `-help`
 
-Run fast MILP preprocessing on the loaded model
+Print out version, non-standard options and some help
 
-Immediately runs the fast MILP preprocessor on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by fastPreProcessLevel. After running, use writeModel to save the tightened problem.
+This prints out some help to get a user started. If you're seeing this message, you should be past that stage.
 
-### `-singletonBounds`
+### `-end`
 
-Whether to tighten variable bounds from singleton rows before solve
+Stops execution
 
-When on, singleton rows (rows with a single nonzero) are used to tighten variable bounds before the initial LP solve and conflict graph construction. This is a cheap preprocessing step that can fix variables and reduce the problem size.
+This stops execution; end, exit, quit and stop are synonyms.
 
-**Values:** `off`, `on` (default: `on`)
+### `-exit`
 
-### `-fastPreProcessLevel`
+Stops cbc execution
 
-Aggression level for fast MILP preprocessing before solve
+This stops the execution of Cbc, end, exit, quit and stop are synonyms
 
-Controls how aggressively fast preprocessing tightens variable bounds before the initial LP solve.
-  off:       disabled (falls back to singletonBounds setting).
-  singletons: singleton rows only — same as singletonBounds on.
-  milpbt:    singletons then knapsack-based bound tightening for up to fastPreProcessMaxRounds rounds (default 100, effectively fixpoint).
-  fixpoint:  singletons then bound tightening until no new fixings are found, regardless of fastPreProcessMaxRounds.
+### `-quit`
 
-**Values:** `off`, `singletons`, `milpbt`, `fixpoint` (default: `milpbt`)
+Stops cbc execution
 
-### `-fastPreProcessMaxRounds`
+This stops the execution of Cbc, end, exit, quit and stop are synonyms
 
-Maximum number of bound-tightening rounds in fast preprocessing
+### `-stop`
 
-Maximum number of CoinMILPBoundTightening rounds when fastPreProcessLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when fastPreProcessLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
+Stops cbc execution
 
-**Range:** 1 to INT_MAX (default: 100)
+This stops the execution of Cbc, end, exit, quit and stop are synonyms
 
-## MIP Preprocessing
+### `-version`
 
-### `-PrepNames`
+Print version
 
-If column names will be kept in pre-processed model
+### `-cutSwitchOff`
 
-Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem
+When a cut generator is switched off for the whole solve
 
-**Values:** `off`, `on` (default: `on`)
+A generator in ifmove or root mode (or with a limited number of tries) is given a threshold N. If N > 0, it is switched off for the rest of the solve when its first root call adds fewer than N cuts; an ifmove generator with N > 0 is also switched off after the root cut loop if the root objective moved by less than 0.5%. N = 0 never switches it off this way, and -1 or -2 give its cut count a weight of 2 or 5 when the root decides whether to keep it. Generators in on or forceOn mode are not affected, and other rules can still switch a generator off (e.g. an ifmove generator none of whose root cuts is short). The value is a comma-separated list: an item VALUE applies to every generator, and NAME:VALUE to one, where NAME is the generator's cut option without "Cuts" (probing, gomory, lagomory, knapsack, reduceAndSplit, reduce2AndSplit, GMI, clique, oddWheel, impliedClique, mixedIntegerRounding, flowCover, twoMir, latwomir, liftAndProject, residualCapacity, zeroHalf). VALUE is an integer >= -2 or auto. NAME:VALUE items take precedence over a VALUE item. The default, auto, keeps each generator's built-in value: 1 for latwomir, reduceAndSplit, reduce2AndSplit, liftAndProject and residualCapacity, 2 for zeroHalf, -2 for knapsack and 0 for the rest. Examples: 'twoMir:1', '0' (never), '0,zeroHalf:2'. The values in effect are logged.
 
-### `-sosOptions`
+### `-pumpRootPlaces`
 
-Whether to use SOS from AMPL
+Root moments at which Feasibility Pump is allowed to run
 
-Normally if AMPL says there are SOS variables they should be used, but sometimes they should be turned off - this does so.
+A string of single-letter codes for which root-processing moments Feasibility Pump may run at: 'L' pre-processed LP solution, before any cuts (the historical default); 'C' after root cut generation is finished; 'c' an intermediate round of cut generation. Combine letters to allow more than one, e.g. 'LC' to try both before and after cuts. Default is '' (unset), which reproduces the classic behavior controlled by pumpTune/moreTune's cryptic numeric encoding (root-before-cuts only, unless moreTune's '/1000' digit says otherwise). Setting this option takes over that decision entirely, in an intuitive way, instead of pumpTune/moreTune.
+
+### `-jumpRootPlaces`
+
+Root moments at which Feasibility Jump is allowed to run
+
+A string of single-letter codes for which root-processing moments Feasibility Jump may run at: 'L' pre-processed LP solution, before any cuts; 'C' after root cut generation is finished (the historical default for standalone FJ). Combine letters to allow more than one, e.g. 'LC'. Default is '' (unset), which reproduces the classic behavior. Does not affect FJ's tree-node execution (feasibilityJumpDepth) or its use as Feasibility Pump's failure-recovery fallback (feasibilityJumpAfterFPump).
+
+### `-cplexUse`
+
+Whether to use Cplex!
+
+If the user has Cplex, but wants to use some of Cbc's heuristics then you can!  If this is on, then Cbc will get to the root node and then hand over to Cplex.  If heuristics find a solution this can be significantly quicker.  You will probably want to switch off Cbc's cuts as Cplex thinks they are genuine constraints.  It is also probable that you want to switch off preprocessing, although for difficult problems it is worth trying both.
 
 **Values:** `off`, `on` (default: `off`)
 
-### `-clqstrengthen`
+### `-rankConflictType`
 
-Whether and when to perform Clique Strengthening preprocessing routine
+Formula for combining directional conflict degrees into a single score.
 
-**Values:** `off`, `before`, `after` (default: `after`)
+Controls how d0 (conflicts when x=0) and d1 (conflicts when x=1) are combined: 
+	 sum: d0+d1 — total propagation power (default);
+	 min: min(d0,d1) — both directions must be strong; 
+	 product: sqrt(d0*d1) — product score analog, rewards balance.
 
-### `-preprocess`
+**Values:** `min`, `sum`, `product`
 
-Whether to use integer preprocessing
+### `-cutPassSmall`
 
-This tries to reduce size of the model in a similar way to presolve and it also tries to strengthen the model. This can be very useful and is worth trying.  save option saves on file presolved.mps.  equal will turn <= cliques into ==.  sos will create sos sets if all 0-1 in sets (well one extra is allowed) and no overlaps.  trysos is same but allows any number extra. equalall will turn all valid inequalities into equalities with integer slacks. strategy is as on but uses CbcStrategy.
+Root cut passes for a small problem when passCuts is auto
 
-**Values:** `off`, `on`, `save`, `equal`, `sos`, `trysos`, `equalall`, `strategy`, `aggregate`, `forcesos`, `stop!aftersaving`, `equalallstop` (default: `sos`)
+Used when passCuts is auto and the problem has fewer rows than sizeSmallRows or fewer columns than sizeSmallCols. The default -100 means up to 100 passes, ignoring minDrop.
 
-### `-cppGenerate`
+**Range:** -INT_MAX to INT_MAX (default: -100)
 
-Generates C++ code
+### `-cutPassMedium`
 
-Once you like what the stand-alone solver does then this allows you to generate user_driver.cpp which approximates the code.  0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values.
+Root cut passes for a medium problem when passCuts is auto
 
-**Range:** 0 to 4 (default: 0)
+Used when passCuts is auto and the problem is neither small nor has at least sizeLargeCols columns. The default 100 means up to 100 passes, stopping once a pass improves the objective by less than minDrop.
 
-### `-extraVariables`
+**Range:** -INT_MAX to INT_MAX (default: 100)
 
-Allow creation of extra integer variables
+### `-cutPassLarge`
 
-Switches on a trivial re-formulation that introduces extra integer variables to group together variables with same cost.
+Root cut passes for a large problem when passCuts is auto
 
-**Range:** -INT_MAX to INT_MAX (default: 0)
+Used when passCuts is auto and the problem is not small and has at least sizeLargeCols columns. The default 50 means up to 50 passes, stopping once a pass improves the objective by less than minDrop.
 
-### `-tunePreProcess`
+**Range:** -INT_MAX to INT_MAX (default: 50)
 
-Dubious tuning parameters for preprocessing
+### `-extra1`
 
-Format aabbcccc - 
- If aa then this is number of major passes (i.e. with presolve) 
- If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) 
- cccc is bit set 
- 0 - 1 Heavy probing 
- 1 - 2 Make variables integer if possible (if obj value)
- 2 - 4 As above but even if zero objective value
- 7 - 128 Try and create cliques
- 8 - 256 If all +1 try hard for dominated rows
- 9 - 512 Even heavier probing 
- 10 - 1024 Use a larger feasibility tolerance in presolve
- 11 - 2048 Try probing before creating cliques
- 12 - 4096 Switch off duplicate column checking for integers 
- 13 - 8192 Allow scaled duplicate column checking 
- 
-     Now aa 99 has special meaning i.e. just one simple presolve.
+Extra integer parameter 1
 
-**Range:** 0 to INT_MAX (default: 7)
+**Range:** -INT_MAX to INT_MAX (default: -1)
 
-### `-fixOnDj`
+### `-extra2`
 
-Try heuristic that fixes variables based on reduced costs
+Extra integer parameter 2
 
-If set, integer variables with reduced costs greater than the specified value will be fixed before branch and bound - use with extreme caution!
+**Range:** -INT_MAX to INT_MAX (default: -1)
 
-**Range:** -∞ to ∞ (default: 0)
+### `-extra3`
 
-### `-tightenFactor`
+Extra integer parameter 3
 
-Tighten bounds using value times largest activity at continuous solution
+**Range:** -INT_MAX to INT_MAX (default: -1)
 
-This sleazy trick can help on some problems.
+### `-extra4`
 
-**Range:** 0 to inf (default: 0)
+Extra integer parameter 4
 
-## LP Presolve
+**Range:** -INT_MAX to INT_MAX (default: -1)
 
-### `-presolve`
+### `-feasibilityJumpEffort`
 
-Whether to presolve problem
+Fixed iteration budget for Feasibility Jump (0 = use NNZ-scaled)
 
-Presolve analyzes the model to find such things as redundant equations, equations which fix some variables, equations which can be transformed into bounds, etc. For the initial solve of any problem this is worth doing unless one knows that it will have no effect. Option 'on' will normally do 5 passes, while using 'more' will do 10.  If the problem is very large one can let CLP write the original problem to file by using 'file'.
+Fixed effort budget (deterministic iteration units) for a single Feasibility Jump call. When set to 0 (default), the budget is computed as NNZ * feasibilityJumpEffortMult, scaling with problem size. Set to a positive value to use a fixed budget (useful for benchmarks comparing fewer/longer calls against more/shorter ones).
 
-**Values:** `on`, `off`, `more`, `file` (default: `on`)
+**Range:** 0 to INT_MAX (default: 0)
 
-### `-passPresolve`
+### `-feasibilityJumpEffortMult`
 
-How many passes in presolve
+NNZ multiplier for Feasibility Jump effort budget
 
-Normally Presolve does 10 passes but you may want to do less to make it more lightweight or do more if improvements are still being made.  As Presolve will return if nothing is being taken out, you should not normally need to use this fine tuning.
+When feasibilityJumpEffort is 0, the effort budget is computed as NNZ * this multiplier. Default: 1024 (same as HiGHS). Larger values give FJ more iterations per call on harder instances.
 
-**Range:** -200 to 100 (default: 5)
+**Range:** 0 to 100000 (default: 1024)
 
-### `-preTolerance`
+### `-feasibilityJumpMaxSol`
 
-Tolerance to use in presolve
+Stop Feasibility Jump after finding this many solutions in one call
 
-One may want to increase this tolerance if presolve says the problem is infeasible and one has awkward numbers and is sure that the problem is really feasible.
+The Feasibility Jump heuristic stops as soon as it has found this many integer-feasible solutions in a single call. Default: 1 (stop after the first solution).
 
-**Range:** 1e-20 to inf (default: 1e-08)
+**Range:** 0 to INT_MAX (default: 1)
+
+### `-feasibilityJumpStall`
+
+NNZ multiplier for stall-based early termination (0 = disable)
+
+Terminate Feasibility Jump when effort since last improvement exceeds NNZ * this multiplier. Default: 256 (same as HiGHS). Prevents wasting time when FJ is stuck in a local minimum. Set to 0 to disable stall-based termination.
+
+**Range:** 0 to 100000 (default: 256)
+
+### `-feasibilityJumpDepth`
+
+Run FJ every N levels in the tree (0 = root only)
+
+Controls how often FJ runs during branch-and-bound. Default: 0 (root only). When set to N > 0, FJ also runs at tree nodes whose depth is a multiple of N (e.g. 6 means depth 6, 12, 18...), each time seeded from that node's own fractional LP solution -- a genuinely different point from any earlier call, which is what makes repeated FJ calls worthwhile. Uses 1/4 of the root effort budget per tree node call.
+
+**Range:** 0 to 1000 (default: 0)
+
+### `-feasibilityJumpOnlyNoSol`
+
+Only run FJ while CBC has no incumbent solution yet (0/1)
+
+When 1 (default), Feasibility Jump is skipped entirely once CBC already has at least one incumbent (from any source: another heuristic, a MIP start, or branch-and-bound). Repeated FJ calls are most valuable for producing the very first incumbent; once one exists they mostly add overhead relative to other cut/heuristic work. Set to 0 to also let FJ try to improve on an existing incumbent, e.g. to test whether that is worthwhile.
+
+**Range:** 0 to 1 (default: 1)
+
+### `-feasibilityJumpMaxCalls`
+
+Cap on the total number of separate FJ calls for the whole solve (0 = unlimited)
+
+Caps how many times Feasibility Jump is invoked in total, across the root-after-cuts and tree trigger points (plus the FPump-failure fallback, see feasibilityJumpAfterFPump). Each invocation is always seeded from a genuinely new fractional solution (a different cut round or tree node), never a repeat on an unchanged point. Default: 0 (unlimited). Combine with feasibilityJumpEffort/feasibilityJumpEffortMult to explore the tradeoff between calling FJ fewer times with a bigger budget each vs. more times with a smaller budget each.
+
+**Range:** 0 to INT_MAX (default: 0)
+
+### `-feasibilityJumpAfterFPump`
+
+Fall back to Feasibility Jump when FPump fails to find a solution (0/1/2)
+
+0: Feasibility Jump never runs as a fallback for FPump (it may still run standalone per feasibilityJump). 1: Feasibility Jump still runs standalone per feasibilityJump *and* is automatically tried right after Feasibility Pump fails to find any feasible solution (only while CBC still has no incumbent at all). 2 (default): Feasibility Jump is *not* registered as a standalone heuristic at all -- it only ever runs as this FPump-failure fallback, i.e. 'run FJ only if FPump fails'. This ordering (FPump first, FJ only as rescue) was found to find a feasible solution on more root-node instances than running FJ standalone first (as mode 1 does), at the cost of a somewhat worse average gap on instances both approaches solve -- see ROOT-FIXTURES.md. Use 1 to restore the older FJ-runs-first behavior, e.g. to isolate FPump's own behavior or when FJ's cheap, eager first attempt is specifically wanted regardless of FPump's outcome.
+
+**Range:** 0 to 2 (default: 2)
+
+### `-rootHeurSchedule`
+
+Enable two-phase parallel root heuristic schedule
+
+When set to 1, replaces the default root heuristic execution with a two-phase parallel schedule. Phase 1 runs optimized diving configurations in parallel (stops on first feasible solution). Phase 2 runs improvement heuristics (RINS, etc.) on the found solution. Use with -threads to set the number of parallel threads.
+
+**Range:** 0 to 1 (default: 0)
+
+### `-sizeSmallRows`
+
+Row count below which a problem is small
+
+A problem with fewer rows than this, or fewer columns than sizeSmallCols, is small for the settings that are auto (at present passCuts).
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-sizeSmallCols`
+
+Column count below which a problem is small
+
+A problem with fewer columns than this, or fewer rows than sizeSmallRows, is small for the settings that are auto (at present passCuts).
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-sizeLargeCols`
+
+Column count from which a problem is large
+
+A problem that is not small and has at least this many columns is large for the settings that are auto (at present passCuts).
+
+**Range:** 0 to INT_MAX (default: 5000)
+
+### `-sizeMiniBab`
+
+Rows plus columns below which depthMiniBab treats a problem as small
+
+Used when depthMiniBab is auto or -1: a problem whose row and column counts add up to less than this is small.
+
+**Range:** 0 to INT_MAX (default: 500)
+
+### `-minDrop`
+
+Minimum objective improvement for a root cut pass to count
+
+Root cut generation stops once a pass improves the objective by less than this, unless passCuts (or the cutPassSmall/cutPassMedium/cutPassLarge value it resolves to) is negative. The default, auto, is min(0.05, 1e-5*|objective| + 1e-5), using the LP objective when branch-and-bound is set up. The choice is logged.
+
+**Range:** 0 to inf (default: auto)
+
+### `-rankConflict`
+
+Weight for conflict-graph degree in strong branching sort-key (0 = disabled).
+
+When positive, the conflict graph degree of binary variables is used to augment the pseudo-cost-based sort key that determines which candidates receive strong branching LP solves. Higher-degree variables (those whose branching triggers more propagations) are prioritized. The boost factor is (1 + weight * scaledScore), where scaledScore depends on rankConflictType and the per-trust scaling powers. Default 0.2 (enabled, sum formula). Set to 0.0 to disable. Typical useful range: 0.1 to 0.5.
+
+**Range:** 0 to 100 (default: 0)
+
+### `-rankConflictPowerTrusted`
+
+Scaling exponent for conflict score when pseudo-costs are trusted (sqrt = 0.5).
+
+When pseudo-cost observations are sufficient (trusted), conflict information acts as a gentle tie-breaker. The raw conflict score is raised to this power before weighting: 0.5 = square root (default, mild nudge), 0.333 = cube root (very mild), 1.0 = linear (full influence even when trusted).
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankConflictPowerUntrusted`
+
+Scaling exponent for conflict score when pseudo-costs are untrusted (linear = 1.0).
+
+When pseudo-cost observations are insufficient (untrusted), conflict information is given stronger influence. The raw conflict score is raised to this power: 1.0 = linear (default, full influence), 0.5 = square root (moderate).
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankRange`
+
+Weight for variable-range criterion 1/min(maxRange,ub-lb) in strong branching sort-key (0 = disabled).
+
+When positive, the domain width of integer variables is used to augment the sort key that determines which candidates receive strong branching LP solves. Score = 1/min(rankRangeMax, ub-lb): binary [0,1] scores 1.0, domains >= rankRangeMax score 1/rankRangeMax (floor), preventing large/unbounded vars from collapsing to ~0. Applies to all integer variables (not just binary). The boost factor is (1 + weight * scaledScore). Default 0.0 (disabled). Typical useful range: 0.01 to 0.3.
+
+**Range:** 0 to 100 (default: 0)
+
+### `-rankRangePowerTrusted`
+
+Scaling exponent for range score when pseudo-costs are trusted (sqrt = 0.5).
+
+When pseudo-cost observations are sufficient (trusted), range information acts as a gentle tie-breaker. The raw score 1/min(maxRange,ub-lb) is raised to this power: 0.5 = square root (default, mild nudge), 0.333 = cube root, 1.0 = linear.
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankRangePowerUntrusted`
+
+Scaling exponent for range score when pseudo-costs are untrusted (linear = 1.0).
+
+When pseudo-cost observations are insufficient, range information is given stronger influence. 1.0 = linear (default), 0.5 = square root (moderate).
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankRangeMax`
+
+Cap on domain width for range criterion: score = 1/min(rankRangeMax, ub-lb). Default 10.
+
+Variables with domain width >= rankRangeMax all receive the same floor score (1/rankRangeMax), preventing large or unbounded integer domains from collapsing to a near-zero range score. Binary [0,1] always scores 1.0 (unaffected). Default 10.0: domains of 10 or wider are treated equally (floor score = 0.1). Increase to give more differentiation among wider domains.
+
+**Range:** 1 to 1e+30 (default: 0)
+
+### `-rankObjCoeff`
+
+Weight for objective coefficient magnitude criterion |c_j|^power in strong branching sort-key (0 = disabled).
+
+When positive, the absolute value of a variable's objective coefficient |c_j| is used to augment the sort key that determines strong branching candidate priority. Score = |c_j|^scalingPower. Variables not in the objective (c_j=0) receive no boost. Most useful for untrusted variables where pseudo-costs are unreliable; for trusted variables pseudo-costs already capture the objective coefficient implicitly. Default 0.0 (disabled). Typical useful range: 0.01 to 0.3.
+
+**Range:** 0 to 100 (default: 0)
+
+### `-rankObjCoeffPowerTrusted`
+
+Scaling exponent for obj-coeff score when pseudo-costs are trusted. Default 0.1 (very slow growth).
+
+When pseudo-cost observations are sufficient, objective coefficient acts as a gentle tie-breaker. Score = |c_j|^power: 0.1 (default) gives c=100→1.58, c=10000→2.51. Use 0.05 for even milder effect, 0.2 for more influence.
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankObjCoeffPowerUntrusted`
+
+Scaling exponent for obj-coeff score when pseudo-costs are untrusted. Default 0.2.
+
+When pseudo-cost observations are insufficient, objective coefficient is allowed more influence. 0.2 (default): c=100→2.51, c=10000→6.31. Use 0.1 to match trusted, or 0.5 for sqrt (moderate growth).
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankNonzeros`
+
+Weight for column non-zeros criterion nz^power in strong branching sort-key (0 = disabled).
+
+When positive, the number of constraints a variable appears in is used to augment the sort key that determines strong branching candidate priority. Score = nz^scalingPower (default 4th-root, very slow growth). Variables appearing in many constraints propagate their fixing more broadly. Applies to all integer variables. Designed as a cheap tie-breaker. Default 0.0 (disabled). Typical useful range: 0.01 to 0.1.
+
+**Range:** 0 to 100 (default: 0)
+
+### `-rankNonzerosPowerTrusted`
+
+Scaling exponent for nz score when pseudo-costs are trusted (4th-root = 0.25).
+
+When pseudo-cost observations are sufficient, nz information acts as a gentle tie-breaker. Score = nz^power: 0.25 = 4th root (default, very slow growth), 0.5 = sqrt, 1.0 = linear.
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankNonzerosPowerUntrusted`
+
+Scaling exponent for nz score when pseudo-costs are untrusted (sqrt = 0.5).
+
+When pseudo-cost observations are insufficient, nz information is given slightly more influence. 0.5 = sqrt (default), 1.0 = linear.
+
+**Range:** 0 to 1 (default: 0)
+
+### `-rankConflictMaxPercBin`
+
+Maximum % of binary integer variables for the conflict ranker to activate (default 97).
+
+The conflict-graph ranker is beneficial primarily on mixed-integer problems (where not all integer variables are binary). When the fraction of binary variables among all integer variables is >= this threshold, the ranker is automatically disabled to avoid performance regressions on near-pure-binary instances. Set to 100 to always activate regardless of binary fraction.
+
+**Range:** 0 to 100 (default: 97)
+
+### `-netlibBarrier`
+
+Solve entire netlib test set with barrier
+
+This exercises the unit test for clp and then solves the netlib test set using barrier. The user can set options before e.g. clp -kkt on -netlib
+
+### `-netlibDual`
+
+Solve entire netlib test set (dual)
+
+This exercises the unit test for clp and then solves the netlib test set using dual. The user can set options before e.g. clp -presolve off -netlib
+
+### `-netlib`
+
+Solve entire netlib test set
+
+This exercises the unit test for clp and then solves the netlib test set using dual or primal. The user can set options before e.g. clp -presolve off -netlib
+
+### `-netlibPrimal`
+
+Solve entire netlib test set (primal)
+
+This exercises the unit test for clp and then solves the netlib test set using primal. The user can set options before e.g. clp -presolve off -netlibp
+
+### `-netlibTune`
+
+Solve entire netlib test set with 'best' algorithm
+
+This exercises the unit test for clp and then solves the netlib test set using whatever works best. I know this is cheating but it also stresses the code better by doing a mixture of stuff. The best algorithm was chosen on a Linux ThinkPad using native cholesky with University of Florida ordering.
 

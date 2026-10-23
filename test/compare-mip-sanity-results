@@ -1,0 +1,256 @@
+#!/usr/bin/env bash
+# compare-mip-sanity-results — diff two ./run-mip-sanity-tests results.tsv files
+# and report performance regressions/improvements in a readable summary.
+#
+# Typical workflow: run the suite once before a solver change to get a
+# baseline, then again after the change into a different file, and diff them:
+#
+#   ./test --results-tsv=/tmp/baseline.tsv
+#   ...make solver changes, rebuild...
+#   ./test --results-tsv=/tmp/after.tsv
+#   ./compare-results /tmp/baseline.tsv /tmp/after.tsv
+#
+# A results.tsv has one header line followed by one row per instance:
+#   instance  status  elapsed_s  nodes  gap_pct  is_optimal  obj  bound
+# where status is PASS/FAIL/OVERTIME/ERROR (validator outcome), gap_pct is the
+# relative MIP gap Cbc reported (empty when optimal or when no solution/gap is
+# available), and is_optimal is 1 only for a *confirmed* (validated) optimum.
+#
+# Usage:
+#   ./compare-mip-sanity-results [OPTIONS] <baseline.tsv> <new.tsv>
+#
+# Options:
+#   --gap-tol=PCT   Minimum |gap delta| (percentage points) to count an
+#                   instance's gap as changed, filtering out solver noise
+#                   (default: 0.01)
+#   --no-color      Disable ANSI colors
+#   -h, --help      Show this help
+#
+# Exit status: 0 if no regressions were found, 1 if at least one instance
+# regressed (newly errored/overtime, newly failed validation, or lost a
+# confirmed optimum/widened its gap beyond --gap-tol).
+set -uo pipefail
+
+GAP_TOL=0.01
+FORCE_COLOR=1
+FILES=()
+
+for arg in "$@"; do
+  case "$arg" in
+    --gap-tol=*) GAP_TOL="${arg#*=}" ;;
+    --no-color) FORCE_COLOR=0 ;;
+    -h|--help)
+      sed -n '2,31p' "$0"
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $arg" >&2
+      exit 1
+      ;;
+    *) FILES+=("$arg") ;;
+  esac
+done
+
+if [[ ${#FILES[@]} -ne 2 ]]; then
+  echo "Usage: $(basename "$0") [OPTIONS] <baseline.tsv> <new.tsv>" >&2
+  exit 1
+fi
+
+BASELINE="${FILES[0]}"
+NEW="${FILES[1]}"
+for f in "$BASELINE" "$NEW"; do
+  if [[ ! -f "$f" ]]; then
+    echo "Error: file not found: $f" >&2
+    exit 1
+  fi
+done
+
+if [[ -t 1 && $FORCE_COLOR -eq 1 ]]; then
+  BOLD=$'\e[1m';  RESET=$'\e[0m';   DIM=$'\e[2m'
+  RED=$'\e[31m';  GREEN=$'\e[32m';  YELLOW=$'\e[33m'
+  CYAN=$'\e[36m'
+else
+  BOLD=''; RESET=''; DIM=''; RED=''; GREEN=''; YELLOW=''; CYAN=''
+fi
+
+echo "${BOLD}=== Comparing mip-sanity-data results ===${RESET}"
+echo "  Baseline: $BASELINE"
+echo "  New:      $NEW"
+echo
+
+# ── 1. Load both TSVs into associative arrays keyed by instance name ────────
+# gap_metric mirrors run_one's own convention (0=optimal, gap_pct if a
+# solution+gap is known, 100=solution but no gap reported, 200=no solution at
+# all) so gap deltas are meaningful across FAIL/OVERTIME/ERROR too.
+declare -A b_status b_gap b_optimal b_obj
+declare -A n_status n_gap n_optimal n_obj
+declare -a b_order=() n_order=()
+
+load_tsv() {
+  local file="$1"
+  local -n status_ref="$2" gap_ref="$3" optimal_ref="$4" obj_ref="$5" order_ref="$6"
+  local first=1
+  # Bash's `read` treats tab as an "IFS whitespace" character regardless of
+  # IFS's value, collapsing consecutive tabs and silently dropping empty
+  # fields (e.g. a blank gap_pct/obj/bound column). Swap tabs for \x01 (not
+  # in the whitespace class) so empty fields are preserved.
+  while IFS=$'\x01' read -r inst status elapsed nodes gap_pct is_optimal obj bound; do
+    if [[ $first -eq 1 ]]; then first=0; continue; fi
+    [[ -z "$inst" ]] && continue
+    local gap
+    if [[ "$is_optimal" == "1" ]]; then
+      gap=0
+    elif [[ -n "$gap_pct" ]]; then
+      gap="$gap_pct"
+    elif [[ -n "$obj" ]]; then
+      gap=100
+    else
+      gap=200
+    fi
+    status_ref["$inst"]="$status"
+    gap_ref["$inst"]="$gap"
+    optimal_ref["$inst"]="${is_optimal:-0}"
+    obj_ref["$inst"]="$obj"
+    order_ref+=("$inst")
+  done < <(tr '\t' '\001' <"$file")
+}
+
+load_tsv "$BASELINE" b_status b_gap b_optimal b_obj b_order
+load_tsv "$NEW" n_status n_gap n_optimal n_obj n_order
+
+# ── 2. Instance set bookkeeping (common / baseline-only / new-only) ─────────
+declare -A in_baseline in_new
+for i in "${b_order[@]}"; do in_baseline["$i"]=1; done
+for i in "${n_order[@]}"; do in_new["$i"]=1; done
+
+common=() baseline_only=() new_only=()
+for i in "${b_order[@]}"; do
+  if [[ -n "${in_new[$i]:-}" ]]; then common+=("$i"); else baseline_only+=("$i"); fi
+done
+for i in "${n_order[@]}"; do
+  [[ -z "${in_baseline[$i]:-}" ]] && new_only+=("$i")
+done
+
+echo "${#b_order[@]} instance(s) in baseline, ${#n_order[@]} in new, ${#common[@]} common."
+echo
+
+# ── 3. Per-instance classification ───────────────────────────────────────────
+# A "hard" status regression is anything where the validated outcome got
+# worse (PASS -> FAIL/OVERTIME/ERROR, or FAIL -> OVERTIME/ERROR); everything
+# else is judged purely on the gap metric (0=optimal .. 200=no solution),
+# so e.g. PASS -> PASS with a wider gap still counts as a (soft) regression.
+status_rank() {
+  case "$1" in
+    PASS) echo 0 ;;
+    FAIL) echo 1 ;;
+    OVERTIME) echo 2 ;;
+    ERROR) echo 3 ;;
+    *) echo 3 ;;
+  esac
+}
+
+declare -a regressions=() improvements=()
+n_errors_up=0 n_overtime_up=0 n_fail_up=0
+
+for i in "${common[@]}"; do
+  bs="${b_status[$i]}"; ns="${n_status[$i]}"
+  bg="${b_gap[$i]}"; ng="${n_gap[$i]}"
+  bo="${b_optimal[$i]}"; no="${n_optimal[$i]}"
+
+  br="$(status_rank "$bs")"; nr="$(status_rank "$ns")"
+  gap_delta="$(awk -v b="$bg" -v n="$ng" 'BEGIN{printf "%.4f", n-b}')"
+  gap_worse="$(awk -v d="$gap_delta" -v tol="$GAP_TOL" 'BEGIN{print (d>tol)?1:0}')"
+  gap_better="$(awk -v d="$gap_delta" -v tol="$GAP_TOL" 'BEGIN{print (d<-tol)?1:0}')"
+
+  desc_b="$bs"; [[ "$bo" == "1" ]] && desc_b="$bs optimal" || { [[ "$bs" == "PASS" && -n "${b_obj[$i]}" ]] && desc_b="$bs gap=${bg}%"; }
+  desc_n="$ns"; [[ "$no" == "1" ]] && desc_n="$ns optimal" || { [[ "$ns" == "PASS" && -n "${n_obj[$i]}" ]] && desc_n="$ns gap=${ng}%"; }
+
+  if [[ "$nr" -gt "$br" ]]; then
+    # status got strictly worse — always a regression, tagged by what changed.
+    reason="status: $bs -> $ns"
+    [[ "$ns" == "ERROR" && "$bs" != "ERROR" ]] && n_errors_up=$((n_errors_up + 1))
+    [[ "$ns" == "OVERTIME" && "$bs" != "OVERTIME" ]] && n_overtime_up=$((n_overtime_up + 1))
+    [[ "$ns" == "FAIL" && "$bs" != "FAIL" ]] && n_fail_up=$((n_fail_up + 1))
+    regressions+=("$i|$desc_b|$desc_n|$reason")
+  elif [[ "$nr" -lt "$br" ]]; then
+    improvements+=("$i|$desc_b|$desc_n|status: $bs -> $ns")
+  elif [[ "$gap_worse" == "1" ]]; then
+    regressions+=("$i|$desc_b|$desc_n|gap widened by ${gap_delta}pp")
+  elif [[ "$gap_better" == "1" ]]; then
+    improvements+=("$i|$desc_b|$desc_n|gap narrowed by ${gap_delta#-}pp")
+  fi
+done
+
+echo "${BOLD}=== Aggregate comparison ===${RESET}"
+count_status() { local -n arr="$1"; local s="$2"; local c=0; for i in "${common[@]}"; do [[ "${arr[$i]}" == "$s" ]] && c=$((c+1)); done; echo "$c"; }
+count_optimal() { local -n arr="$1"; local c=0; for i in "${common[@]}"; do [[ "${arr[$i]}" == "1" ]] && c=$((c+1)); done; echo "$c"; }
+avg_gap() { local -n arr="$1"; local sum=0 n=0; for i in "${common[@]}"; do sum="$(awk -v s="$sum" -v g="${arr[$i]}" 'BEGIN{printf "%.6f", s+g}')"; n=$((n+1)); done; awk -v s="$sum" -v n="$n" 'BEGIN{if(n==0){print 0}else{printf "%.2f", s/n}}'; }
+
+b_pass="$(count_status b_status PASS)"; n_pass="$(count_status n_status PASS)"
+b_fail="$(count_status b_status FAIL)"; n_fail="$(count_status n_status FAIL)"
+b_overtime="$(count_status b_status OVERTIME)"; n_overtime="$(count_status n_status OVERTIME)"
+b_error="$(count_status b_status ERROR)"; n_error="$(count_status n_status ERROR)"
+b_opt="$(count_optimal b_optimal)"; n_opt="$(count_optimal n_optimal)"
+b_avg_gap="$(avg_gap b_gap)"; n_avg_gap="$(avg_gap n_gap)"
+
+# Prints one comparison row, coloring the delta green/red/dim depending on
+# whether `higher_is_good` (1) or `lower_is_good` (0) semantics apply.
+row() {
+  local label="$1" bval="$2" nval="$3" delta="$4" sense="$5" unit="${6:-}"
+  local color="$DIM"
+  if awk -v d="$delta" 'BEGIN{exit !(d>0)}'; then
+    [[ "$sense" == good_up ]] && color="$GREEN"
+    [[ "$sense" == good_down ]] && color="$RED"
+  elif awk -v d="$delta" 'BEGIN{exit !(d<0)}'; then
+    [[ "$sense" == good_up ]] && color="$RED"
+    [[ "$sense" == good_down ]] && color="$GREEN"
+  fi
+  local sign=""
+  awk -v d="$delta" 'BEGIN{exit !(d>0)}' && sign="+"
+  printf "  %-26s %10s %10s   ${color}%s${RESET}\n" "$label" "${bval}${unit}" "${nval}${unit}" "${sign}${delta}${unit}"
+}
+
+printf "  %-26s %10s %10s   %s\n" "Metric" "Baseline" "New" "Delta"
+printf "  %s\n" "$(printf -- '─%.0s' $(seq 1 58))"
+row "Passed"                 "$b_pass"     "$n_pass"     "$((n_pass-b_pass))"         good_up
+row "Failed"                 "$b_fail"     "$n_fail"     "$((n_fail-b_fail))"         good_down
+row "Overtime"                "$b_overtime" "$n_overtime" "$((n_overtime-b_overtime))" good_down
+row "Error"                   "$b_error"    "$n_error"    "$((n_error-b_error))"       good_down
+row "Optimal solutions found" "$b_opt"      "$n_opt"      "$((n_opt-b_opt))"           good_up
+row "Average gap"             "$b_avg_gap"  "$n_avg_gap"  "$(awk -v b="$b_avg_gap" -v n="$n_avg_gap" 'BEGIN{printf "%.2f", n-b}')" good_down "%"
+echo
+
+if [[ ${#regressions[@]} -gt 0 ]]; then
+  echo "${BOLD}${RED}=== Regressions (${#regressions[@]}) ===${RESET}"
+  for r in "${regressions[@]}"; do
+    IFS='|' read -r name db dn reason <<<"$r"
+    printf "  ${RED}✗ %-45s${RESET} %-22s -> %-22s  ${RED}%s${RESET}\n" "$name" "$db" "$dn" "$reason"
+  done
+  echo
+fi
+
+if [[ ${#improvements[@]} -gt 0 ]]; then
+  echo "${BOLD}${GREEN}=== Improvements (${#improvements[@]}) ===${RESET}"
+  for r in "${improvements[@]}"; do
+    IFS='|' read -r name db dn reason <<<"$r"
+    printf "  ${GREEN}✔ %-45s${RESET} %-22s -> %-22s  ${GREEN}%s${RESET}\n" "$name" "$db" "$dn" "$reason"
+  done
+  echo
+fi
+
+if [[ ${#baseline_only[@]} -gt 0 || ${#new_only[@]} -gt 0 ]]; then
+  echo "${BOLD}${YELLOW}=== Instance set changed ===${RESET}"
+  [[ ${#baseline_only[@]} -gt 0 ]] && echo "  Only in baseline (${#baseline_only[@]}): ${baseline_only[*]}"
+  [[ ${#new_only[@]} -gt 0 ]] && echo "  Only in new (${#new_only[@]}): ${new_only[*]}"
+  echo
+fi
+
+echo "${BOLD}=== Summary ===${RESET}"
+if [[ ${#regressions[@]} -eq 0 ]]; then
+  echo "  ${GREEN}No regressions detected.${RESET} ${#improvements[@]} improvement(s)."
+  exit 0
+else
+  echo "  ${RED}${#regressions[@]} regression(s) detected${RESET} (errors +${n_errors_up}, overtime +${n_overtime_up}, new failures +${n_fail_up}, rest = wider gaps)."
+  echo "  ${#improvements[@]} improvement(s) also found."
+  exit 1
+fi

@@ -34,6 +34,7 @@ inline void set_openblas_threads(int n)
 } // namespace
 #elif defined(CLP_USE_OPENBLAS)
 extern "C" void openblas_set_num_threads(int num_threads);
+inline void set_openblas_threads(int n) { openblas_set_num_threads(n); }
 #endif
 
 #ifdef CBC_THREAD
@@ -79,7 +80,6 @@ extern "C" void openblas_set_num_threads(int num_threads);
 #include "ClpPEDualRowSteepest.hpp"
 #include "ClpPEDualRowDantzig.hpp"
 #include "CbcMipStart.hpp"
-#include "CbcBoundPropagation.hpp"
 #include "ClpMessage.hpp"
 #include "CoinStaticConflictGraph.hpp"
 #include <OsiAuxInfo.hpp>
@@ -230,7 +230,8 @@ struct Cbc_Model {
   void *rowNameIndex;
 
   cbc_incumbent_callback inc_callback;
-  cbc_progress_callback progr_callback;
+  cbc_progress_info_callback progress_info_callback;
+  void *progressInfoData;
   cbc_callback userCallBack;
 
   cbc_cut_callback cut_callback;
@@ -249,7 +250,6 @@ struct Cbc_Model {
   /**
    * Progress callback callback data
    **/
-  void *pgrAppData;
 
 #ifdef CBC_THREAD
   pthread_mutex_t cbcMutexCG;
@@ -446,9 +446,10 @@ public:
   double bestCost;
   double bestBound;
   cbc_incumbent_callback inc_callback;
-  cbc_progress_callback progr_callback;
+  cbc_progress_info_callback info_callback;
+  void *infoData;
+  Cbc_Model *cModel;
   void *appData;
-  void *pgAppData;
 #ifdef CBC_THREAD
   pthread_mutex_t *cbcMutex;
 #endif
@@ -459,9 +460,10 @@ Cbc_EventHandler::Cbc_EventHandler()
   , bestCost(COIN_DBL_MAX)
   , bestBound(COIN_DBL_MIN)
   , inc_callback(NULL)
-  , progr_callback(NULL)
+  , info_callback(NULL)
+  , infoData(NULL)
+  , cModel(NULL)
   , appData(NULL)
-  , pgAppData(NULL)
 #ifdef CBC_THREAD
   , cbcMutex(NULL)
 #endif
@@ -473,9 +475,10 @@ Cbc_EventHandler::Cbc_EventHandler(const Cbc_EventHandler &rhs)
   , bestCost(rhs.bestCost)
   , bestBound(rhs.bestBound)
   , inc_callback(rhs.inc_callback)
-  , progr_callback(rhs.progr_callback)
+  , info_callback(rhs.info_callback)
+  , infoData(rhs.infoData)
+  , cModel(rhs.cModel)
   , appData(rhs.appData)
-  , pgAppData(rhs.pgAppData)
 #ifdef CBC_THREAD
   , cbcMutex(rhs.cbcMutex)
 #endif
@@ -488,9 +491,10 @@ Cbc_EventHandler::Cbc_EventHandler(CbcModel *model)
   , bestCost(COIN_DBL_MAX)
   , bestBound(COIN_DBL_MIN)
   , inc_callback(NULL)
-  , progr_callback(NULL)
+  , info_callback(NULL)
+  , infoData(NULL)
+  , cModel(NULL)
   , appData(NULL)
-  , pgAppData(NULL)
 #ifdef CBC_THREAD
   , cbcMutex(NULL)
 #endif
@@ -509,9 +513,10 @@ Cbc_EventHandler &Cbc_EventHandler::operator=(const Cbc_EventHandler &rhs)
     this->bestCost = rhs.bestCost;
     this->bestBound = rhs.bestBound;
     this->inc_callback = rhs.inc_callback;
-    this->progr_callback = rhs.progr_callback;
+    this->info_callback = rhs.info_callback;
+    this->infoData = rhs.infoData;
+    this->cModel = rhs.cModel;
     this->appData = rhs.appData;
-    this->pgAppData = rhs.pgAppData;
 #ifdef CBC_THREAD
     this->cbcMutex = rhs.cbcMutex;
 #endif
@@ -526,6 +531,7 @@ CbcEventHandler *Cbc_EventHandler::clone() const
 
 CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
 {
+  CbcAction action = noAction;
   // if in sub tree carry on
   if ((model_->specialOptions() & 2048) == 0) {
     if ((whichEvent == solution || whichEvent == heuristicSolution)) {
@@ -569,12 +575,6 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
           delete[] cnames[0];
           delete[] cnames;
         } // incumbent callback
-        if (this->progr_callback) {
-          const CbcModel *model = this->getModel();
-          double secs = model->getCurrentSeconds();
-          double lb = model->getBestPossibleObjValue();
-          this->progr_callback((void *) model, 0, model->getNodeCount(), "sol", secs, lb, bestCost, 0, NULL, this->pgAppData);
-        } // incumbent callback
       } // improved cost
 #ifdef CBC_THREAD
     assert(this->cbcMutex);
@@ -582,27 +582,39 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
 #endif
     } // solution found
 
-    if (this->progr_callback)
-    {
+    if (whichEvent == progress && this->info_callback) {
+      const CbcModel *model = this->getModel();
+      const CbcProgressInfo &info = model->progressInfo();
+      Cbc_ProgressInfo out;
+      out.struct_size = (int)sizeof(Cbc_ProgressInfo);
+      out.kind = (int)info.kind;
+      out.seconds = info.seconds;
+      out.has_incumbent = info.primal < 1.0e49;
+      out.has_bound = info.dual > -1.0e49;
+      out.primal = out.has_incumbent ? info.primal : COIN_DBL_MAX;
+      out.dual = out.has_bound ? info.dual : -COIN_DBL_MAX;
+      out.gap = 1.0;
+      if (out.has_incumbent && out.has_bound) {
+        const double den = std::max(fabs(out.primal), fabs(out.dual));
+        out.gap = den > 0.0 && out.primal * out.dual > 0.0 ? fabs(out.primal - out.dual) / den : (out.primal == out.dual ? 0.0 : 1.0);
+      }
+      out.nodes = info.nodes;
+      out.source = info.source;
+      // same lock as the incumbent callback: user code never runs in two threads at once
 #ifdef CBC_THREAD
-    assert(this->cbcMutex);
-    pthread_mutex_lock((this->cbcMutex));
+      assert(this->cbcMutex);
+      pthread_mutex_lock((this->cbcMutex));
 #endif
-      if (this->getModel()->getBestPossibleObjValue() >= this->bestBound+1e-5)
-      {
-        this->bestBound = this->getModel()->getBestPossibleObjValue();
-        const CbcModel *model = this->getModel();
-        double secs = model->getCurrentSeconds();
-        this->progr_callback((void *) model, 0, model->getNodeCount(), "bnd", secs, bestBound, bestCost, 0, NULL, this->pgAppData);
-      } // improved lower bound
+      // the model is the C++ one; the C caller expects its own Cbc_Model handle
+      if (this->info_callback(this->cModel, &out, this->infoData))
+        action = stop;
 #ifdef CBC_THREAD
-    assert(this->cbcMutex);
-    pthread_mutex_unlock((this->cbcMutex));
+      pthread_mutex_unlock((this->cbcMutex));
 #endif
-    } // has progress callback
+    }
   } // not in subtree
 
-  return noAction;
+  return action;
 }
 
 
@@ -738,6 +750,34 @@ const char *CBC_LINKAGE Cbc_getVersion()
   return CBC_VERSION;
 }
 
+// Returns `name` unless it is empty, in which case a unique default name is
+// generated for row/column `idx` instead -- matching the "R"/"C" + 7-digit
+// zero-padded index format OsiSolverInterface::dfltRowColName() itself would
+// use for an unnamed row/column ('rc' is 'r' for rows, 'c' for columns).
+//
+// This matters because OsiNameDiscipline is set to 1 for this solver (see
+// Cbc_newModel()), so OsiSolverInterface::setRowName()/setColName() store
+// whatever name they are given verbatim -- including an empty string. If
+// every unnamed row/column were stored with the SAME empty-string name, any
+// name-based lookup (e.g. python-mip's Model.translate()/var_by_name(), used
+// by lazy-constraints/cut-generator callbacks, or Cbc_getColNameIndex()/
+// Cbc_getRowNameIndex() for C callers that opt into
+// Cbc_storeNameIndexes()) would silently resolve all of them to whichever
+// row/column was stored/indexed last. Generating a unique name here keeps
+// such lookups reliable even when callers (like the MIP cut/lazy-constraint
+// callback path) set CbcModel::setKeepNamesPreproc(true), which otherwise
+// would keep these (duplicate, empty) stored names instead of falling back
+// to auto-generated ones via CbcModel::branchAndBound()'s dropNames().
+static std::string Cbc_rowColNameOrDefault(char rc, const char *name, int idx)
+{
+  if (name && name[0] != '\0')
+    return std::string(name);
+
+  char defaultName[16];
+  snprintf(defaultName, sizeof(defaultName), "%c%07d", toupper(rc), idx);
+  return std::string(defaultName);
+}
+
 static void Cbc_flushCols(Cbc_Model *model) {
   if (model->nCols == 0)
     return;
@@ -753,8 +793,10 @@ static void Cbc_flushCols(Cbc_Model *model) {
         solver->setInteger( colsBefore+i );
   }
 
-  for ( int i=0 ; i<model->nCols; ++i )
-    solver->setColName( colsBefore+i, std::string(model->cNames+model->cNameStart[i]) );
+  for ( int i=0 ; i<model->nCols; ++i ) {
+    const char *colName = model->cNames+model->cNameStart[i];
+    solver->setColName( colsBefore+i, Cbc_rowColNameOrDefault('c', colName, colsBefore+i) );
+  }
 
   model->nCols = 0;
   model->cStart[0] = 0;
@@ -774,8 +816,8 @@ static void Cbc_flushRows(Cbc_Model *model) {
   for ( int i=0 ; i<model->nRows; ++i )
   {
     const int rIdx = rowsBefore+i;
-    const std::string rName = std::string(model->rNames+model->rNameStart[i]);
-    solver->setRowName(rIdx, rName);
+    const char *rowName = model->rNames+model->rNameStart[i];
+    solver->setRowName(rIdx, Cbc_rowColNameOrDefault('r', rowName, rIdx));
   }
 
   model->nRows = 0;
@@ -1183,7 +1225,8 @@ Cbc_newModel()
   model->obj_value = COIN_DBL_MAX;
 
   model->inc_callback = NULL;
-  model->progr_callback = NULL;
+  model->progress_info_callback = NULL;
+  model->progressInfoData = NULL;
   model->userCallBack = NULL;
 
   model->cut_callback = NULL;
@@ -1194,7 +1237,6 @@ Cbc_newModel()
   model->lastOptimization = ModelNotOptimized;
 
   model->icAppData = NULL;
-  model->pgrAppData = NULL;
 
   model->colNameIndex = NULL;
   model->rowNameIndex = NULL;
@@ -1457,6 +1499,15 @@ Cbc_readLp(Cbc_Model *model, const char *filename)
   }
 
   return result;
+}
+
+/** Activates the OsiRowCutDebugger with a known reference solution. See
+ * Cbc_C_Interface.h for details. */
+void CBC_LINKAGE
+Cbc_activateRowCutDebugger(Cbc_Model *model, const double *solution,
+  char enforceOptimality)
+{
+  model->solver_->activateRowCutDebugger(solution, enforceOptimality != 0);
 }
 
 /** @brief If Cbc was built with gzip compressed files support
@@ -1854,24 +1905,7 @@ static int cbc_callb(CbcModel *cbcModel, int whereFrom) {
   }
 #endif
 
-  Cbc_EventHandler *cbc_eh = dynamic_cast<Cbc_EventHandler *>(cbcModel->getEventHandler());
-  if (cbc_eh == NULL)
-    return 0;
-
-  if (cbc_eh->progr_callback != NULL)
-  {
-    switch (whereFrom)
-    {
-      case 1:
-        cbc_eh->progr_callback(cbcModel, 0, 0, "root lp relax", cbcModel->getCurrentSeconds(),
-                               cbcModel->getBestPossibleObjValue(), DBL_MAX, 0, NULL, cbc_eh->pgAppData);
-        break;
-      case 2:
-        cbc_eh->progr_callback(cbcModel, 0, 0, "pre-proc", cbcModel->getCurrentSeconds(),
-                               cbcModel->getBestPossibleObjValue(), cbcModel->getObjValue(), 0, NULL, cbc_eh->pgAppData);
-        break;
-    } // where from
-  } // has progress callback
+  (void)cbcModel;
 
   return 0;
 }
@@ -1882,6 +1916,397 @@ static void Cbc_addAllSOS( Cbc_Model *model, CbcModel &cbcModel );
 // adds mipstart if available
 static void Cbc_addMS( Cbc_Model *model, CbcModel &cbcModel  );
 
+// Maps the post-solve status of solver/clps onto the Cbc_solveLinearProgram()/
+// Cbc_resolve() return codes (0 optimal, 1 stopped/truncated, 2 infeasible,
+// 3 unbounded, -1 unexpected) and updates model's cached solution (x, row
+// activity, slacks, objective value) accordingly. Shared by the warm-start
+// (resolve()) and both cold-start solve paths below.
+static int Cbc_mapLpResult(Cbc_Model *model, OsiClpSolverInterface *solver, ClpSimplex *clps)
+{
+  if (solver->isProvenOptimal()) {
+    model->obj_value = solver->getObjValue();
+    model->x = solver->getColSolution();
+    model->rActv = solver->getRowActivity();
+    Cbc_updateSlack(model, solver->getRowActivity());
+    model->rSlk = model->slack->data();
+    return 0;
+  }
+  {
+    const bool timeLimitHit = (clps->status() == 3 && clps->secondaryStatus() == 9);
+    const bool truncated = timeLimitHit || solver->isIterationLimitReached();
+    if (truncated) {
+      const bool pFeas = clps->primalFeasible();
+      const bool dFeas = clps->dualFeasible();
+      if (pFeas || dFeas)
+        model->obj_value = solver->getObjValue();
+      if (pFeas) {
+        model->x = solver->getColSolution();
+        model->rActv = solver->getRowActivity();
+        Cbc_updateSlack(model, solver->getRowActivity());
+        model->rSlk = model->slack->data();
+      }
+      return 1;
+    }
+  }
+  if (solver->isProvenDualInfeasible())
+    return 3;
+  if (solver->isProvenPrimalInfeasible())
+    return 2;
+  if (solver->isAbandoned()) {
+    fprintf(stderr, "Error while solving the linear program.\n");
+    fflush(stdout); fflush(stderr);
+    abort();
+  }
+  return -1;
+}
+
+// Installs the configured dual simplex pivot algorithm (DualPivot parameter)
+// directly on clps. This is independent of *how* the LP reaches optimality
+// (warm-started resolve() or a cold ClpSolve-driven solve simply continues
+// with whatever pivot algorithm is currently installed), so it is applied
+// unconditionally before either path runs below.
+//
+// Because it runs before *every* solve -- including each Cbc_resolve() -- it
+// overwrites whatever pivot rule is currently installed. That matters for
+// DBL_PARAM_PSI: a positive psi asks for Positive Edge pivoting, which the
+// cold path requests via the "-psi" token, and which CbcSolver implements by
+// *wrapping* the installed pivot rules in their PE variants (see
+// applyPositiveEdge() in CbcSolver.cpp). Re-installing a plain
+// ClpDualRowSteepest here would silently strip that wrapper off the dual side
+// on the first reoptimization while leaving the primal side wrapped, so the
+// requested pivot rule would apply to the root LP only, asymmetrically, and
+// never to any of the reoptimizations. Unlike the one-shot overrides CbcSolver
+// protects with ClpProtectedLpSettings (which exist purely to speed up a single
+// root solve and are deliberately rolled back afterwards), psi is a persistent
+// user-requested setting, so it must be re-asserted rather than restored away.
+static void Cbc_applyDualPivot(Cbc_Model *model, ClpSimplex *clps)
+{
+  // Mirrors applyPositiveEdge()'s convention: PE is active only for psi > 0.
+  // DBL_PARAM_PSI defaults to -1.0, following the sign convention of Clp's own
+  // ClpParam::PSI default (-0.5): negative means "PE off, remembering |psi| as
+  // the factor to use if it is switched on". That is why DP_PESteepest passes
+  // fabs() -- it honors an explicitly selected PE pivot even while psi is still
+  // at that negative default.
+  const double psi = model->dbl_param[DBL_PARAM_PSI];
+  const bool positiveEdge = (psi > 0.0);
+
+  // Three of the five choices are steepest edge differing only in
+  // ClpDualRowSteepest's mode, so they share the single install below rather
+  // than repeating the PE/plain branch five times. -1 means "handled inline".
+  int steepestMode = -1;
+  switch (model->dualp) {
+    case DP_Auto:
+      steepestMode = 3;
+      break;
+    case DP_Partial: // steepest, but examining only a subset of the choices
+      steepestMode = 2;
+      break;
+    case DP_Steepest:
+      // ClpDualRowSteepest's own default mode, named explicitly so the PE
+      // variant wraps that same mode rather than ClpPEDualRowSteepest's
+      // independently-defaulted one.
+      steepestMode = ClpDualRowSteepest().mode();
+      break;
+    case DP_Dantzig:
+      if (positiveEdge) {
+        ClpPEDualRowDantzig p(psi);
+        clps->setDualRowPivotAlgorithm(p);
+      } else {
+        ClpDualRowDantzig dantzig;
+        clps->setDualRowPivotAlgorithm(dantzig);
+      }
+      break;
+    case DP_PESteepest: {
+      // Explicitly selected PE, so it applies even while psi is still at its
+      // negative "PE off" default -- hence fabs() to recover the factor.
+      ClpPEDualRowSteepest p(fabs(psi));
+      clps->setDualRowPivotAlgorithm(p);
+      break;
+    }
+  }
+  if (steepestMode >= 0) {
+    if (positiveEdge) {
+      ClpPEDualRowSteepest p(psi, steepestMode);
+      clps->setDualRowPivotAlgorithm(p);
+    } else {
+      ClpDualRowSteepest steep(steepestMode);
+      clps->setDualRowPivotAlgorithm(steep);
+    }
+  }
+
+  // The primal column pivot is left untouched deliberately: the C interface
+  // exposes no parameter selecting one (there is no PrimalPivot counterpart to
+  // DualPivot), so whatever is installed is either Clp's default or the PE
+  // variant the cold path's "-psi" token already produced -- and in the latter
+  // case it is already what psi asks for, so there is nothing to re-assert.
+}
+
+// Wraps a single Clp solve call (initialSolve() for a cold solve, or
+// resolve() for warm-start reoptimization) with a CbcRootLpEventHandler
+// (modern tabular progress output), active only when the configured log
+// level is >= 1. Shared by the legacy cold-solve path (Cbc_solveLPColdLegacy)
+// and the warm-start resolve() path in Cbc_solveLinearProgram(), so both
+// solve modes use the same modern output format when verbosity is enabled.
+template < typename SolveFn >
+static void Cbc_withRootLpProgress(Cbc_Model *model, OsiClpSolverInterface *solver,
+  ClpSimplex *clps, SolveFn &&solveFn)
+{
+  const int lpLogLevel = model->int_param[INT_PARAM_LOG_LEVEL];
+  CbcRootLpEventHandler *lpProgressHandler = nullptr;
+  int savedClpLogLevel = -1;
+  if (lpLogLevel >= 1) {
+    savedClpLogLevel = clps->logLevel();
+    clps->setLogLevel(0);
+    lpProgressHandler = new CbcRootLpEventHandler(
+      solver->messageHandler(), lpLogLevel, /*iterFreq=*/0, /*timeFreq=*/5.0);
+    clps->passInEventHandler(lpProgressHandler);
+    delete lpProgressHandler;
+    lpProgressHandler = dynamic_cast< CbcRootLpEventHandler * >(clps->eventHandler());
+  }
+
+  solveFn();
+
+  if (savedClpLogLevel >= 0) {
+    if (lpProgressHandler)
+      lpProgressHandler->printFinalStatus();
+    clps->setLogLevel(savedClpLogLevel);
+    ClpEventHandler defaultHandler;
+    clps->passInEventHandler(&defaultHandler);
+  }
+}
+
+// Cold "from scratch" LP solve for the two legacy method/option combinations
+// CbcSolver's applyLpMethod()/runSolveContinuous() cannot express through its
+// public parameter surface: LPM_BarrierNoCross (no CbcParameters knob exists
+// for barrier-without-crossover) and LPR_NoDualReds (the "switch off dual
+// reductions in presolve" ClpSolve special option isn't reachable from a
+// CbcParameters-driven solve either). Every other LP method is handled by
+// Cbc_solveLPColdViaCbcSolver() below.
+static int Cbc_solveLPColdLegacy(Cbc_Model *model, OsiClpSolverInterface *solver, ClpSimplex *clps)
+{
+  ClpSolve clpOptions;
+  if (model->red_type == LPR_NoDualReds)
+    clpOptions.setSpecialOption(5, 1); // switch off dual reductions in presolve
+
+  switch (model->lp_method) {
+    case LPM_Primal:
+      if (model->int_param[INT_PARAM_IDIOT] > 0)
+        clpOptions.setSpecialOption(1, 2, model->int_param[INT_PARAM_IDIOT]);
+      clpOptions.setSolveType(ClpSolve::usePrimal);
+      break;
+    case LPM_Barrier:
+      clpOptions.setSolveType(ClpSolve::useBarrier);
+      clpOptions.setSpecialOption(4, 4);
+      break;
+    case LPM_BarrierNoCross:
+      clpOptions.setSolveType(ClpSolve::useBarrierNoCross);
+      break;
+    default:
+      clpOptions.setSolveType(ClpSolve::useDual);
+      break;
+  }
+  solver->setSolveOptions(clpOptions);
+
+  Cbc_withRootLpProgress(model, solver, clps, [&]() { solver->initialSolve(); });
+
+  return Cbc_mapLpResult(model, solver, clps);
+}
+
+
+// Cold "from scratch" LP solve for the common case: delegates method
+// selection (dual/primal/barrier/auto/racing/recommend) and the actual solve
+// to CbcSolver::applyLpMethod() directly -- the same option-translation/
+// solve logic used internally by the `cbc` command line's -initialSolve/
+// -dualSimplex/-primalSimplex/-barrier actions and by the root-LP solve in
+// the BAB pipeline -- so any new LP solution method added there (e.g. LP
+// racing, the ML-recommended configuration) is automatically available here
+// too, without duplicating any of that setup/solve logic.
+//
+// Deliberately calls applyLpMethod() directly instead of going through
+// CbcSolver::run()'s "-initialSolve" action (which dispatches to
+// runSolveContinuous()): the latter unconditionally also runs
+// preRootLPStrenghtening() (bound propagation + clique merging "before")
+// first, which is inappropriate for a plain LP-relaxation solve --
+// Cbc_C_Interface.h documents that Cbc_solveLinearProgram()/Cbc_resolve()
+// "only solve the LP relaxation as-is and no longer perform bound-tightening
+// preprocessing". Left enabled, that preprocessing silently mutates results
+// in ways callers don't expect:
+//  - Clique strengthening (CglCliqueStrengthening::strengthenCliques())
+//    calls solver->deleteRows() directly on `solver` -- the model's own
+//    persistent OsiSolverInterface, not a clone (see assignSolver() below)
+//    -- permanently shrinking the caller's constraint matrix and corrupting
+//    row indices for any later access (e.g. Model.copy()/constr.expr in
+//    python-mip).
+//  - Bound propagation tightens variable bounds directly from rows (e.g.
+//    turning "x >= b" into a column lower bound), which can make those rows
+//    non-binding at the LP optimum -- so their dual price reads as 0 instead
+//    of the true shadow price, breaking algorithms that rely on duals (e.g.
+//    column generation pricing).
+// applyLpMethod() is the documented, supported entry point for this exact
+// use case ("expose[d] here so the exact same, fully-configured root-LP
+// solve can be triggered directly on an arbitrary OsiClpSolverInterface --
+// e.g. one owned by an external caller such as the C interface"), and never
+// touches bound propagation/clique strengthening -- those were extracted
+// into the separate preRootLPStrenghtening() step precisely so callers like
+// this one can opt out of them while still reusing the LP-method/racing/
+// ClpSolve-option logic.
+//
+// Builds a throwaway CbcSolver wrapping `solver` directly via assignSolver()
+// (never a clone): the resulting optimal basis stays in `solver` itself --
+// the very OsiClpSolverInterface stored in the C interface -- so it remains
+// available for later reoptimization (e.g. via Cbc_resolve()). The throwaway
+// CbcModel/CbcSolver is marked setModelOwnsSolver(false) so destroying it at
+// the end of this function never deletes `solver`.
+static int Cbc_solveLPColdViaCbcSolver(Cbc_Model *model, OsiClpSolverInterface *solver, ClpSimplex *clps)
+{
+  CbcSolver cbcSolver;
+  {
+    OsiSolverInterface *tmp = solver;
+    cbcSolver.model()->assignSolver(tmp, false);
+  }
+  cbcSolver.model()->setModelOwnsSolver(false);
+  cbcSolver.initialize();
+  cbcSolver.parameters().disableWelcomePrinting();
+  cbcSolver.model()->setUseElapsedTime(model->int_param[INT_PARAM_ELAPSED_TIME] == 1);
+
+  // Capture the search start time before applyLpMethod() runs. LP racing reads
+  // it through CbcModel::getCurrentSeconds() to timestamp its progress rows,
+  // and getCurrentSeconds() subtracts CbcStartSeconds from the current clock --
+  // so leaving it at 0 makes every racing progress row report raw epoch seconds
+  // instead of an elapsed time. CbcSolver::solveInitialLp() does this for the
+  // command-line/BAB paths, but this function deliberately bypasses it (see the
+  // doc comment above), so the same guard is needed here.
+  if (!cbcSolver.model()->getDblParam(CbcModel::CbcStartSeconds))
+    cbcSolver.model()->setDblParam(CbcModel::CbcStartSeconds,
+      cbcSolver.model()->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
+
+  std::deque< std::string > inputQueue;
+  auto addParamD = [&](const char *n, double v) {
+    char buf[64]; snprintf(buf, sizeof(buf), "%.17g", v);
+    inputQueue.push_back(std::string("-") + n + "=" + buf);
+  };
+  auto addParamI = [&](const char *n, int v) {
+    char buf[32]; snprintf(buf, sizeof(buf), "%d", v);
+    inputQueue.push_back(std::string("-") + n + "=" + buf);
+  };
+
+  const double timeLimit = model->dbl_param[DBL_PARAM_TIME_LIMIT];
+  addParamD("sec", timeLimit >= COIN_DBL_MAX ? 1.0e12 : timeLimit);
+  if (model->int_param[INT_PARAM_MAX_ITER] != INT_MAX)
+    addParamI("maxIt", model->int_param[INT_PARAM_MAX_ITER]);
+  addParamD("dualT", model->dbl_param[DBL_PARAM_DUAL_TOL]);
+  addParamD("primalT", model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
+  addParamI("log", model->int_param[INT_PARAM_LOG_LEVEL]);
+  addParamI("randomS", model->int_param[INT_PARAM_RANDOM_SEED]);
+  addParamI("pertV", model->int_param[INT_PARAM_PERT_VALUE]);
+  if (model->int_param[INT_PARAM_IDIOT] != -1)
+    addParamI("idiot", model->int_param[INT_PARAM_IDIOT]);
+  if (model->dbl_param[DBL_PARAM_PSI] > 0.0)
+    addParamD("psi", model->dbl_param[DBL_PARAM_PSI]);
+  // Thread count: applyLpMethod() reads CbcParam::THREADS to decide whether LP
+  // racing can run at all (it needs >= 2, and raises a CoinError otherwise) and
+  // how many racing threads to start, as well as which way -lpMethod=auto
+  // resolves (racing when >= 2, the sequential ML recommendation when == 1).
+  // Without forwarding it here, every LP-relaxation solve saw THREADS unset and
+  // so behaved as single-threaded regardless of INT_PARAM_THREADS -- which made
+  // LPM_Racing (documented in Cbc_C_Interface.h as "Requires at least 2 threads
+  // (INT_PARAM_THREADS)") unreachable through the C interface.
+  //
+  // lpThreads is the count applyLpMethod() will actually see, so that the
+  // racing precondition below is checked against the same number rather than
+  // against the requested one: in a build without CBC_THREAD the token is not
+  // forwarded at all, THREADS stays at its default and racing is impossible no
+  // matter what INT_PARAM_THREADS asks for. Mirrors applyLpMethod()'s own
+  // computation, which reads THREADS modulo 100 (values >= 100 encode extra
+  // B&B behaviour).
+  int lpThreads = 1;
+#ifdef CBC_THREAD
+  if (model->int_param[INT_PARAM_THREADS] >= 1) {
+    addParamI("threads", model->int_param[INT_PARAM_THREADS]);
+    lpThreads = std::max(1, model->int_param[INT_PARAM_THREADS] % 100);
+  }
+#endif
+
+  // Dual pivot is applied directly on clps by Cbc_applyDualPivot() (called
+  // by the caller before this function), so it is not repeated here as an
+  // inputQueue token -- applyLpMethod() never overrides an already-installed
+  // pivot algorithm unless psi > 0 (Positive Edge wrapping), which is honored
+  // above via the -psi token.
+
+  static const char *lpmKwd[] = {
+    "auto", "dual", "primal", "barrier", "barrier", "racing", "recommend"
+  }; // index 4 (LPM_BarrierNoCross) is unreachable here -- routed to
+     // Cbc_solveLPColdLegacy() by the caller instead.
+  int lpMethod = model->lp_method;
+
+  // LP racing needs at least two threads to race with; applyLpMethod() treats
+  // being asked for it with one thread as a hard error (CoinError). Reaching
+  // that from here would abort the whole process -- including an embedding
+  // interpreter such as python-mip's -- over what is only a mis-set parameter,
+  // so the combination is resolved here instead: fall back to the sequential
+  // sibling method ("recommend", exactly what applyLpMethod() itself selects
+  // for -lpMethod=auto when a single thread is available) and say so once.
+  if (lpMethod == LPM_Racing && lpThreads < 2) {
+    if (model->int_param[INT_PARAM_LOG_LEVEL] >= 1) {
+      fprintf(stderr, "Cbc_solveLinearProgram: LP racing needs at least 2 "
+        "threads (INT_PARAM_THREADS is %d); using the sequential recommended "
+        "LP method instead.\n", model->int_param[INT_PARAM_THREADS]);
+      fflush(stderr);
+    }
+    lpMethod = LPM_Recommend;
+  }
+  inputQueue.push_back(std::string("-lpMethod=") + lpmKwd[lpMethod]);
+
+  // No action token (e.g. "-initialSolve") is pushed here: run() below is
+  // used only to parse the parameter-setting tokens above into
+  // cbcSolver.parameters()/doIdiot_/doSprint_ -- ending the queue with
+  // "-quit" so it returns immediately without executing any solve action
+  // (in particular, without dispatching to runSolveContinuous(), which
+  // would otherwise unconditionally also run preRootLPStrenghtening() --
+  // see this function's doc comment above). The actual solve is triggered
+  // explicitly below via applyLpMethod(), which reads its configuration
+  // from those same already-set parameters.
+  inputQueue.push_back("-quit");
+
+  // The single unified LP-solve entry point (model-level LP settings, LP
+  // racing, full ClpSolve solve with all configured options) -- see this
+  // function's doc comment above for why this is called directly instead of
+  // via CbcSolver::run()'s "-initialSolve" action. Operates directly on
+  // `solver` (passed explicitly rather than relying on
+  // cbcSolver.model()->solver(), even though they are the same object here).
+  //
+  // Both calls are guarded: applyLpMethod() reports invalid LP-method/thread
+  // combinations by throwing CoinError (e.g. lpMethod=racing with a single
+  // thread), and an exception thrown across this C boundary would otherwise
+  // reach an extern "C" frame and terminate the process with nothing but
+  // "terminate called after throwing an instance of 'CoinError'". Translating
+  // it into a legible diagnostic first matches how Cbc_solve() below handles
+  // the same class of error.
+  try {
+    cbcSolver.run(inputQueue);
+    cbcSolver.applyLpMethod(solver, -1);
+  } catch (CoinError &e) {
+    fprintf(stderr, "%s ERROR: %s::%s, %s\n", "Cbc_solveLinearProgram",
+      e.className().c_str(), e.methodName().c_str(), e.message().c_str());
+    fflush(stdout); fflush(stderr);
+    abort();
+  }
+
+  // applyLpMethod() solves via ClpSimplex::initialSolve()/racing directly
+  // (not OsiClpSolverInterface::initialSolve()), so `solver`'s own
+  // lastAlgorithm_ tracking is never updated by that call. Without this,
+  // solver->basisIsAvailable() would stay permanently false and every
+  // subsequent Cbc_resolve()/warm-start call above would silently fall back
+  // to a full cold solve instead of reusing the basis just computed here.
+  // Unlike the previous "-initialSolve"-via-run() version of this function,
+  // applyLpMethod() is always actually invoked above (no bound-propagation-
+  // skip case can occur here any more, since that preprocessing step is no
+  // longer run in this path at all), so this is now unconditional.
+  solver->setLastAlgorithm(1);
+
+  return Cbc_mapLpResult(model, solver, clps);
+}
+
 int CBC_LINKAGE
 Cbc_solveLinearProgram(Cbc_Model *model)
 {
@@ -1890,21 +2315,53 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   ClpSimplex *clps = solver->getModelPtr();
   assert(clps);
 
-  // stopping criteria
-  double prevMaxSecs = clps->maximumSeconds();
-  clps->setMaximumSeconds(model->dbl_param[DBL_PARAM_TIME_LIMIT]);
-  int prevMaxIter = clps->maximumIterations();
-  clps->setMaximumIterations(model->int_param[INT_PARAM_MAX_ITER]);
-
-  CoinMessages generalMessages = clps->messages();
-  clps->setRandomSeed( model->int_param[INT_PARAM_RANDOM_SEED] );
-
+  // Tolerances, limits and log level: apply regardless of warm/cold path.
   solver->setDblParam( OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
   solver->setDblParam( OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL]);
-
+  // Perturbation, likewise: it is read by every simplex call, so it must be in
+  // effect on the warm-start resolve() path and the legacy cold path too --
+  // not just where it happens to be forwarded as a "-pertV" token (see
+  // Cbc_solveLPColdViaCbcSolver()). Clp's own default is 100 ("off") whereas
+  // Cbc's tuned default is the mild 50 that fast warm-started reoptimization
+  // relies on, so leaving this to the cold path alone means:
+  //   - a reoptimize following a legacy cold solve (LPR_NoDualReds /
+  //     LPM_BarrierNoCross, neither of which sets perturbation) runs with
+  //     perturbation off, and
+  //   - a Cbc_setIntParam(INT_PARAM_PERT_VALUE) issued after the first solve
+  //     is silently ignored on every subsequent Cbc_resolve().
+  // Setting it here makes INT_PARAM_PERT_VALUE authoritative on all paths.
   clps->setPerturbation(model->int_param[INT_PARAM_PERT_VALUE]);
   clps->setSmallElementValue(model->dbl_param[DBL_PARAM_ZERO_TOL]);
+  clps->setRandomSeed( model->int_param[INT_PARAM_RANDOM_SEED] );
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
+  // Time limit, in whichever clock INT_PARAM_ELAPSED_TIME selects. Mirrors
+  // CbcSolver's applyClpTimeLimit()/clearClpTimeLimits() pair, and matters on
+  // both counts:
+  //   - ClpSimplex keeps CPU and wall-clock deadlines in two separate
+  //     parameters, each with -1.0 as its sole "no limit" sentinel, and
+  //     hitMaximumIterations() tests both. Setting only the CPU one meant
+  //     INT_PARAM_ELAPSED_TIME (which defaults to 1, i.e. wall clock) was
+  //     silently ignored for LP solves. Under LP racing that is not a cosmetic
+  //     difference: CPU time accrues once per racing thread, so a budget of N
+  //     seconds was being enforced after roughly N/threads seconds of wall
+  //     time. The unselected clock is cleared rather than left alone so that
+  //     lowering the limit, or switching clocks, between two resolves cannot
+  //     leave a stale deadline from the previous solve still armed.
+  //   - COIN_DBL_MAX ("no limit" in the C interface) is not Clp's sentinel:
+  //     setMaximumSeconds() stores value + CoinCpuTime() for any value >= 0,
+  //     so the default limit landed as a finite-but-astronomical deadline that
+  //     only failed to trigger because hitMaximumIterations() happens to skip
+  //     CPU deadlines >= 4.0e7. Passing -1.0 states "no limit" outright.
+  const double lpTimeLimit = model->dbl_param[DBL_PARAM_TIME_LIMIT];
+  const double lpBudget = (lpTimeLimit >= COIN_DBL_MAX) ? -1.0 : lpTimeLimit;
+  if (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) {
+    clps->setMaximumWallSeconds(lpBudget);
+    clps->setMaximumSeconds(-1.0);
+  } else {
+    clps->setMaximumSeconds(lpBudget);
+    clps->setMaximumWallSeconds(-1.0);
+  }
+  clps->setMaximumIterations(model->int_param[INT_PARAM_MAX_ITER]);
 
   if (! cbc_annouced) {
     CbcOutput::printSolverHeader(solver->messageHandler(),
@@ -1912,295 +2369,48 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     cbc_annouced = 1;
   }
 
-  model->lastOptimization = ContinuousOptimization;
-
-  if (solver->basisIsAvailable()) {
-    solver->resolve();
-    if (solver->isProvenOptimal()) {
-      clps->setMaximumSeconds(prevMaxSecs);
-      clps->setMaximumIterations(prevMaxIter);
-      return 0;
-    }
-    if (solver->isProvenDualInfeasible()) {
-      clps->setMaximumSeconds(prevMaxSecs);
-      clps->setMaximumIterations(prevMaxIter);
-      return 3;
-    }
-    if (solver->isProvenPrimalInfeasible()) {
-      clps->setMaximumSeconds(prevMaxSecs);
-      clps->setMaximumIterations(prevMaxIter);
-      return 2;
-    }
-    if (solver->isIterationLimitReached() || solver->isPrimalObjectiveLimitReached() || solver->isDualObjectiveLimitReached()) {
-      clps->setMaximumSeconds(prevMaxSecs);
-      clps->setMaximumIterations(prevMaxIter);
-      const bool pFeas = clps->primalFeasible();
-      const bool dFeas = clps->dualFeasible();
-      if (pFeas || dFeas)
-        model->obj_value = solver->getObjValue();
-      if (pFeas) {
-        model->x = solver->getColSolution();
-        model->rActv = solver->getRowActivity();
-        Cbc_updateSlack(model, solver->getRowActivity());
-        model->rSlk = model->slack->data();
-      }
-      return 1;
-    }
-    if (solver->isAbandoned()) {
-      clps->setMaximumSeconds(prevMaxSecs);
-      clps->setMaximumIterations(prevMaxIter);
-      fprintf(stderr, "Error while resolving the linear program.\n");
-      fflush(stdout); fflush(stderr);
-      abort();
-    }
-  } // resolve
-
-  /* checking if options should be automatically tuned */
-  if (model->lp_method == LPM_Auto) {
-    // Default to dual simplex — it's the best choice for most problems.
-    // Clp's initialSolve() also auto-selects internally, so this just
-    // sets the ClpSolve type. Previously this block parsed the string
-    // output of ClpSimplexOther::guess() which was fragile.
-    model->lp_method = LPM_Dual;
-  } // auto
-
-  /* for integer or linear optimization starting with LP relaxation */
-  ClpSolve clpOptions;
-  if (model->red_type == LPR_NoDualReds){
-    // set special option in Clp to disable dual reductions
-    clpOptions.setSpecialOption(5, 1);
-  }
-  switch (model->lp_method) {
-    case LPM_Auto:
-      fprintf(stderr, "Method should be already configured.\n");
-      exit(1);
-      break;
-    case LPM_Primal:
-      if (model->int_param[INT_PARAM_IDIOT] > 0)
-        clpOptions.setSpecialOption(1, 2, model->int_param[INT_PARAM_IDIOT]);
-      clpOptions.setSolveType( ClpSolve::usePrimal );
-      break;
-    case LPM_Dual:
-      clpOptions.setSolveType( ClpSolve::useDual );
-      break;
-    case LPM_Barrier:
-      clpOptions.setSolveType( ClpSolve::useBarrier );
-      clpOptions.setSpecialOption(4, 4);
-      break;
-    case LPM_BarrierNoCross:
-      clpOptions.setSolveType( ClpSolve::useBarrierNoCross );
-      break;
-  }
-  solver->setSolveOptions(clpOptions);
-
-  switch (model->dualp) {
-    case DP_Auto:
-      {
-        ClpDualRowSteepest asteep(3);
-        clps->setDualRowPivotAlgorithm(asteep);
-        break;
-      }
-    case DP_Dantzig:
-      {
-        ClpDualRowDantzig dantzig;
-        clps->setDualRowPivotAlgorithm(dantzig);
-        break;
-      }
-    case DP_Partial:
-      {
-        ClpDualRowSteepest bsteep(2);
-        clps->setDualRowPivotAlgorithm(bsteep);
-        break;
-      }
-    case DP_Steepest:
-      {
-        ClpDualRowSteepest csteep;
-        clps->setDualRowPivotAlgorithm(csteep);
-        break;
-      }
-    case DP_PESteepest:
-      {
-        ClpPEDualRowSteepest p(model->dbl_param[DBL_PARAM_PSI]);
-        clps->setDualRowPivotAlgorithm(p);
-        break;
-      }
-  }
+  // Whether *any* solve (LP or MIP root relaxation) has happened on this
+  // model since creation or the last Cbc_reset(): if so, `solver` already
+  // holds a usable warm-start basis and a cheap resolve() should be used
+  // instead of a full cold solve, regardless of what solver->basisIsAvailable()
+  // reports. basisIsAvailable() is NOT a reliable signal for this: Osi
+  // deliberately sets lastAlgorithm_ = 999 (making basisIsAvailable() return
+  // false) on any bound change that could invalidate the *guaranteed-optimal*
+  // status of the current solution (see OsiClpSolverInterface::setColLower/
+  // setColUpper) -- but the underlying basis object is still perfectly usable
+  // as a warm start for resolve(), it just isn't known to still be optimal.
+  // Using basisIsAvailable() alone here would make every reoptimization after
+  // a bound/row change silently fall back to an expensive full cold solve.
+  const bool priorSolveExists = (model->lastOptimization != ModelNotOptimized);
 
   model->lastOptimization = ContinuousOptimization;
 
-  // Root LP progress output via event handler
-  int lpLogLevel = model->int_param[INT_PARAM_LOG_LEVEL];
-  // Default frequencies: every 5 seconds, no iteration-based
-  const int lpIterFreq = 0;
-  const double lpTimeFreq = 5.0;
-  CbcRootLpEventHandler *lpProgressHandler = nullptr;
-  int savedClpLogLevel = -1;
-  if (lpLogLevel >= 1 && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
-    savedClpLogLevel = clps->logLevel();
-    clps->setLogLevel(0);
-    lpProgressHandler = new CbcRootLpEventHandler(
-      solver->messageHandler(), lpLogLevel, lpIterFreq, lpTimeFreq);
-    clps->passInEventHandler(lpProgressHandler);
-    delete lpProgressHandler;
-    lpProgressHandler = dynamic_cast< CbcRootLpEventHandler * >(
-      clps->eventHandler());
+  // Dual pivot algorithm choice: applies whether we warm-start (resolve())
+  // or cold-start below.
+  Cbc_applyDualPivot(model, clps);
+
+  if (priorSolveExists || solver->basisIsAvailable()) {
+    // Warm-start reoptimization -- the configured LP method has no effect
+    // here: Clp just continues from the existing basis. Still uses the
+    // modern tabular progress output (same as the cold paths) when the
+    // configured log level allows it.
+    Cbc_withRootLpProgress(model, solver, clps, [&]() { solver->resolve(); });
+    return Cbc_mapLpResult(model, solver, clps);
   }
 
-  solver->initialSolve();
+  if (model->lp_method == LPM_BarrierNoCross || model->red_type == LPR_NoDualReds)
+    return Cbc_solveLPColdLegacy(model, solver, clps);
 
-  if (savedClpLogLevel >= 0) {
-    if (lpProgressHandler)
-      lpProgressHandler->printFinalStatus();
-    clps->setLogLevel(savedClpLogLevel);
-    // Remove LP progress handler so subsequent LP solves are silent
-    ClpEventHandler defaultHandler;
-    clps->passInEventHandler(&defaultHandler);
-  }
-
-  if (solver->isProvenOptimal()) {
-    model->obj_value = solver->getObjValue();
-    model->x = solver->getColSolution();
-    model->rActv = solver->getRowActivity();
-    Cbc_updateSlack(model, solver->getRowActivity());
-    model->rSlk = model->slack->data();
-    clps->setMaximumSeconds(prevMaxSecs);
-    clps->setMaximumIterations(prevMaxIter);
-    return 0;
-  }
-  {
-    const bool timeLimitHit = (clps->status() == 3 && clps->secondaryStatus() == 9);
-    const bool truncated = timeLimitHit || solver->isIterationLimitReached();
-    if (truncated) {
-      const bool pFeas = clps->primalFeasible();
-      const bool dFeas = clps->dualFeasible();
-      if (pFeas || dFeas)
-        model->obj_value = solver->getObjValue();
-      if (pFeas) {
-        model->x = solver->getColSolution();
-        model->rActv = solver->getRowActivity();
-        Cbc_updateSlack(model, solver->getRowActivity());
-        model->rSlk = model->slack->data();
-      }
-      clps->setMaximumSeconds(prevMaxSecs);
-      clps->setMaximumIterations(prevMaxIter);
-      return 1;
-    }
-  }
-  if (solver->isProvenDualInfeasible()) {
-    clps->setMaximumSeconds(prevMaxSecs);
-    clps->setMaximumIterations(prevMaxIter);
-    return 3;
-  }
-  if (solver->isProvenPrimalInfeasible()) {
-    clps->setMaximumSeconds(prevMaxSecs);
-    clps->setMaximumIterations(prevMaxIter);
-    return 2;
-  }
-
-  clps->setMaximumSeconds(prevMaxSecs);
-  clps->setMaximumIterations(prevMaxIter);
-  return -1;
+  return Cbc_solveLPColdViaCbcSolver(model, solver, clps);
 }
 
 int CBC_LINKAGE
 Cbc_resolve(Cbc_Model *model)
 {
-  Cbc_flush(model);
-  OsiClpSolverInterface *solver = model->solver_;
-
-  // Apply key parameters
-  ClpSimplex *clps = solver->getModelPtr();
-  clps->setMaximumSeconds(model->dbl_param[DBL_PARAM_TIME_LIMIT]);
-  clps->setMaximumIterations(model->int_param[INT_PARAM_MAX_ITER]);
-  solver->setDblParam(OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
-  solver->setDblParam(OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL]);
-  solver->messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
-
-  // Optional bound propagation (disabled by default for pure LP relaxation).
-  // When enabled, tightens variable bounds using combinatorial analysis of the
-  // integer structure before the LP is solved. Useful in custom B&B loops where
-  // each node LP benefits from bound propagation, but must be left off when the
-  // caller requires the unmodified LP relaxation.
-  const int fppLevel = model->int_param[INT_PARAM_LP_FAST_PREPROCESS];
-  if (fppLevel > 0) {
-    CbcBoundPropagation::Level level;
-    switch (fppLevel) {
-      case 1:  level = CbcBoundPropagation::Singletons; break;
-      case 2:  level = CbcBoundPropagation::MILPbt;     break;
-      default: level = CbcBoundPropagation::Fixpoint;   break;
-    }
-    const double timeLimit = model->dbl_param[DBL_PARAM_TIME_LIMIT];
-    const bool useElapsed = (model->int_param[INT_PARAM_ELAPSED_TIME] == 1);
-    const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
-    const int logLevel = model->int_param[INT_PARAM_LOG_LEVEL];
-    CbcBoundPropagation bp;
-    const bool feasible = bp.run(solver, solver->messageHandler(), logLevel,
-                                  level, /*maxRounds=*/100,
-                                  useElapsed, timeLimit, startTime);
-    if (!feasible)
-      return 2;  // infeasible proved by bound propagation
-  }
-
-  model->lastOptimization = ContinuousOptimization;
-
-  // Use resolve() for warm-start reoptimization (reuses current basis and method).
-  // For cold starts, apply the LP method setting (defaulting to dual simplex,
-  // which guarantees a valid dual bound when truncated by a time/iter limit).
-  if (solver->basisIsAvailable()) {
-    solver->resolve();
-  } else {
-    LPMethod method = (model->lp_method == LPM_Auto) ? LPM_Dual : model->lp_method;
-    ClpSolve clpOptions;
-    switch (method) {
-      case LPM_Primal:
-        clpOptions.setSolveType(ClpSolve::usePrimal);
-        break;
-      case LPM_Barrier:
-        clpOptions.setSolveType(ClpSolve::useBarrier);
-        clpOptions.setSpecialOption(4, 4);
-        break;
-      case LPM_BarrierNoCross:
-        clpOptions.setSolveType(ClpSolve::useBarrierNoCross);
-        break;
-      default:
-        clpOptions.setSolveType(ClpSolve::useDual);
-        break;
-    }
-    solver->setSolveOptions(clpOptions);
-    solver->initialSolve();
-  }
-
-  // Update cached results
-  if (solver->isProvenOptimal()) {
-    model->obj_value = solver->getObjValue();
-    model->x = solver->getColSolution();
-    model->rActv = solver->getRowActivity();
-    Cbc_updateSlack(model, solver->getRowActivity());
-    model->rSlk = model->slack->data();
-    return 0;
-  }
-  {
-    const bool timeLimitHit = (clps->status() == 3 && clps->secondaryStatus() == 9);
-    const bool truncated = timeLimitHit || solver->isIterationLimitReached();
-    if (truncated) {
-      const bool pFeas = clps->primalFeasible();
-      const bool dFeas = clps->dualFeasible();
-      if (pFeas || dFeas)
-        model->obj_value = solver->getObjValue();
-      if (pFeas) {
-        model->x = solver->getColSolution();
-        model->rActv = solver->getRowActivity();
-        Cbc_updateSlack(model, solver->getRowActivity());
-        model->rSlk = model->slack->data();
-      }
-      return 1;
-    }
-  }
-  if (solver->isProvenPrimalInfeasible())
-    return 2;
-  if (solver->isProvenDualInfeasible())
-    return 3;
-  return -1;
+  // Functionally the same operation as Cbc_solveLinearProgram(): warm-start
+  // reoptimization when a basis is available, otherwise a full cold-start
+  // solve honoring the configured LP method.
+  return Cbc_solveLinearProgram(model);
 }
 
 void Cbc_updateSlack( Cbc_Model *model, const double *ractivity ) {
@@ -2254,6 +2464,41 @@ Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[])
   if (clqStr.messageHandler())
     clqStr.messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
   clqStr.strengthenCliques(n, rows);
+}
+
+// Runs MILP-based bound propagation on model->solver_, in place. Mirrors
+// Cbc_solveLPColdViaCbcSolver()'s approach (see that function's doc comment
+// above for the rationale): builds a throwaway CbcSolver wrapping `solver`
+// directly via assignSolver() (never a clone, and never owning it -- see
+// setModelOwnsSolver(false) below), so that the bounds tightened here are
+// the persistent ones in the C interface's own OsiClpSolverInterface, not a
+// copy that would be discarded when the throwaway CbcSolver is destroyed.
+//
+// Deliberately calls CbcSolver::strengthenBounds() directly -- the same
+// bound-propagation routine used internally by preRootLPStrenghtening() and
+// by the `cbc` command line's standalone -doBoundPropagation action -- and
+// not runBoundPropagation() (the CLI-action wrapper), since the latter
+// additionally checks/reports on CbcSolver's own goodModel_ bookkeeping,
+// which is never populated on this throwaway-CbcSolver path (goodModel_ is
+// only set when CbcSolver itself reads/loads the model, e.g. via readMps()).
+int CBC_LINKAGE
+Cbc_propagateBounds(Cbc_Model *model)
+{
+  Cbc_flush(model);
+  OsiClpSolverInterface *solver = model->solver_;
+
+  CbcSolver cbcSolver;
+  {
+    OsiSolverInterface *tmp = solver;
+    cbcSolver.model()->assignSolver(tmp, false);
+  }
+  cbcSolver.model()->setModelOwnsSolver(false);
+  cbcSolver.initialize();
+  cbcSolver.parameters().disableWelcomePrinting();
+  cbcSolver.model()->messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
+
+  bool ok = cbcSolver.strengthenBounds(solver);
+  return ok ? 0 : 1;
 }
 
 static void Cbc_cleanOptResults(Cbc_Model *model) {
@@ -2343,9 +2588,20 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
     } /* round integer variables */
   } /* saving solution pool */
 
-  Cbc_updateSlack(model, cbcModel.getRowActivity() );
-  /* storing row activity in MIP sol */
-  memcpy(model->mipRowActivity->data(), cbcModel.getRowActivity(), sizeof(double)*numRows );
+  /* cbcModel.getRowActivity() (== solver_->getRowActivity() of CbcModel's
+     *internal* working solver) reflects whatever LP was last resolved
+     during the search -- typically the node where B&B stopped, which is
+     not necessarily the node that produced the incumbent. Trusting it here
+     silently hands back activity/slack values for the wrong point (e.g. a
+     fractional sibling node), rather than for cbcModel.bestSolution(). The
+     original problem's row activity at the incumbent must instead be
+     recomputed directly as A * bestSolution against the untouched
+     model->solver_ matrix. */
+  model->mipRowActivity->assign(numRows, 0.0);
+  model->solver_->getMatrixByCol()->times(cbcModel.bestSolution(), VEC_PTR(model->mipRowActivity));
+  Cbc_updateSlack(model, VEC_PTR(model->mipRowActivity));
+  model->rSlk = model->slack->data();
+  model->rActv = model->mipRowActivity->data();
 
   if (cbcModel.getObjSense()==-1) {
     model->obj_value = 0.0;
@@ -2365,17 +2621,35 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
     model->colValuesMS = NULL;
   }
 
+  /* Every nonzero, not every positive one: a start is a sparse statement of a
+     point, so dropping the negative entries does not shrink it, it changes which
+     point it describes. On a model with negative-valued integers the carried
+     start used to arrive with those columns missing, and since the reader takes
+     unmentioned columns to be zero, CbcMipStart would go on to complete a
+     different -- and generally worse, or unbuildable -- solution than the one
+     just found. */
   std::vector< std::string > cnames;
   std::vector< double > cvalues;
   model->charSpaceMS = 0;
   for ( int j=0 ; (j<cbcModel.getNumCols()) ; ++j ) {
-    if ( cbcModel.bestSolution()[j] >= 1e-8 ) {
+    if ( fabs(cbcModel.bestSolution()[j]) >= 1e-8 ) {
       cnames.push_back( model->solver_->getColName(j) );
       cvalues.push_back( cbcModel.bestSolution()[j] );
       model->charSpaceMS += model->solver_->getColName(j).length() + 1;
     }
   }
   model->charSpaceMS *= sizeof(char);
+
+  /* An all-zero solution leaves nothing to carry. Allocating for it would mean
+     writing colNamesMS[0] into a zero-byte block, and the nColsMS==0 that
+     follows would then stop the next solve from ever freeing either block. */
+  if ( cnames.empty() ) {
+    model->nColsMS = 0;
+    model->colNamesMS = NULL;
+    model->colValuesMS = NULL;
+    model->charSpaceMS = 0;
+    return;
+  }
 
   model->colNamesMS = (char**)xmalloc(sizeof(char*)*cnames.size());
   model->colNamesMS[0] = (char*)xmalloc(sizeof(char)*model->charSpaceMS);
@@ -2395,282 +2669,311 @@ Cbc_solve(Cbc_Model *model)
 {
   Cbc_cleanOptResults(model);
 
-  int res = Cbc_solveLinearProgram(model);
+  /* Push any buffered rows/columns onto the solver before anything reads it.
+   * Cbc_addCol()/Cbc_addRow() only append to model->cXxx/rXxx staging arrays;
+   * nothing reaches solver_ until Cbc_flush(). Until commit 609c9c48 this
+   * function opened with an unconditional Cbc_solveLinearProgram(), which
+   * flushes as its first act, so the flush was incidental rather than
+   * explicit -- and removing that call left Cbc_solve() reading an empty
+   * solver_. The consequences were both silent and severe: the dispatch test
+   * just below asks solver_->getNumIntegers(), which is 0 for a
+   * freshly-built model however many integers were declared, so every
+   * pure-C-interface MIP was routed to the LP branch and Cbc_solve()
+   * returned the *relaxation* bound while reporting isProvenOptimal(); and
+   * the CbcModel built further down was copied from a solver_ still missing
+   * every row and column buffered since the last flush, so a constraint
+   * added after an earlier solve was simply dropped from the model it was
+   * meant to constrain. Either way the answer is wrong, with no diagnostic.
+   *
+   * Note this cannot be left to Cbc_solveLinearProgram() as before: with the
+   * flush deferred, the test that decides whether to *call* it is itself
+   * reading the stale solver. */
+  Cbc_flush(model);
 
-  if (res == 1)
-    return 1;
-  if (res==2 || res==3)
-    return 0;
+  /* Caller explicitly asked to solve only the LP relaxation
+   * (Cbc_setSolveRelax), OR the model has no integer/SOS entities at all
+   * (it's really just an LP): dispatch to Cbc_solveLinearProgram() and
+   * skip building a CbcModel/CbcSolver entirely -- no point going through
+   * the B&B machinery just to stop at the root, and doing so for the
+   * degenerate 0-integer/SOS case currently mis-reports
+   * isProvenInfeasible() (next-branch regression from commit 609c9c48). */
+  if (model->relax_ == 1 ||
+      (model->solver_->getNumIntegers() + model->nSos) == 0) {
+    int res = Cbc_solveLinearProgram(model);
 
-  OsiClpSolverInterface *solver = model->solver_;
+    if (res == 1)
+      return 1;
+    if (res == 2 || res == 3)
+      return 0;
 
-  if (solver->isProvenPrimalInfeasible() || solver->isProvenDualInfeasible() ||
-      solver->isAbandoned() || solver->isIterationLimitReached() || model->relax_ == 1
-      || ((solver->getNumIntegers()+model->nSos)==0)) {
+    OsiClpSolverInterface *solver = model->solver_;
     if (solver->isProvenOptimal() || solver->isIterationLimitReached()) {
       model->obj_value = solver->getObjValue();
-      Cbc_updateSlack(model, solver->getRowActivity() );
+      Cbc_updateSlack(model, solver->getRowActivity());
       model->x = solver->getColSolution();
       model->rSlk = model->slack->data();
       model->rActv = solver->getRowActivity();
     }
-
     return 0;
   }
 
-  /*  MIP Optimization */
-  {
-    model->lastOptimization = IntegerOptimization;
-    OsiClpSolverInterface linearProgram(*solver);
-    CbcModel cbcModel(linearProgram);
-    try {
-      /* stored lazy Constraints */
-      if (model->lazyConstrs) {
-        cbcModel.addCutGenerator(model->lazyConstrs, 1, "Stored LazyConstraints", true, 1);
-        model->cutCBAtSol = 1;
-      }
+  model->lastOptimization = IntegerOptimization;
+  OsiClpSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface linearProgram(*solver);
+  CbcModel cbcModel(linearProgram);
+  try {
+    /* stored lazy Constraints */
+    if (model->lazyConstrs) {
+      cbcModel.addCutGenerator(model->lazyConstrs, 1, "Stored LazyConstraints", true, 1);
+      model->cutCBAtSol = 1;
+    }
 
-      Cbc_EventHandler *cbc_eh = NULL;
-      if (model->inc_callback!=NULL || model->progr_callback!=NULL)
-      {
-        cbc_eh = new Cbc_EventHandler(&cbcModel);
+    Cbc_EventHandler *cbc_eh = NULL;
+    if (model->inc_callback!=NULL || model->progress_info_callback!=NULL)
+    {
+      cbc_eh = new Cbc_EventHandler(&cbcModel);
 #ifdef CBC_THREAD
-        cbc_eh->cbcMutex = &(model->cbcMutexEvent);
+      cbc_eh->cbcMutex = &(model->cbcMutexEvent);
 #endif
 
-        if (model->inc_callback) {
-          cbc_eh->inc_callback = model->inc_callback;
-          cbc_eh->appData = model->icAppData;
-        }
-        if (model->progr_callback) {
-          cbc_eh->progr_callback = model->progr_callback;
-          cbc_eh->pgAppData = model->pgrAppData;
-        }
+      if (model->inc_callback) {
+        cbc_eh->inc_callback = model->inc_callback;
+        cbc_eh->appData = model->icAppData;
+      }
+      cbc_eh->cModel = model;
+      cbc_eh->info_callback = model->progress_info_callback;
+      cbc_eh->infoData = model->progressInfoData;
 
-        cbcModel.passInEventHandler(cbc_eh);
-      } // callbacks
+      cbcModel.passInEventHandler(cbc_eh);
+    } // callbacks
 
-      /* initial solution */
-      if (model->iniSol)
-        cbcModel.setBestSolution(model->iniSol->data(), Cbc_getNumCols(model), model->iniObj, true);
+    /* initial solution */
+    if (model->iniSol)
+      cbcModel.setBestSolution(model->iniSol->data(), Cbc_getNumCols(model), model->iniObj, true);
 
-      // add cut generator if necessary
-      if (model->cut_callback) {
-        cbcModel.setKeepNamesPreproc(true);
+    // add cut generator if necessary
+    if (model->cut_callback) {
+      cbcModel.setKeepNamesPreproc(true);
 
-        CglCallback cglCb;
-        cglCb.appdata = model->cutCBData;
-        cglCb.cut_callback_ = model->cut_callback;
+      CglCallback cglCb;
+      cglCb.appdata = model->cutCBData;
+      cglCb.cut_callback_ = model->cut_callback;
 #ifdef CBC_THREAD
-        cglCb.cbcMutex = &(model->cbcMutexCG);
+      cglCb.cbcMutex = &(model->cbcMutexCG);
 #endif
-        cbcModel.addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
-      }
+      cbcModel.addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
+    }
 
-      if (model->cutCBAtSol) {
-        /* lazy constraints require no pre-processing and no heuristics */
-        Cbc_setParameter(model, "preprocess", "off");
-        Cbc_setParameter(model, "heur", "off");
-        Cbc_setParameter(model, "cgraph", "off");
-        Cbc_setParameter(model, "clqstr", "off");
-      } else {
-        switch (model->int_param[INT_PARAM_CGRAPH]) {
-          case 0:
-            Cbc_setParameter(model, "cgraph", "off");
-            break;
-          case 2:
-            Cbc_setParameter(model, "cgraph", "on");
-            break;
-          case 3:
-            Cbc_setParameter(model, "cgraph", "clq");
-            break;
-        }
-      }
-
-      switch (model->int_param[INT_PARAM_CLIQUE_MERGING]) {
+    if (model->cutCBAtSol) {
+      /* lazy constraints require no pre-processing and no heuristics */
+      Cbc_setParameter(model, "preprocess", "off");
+      Cbc_setParameter(model, "heur", "off");
+      Cbc_setParameter(model, "cgraph", "off");
+      Cbc_setParameter(model, "clqstr", "off");
+    } else {
+      switch (model->int_param[INT_PARAM_CGRAPH]) {
         case 0:
-          Cbc_setParameter(model, "clqstr", "off");
+          Cbc_setParameter(model, "cgraph", "off");
           break;
         case 2:
-          Cbc_setParameter(model, "clqstr", "before");
+          Cbc_setParameter(model, "cgraph", "on");
           break;
         case 3:
-          Cbc_setParameter(model, "clqstr", "after");
+          Cbc_setParameter(model, "cgraph", "clq");
           break;
       }
-
-      Cbc_MessageHandler *cbcmh  = NULL;
-
-      if (model->userCallBack) {
-        cbcmh = new Cbc_MessageHandler( model );
-        cbcmh->setCallBack(model->userCallBack);
-        cbcmh->setModel(model);
-        cbcModel.passInMessageHandler(cbcmh);
-      }
-
-      // --- Use CbcSolver for parameter handling and solve ---
-      CbcSolver cbcSolver(cbcModel);
-      cbcSolver.initialize();
-      cbcSolver.parameters().disableWelcomePrinting();
-
-      // adds SOSs if any
-      Cbc_addAllSOS(model, *cbcSolver.model());
-
-      // adds MIPStart if any
-      Cbc_addMS(model, *cbcSolver.model());
-
-      // Build command queue from string parameters set via Cbc_setParam/Cbc_setParameter
-      std::deque< std::string > inputQueue;
-      for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
-        std::string param = model->vcbcOptions[i];
-        std::string val = model->cbcOptions[param];
-        if (val.size()) {
-          std::stringstream ss;
-          ss << "-" << param << "=" << val;
-          inputQueue.push_back(ss.str().c_str());
-        } else {
-          std::stringstream ss;
-          ss << "-" << param;
-          inputQueue.push_back(ss.str());
-        }
-      }
-      // add in from options file
-      if (getenv("COIN_CBC_OPTIONS")) {
-	FILE * fp =fopen(getenv("COIN_CBC_OPTIONS"),"r");
-	if (fp) {
-	  char line[512];
-	  int logLevel = Cbc_getLogLevel(model);
-	  if (logLevel)
-	    printf("Adding options from file %s\n",getenv("COIN_CBC_OPTIONS"));
-	  while (fgets(line, 200, fp)) {
-	    if (line[0]=='*')
-	      continue;
-	    int nchar = strlen(line);
-	    if (nchar<2)
-	      continue;
-	    if (line[0]!='-') {
-	      memmove(line+1,line,nchar+1);
-	      nchar++;
-	      line[0]='-';
-	    }
-	    char *pos=line;
-	    char *put=line;
-	    while (true) {
-	      while (*pos != '\n' && *pos != '\0'
-		     && *pos != ' ' && *pos != '\t')
-		pos++;
-	      char save = *pos;
-	      *pos = '\0';
-	      if (strlen(put)) {
-		inputQueue.push_back(put);
-		if (logLevel)
-		  std::cout << put << " ";
-	      }
-	      if (save == ' ' || save == '\t') {
-		pos++;
-		while (*pos == ' ' || *pos == '\t')
-		  pos++;
-		put = pos;
-	      } else {
-		break;
-	      }
-	    }
-	  }
-	  if (logLevel)
-	    std::cout << std::endl;
-	  fclose(fp);
-	} else {
-	  fprintf(stderr, "Unable to open COIN_CBC_OPTIONS file %s\n",
-		  getenv("COIN_CBC_OPTIONS"));
-	  fflush(stderr);
-	}
-      }
-
-      // Translate typed C interface parameters to command-queue strings.
-      // This replaces the manual cbcModel.setXxx() + parameters.setParamVal() boilerplate.
-      {
-        auto addParam = [&](const char *n, double v) {
-          char buf[64]; snprintf(buf, sizeof(buf), "%g", v);
-          std::string s = std::string("-") + n + "=" + buf;
-          inputQueue.push_back(s);
-        };
-        auto addParamI = [&](const char *n, int v) {
-          char buf[32]; snprintf(buf, sizeof(buf), "%d", v);
-          std::string s = std::string("-") + n + "=" + buf;
-          inputQueue.push_back(s);
-        };
-
-        if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX)
-          addParam("sec", model->dbl_param[DBL_PARAM_TIME_LIMIT]);
-        if (model->int_param[INT_PARAM_MAX_NODES] != INT_MAX)
-          addParamI("maxN", model->int_param[INT_PARAM_MAX_NODES]);
-        if (model->int_param[INT_PARAM_MAX_SOLS] != INT_MAX)
-          addParamI("maxSo", model->int_param[INT_PARAM_MAX_SOLS]);
-        if (model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX)
-          addParam("cutoff", model->dbl_param[DBL_PARAM_CUTOFF]);
-        addParam("allow", model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]);
-        addParam("ratio", model->dbl_param[DBL_PARAM_GAP_RATIO]);
-        addParam("integerT", model->dbl_param[DBL_PARAM_INT_TOL]);
-        addParamI("log", model->int_param[INT_PARAM_LOG_LEVEL]);
-        addParamI("strong", model->int_param[INT_PARAM_STRONG_BRANCHING]);
-        addParamI("trust", model->int_param[INT_PARAM_NUMBER_BEFORE]);
-        if (model->int_param[INT_PARAM_CUT_PASS] != -1)
-          addParamI("passC", model->int_param[INT_PARAM_CUT_PASS]);
-        if (model->int_param[INT_PARAM_CUT_PASS_IN_TREE] != 1)
-          addParamI("passt", model->int_param[INT_PARAM_CUT_PASS_IN_TREE]);
-        if (model->int_param[INT_PARAM_FPUMP_ITS] != 30)
-          addParamI("passF", model->int_param[INT_PARAM_FPUMP_ITS]);
-        addParamI("maxSaved", model->int_param[INT_PARAM_MAX_SAVED_SOLS]);
-        addParamI("multiple", model->int_param[INT_PARAM_MULTIPLE_ROOTS]);
-#ifdef CBC_THREAD
-        if (model->int_param[INT_PARAM_THREADS] >= 1)
-          addParamI("threads", model->int_param[INT_PARAM_THREADS]);
-#endif
-        if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX)
-          addParam("maxSecondsBest", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
-        if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX)
-          addParamI("maxNodesBest", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
-      }
-
-      // LP progress was already printed by Cbc_solveLinearProgram(); suppress it
-      inputQueue.push_back("-lpIterFreq=0");
-      inputQueue.push_back("-lpTimeFreq=0");
-      inputQueue.push_back("-solve");
-      inputQueue.push_back("-quit");
-
-      OsiBabSolver defaultC;
-      if (model->cutCBAtSol) {
-        defaultC.setSolverType(4);
-        cbcSolver.model()->solver()->setAuxiliaryInfo(&defaultC);
-        cbcSolver.model()->passInSolverCharacteristics(&defaultC);
-      }
-
-      if (!model->problemSummaryPrinted) {
-        CbcOutput::printProblemSummary(cbcSolver.model()->messageHandler(),
-          *cbcSolver.model()->solver(), model->int_param[INT_PARAM_LOG_LEVEL]);
-      }
-      model->problemSummaryPrinted = 0;
-
-      cbcSolver.model()->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
-      cbcSolver.model()->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
-      cbcSolver.model()->setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
-
-      cbcSolver.run(inputQueue, cbc_callb);
-
-      Cbc_getMIPOptimizationResults( model, *cbcSolver.model() );
-
-      if (cbc_eh)
-        delete cbc_eh;
-
-      if (cbcmh)
-        delete cbcmh;
-    } catch (CoinError &e) {
-      fprintf( stderr, "%s ERROR: %s::%s, %s\n", "Cbc_solve",
-        e.className().c_str(), e.methodName().c_str(), e.message().c_str());
-      fflush(stderr);
-      abort();
     }
-  } /* end of MIP optimization */
+
+    switch (model->int_param[INT_PARAM_CLIQUE_MERGING]) {
+      case 0:
+        Cbc_setParameter(model, "clqstr", "off");
+        break;
+      case 2:
+        Cbc_setParameter(model, "clqstr", "before");
+        break;
+      case 3:
+        Cbc_setParameter(model, "clqstr", "after");
+        break;
+    }
+
+    Cbc_MessageHandler *cbcmh  = NULL;
+
+    if (model->userCallBack) {
+      cbcmh = new Cbc_MessageHandler( model );
+      cbcmh->setCallBack(model->userCallBack);
+      cbcmh->setModel(model);
+      cbcModel.passInMessageHandler(cbcmh);
+    }
+
+    // --- Use CbcSolver for parameter handling and solve ---
+    CbcSolver cbcSolver(cbcModel);
+    cbcSolver.initialize();
+    cbcSolver.parameters().disableWelcomePrinting();
+
+    // adds SOSs if any
+    Cbc_addAllSOS(model, *cbcSolver.model());
+
+    // adds MIPStart if any
+    Cbc_addMS(model, *cbcSolver.model());
+
+    // Build command queue from string parameters set via Cbc_setParam/Cbc_setParameter
+    std::deque< std::string > inputQueue;
+    for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
+      std::string param = model->vcbcOptions[i];
+      std::string val = model->cbcOptions[param];
+      if (val.size()) {
+        std::stringstream ss;
+        ss << "-" << param << "=" << val;
+        inputQueue.push_back(ss.str().c_str());
+      } else {
+        std::stringstream ss;
+        ss << "-" << param;
+        inputQueue.push_back(ss.str());
+      }
+    }
+    // add in from options file
+    if (getenv("COIN_CBC_OPTIONS")) {
+FILE * fp =fopen(getenv("COIN_CBC_OPTIONS"),"r");
+if (fp) {
+  char line[512];
+  int logLevel = Cbc_getLogLevel(model);
+  if (logLevel)
+    printf("Adding options from file %s\n",getenv("COIN_CBC_OPTIONS"));
+  while (fgets(line, 200, fp)) {
+    if (line[0]=='*')
+      continue;
+    int nchar = strlen(line);
+    if (nchar<2)
+      continue;
+    if (line[0]!='-') {
+      memmove(line+1,line,nchar+1);
+      nchar++;
+      line[0]='-';
+    }
+    char *pos=line;
+    char *put=line;
+    while (true) {
+      while (*pos != '\n' && *pos != '\0'
+       && *pos != ' ' && *pos != '\t')
+  pos++;
+      char save = *pos;
+      *pos = '\0';
+      if (strlen(put)) {
+  inputQueue.push_back(put);
+  if (logLevel)
+    std::cout << put << " ";
+      }
+      if (save == ' ' || save == '\t') {
+  pos++;
+  while (*pos == ' ' || *pos == '\t')
+    pos++;
+  put = pos;
+      } else {
+  break;
+      }
+    }
+  }
+  if (logLevel)
+    std::cout << std::endl;
+  fclose(fp);
+} else {
+  fprintf(stderr, "Unable to open COIN_CBC_OPTIONS file %s\n",
+    getenv("COIN_CBC_OPTIONS"));
+  fflush(stderr);
+}
+    }
+
+    // Translate typed C interface parameters to command-queue strings.
+    // This replaces the manual cbcModel.setXxx() + parameters.setParamVal() boilerplate.
+    {
+      auto addParam = [&](const char *n, double v) {
+        char buf[64]; snprintf(buf, sizeof(buf), "%g", v);
+        std::string s = std::string("-") + n + "=" + buf;
+        inputQueue.push_back(s);
+      };
+      auto addParamI = [&](const char *n, int v) {
+        char buf[32]; snprintf(buf, sizeof(buf), "%d", v);
+        std::string s = std::string("-") + n + "=" + buf;
+        inputQueue.push_back(s);
+      };
+
+      if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX)
+        addParam("sec", model->dbl_param[DBL_PARAM_TIME_LIMIT]);
+      if (model->int_param[INT_PARAM_MAX_NODES] != INT_MAX)
+        addParamI("maxN", model->int_param[INT_PARAM_MAX_NODES]);
+      if (model->int_param[INT_PARAM_MAX_SOLS] != INT_MAX)
+        addParamI("maxSo", model->int_param[INT_PARAM_MAX_SOLS]);
+      if (model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX)
+        addParam("cutoff", model->dbl_param[DBL_PARAM_CUTOFF]);
+      addParam("allow", model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]);
+      addParam("ratio", model->dbl_param[DBL_PARAM_GAP_RATIO]);
+      addParam("integerT", model->dbl_param[DBL_PARAM_INT_TOL]);
+      addParamI("log", model->int_param[INT_PARAM_LOG_LEVEL]);
+      addParamI("strong", model->int_param[INT_PARAM_STRONG_BRANCHING]);
+      addParamI("trust", model->int_param[INT_PARAM_NUMBER_BEFORE]);
+      if (model->int_param[INT_PARAM_CUT_PASS] != -1)
+        addParamI("passC", model->int_param[INT_PARAM_CUT_PASS]);
+      if (model->int_param[INT_PARAM_CUT_PASS_IN_TREE] != 1)
+        addParamI("passt", model->int_param[INT_PARAM_CUT_PASS_IN_TREE]);
+      if (model->int_param[INT_PARAM_FPUMP_ITS] != 30)
+        addParamI("passF", model->int_param[INT_PARAM_FPUMP_ITS]);
+      addParamI("maxSaved", model->int_param[INT_PARAM_MAX_SAVED_SOLS]);
+      addParamI("multiple", model->int_param[INT_PARAM_MULTIPLE_ROOTS]);
+#ifdef CBC_THREAD
+      if (model->int_param[INT_PARAM_THREADS] >= 1)
+        addParamI("threads", model->int_param[INT_PARAM_THREADS]);
+#endif
+      if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX)
+        addParam("maxSecondsBest", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
+      if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX)
+        addParamI("maxNodesBest", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
+      if (model->int_param[INT_PARAM_MIPSTART_FIX]) {
+        static const char *const mipStartFixKwd[] = { "integerZero", "integer", "all" };
+        int m = model->int_param[INT_PARAM_MIPSTART_FIX];
+        if (m < 0 || m > 2)
+          m = 0;
+        inputQueue.push_back(std::string("-mipStartFix=") + mipStartFixKwd[m]);
+      }
+    }
+
+    // LP progress was already printed by Cbc_solveLinearProgram(); suppress it
+    inputQueue.push_back("-lpIterFreq=0");
+    inputQueue.push_back("-lpTimeFreq=0");
+    inputQueue.push_back("-solve");
+    inputQueue.push_back("-quit");
+
+    OsiBabSolver defaultC;
+    if (model->cutCBAtSol) {
+      defaultC.setSolverType(4);
+      cbcSolver.model()->solver()->setAuxiliaryInfo(&defaultC);
+      cbcSolver.model()->passInSolverCharacteristics(&defaultC);
+    }
+
+    if (!model->problemSummaryPrinted) {
+      CbcOutput::printProblemSummary(cbcSolver.model()->messageHandler(),
+        *cbcSolver.model()->solver(), model->int_param[INT_PARAM_LOG_LEVEL]);
+    }
+    model->problemSummaryPrinted = 0;
+
+    cbcSolver.model()->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
+    cbcSolver.model()->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
+    cbcSolver.model()->setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
+
+    cbcSolver.run(inputQueue, cbc_callb);
+
+    Cbc_getMIPOptimizationResults( model, *cbcSolver.model() );
+
+    if (cbc_eh)
+      delete cbc_eh;
+
+    if (cbcmh)
+      delete cbcmh;
+  } catch (CoinError &e) {
+    fprintf( stderr, "%s ERROR: %s::%s, %s\n", "Cbc_solve",
+      e.className().c_str(), e.methodName().c_str(), e.message().c_str());
+    fflush(stderr);
+    abort();
+  }
 
   return model->mipStatus;
 }
@@ -2683,12 +2986,11 @@ void CBC_LINKAGE Cbc_addIncCallback(
   model->icAppData = appData;
 }
 
-void CBC_LINKAGE Cbc_addProgrCallback(
-  Cbc_Model *model, cbc_progress_callback prgcbc,
-  void *appData)
+void CBC_LINKAGE Cbc_setProgressCallback(
+  Cbc_Model *model, cbc_progress_info_callback cb, void *appData)
 {
-  model->progr_callback = prgcbc;
-  model->pgrAppData = appData;
+  model->progress_info_callback = cb;
+  model->progressInfoData = appData;
 }
 
 void CBC_LINKAGE Cbc_addCutCallback(
@@ -3520,13 +3822,24 @@ Cbc_clone(Cbc_Model *model)
   result->relax_ = model->relax_;
 
   result->inc_callback = model->inc_callback;
-  result->progr_callback = model->progr_callback;
+  result->progress_info_callback = model->progress_info_callback;
+  result->progressInfoData = model->progressInfoData;
   result->userCallBack = model->userCallBack;
 
   result->cut_callback = model->cut_callback;
   result->cutCBData = model->cutCBData;
   result->cutCBhowOften = model->cutCBhowOften;
   result->cutCBAtSol = model->cutCBAtSol;
+
+  /* Lazy constraints. These are part of the model's definition, not a cache of
+   * a previous solve, so a clone that omitted them would silently solve a
+   * *relaxation* of what was cloned -- and report it as proven optimal. On a
+   * TSP with subtour elimination as lazy constraints that is the difference
+   * between the tour optimum and the assignment bound. CglStored's copy
+   * constructor deep-copies its OsiCuts, so the clone owns its own cuts and
+   * can accumulate more independently. */
+  result->lazyConstrs =
+    model->lazyConstrs ? new CglStored(*model->lazyConstrs) : NULL;
 
   result->obj_value = model->obj_value;
 
@@ -3540,7 +3853,6 @@ Cbc_clone(Cbc_Model *model)
   }
 
   result->icAppData = model->icAppData;
-  result->pgrAppData = model->pgrAppData;
 
   if (model->colNameIndex) {
     Cbc_storeNameIndexes(result, 1);
@@ -3753,8 +4065,12 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
 
   if (model->colNameIndex)
   {
+    // Keyed the same way Cbc_flushCols() will eventually name this column on
+    // the actual solver (see Cbc_rowColNameOrDefault()), so a later
+    // Cbc_getColNameIndex() lookup stays consistent even for unnamed columns.
+    int newColIdx = Cbc_getNumCols(model)-1;
     NameIndex &colNameIndex = *((NameIndex  *)model->colNameIndex);
-    colNameIndex[std::string(name)] = Cbc_getNumCols(model)-1;
+    colNameIndex[Cbc_rowColNameOrDefault('c', name, newColIdx)] = newColIdx;
   }
 }
 
@@ -3800,8 +4116,12 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
 
   if (model->rowNameIndex)
   {
+    // Keyed the same way Cbc_flushRows() will eventually name this row on
+    // the actual solver (see Cbc_rowColNameOrDefault()), so a later
+    // Cbc_getRowNameIndex() lookup stays consistent even for unnamed rows.
+    int newRowIdx = Cbc_getNumRows(model)-1;
     NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
-    rowNameIndex[std::string(name)] = Cbc_getNumRows(model)-1;
+    rowNameIndex[Cbc_rowColNameOrDefault('r', name, newRowIdx)] = newRowIdx;
   }
 }
 
@@ -4086,6 +4406,18 @@ Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double
 void CBC_LINKAGE
 Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double colValues[])
 {
+  /* This entry point stores the start by *name*, translating the caller's
+   * indices through the solver -- so the columns have to be on the solver
+   * first. Cbc_addCol() only stages them, and OsiSolverInterface::getColName()
+   * answers an out-of-range index with a synthesized placeholder ("C0000001")
+   * rather than failing, so without this flush a start referring to any column
+   * added since the last flush was recorded under a name no column has. It was
+   * then quietly dropped when applied: no diagnostic, and the only externally
+   * visible effect was the absence of the effect asked for. Building a model
+   * and setting a start on it before any solve -- the obvious sequence, and the
+   * one Cbc_setMIPStart() by name handles fine -- hit this every time. */
+  Cbc_flush(model);
+
   OsiSolverInterface *solver = model->solver_;
 
   if (model->nColsMS) {
@@ -4422,10 +4754,69 @@ Osi_getRowSense(void *osi, int row)
 void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *oc, int depth, int pass ) {
   assert(cbcModel && oc);
 
+  /* Buffered rows and columns first, for exactly the reason Cbc_solve() opens
+   * with this call (see the long note there): Cbc_addCol()/Cbc_addRow() only
+   * append to the model->cXxx/rXxx staging arrays, so a model built entirely
+   * through them presents solver_ as 0 x 0 until something flushes. Asking for
+   * cuts on that is not merely useless, it is fatal -- CglGomory dies inside
+   * CoinPackedMatrix::reverseOrderedCopyOf() reached via getMatrixByRow(), and
+   * CglLandP dies as well. Of the 46 entry points in this file that touch the
+   * solver, this was the only cut-facing one that did not flush. */
+  Cbc_flush(cbcModel);
+
   OsiClpSolverInterface *solver = cbcModel->solver_;
   CglCutGenerator *cg = NULL;
   OsiCuts *osiCuts = (OsiCuts *) oc;
   int *int_param = cbcModel->int_param;
+
+  /* A CUTTING PLANE IS SEPARATED FROM AN LP SOLUTION, and for most of the
+   * generators below it is literally a row of the simplex tableau at the
+   * current basis -- so there has to be one. All four of CBC's own C++ call
+   * sites test for it (CbcModel.cpp:11239, :16960, :19045, :21714 each skip a
+   * generator when needsOptimalBasis() && !solver_->basisIsAvailable()); this
+   * function did not, which is why a caller who read an MPS file and asked for
+   * cuts got a SIGSEGV instead of cuts.
+   *
+   * The mechanism is worth recording because the obvious guard does not catch
+   * it: OsiClpSolverInterface::getWarmStart() is `return new
+   * CoinWarmStartBasis(basis_);`, so it hands back a NON-NULL basis even for a
+   * never-solved model -- one describing 0 structural and 0 artificial
+   * variables. CglGomory.cpp:399 tests only `if (warmstart)`, passes, and then
+   * indexes a zero-length status array.
+   *
+   * The predicate here is basisIsAvailable(), deliberately NOT
+   * needsOptimalBasis(): a census over the mip-sanity corpus crashed 27 of 27
+   * instances that had a proven optimum, always in the same four cells, and two
+   * of those four -- CglTwomir and its Lagrangean variant -- report
+   * needsOptimalBasis() == false and still die, in DGG_getData(). Skipping only
+   * the generators that admit to needing a basis would have left those crashing.
+   *
+   * Solving rather than returning empty, also deliberately. Returning silently
+   * with no cuts is the same shape of failure commit 609c9c48 introduced
+   * elsewhere in this file: the caller cannot distinguish "this relaxation
+   * yields no cuts" from "you forgot to solve". And it cannot make an answer
+   * wrong -- a cut separated at the LP optimum of the formulation at depth 0 is
+   * valid for the whole integer hull.
+   *
+   * The crash is not the only thing this fixes, and the second case is the more
+   * insidious one. On cvrp_loose, changing one objective coefficient after
+   * solving took CglGMI from 7 cuts to 0, CglRedSplit from 9 to 0 and
+   * CglRedSplit2 from 31 to 0 -- silently, no crash. Since the only new code on
+   * that path is the initialSolve() below, and it runs only when
+   * basisIsAvailable() is false, an objective change must clear the stored basis;
+   * those three generators then found nothing to separate and said so by
+   * returning empty. A caller doing sensitivity analysis would have read that as
+   * "no cuts exist here". */
+  if (!solver->basisIsAvailable()) {
+    solver->initialSolve();
+    if (!solver->isProvenOptimal()) {
+      /* No tableau to cut from, and no valid cut to be found: an infeasible
+       * relaxation has an empty integer hull and an unbounded one has no
+       * optimal basis. Empty is the right answer, and there is nothing the
+       * caller could have done differently. */
+      return;
+    }
+  }
 
   switch (ct) {
     case CT_Probing:
@@ -4447,7 +4838,7 @@ void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *o
         // Only look at rows with fewer than this number of elements
         probingGen->setMaxElements(200);
         probingGen->setMaxElementsRoot(300);
-        probingGen->setRowCuts(3);
+        probingGen->setRowCuts(-3);
       }
       break;
     case CT_Gomory:
@@ -4496,6 +4887,30 @@ void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *o
       {
         CglTwomir *cgTwomir = new CglTwomir();
         cg = cgTwomir;
+        /* setTwomirType() ALONE DOES NOTHING. CglTwomir::generateCuts() opens
+         * its Lagrangean block with
+         *
+         *   clpSolver = originalSolver_ ? getClpSolver(originalSolver_) : NULL;
+         *   ...
+         *   if (clpSolver) { useSolver = originalSolver_; assert(twomirType_); ...
+         *
+         * so with originalSolver_ still NULL -- passInOriginalSolver() is never
+         * called here, unlike CbcSolverCutSetup.cpp:413 -- the entire block is
+         * skipped and twomirType_ is never read. CT_LaTwoMIR is therefore an
+         * alias for CT_TwoMIR through this entry point.
+         *
+         * Passing the solver in would not fix it, which is why this is left as
+         * documentation rather than "corrected". The Lagrangean variants dualize
+         * the rows that are NOT in the original formulation, and decide whether
+         * to bother by comparing si.getNumRows() against
+         * originalSolver_->getNumRows() (CglTwomir.cpp:137-138, CglGomory.cpp
+         * :205-214). passInOriginalSolver() clones the solver at the moment of
+         * the call, and this function builds a fresh generator per call from the
+         * very solver it then separates on -- so the two row counts would be
+         * equal by construction, the whenToDo==1 gate that type 12 selects would
+         * never fire, and the caller would pay for a full solver clone per call
+         * to reach the same cuts. There is no way for a C caller to say which of
+         * its rows are cuts, which is the information the variant needs. */
         cgTwomir->setTwomirType(12);
         cgTwomir->setMaxElements(250);
         break;
@@ -4551,6 +4966,33 @@ void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *o
   CglTreeInfo treeInfo;
   treeInfo.level = depth;
   treeInfo.pass = pass;
+  /* formulation_rows and inTree both default to -1 / false, and leaving them
+   * there is not neutral. CglTwomir hands formulation_rows straight to
+   * DGG_generateFormulationCuts(), which computes
+   *
+   *     num_rows = (data->nrow < nrows) ? data->nrow : nrows;
+   *
+   * i.e. min(nrow, -1) == -1, and then never enters its loop -- so CT_TwoMIR and
+   * CT_LaTwoMIR silently produced no formulation cuts whatsoever through this
+   * interface, with do_form_ enabled and no diagnostic anywhere. This interface
+   * has no notion of which rows are cuts and which are original, so the row
+   * count IS the formulation size.
+   *
+   * Measured rather than inferred, because the inference alone is not safe: on
+   * cvrp_loose the count is 10 either way, which is exactly what you would see if
+   * the reading were wrong. Calling CglTwomir twice on one solved LP with nothing
+   * but this field changed (twomir-formrows-probe.cpp in the local harness) moves
+   * the count on 8 of the 25 largest mip-sanity instances -- atlanta-ip 0 -> 46,
+   * i.e. the generator's entire output through this interface was empty;
+   * trdta5581 6460 -> 8300; supportcase12 62 -> 80; sp98ar 9 -> 16. The other 17
+   * are unaffected, so an instance-level check can easily miss it.
+   *
+   * inTree has to be set in the same change rather than separately: both of
+   * CglClique's uses of formulation_rows (CglClique.cpp:88-118) are gated on
+   * info.inTree, so switching inTree on while formulation_rows was still -1
+   * would newly feed the -1 to a generator that is correct today. */
+  treeInfo.formulation_rows = solver->getNumRows();
+  treeInfo.inTree = (depth > 0);
 
   if (cg != NULL) {
     cg->generateCuts(*solver, *osiCuts, treeInfo);
@@ -5149,7 +5591,11 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_STRONG_BRANCHING]        =        5;
   model->int_param[INT_PARAM_CUT_DEPTH]               =       -1;
   model->int_param[INT_PARAM_MAX_NODES]               =  INT_MAX;
-  model->int_param[INT_PARAM_NUMBER_BEFORE]           =        5;
+  /* Matches cbc's own "trust" (numberBeforeTrust) default of 10
+   * (CbcParameters::setDefaultValues), which this used to diverge from at
+   * 5 with no measured benefit -- keep the two in sync unless a real
+   * benchmark justifies a different C-API-only default again. */
+  model->int_param[INT_PARAM_NUMBER_BEFORE]           =       10;
   model->int_param[INT_PARAM_FPUMP_ITS]               =       30;
   model->int_param[INT_PARAM_MAX_SOLS]                =  INT_MAX;
   model->int_param[INT_PARAM_CUT_PASS]                =       -1;
@@ -5165,6 +5611,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_CLIQUE_MERGING]          =       -1; // not set
   model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] =  INT_MAX;
   model->int_param[INT_PARAM_MAX_ITER]                =  INT_MAX;
+  model->int_param[INT_PARAM_MIPSTART_FIX]            =        0;
 
   model->dbl_param[DBL_PARAM_PRIMAL_TOL]             =          1e-6;
   model->dbl_param[DBL_PARAM_DUAL_TOL]               =          1e-6;

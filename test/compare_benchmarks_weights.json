@@ -1,0 +1,33 @@
+{
+  "_comment": "Tunable weights/costs for compare_benchmarks.py. Lower cost = better. All values are in the same 0-100-ish 'gap points' unit as a MIP gap percentage, so they can be compared directly against a real gap_pct. Edit this file (or pass --weights <file>) to explore how sensitive a ranking is to how harshly you penalize each outcome.",
+
+  "cost_solved": 0.0,
+  "_cost_solved": "Proven optimal, or proven infeasible on a genuinely infeasible instance. Best possible outcome.",
+
+  "gap_cap": 100.0,
+  "_gap_cap": "Ceiling applied to a real reported/derived MIP gap (%) for TIMEOUT/MEMLIMIT-with-solution instances, so one pathological instance can't dominate the average.",
+
+  "cost_no_solution": 200.0,
+  "_cost_no_solution": "Run stopped (timeout/memlimit) with NO integer-feasible solution ever found/persisted. Strictly worse than the worst possible real gap (gap_cap).",
+
+  "cost_overtime": 300.0,
+  "_cost_overtime": "Cbc ignored its own -sec/-maxNodes limit and had to be hard-killed by the harness. Worse than cost_no_solution: not only did it fail to solve, it also blew the time budget users asked for.",
+
+  "cost_error": 250.0,
+  "_cost_error": "Run crashed / ASAN error / exited abnormally before producing any parsable result.",
+
+  "cost_wrong": 1000.0,
+  "_cost_wrong": "Validator caught a solver-correctness bug: a claimed-optimal or claimed-infeasible answer that is actually wrong (WRONG_OBJ, INFEASIBLE_WRONG, INVALID_SOL, or a FAIL from cbc_validate_sol). Set far above every other cost by default because this indicates a bug, not just a weaker heuristic result -- it should dominate any ranking.",
+
+  "cost_unknown": 200.0,
+  "_cost_unknown": "Fallback cost for any status text the loader doesn't recognize (keeps the script from crashing on future/unseen status strings; treated the same as no_solution by default).",
+
+  "primal_gap_clip": [-50.0, 200.0],
+  "_primal_gap_clip": "Min/max applied to the primal gap (%) vs BKS before averaging, so one wildly-off instance doesn't dominate the mean.",
+
+  "dual_gap_clip": [-50.0, 200.0],
+  "_dual_gap_clip": "Same clipping, applied to the dual gap (%) vs BKS.",
+
+  "tie_break": "n_solved_desc",
+  "_tie_break": "How to break ties in average cost when ranking experiments. Currently only 'n_solved_desc' (more confirmed-optimal/infeasible wins) is implemented."
+}

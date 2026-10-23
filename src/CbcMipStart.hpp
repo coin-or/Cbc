@@ -14,6 +14,29 @@ class CoinMessages;
 
 class CBCLIB_EXPORT CbcMipStart {
 public:
+  /*! \brief What computeCompleteSolution() fixes before re-solving the LP.
+
+      A MIP start is normally given in terms of the integer variables, and the
+      continuous ones are recovered by solving the LP with those fixed. Fixing
+      supplied continuous values too can pin down more of the solution, but
+      risks the LP being reported infeasible over rounding in the supplied
+      values, so it is not the default.
+
+      These values must stay in step with CbcParameters::MipStartFixMode, which
+      is what the \c -mipStartFix keywords select; CbcSolver passes that mode
+      straight through.
+   */
+  enum FixMode {
+    /// Fix only integer columns, and start every integer at zero so that
+    /// columns the caller did not mention are taken to be zero. Default.
+    FixIntegersAssumeZero = 0,
+    /// Fix only integer columns, leaving unmentioned ones at their own bounds.
+    FixIntegers,
+    /// Fix integer and continuous columns. Enables the "just fixing integer
+    /// variables" retry (and its SOS handling) if that LP is infeasible.
+    FixIntegersAndContinuous
+  };
+
   /*! \brief Read a MIP start file and populate variable/value pairs.
 
       The file can be whitespace-delimited (default) or use `.csv`/`.psv`
@@ -85,13 +108,15 @@ public:
                       direction as implemented in CbcMipStart.cpp).
       \param messHandler    Message handler for warnings/status.
       \param pmessages      Message catalog used by \a messHandler.
+      \param fixMode        Which columns to fix; see \ref FixMode.
 
       \return 0 if a feasible solution is produced, non-zero otherwise.
     */
   static int computeCompleteSolution(CbcModel *model, OsiSolverInterface *solver,
     const std::vector< std::string > &colNames,
     const std::vector< std::pair< std::string, double > > &colValues,
-    double *sol, double &obj, int extraActions, CoinMessageHandler *messHandler, CoinMessages *pmessages);
+    double *sol, double &obj, int extraActions, CoinMessageHandler *messHandler, CoinMessages *pmessages,
+    int fixMode = FixIntegersAssumeZero);
 };
 
 #endif // MIPSTART_HPP_INCLUDED

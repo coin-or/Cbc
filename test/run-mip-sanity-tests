@@ -1,0 +1,1287 @@
+#!/usr/bin/env bash
+# run-mip-sanity-tests — mip-sanity-data regression suite for Cbc.
+#
+# Self-contained in the Cbc repository (works from a standalone `Cbc` clone,
+# on the `next` branch, once Cbc itself has been configured/built): solves
+# every instance in the `test/mip-sanity-data` submodule with `cbc` (one
+# thread per run), applying the suggested node/time limits from
+# `limits.tsv`, running up to `--jobs` instances in parallel (default:
+# number of processors). Each run's best solution is saved to a `.sol` file
+# and then checked by `cbc_validate_sol` (built from
+# test/cbc_validate_sol.cpp) for:
+#   - primal feasibility (variable bounds, integrality, constraint activity)
+#   - objective value consistency (recomputed vs claimed, within tolerance)
+#   - optimality claims cross-checked against `bks.tsv` best-known values
+#   - infeasibility claims cross-checked against `bks.tsv`
+#
+# Usage (from the `test/` directory, or via `make test` / `make -C test test`):
+#   ./run-mip-sanity-tests [OPTIONS] [instance-glob ...]
+#
+# Options:
+#   --jobs=N            Parallel jobs (default: $CBC_TESTS_JOBS env var if set,
+#                        otherwise nproc)
+#   --cbc=PATH           Path to the cbc executable (default: ../src/cbc built
+#                        in-tree, falling back to $PREFIX/bin/cbc and $PATH)
+#   --prefix=PATH        Install prefix to look for cbc in (default: ~/prog/cbc)
+#   --data-dir=PATH      mip-sanity-data checkout (default: ./mip-sanity-data,
+#                        i.e. the test/mip-sanity-data submodule)
+#   --results-dir=PATH   Where to write logs/.sol files (default: ./sanity-results)
+#   --results-tsv=PATH   Where to save a per-instance results table (tab-separated:
+#                        instance, status, elapsed_s, nodes, gap_pct, is_optimal,
+#                        obj, bound) for later comparison across runs (default:
+#                        <results-dir>/results.tsv). Pass a different path (e.g.
+#                        --results-tsv=after-change.tsv) to keep a baseline around
+#                        and compare it against a later run, e.g.:
+#                          diff <(sort baseline.tsv) <(sort after-change.tsv)
+#   --update-data        Force `git submodule update` for mip-sanity-data before running
+#   --cut-stats          Also collect Cbc's built-in `-csvStatistics`/-writeStatistics
+#                        output for every instance (one CSV per instance, under
+#                        <results-dir>/cutstats/<name>.stats.csv) and print an
+#                        end-of-run summary: total cuts and total time spent per
+#                        cut generator, aggregated across the whole suite (only
+#                        generators that actually produced at least one cut are
+#                        shown). Useful for spotting suite-wide regressions in a
+#                        specific cut generator (much fewer cuts, or much slower)
+#                        after a code change, e.g. when comparing a build with a
+#                        cut generator's "fast path" on vs. off. Off by default
+#                        since it adds a small amount of overhead per instance.
+#   --cut-stats-tsv=PATH Where to save the per-generator aggregate summary
+#                        (tab-separated: generator, total_cuts, total_time_s)
+#                        for later comparison across runs (default:
+#                        <results-dir>/cut-stats.tsv). Only written when
+#                        --cut-stats is passed.
+#   --no-color           Disable ANSI colors
+#   --no-capi-tests      Skip the C API smoke tests (see below)
+#   --capi-jobs=N        Parallel jobs for the C API smoke tests (default: same as --jobs)
+#   --no-lp-tests        Skip the LP-relaxation solve/reoptimize tests (see below)
+#   --no-lazy-tests      Skip the lazy-constraint / TSP tests (see below)
+#   --no-mipstart-tests  Skip the MIP-start tests (see below)
+#   --no-coefstr-tests   Skip the coefficient-tightening tests (see below)
+#   --no-row-activity-tests  Skip the row activity/slack tests (see below)
+#   --no-final-bound-tests  Skip final search-bound tests (see below)
+#   --threads-pin        Invoke cbc WITH an explicit "-threads 1" (opt-in;
+#                        the suite's default is to NOT pass -threads at all,
+#                        matching how most users actually invoke cbc).
+#                        CbcModel's fastNodeDepth_ "mini-BAB" fast-node
+#                        heuristic is only ever active when numberThreads_==0
+#                        (i.e. no -threads flag at all, or "-threads 0");
+#                        passing -threads 1 (or any positive value) switches
+#                        it off (see CbcSolver.cpp's babModel_->setNumberThreads()
+#                        call and CbcModel.cpp's "numberThreads_ > 0" guard
+#                        around fastNodeDepth_). Pass --threads-pin when you
+#                        specifically need the old pinned-single-thread
+#                        behaviour (e.g. for maximally deterministic node
+#                        counts across reruns), at the cost of no longer
+#                        exercising the fastNodeDepth_ path.
+#   --exclude=GLOB       Exclude instances matching GLOB (repeatable), applied
+#                        after the instance-glob selection above. Use this for
+#                        an instance that is known-bad on one specific platform
+#                        (e.g. a crash reproducible only under an emulated/
+#                        cross-compiled target such as Rosetta) rather than
+#                        skipping it for every platform, or editing bks.tsv/
+#                        limits.tsv/removing it from mip-sanity-data, which
+#                        would blind every other platform to a real
+#                        regression there too.
+#   -h, --help           Show this help
+#
+# In addition to the main `cbc`-executable suite above, this script also runs
+# a small, fast smoke-test pass over Cbc's C interface (Cbc_C_Interface.h),
+# via `mip-c-solve` (test/mip-c-solve.cpp), on a curated handful of instances
+# spanning different problem families. Each instance is exercised through
+# `mip-c-solve --stage=bound-propagation`, which calls Cbc_propagateBounds()
+# directly (no branch-and-bound) and checks its result is self-consistent
+# with bks.tsv (e.g. it must not claim infeasibility for an instance known to
+# have an optimal solution). This complements the main suite (which only
+# exercises the `cbc` command-line executable) by giving standalone C-API
+# entry points — like the ones added for individual solve-pipeline stages
+# (bound propagation, clique strengthening, ...) — their own regression
+# coverage, run in parallel just like the main suite. Pass --no-capi-tests to
+# skip this step (e.g. when only iterating on the `cbc` executable itself).
+#
+# Then it runs the LP-relaxation tests (test/lp-relaxation-test.cpp), which
+# cover the *LP-only* C entry points Cbc_solveLinearProgram()/Cbc_resolve():
+# root LP solves under every LPMethod (including parallel LP racing) and
+# DualPivot/LPReductions setting, each checked against independently computed
+# reference objectives; warm-start reoptimization after fixing variables and
+# after removing/re-adding a binding row; and the LP settings that must survive
+# into a reoptimize (INT_PARAM_PERT_VALUE — Clp's default is "perturbation off"
+# while Cbc's tuned default is the mild 50 that fast warm-started
+# reoptimization relies on — and DBL_PARAM_PSI, whose Positive Edge pivot rule
+# must stay installed on every later resolve rather than being stripped after
+# the root solve; both are pure LP-performance regressions that no objective
+# check would catch, as the LP still reaches the same optimum). It also checks
+# the LP limits: Clp holds CPU and wall-clock deadlines in two independent
+# parameters and tests both, so the time limit must be armed on whichever clock
+# INT_PARAM_ELAPSED_TIME selects (wall clock by default) and only that one, with
+# "no limit" disarming it outright — arming a wall-clock budget as CPU time
+# would, under LP racing, cut it short by roughly the thread count. This is
+# a single fast in-process binary rather than a parallel per-instance pass, so
+# it needs no jobs setting. Pass --no-lp-tests to skip it.
+#
+# Last, it runs the lazy-constraint tests (test/lazy-constraint-test.cpp), which
+# cover Cbc_addLazyConstraint() and the at-solution cut callback — the C-API
+# feature that makes a cutting-plane TSP solver possible, by separating subtour
+# elimination constraints only against candidate integral solutions instead of
+# enumerating exponentially many of them up front. Small random TSP instances
+# (n = 8, 10, 12) are solved three ways — lazily, with the same constraints
+# added eagerly up front, and by an in-process Held-Karp dynamic program — and
+# the three optima must agree, on instances chosen so that the assignment
+# relaxation is strictly weaker than the tour optimum (so a lazy constraint that
+# never fires is caught, rather than passing by accident). Beyond the TSP, it
+# checks that the published solution is the point the search actually proved:
+# an externally supplied solution (a MIPStart, or one replayed from a previous
+# solve) has to be screened against the lazy constraints *and* confirmed at its
+# own bounds, since the end-of-search confirm gate re-resolves the continuous
+# solver and publishes whatever that produces. Every check verifies the returned
+# point, not just the returned number — integrality, row activity, and the
+# objective recomputed from the solution — because the failure modes here
+# publish a relaxation bound with isProvenOptimal() true rather than erroring
+# out. One fast in-process binary; pass --no-lazy-tests to skip it.
+#
+# It then runs the MIP-start tests (test/mipstart-test.cpp), which cover
+# Cbc_setMIPStart()/Cbc_setMIPStartI() — the path python-mip uses to hand Cbc an
+# initial solution. The difficulty a MIP start has to survive is that it is
+# stated in the *original* problem while Cbc, by default, searches the
+# *preprocessed* one, and callers typically supply only the nonzero integer
+# values: CbcMipStart then has to fix what it recognizes, re-solve the LP to
+# derive the rest, and fall back to a bounded branch and bound when integers come
+# back fractional. All three shapes a caller might send (nonzero integers only,
+# the full solution, all nonzeros) are tested by name and by index, with
+# preprocessing on and off, along with the fix modes, the fix-continuous-too
+# recovery and the bound-propagation report that localises the infeasibility
+# which triggered it, the mini branch and bound, negative integer values, and
+# starts that are infeasible or name columns the model does not have. The
+# `-mipstart` file path deliberately is not the vehicle: read() densifies over
+# every column before returning, so a sparse file and a full one arrive
+# identically and the shapes cannot be told apart there at all. Checks assert on
+# Cbc's own MIPStart log lines as well as on the objective, because every fixture
+# is small enough that Cbc reaches the same optimum with the start ignored — an
+# objective-only test would pass on a build where MIPStart did nothing, which is
+# how a dead recovery branch and a silently zeroed node limit both survived in
+# shipped code. One fast in-process binary; pass --no-mipstart-tests to skip it.
+#
+# Last of all, it runs the coefficient-tightening tests
+# (test/coefstr-test.cpp), covering CbcCoefficientStrengthening — the "big-M
+# strengthening" step that runs before the root LP relaxation is solved (step 3
+# of CbcSolver::preRootLPStrenghtening(), per -coefStrengthening). The pass
+# shrinks an integer coefficient exceeding its row's slack down to that slack
+# and moves the right-hand side to compensate, which must tighten the LP
+# relaxation while leaving the integer-feasible set exactly as it was. Both
+# halves are asserted: the resulting coefficient, right-hand side and LP bound
+# against values worked out by hand, and the feasible set by *enumerating* every
+# integer point of the box before and after — re-solving and reaching the same
+# optimum would say nothing about the points a too-strong tightening silently
+# stopped admitting, which is the failure mode that matters here. Alongside the
+# textbook big-M row the cases cover a general integer column (what Cgl's own
+# binary-only tightener skips), negative coefficients, >= rows, the eight rows
+# and columns the rule must decline — range and equality rows, infinite max
+# activity, singletons, continuous, fixed and sub-unit-range columns,
+# non-positive slack — fractional slacks used as-is against near-integral ones
+# snapped up rather than down, idempotence under a second pass, and agreement
+# between the row and column matrix views, since modifyCoefficient() leaves the
+# cached row copy stale and the LP would then be solved against a matrix nobody
+# intended. Every fixture is small enough that Cbc reaches the right answer with
+# the pass disabled, so each assertion was checked by mutation: all thirteen
+# plausible wrong implementations tried are caught, including the stale cache
+# and the three ways the deferred matrix copy could fail to be applied.
+# One fast in-process binary; pass --no-coefstr-tests to skip it.
+#
+# Finally, it runs the row-activity tests (test/row-activity-test.cpp),
+# regression-testing Cbc_getRowActivity()/Cbc_getRowSlack() after Cbc_solve()
+# for both the pure-LP dispatch (no integers/SOS — straight to
+# Cbc_solveLinearProgram()) and a genuine MIP solve through branch and bound.
+# The MIP case guards against Cbc_getMIPOptimizationResults() reporting
+# activity/slack for whatever LP CbcModel's internal working solver last
+# resolved during the search — typically the node where B&B stopped, which is
+# not necessarily the node that produced the incumbent — instead of for the
+# actual reported solution (Cbc_getColSolution()). That failure mode is silent
+# (wrong values, not a crash or a wrong objective), so every row's expected
+# activity/slack is recomputed independently as A * Cbc_getColSolution() from
+# the row's own coefficients, rather than trusted from any other Cbc-reported
+# quantity. Also covers the smallest possible extra solution pool
+# (INT_PARAM_MAX_SAVED_SOLS = 0). One fast in-process binary; pass
+# --no-row-activity-tests to skip it.
+#
+# Final search-bound tests (test/final-bound-test.cpp) verify interrupted-search
+# bounds against the live frontier and an enumerated binary optimum, covering
+# minimization/maximization, serial/parallel, node/time/event stops and root-only
+# limits. When decomp2 is present, also require a proven optimum after root
+# cut purging (not a spurious time-limit stop). Pass --no-final-bound-tests
+# to skip this binary.
+#
+# Positional arguments (optional): one or more glob patterns to select a
+# subset of instances by name (e.g. `./run-mip-sanity-tests 'jssp_*' 'cvrp_*'`).
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# On MinGW/MSYS/Cygwin, autoconf's AC_EXEEXT gives every noinst_PROGRAMS
+# target (and cbc itself) a ".exe" suffix, so both the `make -C ... <target>`
+# invocations below and the resulting binary paths need to account for it.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) EXEEXT=".exe" ;;
+  *) EXEEXT="" ;;
+esac
+# nproc is GNU coreutils; macOS has sysctl instead.
+JOBS="${CBC_TESTS_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)}"
+PREFIX="${PREFIX:-$HOME/prog/cbc}"
+DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
+RESULTS_DIR="$SCRIPT_DIR/sanity-results"
+RESULTS_TSV=""
+CBC_BIN_OVERRIDE=""
+UPDATE_DATA=0
+FORCE_COLOR=1
+NO_CAPI_TESTS=0
+CAPI_JOBS=""
+NO_LP_TESTS=0
+NO_LAZY_TESTS=0
+NO_MIPSTART_TESTS=0
+NO_COEFSTR_TESTS=0
+NO_ROW_ACTIVITY_TESTS=0
+NO_FINAL_BOUND_TESTS=0
+THREADS_PIN=0
+CUT_STATS=0
+CUT_STATS_TSV=""
+PATTERNS=()
+EXCLUDES=()
+
+for arg in "$@"; do
+  case "$arg" in
+    --jobs=*) JOBS="${arg#*=}" ;;
+    --exclude=*) EXCLUDES+=("${arg#*=}") ;;
+    --cbc=*) CBC_BIN_OVERRIDE="${arg#*=}" ;;
+    --prefix=*) PREFIX="${arg#*=}" ;;
+    --data-dir=*) DATA_DIR="${arg#*=}" ;;
+    --results-dir=*) RESULTS_DIR="${arg#*=}" ;;
+    --results-tsv=*) RESULTS_TSV="${arg#*=}" ;;
+    --update-data) UPDATE_DATA=1 ;;
+    --cut-stats) CUT_STATS=1 ;;
+    --cut-stats-tsv=*) CUT_STATS_TSV="${arg#*=}" ;;
+    --no-color) FORCE_COLOR=0 ;;
+    --no-capi-tests) NO_CAPI_TESTS=1 ;;
+    --capi-jobs=*) CAPI_JOBS="${arg#*=}" ;;
+    --no-lp-tests) NO_LP_TESTS=1 ;;
+    --no-lazy-tests) NO_LAZY_TESTS=1 ;;
+    --no-mipstart-tests) NO_MIPSTART_TESTS=1 ;;
+    --no-coefstr-tests) NO_COEFSTR_TESTS=1 ;;
+    --no-row-activity-tests) NO_ROW_ACTIVITY_TESTS=1 ;;
+    --no-final-bound-tests) NO_FINAL_BOUND_TESTS=1 ;;
+    --threads-pin) THREADS_PIN=1 ;;
+    -h|--help)
+      # Print the header comment block: everything from line 2 up to (but not
+      # including) the first line that is not a comment. Derived rather than
+      # hardcoded as a line range, which silently truncated the help text
+      # whenever the header grew.
+      sed -n '2,${/^#/!q; p;}' "$0"
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $arg" >&2
+      exit 1
+      ;;
+    *) PATTERNS+=("$arg") ;;
+  esac
+done
+
+# ── ANSI colours (auto-disabled when not a terminal) ────────────────────────
+if [[ -t 1 && $FORCE_COLOR -eq 1 ]]; then
+  BOLD=$'\e[1m';  RESET=$'\e[0m';   DIM=$'\e[2m'
+  RED=$'\e[31m';  GREEN=$'\e[32m';  YELLOW=$'\e[33m'
+  CYAN=$'\e[36m'; MAGENTA=$'\e[35m'; BLUE=$'\e[34m'
+else
+  BOLD=''; RESET=''; DIM=''; RED=''; GREEN=''
+  YELLOW=''; CYAN=''; MAGENTA=''; BLUE=''
+fi
+# Exported so GNU parallel workers (separate bash processes) see them too.
+export BOLD RESET DIM RED GREEN YELLOW CYAN MAGENTA BLUE
+
+echo "${BOLD}=== Cbc mip-sanity-data regression suite (jobs=$JOBS) ===${RESET}"
+if [[ $THREADS_PIN -eq 1 ]]; then
+  echo "${DIM}Running cbc with -threads 1 pinned (--threads-pin).${RESET}"
+else
+  echo "${DIM}Running cbc without an explicit -threads flag (default; pass --threads-pin to pin to 1 thread).${RESET}"
+fi
+
+# ── 1. Ensure mip-sanity-data is available (clone once, reuse afterwards) ───
+if [[ ! -f "$REPO_ROOT/.gitmodules" ]] || ! grep -q "mip-sanity-data" "$REPO_ROOT/.gitmodules"; then
+  echo "${RED}Error: test/mip-sanity-data submodule not declared in .gitmodules.${RESET}" >&2
+  exit 1
+fi
+
+if [[ ! -f "$DATA_DIR/bks.tsv" ]]; then
+  echo "${YELLOW}mip-sanity-data not yet checked out — cloning (one-time)...${RESET}"
+  git -C "$REPO_ROOT" submodule update --init "test/mip-sanity-data"
+elif [[ $UPDATE_DATA -eq 1 ]]; then
+  echo "${CYAN}Updating mip-sanity-data submodule...${RESET}"
+  git -C "$REPO_ROOT" submodule update "test/mip-sanity-data"
+else
+  echo "${DIM}mip-sanity-data already checked out at $DATA_DIR (reusing; use --update-data to refresh)${RESET}"
+fi
+
+if [[ ! -f "$DATA_DIR/bks.tsv" ]]; then
+  echo "${RED}Error: $DATA_DIR/bks.tsv not found after checkout.${RESET}" >&2
+  exit 1
+fi
+
+# ── 2. Locate the cbc executable ────────────────────────────────────────────
+CBC_BIN=""
+if [[ -n "$CBC_BIN_OVERRIDE" ]]; then
+  CBC_BIN="$CBC_BIN_OVERRIDE"
+elif [[ -x "$SCRIPT_DIR/../src/cbc" ]]; then
+  CBC_BIN="$SCRIPT_DIR/../src/cbc"          # in-tree build (preferred: always current)
+elif [[ -x "$PREFIX/bin/cbc" ]]; then
+  CBC_BIN="$PREFIX/bin/cbc"
+elif command -v cbc >/dev/null 2>&1; then
+  CBC_BIN="$(command -v cbc)"
+fi
+if [[ -z "$CBC_BIN" || ! -x "$CBC_BIN" ]]; then
+  echo "${RED}Error: cbc executable not found (looked in ../src/cbc, $PREFIX/bin, \$PATH).${RESET}" >&2
+  echo "       Build Cbc first (e.g. 'make' at the repo root, or via cbc-workspace's ./config)." >&2
+  exit 1
+fi
+echo "${DIM}Using cbc: $CBC_BIN${RESET}"
+
+# ── ASLR workaround for TSan on aarch64 ─────────────────────────────────────
+# On aarch64 kernels with high mmap ASLR entropy, TSan-instrumented binaries
+# abort with "FATAL: ThreadSanitizer: unexpected memory mapping ..." because
+# mmap addresses land outside the fixed VA range TSan's shadow memory
+# expects. Detect a TSan build via its libtsan dependency and disable ASLR
+# for the cbc invocation (mirrors the same workaround in cbc-workspace's
+# ./config and ./build). Exported so GNU parallel workers pick it up too.
+ASLR_WRAP=""
+if [[ "$(uname -m)" == "aarch64" ]] && command -v setarch >/dev/null 2>&1 \
+    && ldd "$CBC_BIN" 2>/dev/null | grep -q 'libtsan\.so'; then
+  ASLR_WRAP="setarch aarch64 -R"
+  echo "${DIM}Detected TSan build on aarch64 — running cbc under 'setarch -R' to avoid a known TSan ASLR limitation.${RESET}"
+fi
+export ASLR_WRAP
+
+# ── 3. Locate/build the validator ───────────────────────────────────────────
+VALIDATOR="$SCRIPT_DIR/cbc_validate_sol$EXEEXT"
+if [[ ! -x "$VALIDATOR" ]]; then
+  echo "${CYAN}Building cbc_validate_sol...${RESET}"
+  if [[ ! -f "$SCRIPT_DIR/Makefile" ]]; then
+    echo "${RED}Error: test/Makefile missing — configure Cbc first ('./configure' at the repo root).${RESET}" >&2
+    exit 1
+  fi
+  make -C "$SCRIPT_DIR" "cbc_validate_sol$EXEEXT" || {
+    echo "${RED}Error: failed to build cbc_validate_sol.${RESET}" >&2
+    exit 1
+  }
+fi
+echo "${DIM}Using validator: $VALIDATOR${RESET}"
+
+# ── 4. Build the instance list ──────────────────────────────────────────────
+mkdir -p "$RESULTS_DIR"
+[[ -z "$RESULTS_TSV" ]] && RESULTS_TSV="$RESULTS_DIR/results.tsv"
+[[ -z "$CUT_STATS_TSV" ]] && CUT_STATS_TSV="$RESULTS_DIR/cut-stats.tsv"
+CUT_STATS_DIR="$RESULTS_DIR/cutstats"
+if [[ $CUT_STATS -eq 1 ]]; then
+  mkdir -p "$CUT_STATS_DIR"
+fi
+shopt -s nullglob
+all_instances=()
+for f in "$DATA_DIR"/mips/*.mps.gz; do
+  name="$(basename "$f" .mps.gz)"
+  all_instances+=("$name")
+done
+shopt -u nullglob
+
+if [[ ${#all_instances[@]} -eq 0 ]]; then
+  echo "${RED}Error: no instances found under $DATA_DIR/mips.${RESET}" >&2
+  exit 1
+fi
+
+instances=()
+if [[ ${#PATTERNS[@]} -eq 0 ]]; then
+  instances=("${all_instances[@]}")
+else
+  for name in "${all_instances[@]}"; do
+    for pat in "${PATTERNS[@]}"; do
+      # shellcheck disable=SC2053
+      if [[ "$name" == $pat ]]; then
+        instances+=("$name")
+        break
+      fi
+    done
+  done
+fi
+
+if [[ ${#EXCLUDES[@]} -gt 0 ]]; then
+  filtered=()
+  excluded_count=0
+  for name in "${instances[@]}"; do
+    excluded=0
+    for pat in "${EXCLUDES[@]}"; do
+      # shellcheck disable=SC2053
+      if [[ "$name" == $pat ]]; then
+        excluded=1
+        break
+      fi
+    done
+    if [[ $excluded -eq 1 ]]; then
+      excluded_count=$((excluded_count + 1))
+    else
+      filtered+=("$name")
+    fi
+  done
+  instances=("${filtered[@]}")
+  echo "${YELLOW}${excluded_count} instance(s) excluded via --exclude.${RESET}"
+fi
+
+echo "${BOLD}${#instances[@]} instance(s) selected (of ${#all_instances[@]} total).${RESET}"
+echo
+
+# ── 5. Per-instance runner ───────────────────────────────────────────────────
+# Both are exported so GNU parallel workers (separate bash processes) can call them.
+
+# Parses a cbc log for both a human-readable one-line summary and the
+# machine-readable fields needed for suite-wide statistics. Cbc always prints
+# classic "Result - ...\nObjective value: ...\nEnumerated nodes: ..." lines
+# (optionally "Lower bound:"/"Gap:" when a gap remains) for every outcome
+# except infeasible/unbounded detected during presolve/root (handled below) —
+# these are more robust to parse than cbc's fancier colored summary line,
+# which is omitted entirely for instances solved during presolve/root.
+#
+# Prints one pipe-delimited record: status_text|obj|bound|gap_pct|nodes|is_optimal|has_solution
+#   is_optimal   = 1 if Cbc's own claimed status is an optimality proof
+#   has_solution = 1 if an integer-feasible incumbent was reported at all
+#                  (0 for proven-infeasible/unbounded and "Integer infeasible")
+parse_cbc_log() {
+  local log="$1"
+  local result_line status_text obj nodes bound gap
+  result_line="$(grep "^Result - " "$log" 2>/dev/null | tail -1)"
+  if [[ -z "$result_line" ]]; then
+    if grep -q "Problem is infeasible" "$log" 2>/dev/null; then
+      echo "Infeasible (detected in presolve/root)||||0|0|0"
+    elif grep -q "Problem is unbounded" "$log" 2>/dev/null; then
+      echo "Unbounded (detected in presolve/root)||||0|0|0"
+    else
+      echo "||||0|0|0"
+    fi
+    return
+  fi
+  status_text="${result_line#Result - }"
+  obj="$(grep "^Objective value:" "$log" 2>/dev/null | tail -1 | awk '{print $NF}')"
+  nodes="$(grep "^Enumerated nodes:" "$log" 2>/dev/null | tail -1 | awk '{print $NF}')"
+  bound="$(grep "^Lower bound:" "$log" 2>/dev/null | tail -1 | awk '{print $NF}')"
+  gap="$(grep "^Gap:" "$log" 2>/dev/null | tail -1 | awk '{print $NF}')"
+
+  local gap_pct=""
+  if [[ -n "$gap" ]]; then
+    gap_pct="$(awk -v g="$gap" 'BEGIN{printf "%.4f", g*100}' 2>/dev/null)"
+  fi
+
+  local is_optimal=0 has_solution=1
+  [[ "$status_text" == Optimal* ]] && is_optimal=1
+  # has_solution must reflect whether Cbc actually printed a real incumbent
+  # ("Objective value:"), not just whether status_text happens to say
+  # "Integer infeasible" -- a "Stopped on <reason>" run with NO integer
+  # solution prints "No feasible solution found" instead of an objective
+  # line (see CbcSolver.cpp), so obj stays empty in that case too. Checking
+  # obj emptiness catches both cases; the old text-only check silently
+  # treated "Stopped ... no integer solution" runs as if a solution had
+  # been found, which fed a bogus 100-point (instead of 200-point) gap
+  # into the suite-wide average-gap aggregate.
+  [[ -z "$obj" ]] && has_solution=0
+
+  echo "${status_text}|${obj}|${bound}|${gap_pct}|${nodes:-0}|${is_optimal}|${has_solution}"
+}
+export -f parse_cbc_log
+
+run_one() {
+  local name="$1"
+  local data_dir="$2" results_dir="$3" cbc_bin="$4" validator="$5" total="$6"
+  local progress_count_file="$7" progress_lock="$8"
+  local cut_stats="${9:-0}" cut_stats_dir="${10:-}"
+  local threads_pin="${11:-0}"
+
+  local mps="$data_dir/mips/$name.mps.gz"
+  local sol="$results_dir/$name.sol"
+  local cbc_log="$results_dir/$name.cbc.log"
+  local val_log="$results_dir/$name.validate.log"
+  local status_file="$results_dir/$name.status"
+
+  # ── read suggested limits (default: unlimited nodes, 120s/180s hard-kill) ──
+  local node_limit=0 time_limit=120 hard_kill=180
+  local limits_row
+  limits_row="$(awk -F'\t' -v n="$name" '$1==n{print $3"\t"$4"\t"$5; found=1} END{if(!found) exit 1}' "$data_dir/limits.tsv" 2>/dev/null)"
+  if [[ -n "$limits_row" ]]; then
+    IFS=$'\t' read -r node_limit time_limit hard_kill <<<"$limits_row"
+  fi
+
+  # ── read bks (expected status/objective) ───────────────────────────────────
+  local bks_row expected_status="" expected_obj=""
+  bks_row="$(awk -F'\t' -v n="$name" '$1==n{print $2"\t"$3; found=1} END{if(!found) exit 1}' "$data_dir/bks.tsv" 2>/dev/null)"
+  if [[ -n "$bks_row" ]]; then
+    IFS=$'\t' read -r expected_status expected_obj <<<"$bks_row"
+  fi
+
+  local node_args=()
+  if [[ "$node_limit" != "0" ]]; then
+    node_args=(-maxNodes "$node_limit")
+  fi
+
+  # Default: no explicit -threads flag (numberThreads_==0), matching how most
+  # users actually invoke cbc — this also keeps CbcModel's fastNodeDepth_
+  # mini-BAB fast-node heuristic active, since it is only ever engaged when
+  # numberThreads_==0 (see CbcModel.cpp's "numberThreads_ > 0" guard around
+  # fastNodeDepth_). --threads-pin opts back into the old "-threads 1"
+  # pinned-single-thread invocation for maximally deterministic node counts.
+  local threads_args=()
+  if [[ "$threads_pin" == "1" ]]; then
+    threads_args=(-threads 1)
+  fi
+
+  local stats_pre_args=() stats_post_args=()
+  if [[ "$cut_stats" == "1" ]]; then
+    stats_pre_args=(-csvStatistics "$cut_stats_dir/$name.stats.csv")
+    stats_post_args=(-writeStatistics)
+  fi
+
+  # Prints one progress line as soon as this instance is done (visible while
+  # the rest of the suite is still running) and records the outcome for the
+  # final summary/failure-detail pass. $summary is filled in below, once the
+  # cbc log exists. done_count is tracked via a dedicated per-run counter file
+  # (not by globbing *.status in results_dir, which may still hold stale
+  # entries from an earlier/broader run) so the "[n/total]" prefix is exact.
+  emit() {
+    local kind="$1" note="$2"
+    echo "$kind|$elapsed|$note|$summary|$is_optimal|$gap_metric|$nodes|$status_text|$obj|$bound|$gap_pct" >"$status_file"
+
+    local done_count
+    done_count=$( { flock -x 9
+      local c
+      c=$(<"$progress_count_file")
+      c=$((c + 1))
+      echo "$c" >"$progress_count_file"
+      echo "$c"
+    } 9>"$progress_lock" )
+
+    local icon color
+    case "$kind" in
+      PASS) icon="✔"; color="$GREEN" ;;
+      OVERTIME) icon="⏱"; color="$YELLOW" ;;
+      *) icon="✗"; color="$RED" ;;
+    esac
+
+    local line
+    line="${DIM}[$(printf '%3d' "$done_count")/${total}]${RESET} ${color}${icon} ${name}${RESET}  ${DIM}(${elapsed}s)${RESET}"
+    [[ -n "$summary" ]] && line="${line}  ${summary}"
+    [[ -n "$note" ]] && line="${line}  ${color}${note}${RESET}"
+    printf '%s\n' "$line"
+  }
+
+  local start_ts end_ts elapsed
+  start_ts=$(date +%s.%N)
+  # cbc's "-solu <file>" appends to an existing file rather than truncating
+  # it, so a stale .sol left over from an earlier run of this same instance
+  # (e.g. a previous ./test invocation against the same results dir) would
+  # otherwise accumulate multiple concatenated solution blocks, which the
+  # validator can misparse as a corrupt/partial solution and report as a
+  # false failure. Always start from a clean file.
+  rm -f "$sol"
+  if [[ "$cut_stats" == "1" ]]; then
+    rm -f "$cut_stats_dir/$name.stats.csv"
+  fi
+  timeout -k 10 "${hard_kill}s" ${ASLR_WRAP:+$ASLR_WRAP} "$cbc_bin" "$mps" "${threads_args[@]}" -sec "$time_limit" \
+    "${node_args[@]}" "${stats_pre_args[@]}" -solve -solu "$sol" "${stats_post_args[@]}" >"$cbc_log" 2>&1
+  local cbc_rc=$?
+  end_ts=$(date +%s.%N)
+  elapsed="$(awk -v a="$start_ts" -v b="$end_ts" 'BEGIN{printf "%.1f", b-a}')"
+
+  # ── parse the log once: human summary line + machine fields for stats ──────
+  local parsed status_text obj bound gap_pct nodes is_optimal has_solution
+  parsed="$(parse_cbc_log "$cbc_log")"
+  IFS='|' read -r status_text obj bound gap_pct nodes is_optimal has_solution <<<"$parsed"
+  nodes="${nodes:-0}"
+
+  local summary=""
+  if [[ -n "$status_text" ]]; then
+    summary="$status_text"
+    [[ -n "$obj" ]] && summary="${summary}  obj=${obj}"
+    [[ -n "$bound" ]] && summary="${summary}  bound=${bound}"
+    if [[ -n "$gap_pct" ]]; then
+      summary="${summary}  gap=$(awk -v g="$gap_pct" 'BEGIN{printf "%.2f", g}')%"
+    fi
+    [[ -n "$nodes" ]] && summary="${summary}  nodes=${nodes}"
+  fi
+
+  # ── gap metric for suite-wide averaging: optimal=0, feasible=min(gap,100),
+  #     no feasible solution at all=200 ───────────────────────────────────────
+  local gap_metric
+  if [[ "$is_optimal" == "1" ]]; then
+    gap_metric=0
+  elif [[ "$has_solution" == "1" && -n "$gap_pct" ]]; then
+    gap_metric="$(awk -v g="$gap_pct" 'BEGIN{v=g; if(v<0) v=-v; if(v>100) v=100; printf "%.4f", v}')"
+  elif [[ "$has_solution" == "1" ]]; then
+    gap_metric=100   # solution found but gap/bound unavailable — conservative cap
+  else
+    gap_metric=200   # no integer-feasible solution at all (or run never completed)
+  fi
+
+  if [[ $cbc_rc -eq 124 || $cbc_rc -eq 137 ]]; then
+    emit OVERTIME "hard-kill (${hard_kill}s) triggered — cbc did not respect its own -sec limit"
+    return
+  fi
+  if [[ ! -f "$sol" ]]; then
+    emit ERROR "cbc exited (rc=$cbc_rc) without writing a .sol file"
+    return
+  fi
+
+  local val_args=(-p 1e-4 -i 1e-4 -o 1e-4 --bks-abs-tol 1e-4 --bks-pct-tol 0.01)
+  if [[ -n "$expected_status" ]]; then
+    val_args+=(--expected-status "$expected_status")
+  fi
+  if [[ -n "$expected_obj" && "$expected_obj" != "NA" ]]; then
+    val_args+=(--expected-obj "$expected_obj")
+  fi
+
+  ${ASLR_WRAP:+$ASLR_WRAP} "$validator" "${val_args[@]}" "$mps" "$sol" >"$val_log" 2>&1
+  local val_rc=$?
+
+  if [[ $val_rc -eq 0 ]]; then
+    emit PASS ""
+  else
+    local fail_reason
+    fail_reason="$(grep -m1 -E "MISMATCH|^  BOUND:|^  INTEG:|^  ROW:|^  OBJ:" "$val_log")"
+    fail_reason="${fail_reason#"${fail_reason%%[![:space:]]*}"}"  # ltrim
+    [[ -z "$fail_reason" ]] && fail_reason="validation FAILED (exit=$val_rc)"
+    emit FAIL "${fail_reason} — full details below"
+  fi
+}
+export -f run_one
+
+# ── 6. Dispatch in parallel (each job prints its own progress line live) ────
+PROGRESS_COUNT_FILE="$(mktemp "${RESULTS_DIR}/.progress-count.XXXXXX")"
+PROGRESS_LOCK="$(mktemp "${RESULTS_DIR}/.progress-lock.XXXXXX")"
+echo 0 >"$PROGRESS_COUNT_FILE"
+trap 'rm -f "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK"' EXIT
+
+echo "${DIM}Running... (results stream in as instances finish; order is by completion, not by name)${RESET}"
+printf '%s\n' "${instances[@]}" | parallel --will-cite -j "$JOBS" --line-buffer \
+  run_one {} "$DATA_DIR" "$RESULTS_DIR" "$CBC_BIN" "$VALIDATOR" "${#instances[@]}" \
+  "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK" "$CUT_STATS" "$CUT_STATS_DIR" "$THREADS_PIN"
+echo
+
+# ── 7. Aggregate results from the .status files already printed above ──────
+declare -a pass_list=() fail_list=() overtime_list=() error_list=()
+STATS_FILE="$(mktemp "${RESULTS_DIR}/.run-stats.XXXXXX")"
+trap 'rm -f "$PROGRESS_COUNT_FILE" "$PROGRESS_LOCK" "$STATS_FILE"' EXIT
+: >"$STATS_FILE"
+printf 'instance\tstatus\telapsed_s\tnodes\tgap_pct\tis_optimal\tobj\tbound\n' >"$RESULTS_TSV"
+for name in "${instances[@]}"; do
+  status_file="$RESULTS_DIR/$name.status"
+  if [[ ! -f "$status_file" ]]; then
+    echo "  ${RED}✗ ${name}${RESET}  ${DIM}(no status file — run_one crashed?)${RESET}"
+    error_list+=("$name")
+    printf '%s\t%s\t%s\t%s\t%s\n' "$name" "0" "0" "200" "0" >>"$STATS_FILE"
+    printf '%s\tERROR\t0\t0\t\t0\t\t\n' "$name" >>"$RESULTS_TSV"
+    continue
+  fi
+  IFS='|' read -r kind elapsed detail summary is_optimal gap_metric nodes status_text obj bound gap_pct <"$status_file"
+  case "$kind" in
+    PASS) pass_list+=("$name") ;;
+    FAIL) fail_list+=("$name") ;;
+    OVERTIME) overtime_list+=("$name") ;;
+    ERROR) error_list+=("$name") ;;
+    *)
+      echo "  ${RED}✗ ${name}${RESET}  ${DIM}(unrecognized status: $kind)${RESET}"
+      error_list+=("$name")
+      ;;
+  esac
+  # "optimal solutions found" only counts claimed-optimal runs that also
+  # passed validation (a claimed-optimal FAIL, e.g. an infeasible "optimal",
+  # is not a real solution).
+  is_optimal_confirmed=0
+  [[ "$kind" == "PASS" && "$is_optimal" == "1" ]] && is_optimal_confirmed=1
+  printf '%s\t%s\t%s\t%s\t%s\n' "$name" "${elapsed:-0}" "${nodes:-0}" "${gap_metric:-200}" "$is_optimal_confirmed" >>"$STATS_FILE"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$name" "$kind" "${elapsed:-0}" "${nodes:-0}" "${gap_pct:-}" "$is_optimal_confirmed" "${obj:-}" "${bound:-}" >>"$RESULTS_TSV"
+done
+echo "${DIM}Per-instance results saved to $RESULTS_TSV${RESET}"
+
+# One pass over the per-instance stats file to compute suite-wide aggregates:
+# total runtime/nodes, average gap (see the per-instance gap_metric rule in
+# run_one), how many were solved to a confirmed optimum, and which instance
+# was slowest / processed the most nodes.
+read -r total_runtime total_nodes avg_gap n_optimal slowest_name slowest_time maxnodes_name maxnodes_val <<<"$(
+  awk -F'\t' '
+    BEGIN { tot_time=0; tot_nodes=0; tot_gap=0; n=0; n_opt=0; slow_t=-1; slow_n="-"; maxnode_v=-1; maxnode_n="-" }
+    {
+      tot_time += $2; tot_nodes += $3; tot_gap += $4; n_opt += $5; n++
+      if ($2+0 > slow_t)   { slow_t=$2+0;   slow_n=$1 }
+      if ($3+0 > maxnode_v) { maxnode_v=$3+0; maxnode_n=$1 }
+    }
+    END {
+      avg = (n > 0) ? tot_gap / n : 0
+      printf "%.1f %d %.2f %d %s %.1f %s %d\n", tot_time, tot_nodes, avg, n_opt, slow_n, slow_t, maxnode_n, maxnode_v
+    }
+  ' "$STATS_FILE"
+)"
+
+# Adds thousands separators to a plain (non-negative) integer, e.g. 12345 -> 12,345.
+with_commas() {
+  echo "$1" | rev | sed -E 's/([0-9]{3})/\1,/g' | rev | sed -E 's/^,//'
+}
+
+# Prints one plain (uncolored) two-column row; colored by wrapping the whole
+# line afterwards, since padding a colored substring with %-Ns miscounts the
+# invisible ANSI escape bytes.
+row() { printf "  %-26s %14s" "$1" "$2"; }
+rule() { printf "  %s" "$(printf -- '─%.0s' $(seq 1 40))"; }
+
+echo
+echo "${BOLD}=== Summary ===${RESET}"
+echo "${BOLD}$(row "Result" "Count")${RESET}"
+rule; echo
+echo "${GREEN}$(row "Passed" "${#pass_list[@]}")${RESET}"
+echo "${RED}$(row "Failed" "${#fail_list[@]}")${RESET}"
+echo "${YELLOW}$(row "Overtime" "${#overtime_list[@]}")${RESET}"
+echo "${RED}$(row "Error" "${#error_list[@]}")${RESET}"
+rule; echo
+echo "${BOLD}$(row "Total" "${#instances[@]}")${RESET}"
+echo
+
+echo "${BOLD}=== Solve statistics ===${RESET}"
+echo "${BOLD}$(row "Metric" "Value")${RESET}"
+rule; echo
+echo "$(row "Optimal solutions found" "$n_optimal / ${#instances[@]}")"
+echo "$(row "Total runtime" "${total_runtime}s")"
+echo "$(row "Total nodes processed" "$(with_commas "$total_nodes")")"
+echo "$(row "Average gap" "${avg_gap}%")"
+echo
+if [[ "$slowest_name" != "-" ]]; then
+  echo "  Slowest instance:          ${slowest_name}  (${slowest_time}s)"
+fi
+if [[ "$maxnodes_name" != "-" ]]; then
+  echo "  Most nodes processed:      ${maxnodes_name}  ($(with_commas "$maxnodes_val") nodes)"
+fi
+echo
+
+# ── 7b. Cut-generator statistics (only with --cut-stats) ────────────────────
+# Aggregates every per-instance `-csvStatistics`/-writeStatistics CSV
+# (Cbc's built-in CbcSolverStatistics feature; see CbcSolverStatistics.cpp)
+# collected under $CUT_STATS_DIR by run_one above. The CSV's generator
+# columns are always the same fixed, canonical set (2 columns per
+# generator: "<Name>_cuts","<Name>_time"), independent of which cut
+# generators actually fired for a given instance -- see
+# CbcSolverStatistics::writeCsv's canonicalGeneratorNames() -- so this list
+# must be kept in sync with that function if generators are ever added
+# there.
+if [[ $CUT_STATS -eq 1 ]]; then
+  CUT_GENERATOR_NAMES=(Clique FlowCover Gomory "Gomory(2)" GomoryL1 GomoryL2 \
+    ImpliedClique Knapsack LiftAndProject MixedIntegerRounding2 OddWheel Probing \
+    Reduce-and-split "Reduce-and-split(2)" TwoMirCuts TwoMirCutsL1 \
+    TwoMirCutsL2 ZeroHalf)
+
+  printf 'generator\ttotal_cuts\ttotal_time_s\n' >"$CUT_STATS_TSV"
+
+  # Only the CURRENT run's selected instances -- not every *.stats.csv that
+  # happens to be sitting in $CUT_STATS_DIR (which may hold stale files left
+  # over from an earlier, broader ./test invocation against the same
+  # --results-dir, e.g. a prior full-suite run before a later subset run).
+  cutstats_files=()
+  for name in "${instances[@]}"; do
+    f="$CUT_STATS_DIR/$name.stats.csv"
+    [[ -f "$f" ]] && cutstats_files+=("$f")
+  done
+
+  if [[ ${#cutstats_files[@]} -eq 0 ]]; then
+    echo "${YELLOW}--cut-stats was given but no per-instance stats CSVs were found under $CUT_STATS_DIR${RESET}"
+  else
+    # FIXED_COLUMNS below must match CbcSolverStatistics.cpp's own
+    # FIXED_COLUMNS-equivalent layout: 18 fixed columns (Name..cgraph_density)
+    # before the first generator's "_cuts" column.
+    awk -F',' -v names="${CUT_GENERATOR_NAMES[*]}" -v OFS='\t' '
+      BEGIN {
+        n = split(names, genArr, " ")
+        fixedCols = 18
+      }
+      FNR == 1 { next }  # skip each files header line
+      NF < fixedCols + 2*n { next }  # malformed/short line — skip
+      {
+        for (i = 1; i <= n; i++) {
+          cutsCol = fixedCols + (i-1)*2 + 1
+          timeCol = fixedCols + (i-1)*2 + 2
+          totalCuts[i] += $cutsCol
+          totalTime[i] += $timeCol
+        }
+      }
+      END {
+        for (i = 1; i <= n; i++) {
+          if (totalCuts[i] > 0)
+            printf "%s\t%d\t%.2f\n", genArr[i], totalCuts[i], totalTime[i]
+        }
+      }
+    ' "${cutstats_files[@]}" | sort -t$'\t' -k2,2 -rn >>"$CUT_STATS_TSV"
+
+    echo "${BOLD}=== Cut generator statistics (aggregated across ${#cutstats_files[@]} instance(s); generators with 0 cuts omitted) ===${RESET}"
+    if [[ $(tail -n +2 "$CUT_STATS_TSV" | wc -l) -eq 0 ]]; then
+      echo "  ${DIM}(no cuts were generated by any generator across the suite)${RESET}"
+    else
+      printf "  %-24s %14s %14s\n" "Generator" "Total cuts" "Total time(s)"
+      rule; echo
+      while IFS=$'\t' read -r gen cuts time; do
+        printf "  %-24s %14s %14s\n" "$gen" "$(with_commas "$cuts")" "$time"
+      done < <(tail -n +2 "$CUT_STATS_TSV")
+    fi
+    echo "${DIM}Per-generator aggregate saved to $CUT_STATS_TSV${RESET}"
+    echo
+  fi
+fi
+
+# ── 8. Full details for anything that didn't pass ───────────────────────────
+report_failure() {
+  local name="$1"
+  echo "${BOLD}${RED}─── $name ─────────────────────────────────────────────${RESET}"
+  echo "${CYAN}-- cbc log ($RESULTS_DIR/$name.cbc.log) --${RESET}"
+  tail -n 60 "$RESULTS_DIR/$name.cbc.log" 2>/dev/null
+  echo
+  if [[ -f "$RESULTS_DIR/$name.validate.log" ]]; then
+    echo "${CYAN}-- validator output ($RESULTS_DIR/$name.validate.log) --${RESET}"
+    cat "$RESULTS_DIR/$name.validate.log"
+  fi
+  echo
+}
+
+if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 ]]; then
+  echo "${BOLD}${RED}=== Failure details ===${RESET}"
+  for name in "${fail_list[@]}" "${error_list[@]}"; do
+    report_failure "$name"
+  done
+fi
+
+if [[ ${#overtime_list[@]} -gt 0 ]]; then
+  echo "${BOLD}${YELLOW}=== Instances that went overtime (hard-kill triggered; limits.tsv may need adjusting) ===${RESET}"
+  for name in "${overtime_list[@]}"; do
+    echo "  - $name"
+  done
+  echo
+fi
+
+# ── 9. C API smoke tests (mip-c-solve --stage=bound-propagation) ───────────
+# A small, fast, separately-tracked pass exercising Cbc's C interface
+# (Cbc_C_Interface.h) directly, complementing the `cbc`-executable suite
+# above. See the header comment for rationale/details.
+capi_fail_list=()
+if [[ $NO_CAPI_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping C API smoke tests (--no-capi-tests).${RESET}"
+else
+  MIP_C_SOLVE="$SCRIPT_DIR/mip-c-solve$EXEEXT"
+  if [[ ! -x "$MIP_C_SOLVE" ]]; then
+    echo "${CYAN}Building mip-c-solve...${RESET}"
+    make -C "$SCRIPT_DIR" "mip-c-solve$EXEEXT" || {
+      echo "${RED}Error: failed to build mip-c-solve.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  # Curated handful of instances spanning different problem families (sizes,
+  # integer/binary mixes, and one confirmed-infeasible case) — kept small
+  # since this is meant to be a fast smoke test, not a full regression pass.
+  capi_instances=(10teams air03 arki001 bell3a blend2 cvrp_capacity_tight
+    markshare1 markshare2 noswot)
+  # Only keep ones actually present in this data-dir checkout.
+  capi_selected=()
+  for name in "${capi_instances[@]}"; do
+    [[ -f "$DATA_DIR/mips/$name.mps.gz" ]] && capi_selected+=("$name")
+  done
+
+  capi_jobs="${CAPI_JOBS:-$JOBS}"
+  echo
+  echo "${BOLD}=== C API smoke tests (${#capi_selected[@]} instance(s), jobs=$capi_jobs) ===${RESET}"
+
+  CAPI_RESULTS_DIR="$RESULTS_DIR/capi"
+  mkdir -p "$CAPI_RESULTS_DIR"
+
+  run_capi_one() {
+    local name="$1" data_dir="$2" results_dir="$3" mip_c_solve="$4"
+    local log="$results_dir/$name.capi.log"
+    if ${ASLR_WRAP:+$ASLR_WRAP} "$mip_c_solve" "$name" --stage=bound-propagation --log-level=0 \
+        --data-dir="$data_dir" >"$log" 2>&1; then
+      echo "  ${GREEN}✔ ${name}${RESET}"
+      echo PASS >"$results_dir/$name.capi.status"
+    else
+      echo "  ${RED}✗ ${name}${RESET}  ${DIM}(see $log)${RESET}"
+      echo FAIL >"$results_dir/$name.capi.status"
+    fi
+  }
+  export -f run_capi_one
+  export GREEN RED DIM RESET
+
+  printf '%s\n' "${capi_selected[@]}" | parallel --will-cite -j "$capi_jobs" --line-buffer \
+    run_capi_one {} "$DATA_DIR" "$CAPI_RESULTS_DIR" "$MIP_C_SOLVE"
+
+  for name in "${capi_selected[@]}"; do
+    status_file="$CAPI_RESULTS_DIR/$name.capi.status"
+    if [[ ! -f "$status_file" ]] || [[ "$(<"$status_file")" != "PASS" ]]; then
+      capi_fail_list+=("$name")
+    fi
+  done
+
+  echo
+  echo "${BOLD}$(row "C API tests passed" "$((${#capi_selected[@]} - ${#capi_fail_list[@]})) / ${#capi_selected[@]}")${RESET}"
+  echo
+
+  if [[ ${#capi_fail_list[@]} -gt 0 ]]; then
+    echo "${BOLD}${RED}=== C API smoke test failures ===${RESET}"
+    for name in "${capi_fail_list[@]}"; do
+      echo "${BOLD}${RED}─── $name (mip-c-solve --stage=bound-propagation) ────${RESET}"
+      cat "$CAPI_RESULTS_DIR/$name.capi.log" 2>/dev/null
+      echo
+    done
+  fi
+fi
+
+# ── 10. LP-relaxation solve/reoptimize tests (lp-relaxation-test) ──────────
+# Covers the LP-only C entry points Cbc_solveLinearProgram()/Cbc_resolve():
+# every LPMethod (including parallel LP racing) and DualPivot/LPReductions
+# setting against independently computed reference objectives, warm-start
+# reoptimization after variable fixing and after removing/re-adding a binding
+# row, and the LP settings that must survive into a reoptimize (see the header
+# comment for why INT_PARAM_PERT_VALUE matters here). One fast in-process
+# binary, so unlike the passes above there is nothing to parallelize.
+lp_tests_failed=0
+if [[ $NO_LP_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping LP-relaxation tests (--no-lp-tests).${RESET}"
+else
+  LP_RELAXATION_TEST="$SCRIPT_DIR/lp-relaxation-test$EXEEXT"
+  if [[ ! -x "$LP_RELAXATION_TEST" ]]; then
+    echo "${CYAN}Building lp-relaxation-test...${RESET}"
+    make -C "$SCRIPT_DIR" "lp-relaxation-test$EXEEXT" || {
+      echo "${RED}Error: failed to build lp-relaxation-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  echo
+  echo "${BOLD}=== LP-relaxation solve/reoptimize tests ===${RESET}"
+
+  LP_RESULTS_DIR="$RESULTS_DIR/lp-relaxation"
+  mkdir -p "$LP_RESULTS_DIR"
+  lp_log="$LP_RESULTS_DIR/lp-relaxation-test.log"
+
+  # The binary prints one line per check; only the tally is echoed here, with
+  # the full log kept for inspection (and dumped below on failure).
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$LP_RELAXATION_TEST" --data-dir="$DATA_DIR" \
+      >"$lp_log" 2>&1; then
+    lp_checks_ok=$(grep -c '^  ok:' "$lp_log" 2>/dev/null || true)
+    echo "  ${GREEN}✔ all ${lp_checks_ok:-0} check(s) passed${RESET}  ${DIM}($lp_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "LP relaxation tests passed" "${lp_checks_ok:-0} / ${lp_checks_ok:-0}")${RESET}"
+  else
+    lp_tests_failed=1
+    lp_checks_ok=$(grep -c '^  ok:' "$lp_log" 2>/dev/null || true)
+    lp_checks_bad=$(grep -c '^  FAIL:' "$lp_log" 2>/dev/null || true)
+    lp_total=$(( ${lp_checks_ok:-0} + ${lp_checks_bad:-0} ))
+    echo "  ${RED}✗ ${lp_checks_bad:-0} check(s) failed${RESET}  ${DIM}(see $lp_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "LP relaxation tests passed" "${lp_checks_ok:-0} / $lp_total")${RESET}"
+  fi
+  echo
+
+  if [[ $lp_tests_failed -eq 1 ]]; then
+    echo "${BOLD}${RED}=== LP-relaxation test failures ===${RESET}"
+    # Only the failing checks (plus the final RESULT line): the full log
+    # interleaves Cbc's own LP solve output for every configuration tried.
+    grep -E '^  FAIL:|^RESULT:' "$lp_log" 2>/dev/null
+    echo
+    echo "${DIM}Full log: $lp_log${RESET}"
+    echo
+  fi
+fi
+
+# ── 11. Lazy-constraint / TSP tests (lazy-constraint-test) ─────────────────
+# Covers Cbc_addLazyConstraint() and the at-solution cut callback: random TSPs
+# solved lazily, eagerly and by Held-Karp must agree, on instances where the
+# assignment relaxation is strictly weaker than the tour optimum so a lazy
+# constraint that never fires is caught rather than passing by accident; plus
+# the screening and end-of-search confirmation of externally supplied solutions
+# (see the header comment). Like the LP tests, one fast in-process binary with
+# nothing to parallelize. Needs no --data-dir: the instances are generated.
+lazy_tests_failed=0
+if [[ $NO_LAZY_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping lazy-constraint tests (--no-lazy-tests).${RESET}"
+else
+  LAZY_CONSTRAINT_TEST="$SCRIPT_DIR/lazy-constraint-test$EXEEXT"
+  if [[ ! -x "$LAZY_CONSTRAINT_TEST" ]]; then
+    echo "${CYAN}Building lazy-constraint-test...${RESET}"
+    make -C "$SCRIPT_DIR" "lazy-constraint-test$EXEEXT" || {
+      echo "${RED}Error: failed to build lazy-constraint-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  echo
+  echo "${BOLD}=== Lazy-constraint / TSP tests ===${RESET}"
+
+  LAZY_RESULTS_DIR="$RESULTS_DIR/lazy-constraint"
+  mkdir -p "$LAZY_RESULTS_DIR"
+  lazy_log="$LAZY_RESULTS_DIR/lazy-constraint-test.log"
+
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$LAZY_CONSTRAINT_TEST" >"$lazy_log" 2>&1; then
+    lazy_checks_ok=$(grep -c '^  ok:' "$lazy_log" 2>/dev/null || true)
+    echo "  ${GREEN}✔ all ${lazy_checks_ok:-0} check(s) passed${RESET}  ${DIM}($lazy_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Lazy-constraint tests passed" "${lazy_checks_ok:-0} / ${lazy_checks_ok:-0}")${RESET}"
+  else
+    lazy_tests_failed=1
+    lazy_checks_ok=$(grep -c '^  ok:' "$lazy_log" 2>/dev/null || true)
+    lazy_checks_bad=$(grep -c '^  FAIL:' "$lazy_log" 2>/dev/null || true)
+    lazy_total=$(( ${lazy_checks_ok:-0} + ${lazy_checks_bad:-0} ))
+    echo "  ${RED}✗ ${lazy_checks_bad:-0} check(s) failed${RESET}  ${DIM}(see $lazy_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Lazy-constraint tests passed" "${lazy_checks_ok:-0} / $lazy_total")${RESET}"
+  fi
+  echo
+
+  if [[ $lazy_tests_failed -eq 1 ]]; then
+    echo "${BOLD}${RED}=== Lazy-constraint test failures ===${RESET}"
+    # Only the failing checks (plus the final RESULT line): the full log carries
+    # Cbc's own output for every solve, several per instance.
+    grep -E '^  FAIL:|^RESULT:' "$lazy_log" 2>/dev/null
+    echo
+    echo "${DIM}Full log: $lazy_log${RESET}"
+    echo
+  fi
+fi
+
+# ── 12. MIP-start tests (mipstart-test) ────────────────────────────────────
+# Covers Cbc_setMIPStart()/Cbc_setMIPStartI() -- the python-mip path -- in the
+# three shapes a caller might supply (nonzero integers only, the full solution,
+# all nonzeros), each with preprocessing on and off, plus the fix modes, the
+# fix-continuous-too recovery, the mini branch and bound, negative integer
+# values, and starts that are infeasible or name unknown columns. Assertions are
+# on Cbc's own MIPStart log lines as well as the objective: the fixtures are
+# small enough that Cbc reaches the same optimum with the start ignored, so an
+# objective check alone would pass on a build where MIPStart did nothing (see the
+# header comment in mipstart-test.cpp). Like the LP and lazy tests, one fast
+# in-process binary with nothing to parallelize. Needs no --data-dir: every
+# fixture and its reference optimum are built in-process.
+mipstart_tests_failed=0
+if [[ $NO_MIPSTART_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping MIP-start tests (--no-mipstart-tests).${RESET}"
+else
+  MIPSTART_TEST="$SCRIPT_DIR/mipstart-test$EXEEXT"
+  if [[ ! -x "$MIPSTART_TEST" ]]; then
+    echo "${CYAN}Building mipstart-test...${RESET}"
+    make -C "$SCRIPT_DIR" "mipstart-test$EXEEXT" || {
+      echo "${RED}Error: failed to build mipstart-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  echo
+  echo "${BOLD}=== MIP-start tests ===${RESET}"
+
+  MIPSTART_RESULTS_DIR="$RESULTS_DIR/mipstart"
+  mkdir -p "$MIPSTART_RESULTS_DIR"
+  mipstart_log="$MIPSTART_RESULTS_DIR/mipstart-test.log"
+
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$MIPSTART_TEST" >"$mipstart_log" 2>&1; then
+    mipstart_checks_ok=$(grep -c '^  ok:' "$mipstart_log" 2>/dev/null || true)
+    echo "  ${GREEN}✔ all ${mipstart_checks_ok:-0} check(s) passed${RESET}  ${DIM}($mipstart_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "MIP-start tests passed" "${mipstart_checks_ok:-0} / ${mipstart_checks_ok:-0}")${RESET}"
+  else
+    mipstart_tests_failed=1
+    mipstart_checks_ok=$(grep -c '^  ok:' "$mipstart_log" 2>/dev/null || true)
+    mipstart_checks_bad=$(grep -c '^  FAIL:' "$mipstart_log" 2>/dev/null || true)
+    mipstart_total=$(( ${mipstart_checks_ok:-0} + ${mipstart_checks_bad:-0} ))
+    echo "  ${RED}✗ ${mipstart_checks_bad:-0} check(s) failed${RESET}  ${DIM}(see $mipstart_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "MIP-start tests passed" "${mipstart_checks_ok:-0} / $mipstart_total")${RESET}"
+  fi
+  echo
+
+  if [[ $mipstart_tests_failed -eq 1 ]]; then
+    echo "${BOLD}${RED}=== MIP-start test failures ===${RESET}"
+    # Only the failing checks (plus the final RESULT line): the full log carries
+    # Cbc's own output for every solve, and MIPStart solves are logged verbosely
+    # on purpose so the log doubles as the record of which path each start took.
+    grep -E '^  FAIL:|^RESULT:' "$mipstart_log" 2>/dev/null
+    echo
+    echo "${DIM}Full log: $mipstart_log${RESET}"
+    echo
+  fi
+fi
+
+# ── 13. Coefficient-tightening tests (coefstr-test) ────────────────────────
+# Covers CbcCoefficientStrengthening -- "big-M strengthening", step 3 of the
+# pre-root-LP strengthening phase. Every fixture's expected coefficient, rhs and
+# LP bound is worked out by hand, and feasible-set preservation is asserted by
+# *enumerating* every integer point of the box before and after rather than by
+# re-solving: a solver that reaches the same optimum says nothing about the
+# points a too-strong tightening silently stopped admitting, which is the one
+# failure mode here that would be a correctness bug rather than a missed
+# opportunity (see the header comment in coefstr-test.cpp). Like the LP, lazy and
+# MIP-start tests, one fast in-process binary with nothing to parallelize. Needs
+# no --data-dir: every fixture is built in-process.
+coefstr_tests_failed=0
+if [[ $NO_COEFSTR_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping coefficient-tightening tests (--no-coefstr-tests).${RESET}"
+else
+  COEFSTR_TEST="$SCRIPT_DIR/coefstr-test$EXEEXT"
+  if [[ ! -x "$COEFSTR_TEST" ]]; then
+    echo "${CYAN}Building coefstr-test...${RESET}"
+    make -C "$SCRIPT_DIR" "coefstr-test$EXEEXT" || {
+      echo "${RED}Error: failed to build coefstr-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  echo
+  echo "${BOLD}=== Coefficient-tightening tests ===${RESET}"
+
+  COEFSTR_RESULTS_DIR="$RESULTS_DIR/coefstr"
+  mkdir -p "$COEFSTR_RESULTS_DIR"
+  coefstr_log="$COEFSTR_RESULTS_DIR/coefstr-test.log"
+
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$COEFSTR_TEST" >"$coefstr_log" 2>&1; then
+    coefstr_checks_ok=$(grep -c '^  ok:' "$coefstr_log" 2>/dev/null || true)
+    echo "  ${GREEN}✔ all ${coefstr_checks_ok:-0} check(s) passed${RESET}  ${DIM}($coefstr_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Coefficient-tightening tests passed" "${coefstr_checks_ok:-0} / ${coefstr_checks_ok:-0}")${RESET}"
+  else
+    coefstr_tests_failed=1
+    coefstr_checks_ok=$(grep -c '^  ok:' "$coefstr_log" 2>/dev/null || true)
+    coefstr_checks_bad=$(grep -c '^  FAIL:' "$coefstr_log" 2>/dev/null || true)
+    coefstr_total=$(( ${coefstr_checks_ok:-0} + ${coefstr_checks_bad:-0} ))
+    echo "  ${RED}✗ ${coefstr_checks_bad:-0} check(s) failed${RESET}  ${DIM}(see $coefstr_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Coefficient-tightening tests passed" "${coefstr_checks_ok:-0} / $coefstr_total")${RESET}"
+  fi
+  echo
+
+  if [[ $coefstr_tests_failed -eq 1 ]]; then
+    echo "${BOLD}${RED}=== Coefficient-tightening test failures ===${RESET}"
+    # Only the failing checks (plus the final RESULT line): the full log records
+    # every check with its actual and expected value, which is what makes a
+    # failure diagnosable, but is far too long to print in full.
+    grep -E '^  FAIL:|^RESULT:' "$coefstr_log" 2>/dev/null
+    echo
+    echo "${DIM}Full log: $coefstr_log${RESET}"
+    echo
+  fi
+fi
+
+# ── 14. Row activity/slack tests (row-activity-test) ───────────────────────
+# Covers Cbc_getRowActivity()/Cbc_getRowSlack() after Cbc_solve(), for both the
+# pure-LP dispatch (no integers/SOS -- straight to Cbc_solveLinearProgram()) and
+# a genuine MIP solve through branch and bound. The MIP case is the regression
+# test for Cbc_getMIPOptimizationResults() reporting activity/slack for whatever
+# LP CbcModel's internal working solver last resolved during the search --
+# typically the node where B&B stopped, which is not necessarily the node that
+# produced the incumbent -- instead of for the solution actually returned by
+# Cbc_getColSolution(). That failure silently reports the wrong point rather
+# than crashing or changing the objective, so every row's expected activity/
+# slack is recomputed independently as A * Cbc_getColSolution() from the row's
+# own coefficients, and checked against what Cbc_getRowActivity()/
+# Cbc_getRowSlack() actually report. Also covers the smallest possible extra
+# solution pool (INT_PARAM_MAX_SAVED_SOLS = 0). Like the LP, lazy, MIP-start and
+# coefficient-tightening tests, one fast in-process binary with nothing to
+# parallelize. Needs no --data-dir: every fixture is built in-process.
+row_activity_tests_failed=0
+if [[ $NO_ROW_ACTIVITY_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping row activity/slack tests (--no-row-activity-tests).${RESET}"
+else
+  ROW_ACTIVITY_TEST="$SCRIPT_DIR/row-activity-test$EXEEXT"
+  if [[ ! -x "$ROW_ACTIVITY_TEST" ]]; then
+    echo "${CYAN}Building row-activity-test...${RESET}"
+    make -C "$SCRIPT_DIR" "row-activity-test$EXEEXT" || {
+      echo "${RED}Error: failed to build row-activity-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+
+  echo
+  echo "${BOLD}=== Row activity/slack tests ===${RESET}"
+
+  ROW_ACTIVITY_RESULTS_DIR="$RESULTS_DIR/row-activity"
+  mkdir -p "$ROW_ACTIVITY_RESULTS_DIR"
+  row_activity_log="$ROW_ACTIVITY_RESULTS_DIR/row-activity-test.log"
+
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$ROW_ACTIVITY_TEST" >"$row_activity_log" 2>&1; then
+    row_activity_checks_ok=$(grep -c '^  ok:' "$row_activity_log" 2>/dev/null || true)
+    echo "  ${GREEN}✔ all ${row_activity_checks_ok:-0} check(s) passed${RESET}  ${DIM}($row_activity_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Row activity/slack tests passed" "${row_activity_checks_ok:-0} / ${row_activity_checks_ok:-0}")${RESET}"
+  else
+    row_activity_tests_failed=1
+    row_activity_checks_ok=$(grep -c '^  ok:' "$row_activity_log" 2>/dev/null || true)
+    row_activity_checks_bad=$(grep -c '^  FAIL:' "$row_activity_log" 2>/dev/null || true)
+    row_activity_total=$(( ${row_activity_checks_ok:-0} + ${row_activity_checks_bad:-0} ))
+    echo "  ${RED}✗ ${row_activity_checks_bad:-0} check(s) failed${RESET}  ${DIM}(see $row_activity_log)${RESET}"
+    echo
+    echo "${BOLD}$(row "Row activity/slack tests passed" "${row_activity_checks_ok:-0} / $row_activity_total")${RESET}"
+  fi
+  echo
+
+  if [[ $row_activity_tests_failed -eq 1 ]]; then
+    echo "${BOLD}${RED}=== Row activity/slack test failures ===${RESET}"
+    grep -E '^  FAIL:|^RESULT:' "$row_activity_log" 2>/dev/null
+    echo
+    echo "${DIM}Full log: $row_activity_log${RESET}"
+    echo
+  fi
+fi
+
+final_bound_tests_failed=0
+if [[ $NO_FINAL_BOUND_TESTS -eq 1 ]]; then
+  echo "${DIM}Skipping final search-bound tests (--no-final-bound-tests).${RESET}"
+else
+  FINAL_BOUND_TEST="$SCRIPT_DIR/final-bound-test$EXEEXT"
+  if [[ ! -x "$FINAL_BOUND_TEST" ]]; then
+    make -C "$SCRIPT_DIR" "final-bound-test$EXEEXT" || {
+      echo "${RED}Error: failed to build final-bound-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+  echo
+  echo "${BOLD}=== Final search-bound tests ===${RESET}"
+  final_bound_log="$RESULTS_DIR/final-bound-test.log"
+  final_bound_args=()
+  if [[ -f "$DATA_DIR/mips/decomp2.mps.gz" ]]; then
+    final_bound_args+=("$DATA_DIR/mips/decomp2.mps.gz")
+  else
+    echo "${DIM}Skipping decomp2 root cut-purge regression (fixture not present).${RESET}"
+  fi
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$FINAL_BOUND_TEST" "${final_bound_args[@]}" >"$final_bound_log" 2>&1; then
+    echo "  ${GREEN}✔ final search-bound tests passed${RESET}  ${DIM}($final_bound_log)${RESET}"
+  else
+    final_bound_tests_failed=1
+    echo "  ${RED}✗ final search-bound tests failed${RESET}" >&2
+    cat "$final_bound_log"
+  fi
+fi
+
+progress_tests_failed=0
+if [[ $NO_FINAL_BOUND_TESTS -eq 0 ]]; then
+  PROGRESS_TEST="$SCRIPT_DIR/progress-callback-test$EXEEXT"
+  if [[ ! -x "$PROGRESS_TEST" ]]; then
+    make -C "$SCRIPT_DIR" "progress-callback-test$EXEEXT" || {
+      echo "${RED}Error: failed to build progress-callback-test.${RESET}" >&2
+      exit 1
+    }
+  fi
+  echo
+  echo "${BOLD}=== Search-progress callback tests ===${RESET}"
+  progress_log="$RESULTS_DIR/progress-callback-test.log"
+  if ${ASLR_WRAP:+$ASLR_WRAP} "$PROGRESS_TEST" >"$progress_log" 2>&1; then
+    echo "  ${GREEN}✔ progress callback tests passed${RESET}  ${DIM}($progress_log)${RESET}"
+  else
+    progress_tests_failed=1
+    echo "  ${RED}✗ progress callback tests failed${RESET}" >&2
+    cat "$progress_log"
+  fi
+fi
+
+if [[ ${#fail_list[@]} -gt 0 || ${#error_list[@]} -gt 0 \
+      || ${#capi_fail_list[@]} -gt 0 || $lp_tests_failed -ne 0 \
+      || $lazy_tests_failed -ne 0 || $mipstart_tests_failed -ne 0 \
+      || $coefstr_tests_failed -ne 0 || $row_activity_tests_failed -ne 0 \
+      || $final_bound_tests_failed -ne 0 || $progress_tests_failed -ne 0 ]]; then
+  exit 1
+fi
+exit 0

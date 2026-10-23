@@ -45,7 +45,8 @@ void CbcRootHeuristicSchedule::addDefaultDivingConfigs()
     h->setTargetFractionality(0.5);
     h->setMaxIterations(500);
     // 100K simplex iters covers P99+ of successful dives in experiments
-    // COIN_INT_MAX bypasses adjustHeuristics() override
+    // adjustHeuristics() (and so diveMaxIterTree/Root) is not run when this
+    // schedule is in use, so these limits stand as set.
     h->setMaxSimplexIterations(100000);
     h->setMaxSimplexIterationsAtRoot(100000);
     h->setSeed(seed);
@@ -71,25 +72,41 @@ void CbcRootHeuristicSchedule::addDefaultDivingConfigs()
   add("Blend30_r05_s3", 1, 0.5, 3, 1, 0.3, 0, 1);
 }
 
-int CbcRootHeuristicSchedule::run(bool afterCuts)
+int CbcRootHeuristicSchedule::run(char hookCode)
 {
   solutionsFound_ = 0;
   int logLevel = model_.messageHandler()->logLevel();
+  bool afterCuts = (hookCode == 'C');
 
   // Check time/event before starting
   if (model_.maximumSecondsReached() || model_.eventHappened())
     return 0;
 
-  // Partition heuristics into constructive vs improvement
+  // Partition eligible heuristics into constructive vs improvement.
+  // Eligibility is gated by three independent, per-heuristic traits:
+  //   - shouldHeurRun(0): respects the classic when_/switches_ settings
+  //   - runsAtRootHook(hookCode): is this heuristic configured to run at
+  //     this particular root moment ("LC" by default, i.e. both here and
+  //     after cuts, matching historical behaviour)
+  //   - solutionCountAllowsStart(): min/maxSolutionsToStart() gate against
+  //     how many incumbents CBC already has
+  // category() still decides which phase (constructive vs improvement) a
+  // heuristic belongs to, since that reflects what kind of neighbourhood/
+  // seed it needs, not just a solution-count threshold.
   std::vector<CbcHeuristic *> constructive;
   std::vector<CbcHeuristic *> improvement;
 
+  int numberSolutions = model_.getSolutionCount();
   for (int i = 0; i < model_.numberHeuristics(); i++) {
     CbcHeuristic *h = model_.heuristic(i);
     if (!h)
       continue;
     // Use shouldHeurRun to respect when_ settings
     if (!h->shouldHeurRun(0))
+      continue;
+    if (!h->runsAtRootHook(hookCode))
+      continue;
+    if (!h->solutionCountAllowsStart(numberSolutions))
       continue;
 
     switch (h->category()) {
@@ -105,6 +122,16 @@ int CbcRootHeuristicSchedule::run(bool afterCuts)
       break;
     }
   }
+
+  // Within each phase, respect the configured orchestration order() --
+  // ties keep insertion order (stable sort), so leaving order() at its
+  // default of 0 for every heuristic reproduces the historical ordering
+  // exactly.
+  auto byOrder = [](const CbcHeuristic *a, const CbcHeuristic *b) {
+    return a->order() < b->order();
+  };
+  std::stable_sort(constructive.begin(), constructive.end(), byOrder);
+  std::stable_sort(improvement.begin(), improvement.end(), byOrder);
 
 
   // Phase 1: constructive heuristics

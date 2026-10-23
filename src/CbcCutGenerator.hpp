@@ -414,6 +414,27 @@ public:
     switches_ &= ~512;
     switches_ |= yesNo ? 512 : 0;
   }
+  /** Whether this generator's root adaptive-skip "miss" test (see
+      CbcModel::serialCuts()) should also count a pass as a miss when the
+      generator DID produce cuts but overall root progress that pass was
+      negligible (i.e. ineffectualCuts() is set). Meant for generators that
+      are expensive but prone to producing cuts of no practical value once
+      the relaxation has already tightened (e.g. RedSplit2/GMI/LandP) --
+      without this, a trickle of near-useless cuts every pass would keep
+      resetting the adaptive-skip backoff and the generator would never be
+      throttled. Off by default, so it changes nothing for generators that
+      don't opt in.
+    */
+  inline bool boundStallAware() const
+  {
+    return (switches_ & 524288) != 0;
+  }
+  /// Set boundStallAware() (see above)
+  inline void setBoundStallAware(bool yesNo)
+  {
+    switches_ &= ~524288;
+    switches_ |= yesNo ? 524288 : 0;
+  }
   /// Whether to use if any cuts generated
   inline bool whetherToUse() const
   {
@@ -484,6 +505,52 @@ public:
   inline void setNumberShortCutsAtRoot(int value)
   {
     numberShortCutsAtRoot_ = value;
+  }
+  /** Number of consecutive root passes (since the last one that produced a
+      cut) in which this generator was actually tried and produced nothing.
+      Reset to 0 as soon as the generator produces at least one cut. Used
+      only by the adaptive root cut-generator skip
+      (CbcModel::cutGeneratorAdaptiveSkip()/serialCuts()); meaningless
+      otherwise.
+    */
+  inline int numberConsecutiveMisses() const
+  {
+    return numberConsecutiveMisses_;
+  }
+  inline void setNumberConsecutiveMisses(int value)
+  {
+    numberConsecutiveMisses_ = value;
+  }
+  /** Root pass number at which this generator should next be tried while
+      the adaptive root cut-generator skip has it on backoff. 0 means "not
+      currently skipped".
+    */
+  inline int nextRetryPass() const
+  {
+    return nextRetryPass_;
+  }
+  inline void setNextRetryPass(int value)
+  {
+    nextRetryPass_ = value;
+  }
+  /// Current backoff period (in passes), used to grow nextRetryPass_ after
+  /// each unsuccessful retry (adaptive root cut-generator skip).
+  inline int retryPeriod() const
+  {
+    return retryPeriod_;
+  }
+  inline void setRetryPeriod(int value)
+  {
+    retryPeriod_ = value;
+  }
+  /// Explicit root cadence; 0 retains adaptive scheduling.
+  inline int rootCallPeriod() const
+  {
+    return rootCallPeriod_;
+  }
+  inline void setRootCallPeriod(int value)
+  {
+    rootCallPeriod_ = value;
   }
   /// Set model
   inline void setModel(CbcModel *model)
@@ -576,6 +643,13 @@ private:
   int numberActiveCutsAtRoot_;
   /// Number of short cuts at root
   int numberShortCutsAtRoot_;
+  /// Consecutive misses at root (see numberConsecutiveMisses())
+  int numberConsecutiveMisses_;
+  /// Next root pass at which to retry after backoff (see nextRetryPass())
+  int nextRetryPass_;
+  /// Current backoff period in passes (see retryPeriod())
+  int retryPeriod_;
+  int rootCallPeriod_;
   /// Switches - see gets and sets
   int switches_;
   /// Maximum number of times to enter

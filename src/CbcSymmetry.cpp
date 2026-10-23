@@ -1576,7 +1576,12 @@ void
 CbcSymmetry::addPermutation(cbc_permute permutation)
 {
   cbc_permute * temp = new cbc_permute[numberPermutations_+1];
-  memcpy(temp,permutations_,numberPermutations_*sizeof(cbc_permute));
+  // permutations_ is NULL until the first call (numberPermutations_==0);
+  // memcpy() with a null source pointer is undefined behaviour even when
+  // the length is 0 (UBSan's nonnull-arg check flags it), so skip the copy
+  // entirely when there's nothing to copy yet.
+  if (numberPermutations_)
+    memcpy(temp,permutations_,numberPermutations_*sizeof(cbc_permute));
   delete [] permutations_;
   permutations_=temp;
   permutations_[numberPermutations_] = permutation;

@@ -30,315 +30,403 @@ class CbcParameters;
     object.
 */
 
+/** One family of control parameters per heuristic whose invocation is managed
+    by CbcHeuristicControl: X(ID, "prefix"). Each family defines
+    <prefix>Schedule/Every/Decay/Window/MinSuccess/MaxFail/TimeShare/Nodes,
+    all of which accept `auto` (= the heuristic's built-in value). To put
+    another heuristic under the same control add one line here and apply it
+    with applyHeuristicControl() where the heuristic is installed. */
+#define CBC_HEUR_CONTROL_LIST(X) \
+  X(RINS, "rins") \
+  X(VND, "vnd") \
+  X(DINS, "dins") \
+  X(COMBINE, "combine") \
+  X(CROSSOVER, "combine2") \
+  X(PROXIMITY, "proximity")
+
 class CBCLIB_EXPORT CbcParam : public CoinParam {
 
 public:
+  /*! \name Enumeration types used to index parameters */
+  //@{
 
-   /*! \name Enumeration types used to index parameters */
-   //@{
+  /*! \brief Codes to specify psramters */
 
-   /*! \brief Codes to specify psramters */
+  enum CbcParamCode {
+    FIRSTPARAM = 0,
 
-   enum CbcParamCode {
-      FIRSTPARAM = 0,
+    // Unused paramters that we may delete
+    FIRSTUNUSEDPARAM,
+    BRANCHSTRATEGY,
+    CLEARCUTS,
+    SOLVER,
+    LASTUNUSEDPARAM,
 
-      // Unused paramters that we may delete
-      FIRSTUNUSEDPARAM,
-      BRANCHSTRATEGY,
-      CLEARCUTS,
-      SOLVER,
-      LASTUNUSEDPARAM,
+    // Help and Information Parameters
+    FIRSTHELPPARAM,
+    GENERALQUERY,
+    FULLGENERALQUERY,
+    HELP,
+    LASTHELPPARAM,
 
-      // Help and Information Parameters
-      FIRSTHELPPARAM,
-      GENERALQUERY,
-      FULLGENERALQUERY,
-      HELP,
-      LASTHELPPARAM,
+    // Action Parameters
+    FIRSTACTIONPARAM,
+    BAB,
+    DEBUG,
+    DEBUGCUTS,
+    ENVIRONMENT,
+    END,
+    EXIT,
+    QUIT,
+    STOP,
+    EXPORT,
+    IMPORT,
+    OUTDUPROWS,
+    PRINTSOL,
+    PRINTVERSION,
+    READMIPSTART,
+    READPRIORITIES,
+    READSOL,
+    READMODEL,
+    READMODEL_OLD, // For backward compatibility
+    SHOWUNIMP,
+    SOLVECONTINUOUS,
+    STATISTICS,
+    STDIN,
+    WRITEGMPLSOL,
+    WRITEGMPLSOL_OLD, // For backward compatibility
+    WRITEMODEL,
+    WRITEMODEL_OLD, // For backward compatibility
+    WRITENEXTSOL,
+    WRITESOL,
+    WRITESOL_OLD, // For backward compatibility
+    WRITESOLBINARY,
+    WRITESOLBINARY_OLD, // For backward compatibility
+    WRITESTATS,
+    WRITEFEATURES,
+    CHECKSOLUTION,
+    DUMPPARAMS,
+    BOUNDPROP,
+    CLIQUESTRENGTHEN,
+    LASTACTIONPARAM,
 
-      // Action Parameters
-      FIRSTACTIONPARAM,
-      BAB,
-      DEBUG,
-      ENVIRONMENT,
-      END,
-      EXIT,
-      QUIT,
-      STOP,
-      EXPORT,
-      IMPORT,
-      MIPLIB,
-      OUTDUPROWS,
-      PRINTSOL,
-      PRINTVERSION,
-      READMIPSTART,
-      READPRIORITIES,
-      READSOL,
-      READMODEL,
-      READMODEL_OLD, // For backward compatibility
-      SHOWUNIMP,
-      SOLVECONTINUOUS,
-      STATISTICS,
-      STDIN,
-      STRENGTHEN,
-      UNITTEST,
-      WRITEGMPLSOL,
-      WRITEGMPLSOL_OLD, // For backward compatibility
-      WRITEMODEL,
-      WRITEMODEL_OLD, // For backward compatibility
-      WRITENEXTSOL,
-      WRITESOL,
-      WRITESOL_OLD, // For backward compatibility
-      WRITESOLBINARY,
-      WRITESOLBINARY_OLD, // For backward compatibility
-      WRITESTATS,
-      WRITEFEATURES,
-      CHECKSOLUTION,
-      DUMPPARAMS,
-      BOUNDPROP,
-      LASTACTIONPARAM,
+    // File Parameters
+    FIRSTFILEPARAM,
+    CSVFEATURESFILE,
+    CSVSTATSFILE,
+    DEBUGFILE,
+    EXPORTFILE,
+    IMPORTFILE,
+    GMPLSOLFILE,
+    MIPSTARTFILE,
+    MODELFILE,
+    NEXTSOLFILE,
+    PROGRESSCSVFILE,
+    PRIORITYFILE,
+    SOLUTIONFILE,
+    SOLUTIONBINARYFILE,
+    LASTFILEPARAM,
 
-      // File Parameters
-      FIRSTFILEPARAM,
-      CSVFEATURESFILE,
-      CSVSTATSFILE,
-      DEBUGFILE,
-      EXPORTFILE,
-      IMPORTFILE,
-      GMPLSOLFILE,
-      MIPSTARTFILE,
-      MODELFILE,
-      NEXTSOLFILE,
-      PRIORITYFILE,
-      SOLUTIONFILE,
-      SOLUTIONBINARYFILE,
-      LASTFILEPARAM,
+    // Directory Paramaters
+    FIRSTDIRECTORYPARAM,
+    DIRECTORY,
+    DIRNETLIB,
+    LASTDIRECTORYPARAM,
 
-      // Directory Paramaters
-      FIRSTDIRECTORYPARAM,
-      DIRECTORY,
-      DIRSAMPLE,
-      DIRNETLIB,
-      DIRMIPLIB,
-      LASTDIRECTORYPARAM,
+    // String Parameters
+    FIRSTSTRINGPARAM,
+    CUTSWITCHOFF,
+    MAXMEMORY,
+    PRINTMASK,
+    OUTPUTPRECISION,
+    PUMPROOTPLACES,
+    JUMPROOTPLACES,
+    LASTSTRINGPARAM,
 
-      // String Parameters
-      FIRSTSTRINGPARAM,
-      PRINTMASK,
-      OUTPUTPRECISION,
-      LASTSTRINGPARAM,
+    // Cut Parameters
+    FIRSTCUTPARAM,
+    CLIQUECUTS,
+    CUTSTRATEGY,
+    FLOWCUTS,
+    GMICUTS,
+    GOMORYCUTS,
+    IMPLIEDCLIQUECUTS,
+    KNAPSACKCUTS,
+    LAGOMORYCUTS,
+    LANDPCUTS,
+    LATWOMIRCUTS,
+    MIRCUTS,
+    // ODDHOLECUTS, // Not used
+    ODDWHEELCUTS,
+    PROBINGCUTS,
+    REDSPLITCUTS,
+    REDSPLIT2CUTS,
+    RESIDCAPCUTS,
+    TWOMIRCUTS,
+    ZEROHALFCUTS,
+    LASTCUTPARAM,
 
-      // Cut Parameters
-      FIRSTCUTPARAM,
-      CLIQUECUTS,
-      CUTSTRATEGY,
-      FLOWCUTS,
-      GMICUTS,
-      GOMORYCUTS,
-      KNAPSACKCUTS,
-      LAGOMORYCUTS,
-      LANDPCUTS,
-      LATWOMIRCUTS,
-      MIRCUTS,
-      //ODDHOLECUTS, // Not used
-      ODDWHEELCUTS,
-      PROBINGCUTS,
-      REDSPLITCUTS,
-      REDSPLIT2CUTS,
-      RESIDCAPCUTS,
-      TWOMIRCUTS,
-      ZEROHALFCUTS,
-      LASTCUTPARAM,
+    // Heuristic Parameters
+    FIRSTHEURPARAM,
+    COMBINE,
+    CROSSOVER,
+    DINS,
+    DIVINGC,
+    DIVINGF,
+    DIVINGG,
+    DIVINGL,
+    DIVINGP,
+    DIVINGS,
+    DIVINGV,
+    DW,
+    FEASIBILITYJUMP,
+    FPUMP,
+    GREEDY,
+    HEURISTICSTRATEGY,
+    LOCALTREE,
+    NAIVE,
+    PIVOTANDFIX,
+    PIVOTANDCOMPLEMENT,
+    PROXIMITY,
+    RANDROUND,
+    RENS,
+    RINS,
+    ROUNDING,
+    VND,
+    LASTHEURPARAM,
 
-      // Heuristic Parameters
-      FIRSTHEURPARAM,
-      COMBINE,
-      CROSSOVER,
-      DINS,
-      DIVINGC,
-      DIVINGF,
-      DIVINGG,
-      DIVINGL,
-      DIVINGP,
-      DIVINGS,
-      DIVINGV,
-      DW,
-      FPUMP,
-      GREEDY,
-      HEURISTICSTRATEGY,
-      LOCALTREE,
-      NAIVE,
-      PIVOTANDFIX,
-      PIVOTANDCOMPLEMENT,
-      PROXIMITY,
-      RANDROUND,
-      RENS,
-      RINS,
-      ROUNDING,
-      VND,
-      LASTHEURPARAM,
+    // On/Off Parameters
+    FIRSTBOOLPARAM,
+    COEFSTRENGTHENING,
+    CPX,
+    DOHEURISTIC,
+    ERRORSALLOWED,
+    MESSAGES,
+    PREPROCNAMES,
+    PREPROCTIMES,
+    PREROOTLPSTRENGTHENING,
+    ROWREDUCTIONS,
+    SINGLETONBOUNDS,
+    SOS,
+    USESOLUTION,
+    CUTFILTERALWAYS,
+    CLIQUEFILTERALWAYS,
+    IMPLIEDCLIQUEFILTER,
+    AUTOTUNECUTS,
+    LASTBOOLPARAM,
 
-      // On/Off Parameters
-      FIRSTBOOLPARAM,
-      CPX,
-      DOHEURISTIC,
-      ERRORSALLOWED,
-      MESSAGES,
-      PREPROCNAMES,
-      SINGLETONBOUNDS,
-      SOS,
-      USESOLUTION,
-      LASTBOOLPARAM,
+    // Keyword Parameters
+    FIRSTKWDPARAM,
+    COMMANDPRINTLEVEL,
+    CLQSTRENGTHENING,
+    BRANCHPRIORITY,
+    CHECKTIMEFREQ,
+    CUTOFFCONSTRAINT,
+    INTPRINT,
+    MIPSTARTFIX,
+    NODESTRATEGY,
+    ORBITAL,
+    PREPROCESS,
+    RANKCONFLICTTYPE,
+    SOSPRIORITIZE,
+    STRATEGY,
+    TIMEMODE,
+    USECGRAPH,
+    BOUNDPROPLEVEL,
+    LPMETHOD,
+    NODEBOUNDPROP,
+    PROBLEMCLASS,
+#define CBC_HC_KWD(ID, N) HC_##ID##_SCHEDULE,
+    CBC_HEUR_CONTROL_LIST(CBC_HC_KWD)
+    LASTKWDPARAM,
 
-      // Keyword Parameters
-      FIRSTKWDPARAM,
-      COMMANDPRINTLEVEL,
-      CLQSTRENGTHENING,
-      BRANCHPRIORITY,
-      CHECKTIMEFREQ,
-      CUTOFFCONSTRAINT,
-      INTPRINT,
-      NODESTRATEGY,
-      ORBITAL,
-      PREPROCESS,
-      RANKCONFLICTTYPE,
-      SOSPRIORITIZE,
-      STRATEGY,
-      TIMEMODE,
-      USECGRAPH,
-      BOUNDPROPLEVEL,
-      LPMETHOD,
-      NODEBOUNDPROP,
-      LASTKWDPARAM,
+    // Integer Parameters
+    FIRSTINTPARAM,
+    AGGREGATEMIXED,
+    BKPIVOTINGSTRATEGY,
+    BKMAXCALLS,
+    BKCLQEXTMETHOD,
+    CPP,
+    CUTDEPTH,
+    CUTLENGTH,
+    CUTPASSINTREE,
+    CUTPASSSMALL,
+    CUTPASSMEDIUM,
+    CUTPASSLARGE,
+    ROOTCUTDROPPATIENCE,
+    ROOTCUTFILTERSCORE,
+    ROOTCUTFILTERSCOPE,
+    ROOTCUTREUSEPERIOD,
+    ROOTCUTREUSEMAXCUTS,
+    DEPTHMINIBAB,
+    DIVEOPT,
+    DIVEOPTSOLVES,
+    DUMMY,
+    EXPERIMENT,
+    EXTRA1,
+    EXTRA2,
+    EXTRA3,
+    EXTRA4,
+    EXTRAVARIABLES,
+    FEASIBILITYJUMPEFFORT,
+    FEASIBILITYJUMPEFFORTMULT,
+    FEASIBILITYJUMPMAXSOL,
+    FEASIBILITYJUMPSTALL,
+    FEASIBILITYJUMPDEPTH,
+    FEASIBILITYJUMPONLYNOSOL,
+    FEASIBILITYJUMPMAXCALLS,
+    FEASIBILITYJUMPAFTERFPUMP,
+    FPUMPITS,
+    FPUMPTUNE,
+    FPUMPTUNE2,
+    HEUROPTIONS,
+    LOGLEVEL,
+    LPLOGLEVEL,
+    FLUSHPERNEWLINE,
+    USEUTF8,
+    COMPACTTABLES,
+    LPITERFREQ,
+    FPUMPPASSFREQ,
+    MAXHOTITS,
+    MAXSAVEDSOLS,
+    MAXSLOWCUTS,
+    MOREMOREMIPOPTIONS,
+    MULTIPLEROOTS,
+    ODDWEXTMETHOD,
+    OUTPUTFORMAT,
+    OPTIONS,
+    PRINTOPTIONS,
+    PROCESSTUNE,
+    ROOTHEURSCHED,
+    RANDOMSEED,
+    STRONGSTRATEGY,
+    TESTOSI,
+    THREADS,
+    USERCBC,
+    VERBOSE,
+    VUBTRY,
+    TWOMIRLENGTH,
+    GOMORYLIMITROOT,
+    ZEROHALFROWMAXFRACTIONALCOUNT,
+    ZEROHALFROWMAXPAIRCOUNT,
+    ZEROHALFSPARSETHRESH,
+    ZEROHALFROOTPERIOD,
+    BOUNDPROPMAXROUNDS,
+    NODEBOUNDPROPMAXDEPTH,
+    NODEBOUNDPROPMINDEPTH,
+    NODEBOUNDPROPDEPTHINTERVAL,
+    SIZESMALLROWS,
+    SIZESMALLCOLS,
+    SIZELARGECOLS,
+    SIZEMINIBAB,
+    DIVEMAXITERTREE,
+    DIVEMAXITERROOT,
+    STRONGBOOSTROWS,
+    STRONGBOOSTSIZE,
+    CUTGATEMINCOLS,
+    CUTGATEMAXCOLS,
+    REDSPLIT2MAXROWS,
+    REDSPLIT2MAXCUTS,
+    REDSPLIT2MAXCOMPUTED,
+    REDSPLIT2MAXBUFFER,
+    REDSPLIT2MAXTABELEMENTS,
+    GMIHOWOFTEN,
+    LANDPMAXCUTSPERROUND,
+    CUTFILTERMINCOLS,
+    CUTFILTERMINELEMENTS,
+    CUTFILTERMINCANDIDATES,
+    CLIQUEFILTERMINCOLS,
+    CLIQUEFILTERMINCANDIDATES,
+    CUTSKIPMINTRIES,
+    CUTSKIPMISSTHRESHOLD,
+    CUTSKIPINITIALPERIOD,
+    CUTSKIPMAXPERIOD,
+    CUTSKIPMINCOLS,
+#define CBC_HC_INT(ID, N) HC_##ID##_EVERY, HC_##ID##_WINDOW, HC_##ID##_MAXFAIL, HC_##ID##_NODES,
+    CBC_HEUR_CONTROL_LIST(CBC_HC_INT)
+    LASTINTPARAM,
 
-      // Integer Parameters
-      FIRSTINTPARAM,
-      AGGREGATEMIXED,
-      BKPIVOTINGSTRATEGY,
-      BKMAXCALLS,
-      BKCLQEXTMETHOD,
-      CPP,
-      CUTDEPTH,
-      CUTLENGTH,
-      CUTPASSINTREE,
-      DEPTHMINIBAB,
-      DIVEOPT,
-      DIVEOPTSOLVES,
-      DUMMY,
-      EXPERIMENT,
-      EXTRA1,
-      EXTRA2,
-      EXTRA3,
-      EXTRA4,
-      EXTRAVARIABLES,
-      FPUMPITS,
-      FPUMPTUNE,
-      FPUMPTUNE2,
-      HEUROPTIONS,
-      LOGLEVEL,
-      LPLOGLEVEL,
-      FLUSHPERNEWLINE,
-      USEUTF8,
-      COMPACTTABLES,
-      LPITERFREQ,
-      FPUMPPASSFREQ,
-      MAXHOTITS,
-      MAXSAVEDSOLS,
-      MAXSLOWCUTS,
-      MOREMOREMIPOPTIONS,
-      MULTIPLEROOTS,
-      ODDWEXTMETHOD,
-      OUTPUTFORMAT,
-      OPTIONS,
-      PRINTOPTIONS,
-      PROCESSTUNE,
-      RACINGLP,
-      ROOTHEURSCHED,
-      RANDOMSEED,
-      STRONGSTRATEGY,
-      TESTOSI,
-      THREADS,
-      USERCBC,
-      VERBOSE,
-      VUBTRY,
-      ZEROHALFROWMAXFRACTIONALCOUNT,
-      ZEROHALFROWMAXPAIRCOUNT,
-      ZEROHALFSPARSETHRESH,
-      BOUNDPROPMAXROUNDS,
-      NODEBOUNDPROPMAXDEPTH,
-      NODEBOUNDPROPMINDEPTH,
-      NODEBOUNDPROPDEPTHINTERVAL,
-      LASTINTPARAM,
+    // Double Parameters
+    FIRSTDBLPARAM,
+    ARTIFICIALCOST,
+    DEXTRA3,
+    DEXTRA4,
+    DEXTRA5,
+    DJFIX,
+    FAKECUTOFF,
+    FAKEINCREMENT,
+    LPTIMEFREQ,
+    FPUMPTIMEFREQ,
+    PROGRESSMINCHANGE,
+    PROGRESSINTERVAL,
+    MINIMUMDROP,
+    RANKCONFLICT,
+    RANKCONFLICTPOWERTRUSTED,
+    RANKCONFLICTPOWERUNTRUSTED,
+    RANKRANGE,
+    RANKRANGEPOWERTRUSTED,
+    RANKRANGEPOWERUNTRUSTED,
+    RANKRANGEMAXRANGE,
+    RANKOBJCOEFF,
+    RANKOBJCOEFFPOWERTRUSTED,
+    RANKOBJCOEFFPOWERUNTRUSTED,
+    RANKNONZEROS,
+    RANKNONZEROSPOWERTRUSTED,
+    RANKNONZEROSPOWERUNTRUSTED,
+    RANKCONFLICTMAXPERCBIN,
+    SMALLBAB,
+    TIGHTENFACTOR,
+    RINSCLOSEMAXDIST,
+    REDSPLIT2TIMELIMIT,
+    LANDPTIMELIMIT,
+    LANDPCUTTIMELIMIT,
+    CUTFILTERMAXPARALLELISM,
+    CLIQUEFILTERMAXPARALLELISM,
+    CUTPASSMULTIPLIER,
+    MINDROPMULTIPLIER,
+#define CBC_HC_DBL(ID, N) HC_##ID##_DECAY, HC_##ID##_MINSUCCESS, HC_##ID##_TIMESHARE,
+    CBC_HEUR_CONTROL_LIST(CBC_HC_DBL)
+    LASTDBLPARAM,
 
-      // Double Parameters
-      FIRSTDBLPARAM,
-      ARTIFICIALCOST,
-      DEXTRA3,
-      DEXTRA4,
-      DEXTRA5,
-      DJFIX,
-      FAKECUTOFF,
-      FAKEINCREMENT,
-      LPTIMEFREQ,
-      FPUMPTIMEFREQ,
-      RANKCONFLICT,
-      RANKCONFLICTPOWERTRUSTED,
-      RANKCONFLICTPOWERUNTRUSTED,
-      RANKRANGE,
-      RANKRANGEPOWERTRUSTED,
-      RANKRANGEPOWERUNTRUSTED,
-      RANKRANGEMAXRANGE,
-      RANKOBJCOEFF,
-      RANKOBJCOEFFPOWERTRUSTED,
-      RANKOBJCOEFFPOWERUNTRUSTED,
-      RANKNONZEROS,
-      RANKNONZEROSPOWERTRUSTED,
-      RANKNONZEROSPOWERUNTRUSTED,
-      RANKCONFLICTMAXPERCBIN,
-      SMALLBAB,
-      TIGHTENFACTOR,
-      RINSCLOSEMAXDIST,
-      LASTDBLPARAM,
+    FIRSTMODELPARAM,
+    ALLOWABLEGAP,
+    COSTSTRATEGY,
+    // CUTDEPTH,
+    CUTOFF,
+    CUTPASS,
+    DIRECTION,
+    GAPRATIO,
+    INCREMENT,
+    INFEASIBILITYWEIGHT,
+    INTEGERTOLERANCE,
+    // LOGLEVEL,
+    MAXIMIZE,
+    MAXNODES,
+    MAXNODESNOTIMPROVING, // Added
+    MAXSECONDSNOTIMPROVING, // Added
+    MAXSOLS, // Added
+    MINIMIZE,
+    MIPOPTIONS,
+    MOREMIPOPTIONS,
+    NUMBERANALYZE,
+    NUMBERBEFORE,
+    REVERSE,
+    STRONGBRANCHING,
+    TIMELIMIT,
+    LASTMODELPARAM,
 
-      FIRSTMODELPARAM,
-      ALLOWABLEGAP,
-      COSTSTRATEGY,
-      //CUTDEPTH,
-      CUTOFF,
-      CUTPASS,
-      DIRECTION,
-      GAPRATIO,
-      INCREMENT,
-      INFEASIBILITYWEIGHT,
-      INTEGERTOLERANCE,
-      //LOGLEVEL,
-      MAXIMIZE,
-      MAXNODES,
-      MAXNODESNOTIMPROVING,   // Added
-      MAXSECONDSNOTIMPROVING, // Added
-      MAXSOLS,                // Added
-      MINIMIZE,
-      MIPOPTIONS,
-      MOREMIPOPTIONS,
-      NUMBERANALYZE,
-      NUMBERBEFORE,
-      REVERSE,
-      STRONGBRANCHING,
-      TIMELIMIT,
-      LASTMODELPARAM,
+    INVALID,
 
-      INVALID,
+    LASTPARAM
+  };
 
-      LASTPARAM
-   };
+  //@}
 
-   //@}
+  /*! \name Constructors and Destructors
 
-   /*! \name Constructors and Destructors
-
-      Be careful how you specify parameters for the constructors! There's great
-      potential for confusion.
-    */
+     Be careful how you specify parameters for the constructors! There's great
+     potential for confusion.
+   */
   //@{
   /*! \brief Default constructor */
 
@@ -351,18 +439,18 @@ public:
       constructor for an integer parameter.
     */
   CbcParam(int code, std::string name, std::string help,
-           double lower = -COIN_DBL_MAX, double upper = COIN_DBL_MAX,
-           std::string longHelp = "",
-           CoinDisplayPriority display = displayPriorityHigh);
+    double lower = -COIN_DBL_MAX, double upper = COIN_DBL_MAX,
+    std::string longHelp = "",
+    CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with an integer value
 
       The default value is 0.
     */
   CbcParam(int code, std::string name, std::string help,
-           int lower = -COIN_INT_MAX, int upper = COIN_INT_MAX,
-           std::string longHelp = "",
-           CoinDisplayPriority display = displayPriorityHigh);
+    int lower = -COIN_INT_MAX, int upper = COIN_INT_MAX,
+    std::string longHelp = "",
+    CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with string values (or no value)
     Type is not optional to resolve ambiguity.
@@ -370,8 +458,8 @@ public:
     The default value is "" for all such parameter types
   */
   CbcParam(int code, std::string name, CoinParam::CoinParamType type,
-           std::string help, std::string longHelp = "",
-           CoinDisplayPriority displayPriority = CoinParam::displayPriorityHigh);
+    std::string help, std::string longHelp = "",
+    CoinDisplayPriority displayPriority = CoinParam::displayPriorityHigh);
   /*! \brief Copy constructor */
   CbcParam(const CbcParam &orig);
 
@@ -407,7 +495,7 @@ public:
   /*! \brief Set the associated Cbc model object */
   inline void setModel(CbcModel *m) { model_ = m; }
 
-//@}
+  //@}
 
 private:
   /*! \name Data */
@@ -420,7 +508,7 @@ private:
   CbcParameters *parameters_;
 
   /// Pointer to model object
-  CbcModel * model_;
+  CbcModel *model_;
 
   //@}
 };

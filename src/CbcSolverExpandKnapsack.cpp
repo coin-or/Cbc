@@ -28,7 +28,6 @@
 
 #ifdef COIN_HAS_LINK
 
-
 /* Expands out all possible combinations for a knapsack
    If buildObj NULL then just computes space needed - returns number elements
    On entry numberOutput is maximum allowed, on exit it is number needed or
@@ -39,7 +38,7 @@
    If reConstruct >=0 then returns number of entrie which make up item "reConstruct"
    in expanded knapsack.  Values in buildRow and buildElement;
 */
-int expandKnapsack(CoinModel& cm, int knapsackRow, int &numberOutput, double *buildObj, CoinBigIndex *buildStart,
+int expandKnapsack(CoinModel &cm, int knapsackRow, int &numberOutput, double *buildObj, CoinBigIndex *buildStart,
   int *buildRow, double *buildElement, int reConstruct = -1)
 {
   /* mark rows
@@ -127,7 +126,7 @@ int expandKnapsack(CoinModel& cm, int knapsackRow, int &numberOutput, double *bu
   double *rowLower = smallModel.rowLower();
   double *rowUpper = smallModel.rowUpper();
   const double *columnLower = smallModel.columnLower();
-  //const double * columnUpper = smallModel.columnUpper();
+  // const double * columnUpper = smallModel.columnUpper();
   const CoinPackedMatrix *matrix = smallModel.matrix();
   const double *element = matrix->getElements();
   const int *row = matrix->getIndices();
@@ -141,7 +140,7 @@ int expandKnapsack(CoinModel& cm, int knapsackRow, int &numberOutput, double *bu
     if (lower) {
       objectiveOffset += objective[iColumn];
       for (CoinBigIndex j = columnStart[iColumn];
-           j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+        j < columnStart[iColumn] + columnLength[iColumn]; j++) {
         double value = element[j] * lower;
         int kRow = row[j];
         rhsOffset[kRow] += value;
@@ -183,7 +182,7 @@ int expandKnapsack(CoinModel& cm, int knapsackRow, int &numberOutput, double *bu
   int nelCreate = 0;
   /* typeRun is - 0 for initial sizes
                     1 for build
-      	  2 for reconstruct
+          2 for reconstruct
     */
   int typeRun = buildObj ? 1 : 0;
   if (reConstruct >= 0) {
@@ -207,7 +206,7 @@ int expandKnapsack(CoinModel& cm, int knapsackRow, int &numberOutput, double *bu
         } else if (iValue) {
           obj += objective[iColumn] * iValue;
           for (CoinBigIndex j = columnStart[iColumn];
-               j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+            j < columnStart[iColumn] + columnLength[iColumn]; j++) {
             double value = element[j] * iValue;
             int kRow = row[j];
             if (rowActivity[kRow]) {
@@ -308,7 +307,7 @@ int expandKnapsack(CoinModel& cm, int knapsackRow, int &numberOutput, double *bu
       stack[iStack]++;
     }
   }
-  //printf("%d will be created\n",numberOutput);
+  // printf("%d will be created\n",numberOutput);
   delete[] whichColumn;
   delete[] whichRow;
   delete[] bound;
@@ -383,7 +382,7 @@ expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
             for now - linear (but further down in code may use nonlinear)
             column bounds should be tight
             */
-      //double lower = coinModel.getRowLower(iRow);
+      // double lower = coinModel.getRowLower(iRow);
       double upper = coinModel.getRowUpper(iRow);
       if (upper < 1.0e10) {
         CoinModelLink triple = coinModel.firstInRow(iRow);
@@ -452,7 +451,7 @@ expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
            for now - linear (but further down in code may use nonlinear)
            column bounds should be tight
         */
-    //double lower = coinModel.getRowLower(iRow);
+    // double lower = coinModel.getRowLower(iRow);
     double upper = coinModel.getRowUpper(iRow);
     if (upper < 1.0e10) {
       CoinModelLink triple = coinModel.firstInRow(iRow);
@@ -813,7 +812,7 @@ expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
     return NULL;
   }
 }
-#endif //COIN_HAS_LINK
+#endif // COIN_HAS_LINK
 
 // Fills in original solution (coinModel length)
 void afterKnapsack(const CoinModel &coinModel2, const int *whichColumn, const int *knapsackStart,
@@ -877,4 +876,4 @@ void afterKnapsack(const CoinModel &coinModel2, const int *whichColumn, const in
 }
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

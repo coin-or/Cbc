@@ -16,6 +16,7 @@
 #include "OsiClpSolverInterface.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristicFPump.hpp"
+#include "CbcHeuristicFeasibilityJump.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcBranchDynamic.hpp"
 #include "CoinHelperFunctions.hpp"
@@ -154,6 +155,7 @@ void CbcHeuristicFPump::generateCpp(FILE *fp)
 // Copy constructor
 CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump &rhs)
   : CbcHeuristic(rhs)
+  , fjFallback_(nullptr) // not copied: caller must reinstall
   , startTime_(rhs.startTime_)
   , maximumTime_(rhs.maximumTime_)
   , fakeCutoff_(rhs.fakeCutoff_)
@@ -171,6 +173,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump &rhs)
   , fixOnReducedCosts_(rhs.fixOnReducedCosts_)
   , roundExpensive_(rhs.roundExpensive_)
   , fpOutput_(nullptr) // not copied: caller must reinstall
+  , rootPlacesOverride_(rhs.rootPlacesOverride_)
 {
 }
 
@@ -197,6 +200,9 @@ CbcHeuristicFPump::operator=(const CbcHeuristicFPump &rhs)
     fixOnReducedCosts_ = rhs.fixOnReducedCosts_;
     roundExpensive_ = rhs.roundExpensive_;
     fpOutput_ = nullptr; // not copied: caller must reinstall
+    fjFallback_ = nullptr; // not copied: caller must reinstall
+    rootPlacesOverride_ = rhs.rootPlacesOverride_;
+    bestRoundedAttempt_.clear();
   }
   return *this;
 }
@@ -205,6 +211,37 @@ CbcHeuristicFPump::operator=(const CbcHeuristicFPump &rhs)
 void CbcHeuristicFPump::resetModel(CbcModel * model)
 {
   model_ = model;
+}
+
+// Propagate the CBC-level remaining time budget (model_->getMaximumSeconds()
+// minus time already elapsed, in whichever mode -- elapsed/wall or CPU --
+// model_ is configured for) onto a freshly cloned LP solver, as an absolute
+// Clp-level deadline (ClpMaxWallSeconds/ClpMaxSeconds), so that a single
+// initialSolve()/resolve() on that clone cannot silently run past the
+// overall solve's time limit. Every fresh clone created by cloneBut() in
+// this file's Feasibility Pump / post-pump local-search code must call this
+// immediately after cloning, and before any solve on it -- a clone created
+// via OsiClpSolverInterface::clone() does NOT automatically get a
+// correctly up-to-date deadline: it only inherits whatever (possibly stale,
+// possibly never-set) absolute deadline its origin solver happened to carry
+// at that instant, not "whatever time remains from now". Omitting this
+// propagation is exactly what let a single feasibility-pump-driven Clp
+// solve run for tens of seconds past the user's requested -seconds limit
+// with no way to interrupt it, since Clp only checks its own deadline (and
+// only if one was actually set) every 10 simplex iterations / at
+// (re)factorization -- it never consults CbcModel's own time bookkeeping.
+static void propagateRemainingTime(CbcModel *model, OsiSolverInterface *solver)
+{
+  if (model->getMaximumSeconds() >= 1.0e10)
+    return; // no user time limit in effect
+  OsiClpSolverInterface *clpSolver = getClpSolver(solver);
+  if (!clpSolver)
+    return;
+  double remaining = std::max(model->getMaximumSeconds() - model->getCurrentSeconds(), 0.0);
+  if (model->useElapsedTime())
+    clpSolver->getModelPtr()->setMaximumWallSeconds(remaining);
+  else
+    clpSolver->getModelPtr()->setMaximumSeconds(remaining);
 }
 
 /**************************BEGIN MAIN PROCEDURE ***********************************/
@@ -248,7 +285,19 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   // just do once
   if (!atRoot)
     return 0;
+  // Explicit rootPlacesOverride() (see setRootPlacesOverride() / the
+  // pumpRootPlaces CLI parameter) replaces the legacy
+  // feasibilityPumpOptions()-driven logic below entirely, once configured.
+  // passNumber==999999 is the sentinel doRootHeuristicsAfterCuts sets for
+  // "after root cuts" (hook 'C'); passNumber<=1 is "before any cuts" (hook
+  // 'L'); anything else is an intermediate cut round (hook 'c').
+  if (!rootPlacesOverride_.empty()) {
+    char hook = (passNumber == 999999) ? 'C' : (passNumber <= 1 ? 'L' : 'c');
+    if (rootPlacesOverride_.find(hook) == std::string::npos)
+      return 0;
+  }
   int options = feasibilityPumpOptions_;
+  if (rootPlacesOverride_.empty()) {
   if ((options % 1000000) > 0) {
     int kOption = options / 1000000;
     options = options % 1000000;
@@ -280,6 +329,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   } else {
     if (passNumber > 1)
       return 0;
+  }
   }
   // loop round doing repeated pumps
   double cutoff;
@@ -382,7 +432,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     printf("DOing general with %d out of %d\n", general, numberIntegers);
 #endif
   if (fpOutput_ && fpOutput_->isActive()) {
-    fpOutput_->onStart(numberUnsatisfied, sumUnsatisfied);
+    fpOutput_->onStart(numberUnsatisfied, sumUnsatisfied, model_->getCurrentSeconds());
   } else {
     sprintf(pumpPrint, "Initial state - %d integers unsatisfied sum - %g",
       numberUnsatisfied, sumUnsatisfied);
@@ -406,6 +456,14 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   numberIntegers = j;
   double *newSolution = new double[numberColumns];
   double newSolutionValue = COIN_DBL_MAX;
+  // Track the rounded candidate obtained from the least-fractional LP
+  // solution seen across all major passes (not just the very last one --
+  // later passes can end up more fractional than an earlier one, e.g. once
+  // the cutoff tightens or the neighborhood objective bounces around). This
+  // is what gets handed to the Feasibility Jump fallback on failure (see
+  // bestRoundedAttempt_ below), since it is a more promising starting point
+  // than an arbitrary last attempt.
+  double bestRoundedSumInfeas = COIN_DBL_MAX;
   int maxSolutions = model_->getMaximumSolutions();
   int numberSolutions = 0;
   bool solutionFound = false;
@@ -867,6 +925,16 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       if (exitAll || exitThis)
         break;
       memcpy(newSolution, solution, numberColumns * sizeof(double));
+      // Fractionality of the LP solution about to be rounded, used below to
+      // decide whether this pass's rounded candidate is the new
+      // "least fractional" one seen so far (see bestRoundedSumInfeas above).
+      double thisPassSumInfeas = 0.0;
+      for (i = 0; i < numberIntegers; i++) {
+        int iColumn = integerVariable[i];
+        double value = solution[iColumn];
+        double nearest = floor(value + 0.5);
+        thisPassSumInfeas += fabs(value - nearest);
+      }
       int flip;
       if (numberPasses == 0 && false) {
         // always use same seed
@@ -908,6 +976,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         numberIntegers, integerVariable,
         /*pumpPrint,*/ numberPasses,
         /*roundExpensive_,*/ defaultRounding_, &flip);
+      if (thisPassSumInfeas < bestRoundedSumInfeas) {
+        bestRoundedSumInfeas = thisPassSumInfeas;
+        bestRoundedAttempt_.assign(newSolution, newSolution + numberColumns);
+      }
       if (numberPasses == 0 && false) {
         // Make sure random will be different
         for (i = 1; i < numberTries; i++)
@@ -2076,6 +2148,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     delete[] saveObjective;
     if (usedColumn && !exitAll) {
       OsiSolverInterface *newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
+      propagateRemainingTime(model_, newSolver);
 #if 0 //def CBC_HAS_CLP
 	    OsiClpSolverInterface * clpSolver
 	      = dynamic_cast<OsiClpSolverInterface *> (newSolver);
@@ -2246,6 +2319,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #endif
           delete newSolver;
           newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
+          propagateRemainingTime(model_, newSolver);
           newSolutionValue = -saveOffset;
           //double newSumInfeas = 0.0;
           const double *obj = newSolver->getObjCoefficients();
@@ -2561,6 +2635,40 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     }
     delete newSolver;
   }
+  // Feasibility Jump fallback: FPump found no solution (nor did the
+  // closest-solution B&B fallback just above). If configured (see
+  // setFeasibilityJumpFallback()) and CBC still has no incumbent at all,
+  // give FJ a shot, seeded from the *least fractional* rounded candidate
+  // FPump produced across all of its major passes (bestRoundedAttempt_,
+  // tracked pass-by-pass above) -- not merely its last attempt, which can
+  // be more fractional than an earlier pass once the cutoff tightens or the
+  // neighborhood objective bounces around. This is a different, and often
+  // more promising, starting point than the raw LP relaxation FJ would
+  // otherwise use on its own.
+  // NOTE: solutionFound alone is not a reliable "FPump never found anything"
+  // signal -- it is reset to false at the top of the retry loop whenever a
+  // further (tighter-cutoff) retry is attempted after an earlier retry
+  // already succeeded (see "solutionFound = false;" a few dozen lines above,
+  // in the "else" branch that continues to another retry). finalReturnCode
+  // is the sticky signal that mirrors this function's actual return value,
+  // so require both to be false before treating this as a genuine failure.
+  if (!finalReturnCode && !solutionFound && (newSolution || !bestRoundedAttempt_.empty())) {
+    // Fall back to the last-available rounded array only in the (rare) edge
+    // case where the main loop never got to run a single pass.
+    if (bestRoundedAttempt_.empty() && newSolution)
+      bestRoundedAttempt_.assign(newSolution, newSolution + numberColumns);
+    if (fjFallback_ && !model_->getSolutionCount()) {
+      double fjObjective = COIN_DBL_MAX;
+      if (fjFallback_->solveFromSeed(fjObjective, betterSolution, bestRoundedAttempt_.data()) > 0) {
+        solutionValue = fjObjective;
+        finalReturnCode = 1;
+        solutionFound = true;
+        numberSolutions++;
+      }
+    }
+  } else {
+    bestRoundedAttempt_.clear();
+  }
   delete clonedSolver;
   delete[] roundingSolution;
   delete[] usedColumn;
@@ -2731,6 +2839,15 @@ int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
       // new CbcModel
       model_ = new CbcModel(*solver);
       model_->findIntegers(true);
+      // Propagate the outer model's time budget: a freshly constructed
+      // CbcModel starts with CbcStartSeconds==0 and the default (unlimited)
+      // maximum time, so without this the recursive solutionInternal() call
+      // below would run with a full fresh time budget instead of whatever
+      // remains of the overall solve's deadline.
+      model_->setMaximumSeconds(saveModel->getMaximumSeconds());
+      model_->setUseElapsedTime(saveModel->useElapsedTime());
+      model_->setDblParam(CbcModel::CbcStartSeconds,
+        saveModel->getDblParam(CbcModel::CbcStartSeconds));
       // set cutoff
       solver->setDblParam(OsiDualObjectiveLimit, cutoff);
       model_->setCutoff(cutoff);

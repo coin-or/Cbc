@@ -5,9 +5,11 @@
 #ifndef CbcHeuristicFeasibilityPump_H
 #define CbcHeuristicFeasibilityPump_H
 
+#include <vector>
 #include "CbcHeuristic.hpp"
 
 class CbcFPumpOutput;
+class CbcHeuristicFeasibilityJump;
 #include "OsiClpSolverInterface.hpp"
 
 /** Feasibility Pump class
@@ -39,6 +41,47 @@ public:
   void setFPumpOutput(CbcFPumpOutput *output) { fpOutput_ = output; }
   /// Get the FP output handler.
   CbcFPumpOutput *getFPumpOutput() const { return fpOutput_; }
+
+  /** Set a Feasibility Jump heuristic to try as a fallback right after this
+   *  pump fails to find a feasible solution (i.e. solution()/solutionInternal()
+   *  is about to return 0) while CBC still has no incumbent at all. When
+   *  set, FJ is seeded from the *least fractional* rounded (but possibly
+   *  constraint-infeasible) attempt seen across the pump's own major
+   *  passes -- a different, and often more promising, starting point than
+   *  the raw LP relaxation FJ would otherwise use. Not owned by this
+   *  object; pass nullptr to disable (default). Must point at an object
+   *  that outlives this heuristic's use (in practice: another heuristic
+   *  already registered on the same CbcModel, so both are cloned/destroyed
+   *  together). */
+  void setFeasibilityJumpFallback(CbcHeuristicFeasibilityJump *fj) { fjFallback_ = fj; }
+  /// Get the Feasibility Jump fallback heuristic (nullptr if none set).
+  CbcHeuristicFeasibilityJump *feasibilityJumpFallback() const { return fjFallback_; }
+
+  /** Explicit, letter-coded override for which root-processing moments
+   *  Feasibility Pump is allowed to run at ('L' pre-processed LP solution
+   *  before any cuts, 'C' after root cuts, 'c' an intermediate cut round --
+   *  see CbcHeuristic::rootHooks()), replacing the classic pumpTune/
+   *  moreTune numeric encoding entirely once set. Empty string (default)
+   *  means "no override" -- solution() falls back to the historical
+   *  feasibilityPumpOptions()-driven logic, so behavior is unchanged
+   *  unless this is explicitly configured (see the pumpRootPlaces CLI
+   *  parameter in CbcSolverHeuristics.cpp). */
+  void setRootPlacesOverride(const std::string &places) { rootPlacesOverride_ = places; }
+  const std::string &rootPlacesOverride() const { return rootPlacesOverride_; }
+
+  /// Whether the last call captured a rounded-but-failed attempt (see
+  /// bestRoundedAttempt()). Cleared whenever a call succeeds.
+  bool hasBestRoundedAttempt() const { return !bestRoundedAttempt_.empty(); }
+  /// The pump's *least fractional* rounded (all-integers-integral, but
+  /// possibly constraint-infeasible) attempt across every major pass of its
+  /// most recent failed call -- not merely its last pass, which can be more
+  /// fractional than an earlier one once the cutoff tightens or the
+  /// neighborhood objective bounces around -- or nullptr if the last call
+  /// succeeded (or none has run yet).
+  const double *bestRoundedAttempt() const
+  {
+    return bestRoundedAttempt_.empty() ? nullptr : bestRoundedAttempt_.data();
+  }
 
   /// Resets stuff if model changes
   virtual void resetModel(CbcModel *model);
@@ -241,6 +284,12 @@ public:
 
 protected:
   // Data
+  /// Not owned. See setFeasibilityJumpFallback().
+  CbcHeuristicFeasibilityJump *fjFallback_ = nullptr;
+  /// See setRootPlacesOverride().
+  std::string rootPlacesOverride_;
+  /// See bestRoundedAttempt().
+  std::vector< double > bestRoundedAttempt_;
   /// Start time
   double startTime_;
   /// Maximum Cpu seconds

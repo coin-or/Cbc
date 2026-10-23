@@ -14,6 +14,7 @@
 #include "CbcModel.hpp"
 #include "CbcParam.hpp"
 #include "CbcParameters.hpp"
+#include "CbcProblemClassifier.hpp"
 #include "CbcSolverCutSetup.hpp"
 
 #include "CglBKClique.hpp"
@@ -21,6 +22,7 @@
 #include "CglFlowCover.hpp"
 #include "CglGMI.hpp"
 #include "CglGomory.hpp"
+#include "CglImpliedClique.hpp"
 #include "CglKnapsackCover.hpp"
 #include "CglLandP.hpp"
 #include "CglMixedIntegerRounding2.hpp"
@@ -33,6 +35,162 @@
 #include "CglTwomir.hpp"
 #include "CglZeroHalf.hpp"
 
+#include <cctype>
+#include <cmath>
+#include <climits>
+#include <cstring>
+#include <cstdlib>
+#include <sstream>
+#include <stdexcept>
+
+CbcRootCutSettings resolveRootCutSettings(
+  const CbcModel &model, CbcParameters &parameters)
+{
+  CbcRootCutSettings settings;
+  settings.dropPatience = parameters[CbcParam::ROOTCUTDROPPATIENCE]->intVal();
+  if (parameters[CbcParam::MINIMUMDROP]->isAuto()) {
+    settings.minimumDrop = std::min(5.0e-2,
+      std::fabs(model.solver()->getObjValue()) * 1.0e-5 + 1.0e-5);
+  } else {
+    settings.minimumDrop = parameters[CbcParam::MINIMUMDROP]->dblVal();
+  }
+  if (!parameters[CbcParam::CUTPASS]->isAuto()) {
+    settings.passes = parameters[CbcParam::CUTPASS]->intVal();
+  } else if (model.getNumCols() < parameters[CbcParam::SIZESMALLCOLS]->intVal()
+    || model.getNumRows() < parameters[CbcParam::SIZESMALLROWS]->intVal()) {
+    settings.passes = parameters[CbcParam::CUTPASSSMALL]->intVal();
+  } else if (model.getNumCols() < parameters[CbcParam::SIZELARGECOLS]->intVal()) {
+    settings.passes = parameters[CbcParam::CUTPASSMEDIUM]->intVal();
+  } else {
+    settings.passes = parameters[CbcParam::CUTPASSLARGE]->intVal();
+  }
+  double cutPassMult = parameters[CbcParam::CUTPASSMULTIPLIER]->dblVal();
+  if (cutPassMult > 0.0 && cutPassMult != 1.0) {
+    settings.passes = std::max(1, static_cast< int >(std::round(settings.passes * cutPassMult)));
+  }
+  double minDropMult = parameters[CbcParam::MINDROPMULTIPLIER]->dblVal();
+  if (minDropMult > 0.0 && minDropMult != 1.0) {
+    settings.minimumDrop *= minDropMult;
+  }
+  return settings;
+}
+
+namespace {
+// -cutSwitchOff key for each name a generator is registered under below.
+// The key is the option that enables it, minus "Cuts", in lower case.
+struct SwitchOffKey {
+  const char *generatorName;
+  const char *key;
+};
+const SwitchOffKey switchOffKeys[] = {
+  { "Probing", "probing" },
+  { "Gomory", "gomory" },
+  { "GomoryL1", "lagomory" },
+  { "GomoryL2", "lagomory" },
+  { "Knapsack", "knapsack" },
+  { "Reduce-and-split", "reduceandsplit" },
+  { "Reduce-and-split(2)", "reduce2andsplit" },
+  { "Gomory(2)", "gmi" },
+  { "Clique", "clique" },
+  { "OddWheel", "oddwheel" },
+  { "ImpliedClique", "impliedclique" },
+  { "MixedIntegerRounding2", "mixedintegerrounding" },
+  { "FlowCover", "flowcover" },
+  { "TwoMirCuts", "twomir" },
+  { "TwoMirCutsL1", "latwomir" },
+  { "TwoMirCutsL2", "latwomir" },
+  { "LiftAndProject", "liftandproject" },
+  { "ResidualCapacity", "residualcapacity" },
+  { "ZeroHalf", "zerohalf" },
+};
+const int numberSwitchOffKeys = sizeof(switchOffKeys) / sizeof(switchOffKeys[0]);
+
+const char *switchOffKeyFor(const char *generatorName)
+{
+  for (int i = 0; i < numberSwitchOffKeys; i++) {
+    if (!strcmp(switchOffKeys[i].generatorName, generatorName))
+      return switchOffKeys[i].key;
+  }
+  return NULL;
+}
+
+bool isSwitchOffKey(const std::string &key)
+{
+  for (int i = 0; i < numberSwitchOffKeys; i++) {
+    if (key == switchOffKeys[i].key)
+      return true;
+  }
+  return false;
+}
+
+std::string lowerCase(std::string text)
+{
+  for (size_t i = 0; i < text.size(); i++)
+    text[i] = static_cast< char >(tolower(static_cast< unsigned char >(text[i])));
+  return text;
+}
+
+// `auto' or an integer >= -2 (-1 and -2 select CbcModel's cut-count
+// multipliers; anything below is rejected there by an assert).
+bool parseSwitchOffValue(const std::string &text, int &value)
+{
+  if (lowerCase(text) == "auto") {
+    value = CbcCutSwitchOff::autoValue;
+    return true;
+  }
+  if (text.empty())
+    return false;
+  char *end;
+  long number = strtol(text.c_str(), &end, 10);
+  if (*end || number < -2 || number > INT_MAX)
+    return false;
+  value = static_cast< int >(number);
+  return true;
+}
+} // namespace
+
+const int CbcCutSwitchOff::autoValue = INT_MIN;
+
+bool parseCutSwitchOff(const std::string &spec, CbcCutSwitchOff &result,
+  std::string *error)
+{
+  CbcCutSwitchOff parsed;
+  std::istringstream items(spec);
+  std::string item;
+  while (std::getline(items, item, ',')) {
+    // `:' because the command line turns any `a=b' argument into `-a b'.
+    size_t equals = item.find_first_of(":=");
+    std::string valueText = equals == std::string::npos ? item : item.substr(equals + 1);
+    int value;
+    if (!parseSwitchOffValue(valueText, value)) {
+      if (error)
+        *error = "cutSwitchOff: `" + valueText + "' is not auto or an integer >= -2";
+      return false;
+    }
+    if (equals == std::string::npos) {
+      parsed.allAuto = value == CbcCutSwitchOff::autoValue;
+      parsed.all = parsed.allAuto ? 0 : value;
+    } else {
+      std::string key = lowerCase(item.substr(0, equals));
+      if (!isSwitchOffKey(key)) {
+        if (error) {
+          *error = "cutSwitchOff: unknown generator `" + item.substr(0, equals) + "'; expected one of";
+          const char *previous = "";
+          for (int i = 0; i < numberSwitchOffKeys; i++) {
+            if (strcmp(previous, switchOffKeys[i].key))
+              *error += std::string(" ") + switchOffKeys[i].key;
+            previous = switchOffKeys[i].key;
+          }
+        }
+        return false;
+      }
+      parsed.byKey[key] = value;
+    }
+  }
+  result = parsed;
+  return true;
+}
+
 // Register all cut generators on babModel based on parameter settings,
 // then apply per-generator tuning (switches, accuracy, timing, cutDepth).
 void installCutGenerators(
@@ -40,14 +198,14 @@ void installCutGenerators(
   CbcParameters &parameters,
   int complicatedInteger,
   bool dominatedCuts,
-  bool miplib,
   const std::string &cgraphMode,
   int oldCliqueMode,
   int maxCallsBK,
   int bkClqExtMethod,
   CoinBronKerbosch::PivotingStrategy bkPivotingStrategy,
   int oddWExtMethod,
-  int mixedRoundStrategy)
+  int mixedRoundStrategy,
+  std::string *switchOffChoice)
 {
   int switches[30] = {};
   int accuracyFlag[30] = {};
@@ -55,7 +213,7 @@ void installCutGenerators(
   int lagrangeanFlag = (parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal() & (7 * 33554432)) >> 9;
 #define ALL_LAGRANGEAN 1
   int numberGenerators = 0;
-  std::map<int, int> translate;
+  std::map< int, int > translate;
   translate[CbcParameters::CGOff] = -100;
   translate[CbcParameters::CGOn] = -1;
   translate[CbcParameters::CGRoot] = -99;
@@ -67,7 +225,7 @@ void installCutGenerators(
   translate[CbcParameters::CGForceOnStrong] = 1;
   translate[CbcParameters::CGForceOnButStrong] = 1;
   translate[CbcParameters::CGStrongRoot] = -1;
-  std::map<int, int> laTranslate;
+  std::map< int, int > laTranslate;
   laTranslate[CbcParameters::CGEndOnlyRoot] = 1;
   laTranslate[CbcParameters::CGEndCleanRoot] = 2;
   laTranslate[CbcParameters::CGEndBothRoot] = 3;
@@ -85,6 +243,170 @@ void installCutGenerators(
   laTranslate[CbcParameters::CGBothInstead] = 12;
   int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
 
+  // Auto-tuning cut generators based on problem classification. A parameter
+  // is only touched while it is `auto' (never set by the user); picks made by
+  // a previous call are undone first so a reused parameter set starts clean.
+  {
+    const std::vector< int > &autoCodes = CbcProblemClassifier::autoCutParams();
+    for (size_t i = 0; i < autoCodes.size(); ++i) {
+      CbcParam *p = parameters[autoCodes[i]];
+      if (p->isAuto() && p->modeVal() != p->defaultMode())
+        p->setModeValAuto(p->defaultMode());
+    }
+  }
+  if (parameters[CbcParam::AUTOTUNECUTS]->modeVal() != 0) {
+    CbcParameters::ProblemClassMode overrideMode = static_cast< CbcParameters::ProblemClassMode >(
+      parameters[CbcParam::PROBLEMCLASS]->modeVal());
+    CbcProblemClassifier::ClassificationResult cls = CbcProblemClassifier::classify(babModel.solver(), overrideMode);
+    CbcProblemClassifier::CutTuningRecommendations rec = CbcProblemClassifier::getCutTuning(cls);
+
+    if (rec.apply) {
+      std::ostringstream tunedMsg;
+      tunedMsg << "AutoTuneCuts: " << cls.className << " (" << cls.rationale
+               << ")\n  -> " << rec.summary;
+      std::string changed, kept;
+      // Only parameters still at `auto' are changed; the rest are reported
+      std::vector< std::pair< int, int > > picks;
+      for (size_t i = 0; i < rec.disableParams.size(); ++i)
+        picks.push_back(std::make_pair(rec.disableParams[i], static_cast< int >(CbcParameters::CGOff)));
+      for (size_t i = 0; i < rec.enableParams.size(); ++i)
+        picks.push_back(rec.enableParams[i]);
+      for (size_t i = 0; i < picks.size(); ++i) {
+        CbcParam *p = parameters[picks[i].first];
+        std::string name = p->name();
+        std::string::size_type bang = name.find('!');
+        if (bang != std::string::npos)
+          name.erase(bang, 1);
+        if (p->isAuto()) {
+          if (p->modeVal() != picks[i].second)
+            p->setModeValAuto(picks[i].second);
+          changed += " " + name + "=" + p->modeString(p->modeVal());
+        } else {
+          kept += " " + name + "=" + p->kwdVal();
+        }
+      }
+      tunedMsg << "\n  auto-set:" << changed;
+      if (!kept.empty())
+        tunedMsg << "\n  user-set (kept):" << kept;
+      tunedMsg << "\n";
+      // Cut filter settings, if not set by the user
+      if (rec.filterScoreMode >= 0 && parameters[CbcParam::ROOTCUTFILTERSCORE]->isDefault()) {
+        parameters[CbcParam::ROOTCUTFILTERSCORE]->setIntVal(rec.filterScoreMode);
+      }
+      if (rec.filterAlways && parameters[CbcParam::CUTFILTERALWAYS]->isDefault()) {
+        parameters[CbcParam::CUTFILTERALWAYS]->setVal("on");
+      }
+      if (switchOffChoice) {
+        if (!switchOffChoice->empty())
+          *switchOffChoice += "\n";
+        *switchOffChoice += tunedMsg.str();
+      }
+    }
+  }
+  // Parallelism filter on each round of Gomory/MIR/TwoMir/GMI/LandP/
+  // RedSplit2/probing cuts (CbcCutGenerator -> cbcFilterGeneratedCuts).
+  {
+    CbcCutPoolFilterSettings filter;
+    filter.minCols = parameters[CbcParam::CUTFILTERMINCOLS]->intVal();
+    filter.minElements = parameters[CbcParam::CUTFILTERMINELEMENTS]->intVal();
+    filter.minCandidates = parameters[CbcParam::CUTFILTERMINCANDIDATES]->intVal();
+    filter.maxParallelism = parameters[CbcParam::CUTFILTERMAXPARALLELISM]->dblVal();
+    filter.always = parameters[CbcParam::CUTFILTERALWAYS]->modeVal() != 0;
+    filter.scoreMode = parameters[CbcParam::ROOTCUTFILTERSCORE]->intVal();
+    filter.rootScope = parameters[CbcParam::ROOTCUTFILTERSCOPE]->intVal();
+    filter.rootReusePeriod = parameters[CbcParam::ROOTCUTREUSEPERIOD]->intVal();
+    filter.rootReuseMaxCuts = parameters[CbcParam::ROOTCUTREUSEMAXCUTS]->intVal();
+    if (filter.rootScope && !filter.scoreMode)
+      throw std::invalid_argument("rootCutFilterScope requires a nonzero rootCutFilterScore");
+    babModel.setCutPoolFilterSettings(filter);
+  }
+  // The clique/odd-wheel/implied-clique generators filter in their own
+  // CoinCutPool, with these thresholds.
+  CoinCutPoolGate cliquePoolGate;
+  cliquePoolGate.minCols = parameters[CbcParam::CLIQUEFILTERMINCOLS]->intVal();
+  cliquePoolGate.minCandidates = parameters[CbcParam::CLIQUEFILTERMINCANDIDATES]->intVal();
+  cliquePoolGate.maxParallelism = parameters[CbcParam::CLIQUEFILTERMAXPARALLELISM]->dblVal();
+  cliquePoolGate.alwaysFilter = parameters[CbcParam::CLIQUEFILTERALWAYS]->modeVal() != 0;
+  // See CbcSolver.cpp's REDSPLIT2CUTS/GMICUTS/LANDPCUTS default ("root"): a
+  // 2026-09 sanity-suite sweep found these only pay for themselves in
+  // aggregate within a "sweet spot" instance-size window. Below it, the
+  // adaptive root cut-generator skip's own size floor
+  // (-cutSkipMinCols, default 500 -- see CbcModel::serialCuts())
+  // never engages, so the generator just burns time every pass with no
+  // throttling; above it, even a single call can be expensive enough to
+  // blow the node/time budget before enough misses accumulate for backoff
+  // to kick in. This only narrows the "root" default itself -- a user who
+  // wants a generator regardless of size can still force it on explicitly
+  // (e.g. -redsplit2Cuts=on/ifmove).
+  const int numberColumnsForGate = babModel.getNumCols();
+  // Window bounds: -cutGateMinCols / -cutGateMaxCols (500 / 50000).
+  const int gateMinCols = parameters[CbcParam::CUTGATEMINCOLS]->intVal();
+  const int gateMaxCols = parameters[CbcParam::CUTGATEMAXCOLS]->intVal();
+  // Row-count companion to the column gate above. Found 2026-09 while
+  // investigating an OOM crash: CglRedSplit2::generateCuts() allocates a
+  // "bufflambda" work array sized maxNumComputedCuts*nrow ints whenever
+  // maxNumCuts<maxNumComputedCuts (see CglRedSplit2.cpp ~L2011,2029) --
+  // nrow there is solver->getNumRows(), i.e. the *actual* preprocessed row
+  // count, completely unrelated to the column-count gate above. A handful
+  // of real 2017+spp instances have millions of rows despite a modest
+  // column count (e.g. neos-3402454-bohle: 2496 cols, comfortably inside
+  // the [500,50000) column window, but 2,881,228 rows) -- for those, even
+  // this file's own reduced maxNumComputedCuts default (2000, see below)
+  // allocates ~23GB in that one array alone, enough to OOM-kill the whole
+  // process (observed directly: a real crash at total-vm ~73GB,
+  // anon-rss ~68GB, see kernel oom-killer log). GMI/LandP's own
+  // per-cut work arrays are only O(nrow) (no maxNumComputedCuts-like
+  // multiplier), so they don't share this specific failure mode and are
+  // deliberately not gated on rows here -- only RedSplit2 needs it.
+  //
+  // Unlike the column window, this gate applies to every RedSplit2 mode,
+  // including an explicit -reduce2AndSplitCuts on/ifmove (-reduce2MaxRows,
+  // default 200000).
+  const int gateMaxRowsRedsplit2 = parameters[CbcParam::REDSPLIT2MAXROWS]->intVal();
+  auto gateRootDefault = [numberColumnsForGate, gateMinCols, gateMaxCols](int mode) {
+    if (mode == CbcParameters::CGRoot
+      && (numberColumnsForGate < gateMinCols || numberColumnsForGate >= gateMaxCols))
+      return static_cast< int >(CbcParameters::CGOff);
+    return mode;
+  };
+  const int numberRowsForGate = babModel.getNumRows();
+  auto gateRootDefaultRedsplit2 = [numberRowsForGate, gateMaxRowsRedsplit2](int mode) {
+    if (numberRowsForGate >= gateMaxRowsRedsplit2)
+      return static_cast< int >(CbcParameters::CGOff);
+    return mode;
+  };
+  // Per-round/per-lifetime cost caps for RedSplit2/GMI/LandP -- see the
+  // comments at each generator's setup below for the exact semantics
+  // (RedSplit2's timeLimit is per-call, LandP's is a cumulative
+  // whole-solve budget). Each is a parameter (-reduce2TimeLimit,
+  // -reduce2MaxCuts, -reduce2MaxComputed, -reduce2MaxBuffer,
+  // -reduce2MaxTabElements, -GMIHowOften,
+  // -liftTimeLimit, -liftCutTimeLimit, -liftMaxCutsPerRound).
+  // Defaults match the "old-unthrottled" config from the cutgen-throttle-sweep
+  // experiment (348 root-fixture instances, 128 nodes, 2h cap): it edged out
+  // the tighter-throttle variants on both dual gap (30.66% vs 30.76%/31.20%)
+  // and primal gap (12.85% vs 13.11%/13.58%), with no meaningful time cost
+  // at this node budget -- see session notes for 2026-09-24. The independent
+  // RedSplit2 memory-safety fixes (row-gate, dynamic buffer cap on
+  // maxNumComputedCuts*nrow, and the mTab*card_contNonBasicVar tableau-size
+  // guard in CglRedSplit2.cpp) remain in effect regardless of these values.
+  const double redsplit2TimeLimit = parameters[CbcParam::REDSPLIT2TIMELIMIT]->dblVal();
+  const int redsplit2MaxNumCuts = parameters[CbcParam::REDSPLIT2MAXCUTS]->intVal();
+  const int redsplit2MaxNumComputedCuts = parameters[CbcParam::REDSPLIT2MAXCOMPUTED]->intVal();
+  // Defense-in-depth for the bufflambda blowup described above: when the
+  // row count sits just under gateMaxRowsRedsplit2, cap
+  // maxNumComputedCuts so the
+  // maxNumComputedCuts*nrow allocation can never exceed a fixed memory
+  // budget, shrinking gracefully as nrow grows instead of either being
+  // unbounded or an all-or-nothing gate. 50,000,000 ints (~200MB) is
+  // generous next to Gomory's near-instant footprint while making even a
+  // million-plus-row instance's worst case a bounded, known quantity.
+  const long redsplit2MaxBufferInts = parameters[CbcParam::REDSPLIT2MAXBUFFER]->intVal();
+  const int gmiHowOften = parameters[CbcParam::GMIHOWOFTEN]->intVal();
+  const double landpTimeLimit = parameters[CbcParam::LANDPTIMELIMIT]->dblVal();
+  const double landpSingleCutTimeLimit = parameters[CbcParam::LANDPCUTTIMELIMIT]->dblVal();
+  const int landpMaxCutPerRound = parameters[CbcParam::LANDPMAXCUTSPERROUND]->intVal();
+
   // --- Probing ---
   int probingMode = parameters[CbcParam::PROBINGCUTS]->modeVal();
   if (probingMode) {
@@ -99,7 +421,7 @@ void installCutGenerators(
     probingGen.setMaxLookRoot(10);
     probingGen.setMaxElements(200);
     probingGen.setMaxElementsRoot(300);
-    probingGen.setRowCuts(3);
+    probingGen.setRowCuts(-3);
     int numberColumns = babModel.solver()->getNumCols();
     if (probingMode > CbcParameters::CGForceOnBut) {
       probingGen.setMaxElements(numberColumns);
@@ -181,6 +503,10 @@ void installCutGenerators(
         gomoryGen.setLimit(cutLength % 10000000);
       }
     }
+    // An explicit gomoryLimitRoot is the root limit, whatever the mode and
+    // cutLength; auto keeps the choice made above.
+    if (!parameters[CbcParam::GOMORYLIMITROOT]->isAuto())
+      gomoryGen.setLimitAtRoot(parameters[CbcParam::GOMORYLIMITROOT]->intVal());
     int laGomory = parameters[CbcParam::LAGOMORYCUTS]->modeVal();
     int gType = translate[gomoryMode];
     if (!laGomory) {
@@ -237,18 +563,6 @@ void installCutGenerators(
     }
   }
 
-#ifdef CLIQUE_ANALYSIS
-  if (miplib) {
-    CglStored storedAmpl;
-    if (!storedAmpl.sizeRowCuts()) {
-      printf("looking at probing\n");
-      babModel.addCutGenerator(&storedAmpl, 1, "Stored");
-      accuracyFlag[numberGenerators] = 0;
-      switches[numberGenerators++] = 0;
-    }
-  }
-#endif
-
   // --- Knapsack ---
   int knapsackMode = parameters[CbcParam::KNAPSACKCUTS]->modeVal();
   if (knapsackMode) {
@@ -273,7 +587,8 @@ void installCutGenerators(
   }
 
   // --- RedSplit2 ---
-  int redsplit2Mode = parameters[CbcParam::REDSPLIT2CUTS]->modeVal();
+  int redsplit2Mode = gateRootDefaultRedsplit2(
+    gateRootDefault(parameters[CbcParam::REDSPLIT2CUTS]->modeVal()));
   if (redsplit2Mode && !complicatedInteger) {
     CglRedSplit2 redsplit2Gen;
     int maxLength = 256;
@@ -283,6 +598,35 @@ void installCutGenerators(
     }
     CglRedSplit2Param &rs2params = redsplit2Gen.getParam();
     rs2params.setMaxNonzeroesTab(maxLength);
+    // CglRedSplit2Param's own defaults (timeLimit=60s, maxNumCuts=
+    // maxNumComputedCuts=10000) are unbounded relative to what Gomory
+    // allows per round (setLimitAtRoot(1000)/setLimit(50)) -- a single
+    // slow round could burn a large fraction of a node/time budget before
+    // boundStallAware()'s backoff ever gets a chance to react. Bring this
+    // generator's per-round cost onto the same order of magnitude as
+    // Gomory's, still generous enough for its typically much smaller cut
+    // yield per pass.
+    //
+    // On top of that: CglRedSplit2::generateCuts() allocates a
+    // "bufflambda" work array sized maxNumComputedCuts*nrow ints whenever
+    // maxNumCuts<maxNumComputedCuts (see CglRedSplit2.cpp), where nrow is
+    // this model's actual row count -- unrelated to maxNumComputedCuts
+    // itself. gateRootDefaultRedsplit2 above already turns this generator
+    // off outright, in every mode, once rows reach -reduce2MaxRows; below
+    // that, shrink maxNumComputedCuts/maxNumCuts here so the product with
+    // this model's real row count never exceeds redsplit2MaxBufferInts.
+    const int numberRows = babModel.getNumRows();
+    int cappedMaxNumComputedCuts = redsplit2MaxNumComputedCuts;
+    if (numberRows > 0) {
+      const long byMemory = redsplit2MaxBufferInts / numberRows;
+      cappedMaxNumComputedCuts = static_cast< int >(
+        std::max< long >(1, std::min< long >(redsplit2MaxNumComputedCuts, byMemory)));
+    }
+    const int cappedMaxNumCuts = std::min(redsplit2MaxNumCuts, cappedMaxNumComputedCuts);
+    rs2params.setTimeLimit(redsplit2TimeLimit);
+    rs2params.setMaxNumComputedCuts(cappedMaxNumComputedCuts);
+    rs2params.setMaxNumCuts(cappedMaxNumCuts);
+    rs2params.setMaxTabElements(parameters[CbcParam::REDSPLIT2MAXTABELEMENTS]->intVal());
     babModel.addCutGenerator(&redsplit2Gen, translate[redsplit2Mode], "Reduce-and-split(2)");
     accuracyFlag[numberGenerators] = 5;
     if (redsplit2Mode != CbcParameters::CGOn) {
@@ -292,11 +636,15 @@ void installCutGenerators(
         ->setMaximumTries(maximumSlowPasses);
       babModel.cutGenerator(numberGenerators)->setHowOften(5);
     }
+    // Expensive generator: only counts as "productive" for the adaptive
+    // root skip (CbcModel::serialCuts()) when it actually moves the bound,
+    // not just when it emits some (possibly near-useless) cuts.
+    babModel.cutGenerator(numberGenerators)->setBoundStallAware(true);
     switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
   }
 
   // --- GMI ---
-  int GMIMode = parameters[CbcParam::GMICUTS]->modeVal();
+  int GMIMode = gateRootDefault(parameters[CbcParam::GMICUTS]->modeVal());
   if (GMIMode && !complicatedInteger) {
     CglGMI GMIGen;
     if (GMIMode > CbcParameters::CGOnGlobal) {
@@ -313,6 +661,19 @@ void installCutGenerators(
       babModel.cutGenerator(numberGenerators)->setHowOften(1);
     }
     accuracyFlag[numberGenerators] = 5;
+    // Unlike RedSplit2/LandP just above, GMI's normal ("root") path was
+    // never given the same setMaximumTries()/setHowOften() throttle --
+    // an oversight, not a deliberate exemption, since GMI is no cheaper
+    // per call. Bring it in line: skip most passes past the root the same
+    // way RedSplit2/LandP already do.
+    if (GMIMode != CbcParameters::CGOn && GMIMode != CbcParameters::CGOnGlobal) {
+      babModel.cutGenerator(numberGenerators)
+        ->setMaximumTries(maximumSlowPasses);
+      babModel.cutGenerator(numberGenerators)->setHowOften(gmiHowOften);
+    }
+    // See RedSplit2 comment above: only count as productive when the bound
+    // actually moves, not merely when some cut is produced.
+    babModel.cutGenerator(numberGenerators)->setBoundStallAware(true);
     switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN * lagrangeanFlag);
   }
 
@@ -324,6 +685,7 @@ void installCutGenerators(
     bkCliqueGen.setMaxCallsBK(maxCallsBK);
     bkCliqueGen.setExtendingMethod(bkClqExtMethod);
     bkCliqueGen.setPivotingStrategy(bkPivotingStrategy);
+    bkCliqueGen.setPoolGate(cliquePoolGate);
     babModel.addCutGenerator(&bkCliqueGen, translate[cliqueMode], "Clique");
     accuracyFlag[numberGenerators] = 0;
     switches[numberGenerators++] = 0;
@@ -343,7 +705,23 @@ void installCutGenerators(
   if (oddWheelMode) {
     CglOddWheel oddWheelGen;
     oddWheelGen.setExtendingMethod(oddWExtMethod);
+    oddWheelGen.setPoolGate(cliquePoolGate);
     babModel.addCutGenerator(&oddWheelGen, translate[oddWheelMode], "OddWheel");
+    accuracyFlag[numberGenerators] = 0;
+    // Also expensive at root on dense/large conflict graphs; only count as
+    // productive for the adaptive root skip when it actually moves the
+    // bound (see RedSplit2/GMI/LandP comment above).
+    babModel.cutGenerator(numberGenerators)->setBoundStallAware(true);
+    switches[numberGenerators++] = 0;
+  }
+
+  // --- ImpliedClique ---
+  int impliedCliqueMode = parameters[CbcParam::IMPLIEDCLIQUECUTS]->modeVal();
+  if (impliedCliqueMode) {
+    CglImpliedClique impliedCliqueGen;
+    impliedCliqueGen.setPoolGate(cliquePoolGate);
+    impliedCliqueGen.setPoolFilter(parameters[CbcParam::IMPLIEDCLIQUEFILTER]->modeVal() != 0);
+    babModel.addCutGenerator(&impliedCliqueGen, translate[impliedCliqueMode], "ImpliedClique");
     accuracyFlag[numberGenerators] = 0;
     switches[numberGenerators++] = 0;
   }
@@ -374,6 +752,7 @@ void installCutGenerators(
   if (twomirMode && (complicatedInteger != 1 || (twomirMode == CbcParameters::CGOn || twomirMode >= CbcParameters::CGForceOn))) {
     CglTwomir twomirGen;
     twomirGen.setMaxElements(250);
+    twomirGen.setMaxLength(parameters[CbcParam::TWOMIRLENGTH]->intVal());
     // MORE_CUTS defaults
 #ifdef MORE_CUTS
     twomirGen.setAwayAtRoot(0.005);
@@ -394,7 +773,7 @@ void installCutGenerators(
     if (!laTwomir) {
       babModel.addCutGenerator(&twomirGen, translate[twomirMode], "TwoMirCuts");
       accuracyFlag[numberGenerators] = 4;
-      switches[numberGenerators++] = 1 | lagrangeanFlag;
+      switches[numberGenerators++] = 0 | lagrangeanFlag;
     } else {
       laTwomir = laTranslate[laTwomir] - 1;
       int type = (laTwomir % 3) + 1;
@@ -404,7 +783,7 @@ void installCutGenerators(
       if (when < 3) {
         babModel.addCutGenerator(&twomirGen, translate[twomirMode], "TwoMirCuts");
         accuracyFlag[numberGenerators] = 4;
-        switches[numberGenerators++] = 1;
+        switches[numberGenerators++] = 0;
         if (when == 2)
           twomirTypeMajor = 10;
       } else {
@@ -433,10 +812,32 @@ void installCutGenerators(
 
   // --- LandP ---
 #ifndef DEBUG_MALLOC
-  int landpMode = parameters[CbcParam::LANDPCUTS]->modeVal();
+  int landpMode = gateRootDefault(parameters[CbcParam::LANDPCUTS]->modeVal());
   if (landpMode) {
     CglLandP landpGen;
-    landpGen.parameter().maximumCutLength = 2000;
+    // Lowered from 2000: a 2026-09 fixture-replay sweep found capping cut
+    // length here cuts LandP's worst-case root time by ~50x for only
+    // ~1-5% of its bound value (see BENCHMARKING-CUT-GENERATORS.md).
+    landpGen.parameter().maximumCutLength = 200;
+    // CglLandP::Parameters' own defaults leave timeLimit/singleCutTimeLimit
+    // at COIN_DBL_MAX (i.e. genuinely unbounded) and maxCutPerRound at
+    // 5000. Unlike CglRedSplit2's timeLimit (reset every generateCuts()
+    // call -- a true per-round budget), CglLandP::timeLimit_ is a
+    // *cumulative* CPU-time allowance consumed across the generator's
+    // entire lifetime in this solve (CglLandP.cpp adds/subtracts
+    // CoinCpuTime() around each call, decrementing a persistent running
+    // total; once it goes negative, pivotLimit is forced to 0 and the
+    // generator effectively self-disables for the rest of the solve --
+    // see CglLandP.cpp ~L1047/1221/904). So this value should be sized as
+    // a total time budget for the whole B&B, not a per-call one. The
+    // shipped default (-liftTimeLimit) is 1e30, i.e. unbounded: a 30s budget
+    // was tried and reverted on 2026-09-24 (see above). singleCutTimeLimit additionally caps any single cut
+    // attempt's own pivot search (used via
+    // std::min(timeLimit, singleCutTimeLimit) in CglLandPSimplex.cpp), so
+    // one degenerate candidate can't consume the whole remaining budget.
+    landpGen.parameter().timeLimit = landpTimeLimit;
+    landpGen.parameter().singleCutTimeLimit = landpSingleCutTimeLimit;
+    landpGen.parameter().maxCutPerRound = landpMaxCutPerRound;
     landpGen.validator().setMinViolation(1.0e-4);
     if (landpMode == CbcParameters::CGOnGlobal) {
       landpGen.parameter().maximumCutLength = 2000000;
@@ -449,6 +850,9 @@ void installCutGenerators(
         ->setMaximumTries(maximumSlowPasses);
       babModel.cutGenerator(numberGenerators)->setHowOften(10);
     }
+    // See RedSplit2 comment above: only count as productive when the bound
+    // actually moves, not merely when some cut is produced.
+    babModel.cutGenerator(numberGenerators)->setBoundStallAware(true);
     switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
   }
 #endif
@@ -475,8 +879,7 @@ void installCutGenerators(
       zerohalfGen.setFlags(1);
     babModel.addCutGenerator(&zerohalfGen, translate[zerohalfMode], "ZeroHalf");
     accuracyFlag[numberGenerators] = 5;
-    CglZeroHalf *storedZeroHalf =
-      dynamic_cast<CglZeroHalf *>(babModel.cutGenerator(numberGenerators)->generator());
+    CglZeroHalf *storedZeroHalf = dynamic_cast< CglZeroHalf * >(babModel.cutGenerator(numberGenerators)->generator());
     if (storedZeroHalf)
       storedZeroHalf->setSepGraphSparseThreshold(
         parameters[CbcParam::ZEROHALFSPARSETHRESH]->intVal());
@@ -487,6 +890,11 @@ void installCutGenerators(
       storedZeroHalf->setRowMaxFractionalCount(
         parameters[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->intVal());
     babModel.cutGenerator(numberGenerators)->setNeedsRefresh(true);
+    babModel.cutGenerator(numberGenerators)->setRootCallPeriod(parameters[CbcParam::ZEROHALFROOTPERIOD]->intVal());
+    // Also expensive on dense graphs at root; only count as productive for
+    // the adaptive root skip when it actually moves the bound (see
+    // RedSplit2/GMI/LandP comment above).
+    babModel.cutGenerator(numberGenerators)->setBoundStallAware(true);
     switches[numberGenerators++] = 2;
   }
 
@@ -496,6 +904,13 @@ void installCutGenerators(
   // Per-generator tuning
   numberGenerators = babModel.numberCutGenerators();
   int cutDepth = parameters[CbcParam::CUTDEPTH]->intVal();
+  // Validated when set, so this only fails for a value set from code.
+  const std::string &switchOffSpec = parameters[CbcParam::CUTSWITCHOFF]->strVal();
+  CbcCutSwitchOff switchOff;
+  std::string switchOffError;
+  if (!parseCutSwitchOff(switchOffSpec, switchOff, &switchOffError) && switchOffChoice)
+    *switchOffChoice = switchOffError + ", using auto";
+  std::ostringstream armed;
   for (int iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
     CbcCutGenerator *generator = babModel.cutGenerator(iGenerator);
     int howOften = generator->howOften();
@@ -508,8 +923,19 @@ void installCutGenerators(
     } else {
       iSwitch2 = iSwitch;
     }
-    if (howOften == -98 || howOften == -99 || generator->maximumTries() > 0)
+    const char *key = switchOffKeyFor(generator->cutGeneratorName());
+    std::map< std::string, int >::const_iterator entry = key ? switchOff.byKey.find(key) : switchOff.byKey.end();
+    if (entry != switchOff.byKey.end()) {
+      if (entry->second != CbcCutSwitchOff::autoValue)
+        iSwitch2 = entry->second;
+    } else if (!switchOff.allAuto && key) {
+      iSwitch2 = switchOff.all;
+    }
+    if (howOften == -98 || howOften == -99 || generator->maximumTries() > 0) {
       generator->setSwitchOffIfLessThan(iSwitch2);
+      if (iSwitch2)
+        armed << (armed.tellp() ? ", " : "") << generator->cutGeneratorName() << ' ' << iSwitch2;
+    }
     generator->setInaccuracy(accuracyFlag[iGenerator]);
     if (doAtEnd[iGenerator]) {
       generator->setWhetherCallAtEnd(true);
@@ -518,7 +944,12 @@ void installCutGenerators(
     if (cutDepth >= 0)
       generator->setWhatDepth(cutDepth);
   }
+  if (switchOffChoice) {
+    std::string choice = "cutSwitchOff " + switchOffSpec + " -> "
+      + (armed.tellp() ? armed.str() + " (others 0)" : std::string("all 0"));
+    *switchOffChoice = switchOffChoice->empty() ? choice : *switchOffChoice + "; " + choice;
+  }
 }
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

@@ -46,11 +46,13 @@ typedef struct Cbc_Model Cbc_Model;
  *  If a problem with integer variables, this affects only the root node.
  * */
 enum LPMethod {
-  LPM_Auto           = 0,  /*! Solver will decide automatically which method to use */
+  LPM_Auto           = 0,  /*! Solver will decide automatically which method to use: picks LPM_Racing when running in parallel (threads >= 2) or LPM_Recommend when running sequentially (threads == 1) */
   LPM_Dual           = 1,  /*! Dual simplex */
   LPM_Primal         = 2,  /*! Primal simplex */
   LPM_Barrier        = 3,  /*! The barrier algorithm */
-  LPM_BarrierNoCross = 4   /*! Barrier algorithm, not to be followed by crossover */
+  LPM_BarrierNoCross = 4,  /*! Barrier algorithm, not to be followed by crossover */
+  LPM_Racing         = 5,  /*! Opportunistic parallel LP racing: multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (INT_PARAM_THREADS); with fewer it silently degrades to LPM_Recommend. */
+  LPM_Recommend      = 6   /*! ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features. Runs sequentially. */
 };
 
 /*! Whether specific presolve reductions should be disabled
@@ -81,7 +83,7 @@ enum CutType {
   CT_FlowCover        =  5,  /*! Flow cover cuts */
   CT_MIR              =  6,  /*! Mixed-integer rounding cuts */
   CT_TwoMIR           =  7,  /*! Two-phase Mixed-integer rounding cuts */
-  CT_LaTwoMIR         =  8,  /*! Lagrangean relaxation for two-phase Mixed-integer rounding cuts, as in CT_LaGomory */
+  CT_LaTwoMIR         =  8,  /*! Two-phase Mixed-integer rounding cuts, requested with the Lagrangean variant selected. NOTE: through Cbc_generateCuts() this behaves exactly as CT_TwoMIR -- the Lagrangean path needs to know which rows are cuts rather than part of the formulation, and a C caller has no way to say. See the comment on the CT_LaTwoMIR case in Cbc_C_Interface.cpp. There is deliberately no CT_LaGomory, for the same reason. */
   CT_LiftAndProject   =  9,  /*! Lift and project cuts */
   CT_ResidualCapacity = 10,  /*! Residual capacity cuts */
   CT_ZeroHalf         = 11,  /*! Zero-half cuts */
@@ -118,7 +120,7 @@ enum IntParam {
   INT_PARAM_FPUMP_ITS               = 6,  /*! Maximum number of iterations in the feasibility pump method. */
   INT_PARAM_MAX_SOLS                = 7,  /*! Maximum number of solutions generated during the search. Stops the search when this number of solutions is found. */
   INT_PARAM_CUT_PASS_IN_TREE        = 8,  /*! Maximum number of cuts passes in the search tree (with the exception of the root node). Default 1. */
-  INT_PARAM_THREADS                 = 9,  /*! Number of threads that can be used in the branch-and-bound method.*/
+  INT_PARAM_THREADS                 = 9,  /*! Number of threads that can be used in the branch-and-bound method. Also bounds the LP-relaxation solve (Cbc_solveLinearProgram): LPM_Racing needs >= 2 to race, and LPM_Auto only selects racing when >= 2 threads are available. */
   INT_PARAM_CUT_PASS                = 10, /*! Number of cut passes in the root node. Default -1, solver decides */
   INT_PARAM_LOG_LEVEL               = 11, /*! Verbosity level, from 0 to 2 */
   INT_PARAM_MAX_SAVED_SOLS          = 12, /*! Size of the pool to save the best solutions found during the search. */
@@ -129,26 +131,12 @@ enum IntParam {
   INT_PARAM_CGRAPH                  = 17, /*! Conflict graph: controls if the conflict graph is created or not. 0: off, 1: auto, 2: on 3: fast weaker clique sep */
   INT_PARAM_CLIQUE_MERGING          = 18, /*! Clique merging options: 0: off , 1 auto , 2 before solving LP, 3 after solving LP and pre-processing */
   INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19, /*! Maximum number of nodes processed without improving best solution, after a feasible solution is found */
-  INT_PARAM_LP_FAST_PREPROCESS      = 20, /*! Fast MILP preprocessing before LP solve (Cbc_resolve / Cbc_solveLinearProgram). 0: off (default, pure LP relaxation); 1: singleton bound tightening only; 2: singletons + knapsack-based bound tightening (milpbt); 3: fixpoint (milpbt until no new fixings). Has no effect on MIP solves (Cbc_solve), which control preprocessing via the fastPreProcessLevel parameter. */
+  INT_PARAM_LP_FAST_PREPROCESS      = 20, /*! Deprecated, no longer has any effect: Cbc_resolve()/Cbc_solveLinearProgram() only solve the LP relaxation as-is and no longer perform bound-tightening preprocessing. Kept only so existing code that sets this parameter keeps compiling/linking. Has no effect on MIP solves (Cbc_solve) either, which control preprocessing via the fastPreProcessLevel parameter. */
   INT_PARAM_MAX_ITER                = 21, /*! Maximum number of simplex iterations for LP solves (Cbc_resolve / Cbc_solveLinearProgram). Default INT_MAX (no limit). */
+  INT_PARAM_MIPSTART_FIX            = 22, /*! Which columns a MIP start fixes before its LP is re-solved to fill in the values it did not supply. 0 (default): integers only, and every integer the start does not name is taken to be zero -- which is what a start listing just the nonzero integers means. 1: integers only, leaving unnamed ones free between their own bounds -- use this when the start is complete over the integers, since it avoids forcing values the LP would otherwise derive. 2: also fix supplied continuous values; this pins down more of the solution, but a rounding error in a supplied value can make the LP infeasible, and the continuous columns are then released and the LP retried with just the integers fixed. */
 };
-#define N_INT_PARAMS 22
+#define N_INT_PARAMS 23
   
-/** typedef for cbc callback to monitor the progress of the search
- * in terms of improved upper and lower bounds */
-typedef int(CBC_LINKAGE_CB *cbc_progress_callback)(void *model,
-                                                   int phase,
-                                                   int step,
-                                                   const char *phaseName,
-                                                   double seconds,
-                                                   double lb,
-                                                   double ub,
-                                                   int nint,
-                                                   int *vecint,
-                                                   void *cbData
-                                                   );
-
-
 /** typedef for cbc callback to monitor the discovery
  * of new integer feasible solutions */
 typedef int (CBC_LINKAGE_CB *cbc_incumbent_callback)(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData);
@@ -855,6 +843,32 @@ Cbc_readMps(Cbc_Model *model, const char *filename);
 CBCLIB_EXPORT int CBC_LINKAGE
 Cbc_readLp(Cbc_Model *model, const char *filename);
 
+/** @brief Activates the OsiRowCutDebugger with a known reference solution
+  *
+  * Every cut/bound-fixing generated during the subsequent Cbc_solve() call
+  * is checked against \p solution; the search reports a diagnostic (and, in
+  * a non-NDEBUG/--debug build, raises a CoinError) as soon as a cut or bound
+  * change would exclude it. Use this to identify which cut generator, bound
+  * propagation pass, or branching decision incorrectly prunes a known-valid
+  * (e.g. certified optimal) solution when Cbc reports a wrong answer.
+  *
+  * @param model problem object. Must be called after Cbc_readMps/Cbc_readLp
+  *        (or the problem has otherwise been fully built) and before
+  *        Cbc_solve().
+  * @param solution full-length primal solution vector (one entry per
+  *        column, in the same order as the model's columns). Only the
+  *        integer variables need to be exact; continuous variables are
+  *        recomputed by solving the LP relaxation with the integers fixed,
+  *        unless \p enforceOptimality is 0.
+  * @param enforceOptimality if nonzero (default behaviour), fill in
+  *        continuous variable values by solving the LP relaxation with
+  *        integers fixed at \p solution's values; if zero, use the
+  *        continuous values supplied in \p solution as-is.
+  **/
+CBCLIB_EXPORT void CBC_LINKAGE
+Cbc_activateRowCutDebugger(Cbc_Model *model, const double *solution,
+  char enforceOptimality);
+
 /** @brief Read the optimal basis for the linear program
   *
   * @param model problem object
@@ -1200,16 +1214,54 @@ CBCLIB_EXPORT void CBC_LINKAGE Cbc_addCutCallback(
     int howOften,
     char atSolution );
 
+/** Why a search-progress event was sent */
+typedef enum {
+  CBC_PROGRESS_INCUMBENT = 0, /*!< a better integer solution was found */
+  CBC_PROGRESS_BOUND = 1,     /*!< the dual bound improved significantly (see parameter progressMinChange) */
+  CBC_PROGRESS_TICK = 2,      /*!< heartbeat: nothing changed for progressInterval seconds */
+  CBC_PROGRESS_FINAL = 3      /*!< the search ended */
+} Cbc_ProgressKind;
+
+/** Snapshot of the search, valid only during the callback. Values are in the
+ * problem's own objective sense (maximisation problems are not negated).
+ * struct_size is set by Cbc to sizeof(Cbc_ProgressInfo) so that fields can be
+ * appended later: read a field only if it lies within struct_size. */
+typedef struct Cbc_ProgressInfo {
+  int struct_size;
+  int kind;             /*!< a Cbc_ProgressKind */
+  double seconds;       /*!< time since the search started */
+  double primal;        /*!< best solution value; valid if has_incumbent */
+  double dual;          /*!< best proven bound; valid if has_bound */
+  double gap;           /*!< |primal-dual| / max(|primal|,|dual|); 1 if either is missing */
+  int nodes;            /*!< branch-and-bound nodes processed */
+  int has_incumbent;
+  int has_bound;
+  const char *source;   /*!< "rootLP", "cutpass", "bound", "node", "tick", "final", or the name of the heuristic that found the incumbent */
+} Cbc_ProgressInfo;
+
+/** callback for search progress. Calls are serialised (never concurrent), also
+ * with threads and with the incumbent callback, and come from whichever thread
+ * triggered them: return quickly, and do not call back into the model except
+ * for read-only queries. Return 0 to continue; a nonzero value asks Cbc to stop
+ * the search as soon as possible: Cbc_status() is then 1 (stopped) and
+ * Cbc_secondaryStatus() is 5 (user event); the best solution found so far is kept.
+ * Use the info (time, nodes, primal/dual/gap, has_incumbent) to implement any
+ * stopping rule.
+ * Events: every incumbent, every significant dual bound improvement
+ * (parameter progressMinChange, default 1e-4), a heartbeat after progressInterval
+ * seconds without either (default 1, 0 disables), and a final one. */
+typedef int(CBC_LINKAGE_CB *cbc_progress_info_callback)(Cbc_Model *model, const Cbc_ProgressInfo *info, void *appData);
+
+/** Registers the search progress callback (NULL removes it). Tune it with
+ * Cbc_setParameter(model, "progressMinChange", "1e-3") and
+ * Cbc_setParameter(model, "progressInterval", "0.5"). */
+CBCLIB_EXPORT void CBC_LINKAGE Cbc_setProgressCallback(
+  Cbc_Model *model, cbc_progress_info_callback cb, void *appData);
+
 /** callback to monitor new incumbent solutions **/
 CBCLIB_EXPORT void CBC_LINKAGE Cbc_addIncCallback(
     Cbc_Model *model, cbc_incumbent_callback inccb, 
     void *appData );
-
-/** callback to monitor improvements in lower or upper
- * bounds */
-CBCLIB_EXPORT void CBC_LINKAGE Cbc_addProgrCallback(
-  Cbc_Model *model, cbc_progress_callback prgcbc,
-  void *appData);
 
 /*@}*/
 
@@ -1240,11 +1292,29 @@ Cbc_solve(Cbc_Model *model);
  **/
 /** Solves the LP relaxation (or re-solves after modifications).
  *
- * If a basis is available (from a previous solve), uses warm-start
- * (resolve). Otherwise does a full initial solve.
+ * Always operates directly on the OsiClpSolverInterface/CbcModel stored in
+ * the C interface (never a copy), so the optimal basis it produces remains
+ * available for later reoptimization (e.g. via Cbc_resolve()).
  *
- * Uses the LP method set via Cbc_setLPmethod() or Cbc_setParam("lpMethod",...).
- * Respects time limit, tolerances, and log level from the current parameters.
+ * If a basis is already available (from a previous solve), this is a fast
+ * warm-start reoptimization (OsiSolverInterface::resolve()) -- in that case
+ * the configured LP method (Cbc_setLPmethod()/lpMethod parameter) has no
+ * effect, since Clp simply continues from the existing basis.
+ *
+ * Otherwise this performs a full "cold" initial solve, using
+ * CbcSolver::runSolveContinuous()/applyLpMethod() -- the same machinery
+ * used by the `cbc` command line's -initialSolve/-dualSimplex/-primalSimplex/
+ * -barrier actions -- so the configured LP method
+ * (Cbc_setLPmethod()/lpMethod parameter: dual, primal, barrier, auto, racing,
+ * recommend) is fully honored, including the racing (parallel) and
+ * ML-recommended configurations.
+ *
+ * Only solves (or resolves) the LP relaxation as given -- it does not
+ * perform any bound-tightening/preprocessing of the model (see
+ * INT_PARAM_LP_FAST_PREPROCESS, now deprecated/no-op).
+ *
+ * Respects time limit, iteration limit, tolerances, dual pivot algorithm,
+ * and log level from the current parameters.
  *
  * @param model problem object
  * @return 0=optimal, 1=stopped, 2=infeasible, 3=unbounded
@@ -1255,10 +1325,16 @@ Cbc_solveLinearProgram(Cbc_Model *model);
 /** Re-solves the LP using the current basis (warm start).
  *
  * This is the fast path for reoptimization after bound changes,
- * adding/removing rows, or modifying coefficients. Uses dual simplex
- * by default (efficient for bound changes and added constraints).
+ * adding/removing rows, or modifying coefficients: it reuses the current
+ * basis, so the configured LP method has no effect on this path.
  *
- * If no basis is available, falls back to Cbc_solveLinearProgram().
+ * Like Cbc_solveLinearProgram(), respects the configured log level: at
+ * INT_PARAM_LOG_LEVEL >= 1 a modern progress table is printed for this
+ * reoptimization too (note this means logging is verbose if resolve is
+ * called many times in a tight loop -- set the log level to 0 to silence it).
+ *
+ * If no basis is available, falls back to Cbc_solveLinearProgram(), which
+ * performs a full cold-start solve honoring the configured LP method.
  *
  * @param model problem object
  * @return 0=optimal, 1=stopped, 2=infeasible, 3=unbounded, -1=error
@@ -1285,7 +1361,23 @@ Cbc_strengthenPacking(Cbc_Model *model);
 CBCLIB_EXPORT void CBC_LINKAGE
 Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[]);
 
-
+/** @brief Runs MILP-based bound propagation on the model, in place.
+ *
+ * Tightens variable bounds using the constraint structure (the same
+ * bound-tightening routine used internally by the `cbc` command line's
+ * `-doBoundPropagation` action and, before every root LP solve, by
+ * `-preRootLPStrenghtening`), at the default "milpbt" aggression level
+ * (singleton-row tightening followed by MILP bound propagation, iterated
+ * up to the default round limit). Operates directly on the model's own
+ * solver -- not a copy -- so bounds tightened here persist for later
+ * calls (Cbc_solveLinearProgram(), Cbc_solve(), ...).
+ *
+ * @param model problem object
+ * @return 0 = bounds tightened (or nothing to tighten) successfully,
+ *         1 = infeasibility was proved while propagating bounds
+ **/
+CBCLIB_EXPORT int CBC_LINKAGE
+Cbc_propagateBounds(Cbc_Model *model);
 
 /*@}*/
 
@@ -1808,12 +1900,32 @@ CG_conflictingNodes(Cbc_Model *model, void *cgraph, size_t node);
 
 /** @brief Generates cutting planes of a given type
      *
-     *  Generates cutting planes of a given type
+     *  Separates cutting planes from the current linear programming relaxation
+     *  and appends them to \p oc.
+     *
+     *  Any rows and columns still buffered by Cbc_addRow()/Cbc_addCol() are
+     *  flushed first, so a freshly built model may be passed directly.
+     *
+     *  A cutting plane is separated from an LP solution, and for most types it
+     *  is a row of the simplex tableau at the current basis -- so if no basis is
+     *  available this function solves the relaxation itself before separating.
+     *  If that relaxation turns out to be infeasible or unbounded no cuts are
+     *  produced, because none exist to be found. A basis that is already present
+     *  is used as it stands and never refreshed, so a caller who changes bounds
+     *  or the objective after solving and wants cuts for the changed problem
+     *  should call Cbc_solveLinearProgram() again first.
+     *
+     *  Cuts are valid for the problem as \p cbcModel currently stands. Passing a
+     *  \p depth greater than zero declares that the bounds in the model are a
+     *  node's rather than the original ones, and the cuts are then valid only at
+     *  that node.
      *
      *  @param cbcModel problem object
      *  @param ct cut type
      *  @param oc an OsiCuts object where cuts will be stored
-     *  @param depth current three depth, cuts may use this info to decide which strategy to use
+     *  @param depth current tree depth; 0 means the root. Generators use this to
+     *         choose limits and tolerances, and a non-zero value marks the cuts
+     *         as node-local rather than globally valid
      *  @param pass cut pass number
      * */
 CBCLIB_EXPORT void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *oc, int depth, int pass );

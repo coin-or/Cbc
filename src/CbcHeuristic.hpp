@@ -13,6 +13,7 @@
 #include "OsiBranchingObject.hpp"
 #include "CbcConfig.h"
 #include "CbcModel.hpp"
+#include "CbcHeuristicControl.hpp"
 
 class OsiSolverInterface;
 
@@ -115,6 +116,93 @@ public:
 
   /// Classification: constructive vs improvement heuristic
   virtual HeuristicCategory category() const { return HeuristicCategory::CONSTRUCTIVE; }
+
+  /** Orchestration order used by CbcRootHeuristicSchedule (and any other
+      scheduler that wants it) to decide, among heuristics eligible to run
+      at the same moment, which ones to try first. Lower runs first; ties
+      keep insertion order (stable sort). Purely a hint used by whichever
+      scheduler groups multiple heuristics together -- it has no effect on
+      when a heuristic runs on its own (see rootHooks()/shouldHeurRun()). */
+  inline void setOrder(int value) { order_ = value; }
+  inline int order() const { return order_; }
+
+  /** Minimum number of incumbent solutions CBC must already have before
+      this heuristic is allowed to start. 0 (the default for constructive
+      heuristics, e.g. FeasibilityPump/Diving/FeasibilityJump) means "no
+      incumbent needed yet". Improvement heuristics that require at least
+      one/two solutions to build a neighbourhood (RINS/VND: 1, Combine2: 2)
+      should set this explicitly; category() supplies a sensible default
+      (see effectiveMinSolutionsToStart()) when it is left unset. */
+  inline void setMinSolutionsToStart(int value) { minSolutionsToStart_ = value; }
+  inline int minSolutionsToStart() const { return minSolutionsToStart_; }
+
+  /** Maximum number of incumbent solutions CBC may already have for this
+      heuristic to still be worth starting. -1 (default) means unlimited.
+      Set to 0 for heuristics that should only be tried while no feasible
+      solution has been found at all (e.g. an expensive constructive
+      heuristic that stops being useful once cheaper ones already
+      succeeded). */
+  inline void setMaxSolutionsToStart(int value) { maxSolutionsToStart_ = value; }
+  inline int maxSolutionsToStart() const { return maxSolutionsToStart_; }
+
+  /** category()-derived default for minSolutionsToStart() when the user has
+      not explicitly overridden it (minSolutionsToStart_ == -1 sentinel). */
+  inline int effectiveMinSolutionsToStart() const
+  {
+    if (minSolutionsToStart_ >= 0)
+      return minSolutionsToStart_;
+    switch (category()) {
+    case HeuristicCategory::IMPROVEMENT:
+      return 1;
+    case HeuristicCategory::IMPROVEMENT_2:
+      return 2;
+    case HeuristicCategory::CONSTRUCTIVE:
+    default:
+      return 0;
+    }
+  }
+
+  /** Whether, given that CBC currently has numberSolutions incumbent(s),
+      this heuristic is allowed to start at all (independent of *where* --
+      see runsAtRootHook()). Centralises the
+      minSolutionsToStart()/maxSolutionsToStart() gate so schedulers don't
+      each reimplement it. */
+  inline bool solutionCountAllowsStart(int numberSolutions) const
+  {
+    if (numberSolutions < effectiveMinSolutionsToStart())
+      return false;
+    if (maxSolutionsToStart_ >= 0 && numberSolutions > maxSolutionsToStart_)
+      return false;
+    return true;
+  }
+
+  /** Root-node "hook" moments (see CbcRootHeuristicSchedule) at which this
+      heuristic is allowed to run, encoded as a string of single-letter
+      codes:
+        l - first LP solution (before pre-processing)
+        L - pre-processed LP solution (default; matches historical
+            behaviour of "root heuristics before cuts")
+        c - an intermediate round of cut generation
+        C - after cut generation is finished at the root
+        P - after FeasibilityPump, seeded with its least-fractional
+            attempt (currently implemented directly inside
+            CbcHeuristicFPump's failure-recovery fallback -- see
+            CbcHeuristicFPump::setFeasibilityJumpFallback() -- rather than
+            through this generic hook, since it needs FPump's internal
+            per-pass tracking; the code is reserved here for future use by
+            a scheduler-level equivalent)
+      Default is "LcC", i.e. runs before cuts, during intermediate cut
+      rounds, and after root cuts, which is what every root heuristic has
+      always done (the 'c' gate at CbcModel's intermediate-cut-round
+      heuristics call was only added alongside this attribute, so the
+      default had to include it to avoid changing behaviour). */
+  inline void setRootHooks(const char *hooks) { rootHooks_ = hooks ? hooks : ""; }
+  inline void setRootHooks(const std::string &hooks) { rootHooks_ = hooks; }
+  inline const std::string &rootHooks() const { return rootHooks_; }
+  inline bool runsAtRootHook(char hook) const
+  {
+    return rootHooks_.find(hook) != std::string::npos;
+  }
 
   /// Assignment operator
   CbcHeuristic &operator=(const CbcHeuristic &rhs);
@@ -251,10 +339,15 @@ public:
         (could add global cut if finished)
         -1 returned on size
         -2 time or user event
+        If bestPossibleObjective is given, it is set to the best possible
+        (minimization) objective of the sub branch and bound when one was
+        done, otherwise to -COIN_DBL_MAX. A finished search may have stopped
+        on the gap tolerance with this bound below the solution value.
     */
   int smallBranchAndBound(OsiSolverInterface *solver, int numberNodes,
     double *newSolution, double &newSolutionValue,
-    double cutoff, std::string name) const;
+    double cutoff, std::string name,
+    double *bestPossibleObjective = NULL) const;
   /// Create C++ lines to get to current state
   virtual void generateCpp(FILE *) {}
   /// Create C++ lines to get to current state - does work for base class
@@ -282,6 +375,7 @@ public:
   inline void setDecayFactor(double value)
   {
     decayFactor_ = value;
+    control_.decay = value;
   }
   /// Set input solution
   void setInputSolution(const double *solution, double objValue);
@@ -323,6 +417,81 @@ public:
   {
     minDistanceToRun_ = value;
   }
+  /** Select a HeuristicScheduleMode and its K parameter. Takes effect for
+      heuristics that consult shouldRunBySchedule()/controlAllows() from
+      their own gating logic (RINS, VND, DINS, FJ, the dives, combine,
+      crossover, proximity). Default is Legacy (no behaviour change). */
+  inline void setScheduleMode(HeuristicScheduleMode mode, int k = 1)
+  {
+    control_.mode = mode;
+    control_.everyK = k > 0 ? k : 1;
+    control_.initialK = control_.everyK;
+  }
+  inline HeuristicScheduleMode scheduleMode() const
+  {
+    return control_.mode;
+  }
+  inline int scheduleK() const
+  {
+    return control_.everyK;
+  }
+  /// The policy and statistics deciding when this heuristic runs
+  inline CbcHeuristicControl &control() { return control_; }
+  inline const CbcHeuristicControl &control() const { return control_; }
+  /** Returns true if, per scheduleMode()/scheduleK(), this is a node at
+      which the heuristic should attempt to run; also applies the
+      maxFailures and timeShare limits of control(). Has side effects
+      (advances internal bookkeeping), so a heuristic should call it at most
+      once per candidate invocation. In Legacy mode only the limits apply:
+      the heuristic's own pre-existing logic decides the rest. */
+  bool shouldRunBySchedule();
+  /** Only the schedule-independent limits (pause after repeated failures,
+      time share) and, for non-Legacy modes, a minimum gap of K nodes since
+      the last run. For heuristics triggered by a new incumbent rather than
+      periodically (combine, crossover, proximity). */
+  bool controlAllows();
+
+  /** Brackets one real execution of the heuristic. Time is always charged
+      to control(); the run only counts (towards back-off, failures and
+      statistics) if finish() is called, so early exits do not count. */
+  class RunGuard {
+  public:
+    explicit RunGuard(CbcHeuristic *heuristic);
+    ~RunGuard();
+    void finish(bool success);
+
+  private:
+    CbcHeuristic *h_;
+    double start_;
+    bool finished_;
+  };
+
+  /** Allow this heuristic to be considered during in-tree node processing
+      (whereFrom 3 "after cuts at other nodes" / 4 "during cuts at other
+      nodes"), on top of whatever root-only whereFrom_ bits the
+      constructor already set. Centralises the whereFrom_ bit-twiddling
+      ("magic numbers") that used to be hand-rolled at each call site
+      wanting tree execution (e.g. CbcSolverHeuristics.cpp's old
+      `setWhereFrom(whereFrom() | (1 << 4))`). Pair with
+      setScheduleMode(EveryKDepth, K) so the heuristic doesn't fire on
+      every single tree node. */
+  inline void enableTreeCalls() { whereFrom_ |= (1 << 3) | (1 << 4); }
+
+  /** Caps the total number of times this heuristic is allowed to actually
+      execute its search (as opposed to being merely considered and
+      skipped) over the whole solve. 0 (default) means unlimited. Any
+      heuristic that wants this cap should call recordInvocation() itself
+      exactly once per real (non-skipped) execution, and consult
+      invocationBudgetAllows() beforehand. Generic replacement for each
+      heuristic hand-rolling its own "maxCalls_/callsMade_" pair. */
+  inline void setMaxInvocations(int n) { maxInvocations_ = n; }
+  inline int maxInvocations() const { return maxInvocations_; }
+  inline int invocationsMade() const { return invocationsMade_; }
+  inline bool invocationBudgetAllows() const
+  {
+    return maxInvocations_ <= 0 || invocationsMade_ < maxInvocations_;
+  }
+  inline void recordInvocation() { ++invocationsMade_; }
 
   /** Check whether the heuristic should run at all
         0 - before cuts at root node (or from doHeuristics)
@@ -331,7 +500,19 @@ public:
         3 - after cuts at other nodes
         4 - during cuts at other nodes
             8 added if previous heuristic in loop found solution
-    */
+
+      When scheduleMode() is non-Legacy, this base implementation bypasses
+      the legacy shallowDepth_/howOftenShallow_/minDistanceToRun_ per-node
+      throttling below entirely (that math was tuned for -- and only ever
+      really opens up during -- shallow, root-adjacent calls; see
+      CbcHeuristicRINS::shouldHeurRun()'s original override, which this
+      generalises) and only checks the whereFrom_ context bitmask plus the
+      hot-start/no-rows guard. The actual periodic decision is then left
+      to shouldRunBySchedule(), which the heuristic's solution() must call
+      itself. This lets ANY heuristic opt into schedule-based tree
+      execution (setScheduleMode() + enableTreeCalls()) with no need to
+      override shouldHeurRun() at all -- see CbcHeuristicFeasibilityJump
+      and CbcHeuristicDive for heuristics that rely on this default. */
   virtual bool shouldHeurRun(int whereFrom);
   /** Check whether the heuristic should run this time */
   bool shouldHeurRun_randomChoice();
@@ -396,6 +577,15 @@ protected:
   /// Name for printing
   std::string heuristicName_;
 
+  /// See setOrder()
+  int order_;
+  /// See setMinSolutionsToStart(); -1 sentinel means "use category() default"
+  int minSolutionsToStart_;
+  /// See setMaxSolutionsToStart(); -1 means unlimited
+  int maxSolutionsToStart_;
+  /// See setRootHooks()
+  std::string rootHooks_;
+
   /// How often to do (code can change)
   mutable int howOften_;
   /// How much to increase how often
@@ -443,6 +633,13 @@ protected:
         run in order to allow the heuristic to run in this node, too. Currently
         this is tested, but we may switch to avgDistanceToRun_ in the future. */
   int minDistanceToRun_;
+
+  /// Policy and statistics of when to run (see CbcHeuristicControl)
+  CbcHeuristicControl control_;
+  /// See setMaxInvocations()
+  int maxInvocations_ = 0;
+  /// See recordInvocation()
+  int invocationsMade_ = 0;
 
   /// The description of the nodes where this heuristic has been applied
   CbcHeuristicNodeList runNodes_;

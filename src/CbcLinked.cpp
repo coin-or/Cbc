@@ -2529,7 +2529,7 @@ OsiSolverLink::linearizedBAB(CglStored *cut)
     probing.setMaxElements(200);
     probing.setMaxProbeRoot(50);
     probing.setMaxLookRoot(10);
-    probing.setRowCuts(3);
+    probing.setRowCuts(-3);
     probing.setUsingObjective(true);
     cbcModel->addCutGenerator(&probing, -1, "Probing", true, false, false, -100, -1, -1);
     cbcModel->cutGenerator(0)->setTiming(true);

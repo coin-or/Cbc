@@ -96,14 +96,20 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@COIN_HAS_CLP_TRUE@am__append_1 = test_cbc ctests
-#  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_SAMPLE_TRUE@am__append_2 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_MIPLIB3_TRUE@am__append_3 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
-#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-@COIN_HAS_NETLIB_TRUE@am__append_4 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
-bin_PROGRAMS = gamsTest$(EXEEXT) osiUnitTest$(EXEEXT) \
-	CInterfaceTest$(EXEEXT)
+noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
+	mip-debug-cuts$(EXEEXT) lp-relaxation-test$(EXEEXT) \
+	lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
+	coefstr-test$(EXEEXT) rowred-test$(EXEEXT) \
+	row-activity-test$(EXEEXT) final-bound-test$(EXEEXT) \
+	progress-callback-test$(EXEEXT) bkclique-bench$(EXEEXT) \
+	clqext-bench$(EXEEXT) zerohalf-bench$(EXEEXT) \
+	probing-bench$(EXEEXT) gomory-bench$(EXEEXT) \
+	lagomory-bench$(EXEEXT) landp-bench$(EXEEXT) \
+	twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
+	impclique-explore$(EXEEXT) impclique-bench$(EXEEXT) \
+	impclique-vs-clique-bench$(EXEEXT) \
+	impclique-real-bench$(EXEEXT) mip-root-replay$(EXEEXT) \
+	oddwheel-bench$(EXEEXT) rins-bench$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -116,24 +122,94 @@ CONFIG_HEADER = $(top_builddir)/src/config.h \
 	$(top_builddir)/src/OsiCbc/config_osicbc.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
-PROGRAMS = $(bin_PROGRAMS)
-am_CInterfaceTest_OBJECTS = CInterfaceTest.$(OBJEXT)
-CInterfaceTest_OBJECTS = $(am_CInterfaceTest_OBJECTS)
-CInterfaceTest_DEPENDENCIES = ../src/libCbc.la
+PROGRAMS = $(noinst_PROGRAMS)
+am_bkclique_bench_OBJECTS = bkclique-bench.$(OBJEXT)
+bkclique_bench_OBJECTS = $(am_bkclique_bench_OBJECTS)
+bkclique_bench_DEPENDENCIES = ../src/libCbc.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_gamsTest_OBJECTS = gamsTest.$(OBJEXT)
-gamsTest_OBJECTS = $(am_gamsTest_OBJECTS)
-gamsTest_DEPENDENCIES = ../src/libCbc.la
-am_osiUnitTest_OBJECTS = osiUnitTest.$(OBJEXT) \
-	OsiCbcSolverInterfaceTest.$(OBJEXT)
-osiUnitTest_OBJECTS = $(am_osiUnitTest_OBJECTS)
-am__DEPENDENCIES_1 =
-osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-	$(am__DEPENDENCIES_1)
+am_cbc_validate_sol_OBJECTS = cbc_validate_sol.$(OBJEXT)
+cbc_validate_sol_OBJECTS = $(am_cbc_validate_sol_OBJECTS)
+cbc_validate_sol_DEPENDENCIES = ../src/libCbc.la
+am_clqext_bench_OBJECTS = clqext-bench.$(OBJEXT)
+clqext_bench_OBJECTS = $(am_clqext_bench_OBJECTS)
+clqext_bench_DEPENDENCIES = ../src/libCbc.la
+am_coefstr_test_OBJECTS = coefstr-test.$(OBJEXT)
+coefstr_test_OBJECTS = $(am_coefstr_test_OBJECTS)
+coefstr_test_DEPENDENCIES = ../src/libCbc.la
+am_final_bound_test_OBJECTS = final-bound-test.$(OBJEXT)
+final_bound_test_OBJECTS = $(am_final_bound_test_OBJECTS)
+final_bound_test_DEPENDENCIES = ../src/libCbc.la
+am_gomory_bench_OBJECTS = gomory-bench.$(OBJEXT)
+gomory_bench_OBJECTS = $(am_gomory_bench_OBJECTS)
+gomory_bench_DEPENDENCIES = ../src/libCbc.la
+am_impclique_bench_OBJECTS = impclique-bench.$(OBJEXT)
+impclique_bench_OBJECTS = $(am_impclique_bench_OBJECTS)
+impclique_bench_DEPENDENCIES = ../src/libCbc.la
+am_impclique_explore_OBJECTS = impclique-explore.$(OBJEXT)
+impclique_explore_OBJECTS = $(am_impclique_explore_OBJECTS)
+impclique_explore_DEPENDENCIES = ../src/libCbc.la
+am_impclique_real_bench_OBJECTS = impclique-real-bench.$(OBJEXT)
+impclique_real_bench_OBJECTS = $(am_impclique_real_bench_OBJECTS)
+impclique_real_bench_DEPENDENCIES = ../src/libCbc.la
+am_impclique_vs_clique_bench_OBJECTS =  \
+	impclique-vs-clique-bench.$(OBJEXT)
+impclique_vs_clique_bench_OBJECTS =  \
+	$(am_impclique_vs_clique_bench_OBJECTS)
+impclique_vs_clique_bench_DEPENDENCIES = ../src/libCbc.la
+am_lagomory_bench_OBJECTS = lagomory-bench.$(OBJEXT)
+lagomory_bench_OBJECTS = $(am_lagomory_bench_OBJECTS)
+lagomory_bench_DEPENDENCIES = ../src/libCbc.la
+am_landp_bench_OBJECTS = landp-bench.$(OBJEXT)
+landp_bench_OBJECTS = $(am_landp_bench_OBJECTS)
+landp_bench_DEPENDENCIES = ../src/libCbc.la
+am_lazy_constraint_test_OBJECTS = lazy-constraint-test.$(OBJEXT)
+lazy_constraint_test_OBJECTS = $(am_lazy_constraint_test_OBJECTS)
+lazy_constraint_test_DEPENDENCIES = ../src/libCbc.la
+am_lp_relaxation_test_OBJECTS = lp-relaxation-test.$(OBJEXT)
+lp_relaxation_test_OBJECTS = $(am_lp_relaxation_test_OBJECTS)
+lp_relaxation_test_DEPENDENCIES = ../src/libCbc.la
+am_mip_c_solve_OBJECTS = mip-c-solve.$(OBJEXT)
+mip_c_solve_OBJECTS = $(am_mip_c_solve_OBJECTS)
+mip_c_solve_DEPENDENCIES = ../src/libCbc.la
+am_mip_debug_cuts_OBJECTS = mip-debug-cuts.$(OBJEXT)
+mip_debug_cuts_OBJECTS = $(am_mip_debug_cuts_OBJECTS)
+mip_debug_cuts_DEPENDENCIES = ../src/libCbc.la
+am_mip_root_replay_OBJECTS = mip-root-replay.$(OBJEXT)
+mip_root_replay_OBJECTS = $(am_mip_root_replay_OBJECTS)
+mip_root_replay_DEPENDENCIES = ../src/libCbc.la
+am_mipstart_test_OBJECTS = mipstart-test.$(OBJEXT)
+mipstart_test_OBJECTS = $(am_mipstart_test_OBJECTS)
+mipstart_test_DEPENDENCIES = ../src/libCbc.la
+am_mir2_bench_OBJECTS = mir2-bench.$(OBJEXT)
+mir2_bench_OBJECTS = $(am_mir2_bench_OBJECTS)
+mir2_bench_DEPENDENCIES = ../src/libCbc.la
+am_oddwheel_bench_OBJECTS = oddwheel-bench.$(OBJEXT)
+oddwheel_bench_OBJECTS = $(am_oddwheel_bench_OBJECTS)
+oddwheel_bench_DEPENDENCIES = ../src/libCbc.la
+am_probing_bench_OBJECTS = probing-bench.$(OBJEXT)
+probing_bench_OBJECTS = $(am_probing_bench_OBJECTS)
+probing_bench_DEPENDENCIES = ../src/libCbc.la
+am_progress_callback_test_OBJECTS = progress-callback-test.$(OBJEXT)
+progress_callback_test_OBJECTS = $(am_progress_callback_test_OBJECTS)
+progress_callback_test_DEPENDENCIES = ../src/libCbc.la
+am_rins_bench_OBJECTS = rins-bench.$(OBJEXT)
+rins_bench_OBJECTS = $(am_rins_bench_OBJECTS)
+rins_bench_DEPENDENCIES = ../src/libCbc.la
+am_row_activity_test_OBJECTS = row-activity-test.$(OBJEXT)
+row_activity_test_OBJECTS = $(am_row_activity_test_OBJECTS)
+row_activity_test_DEPENDENCIES = ../src/libCbc.la
+am_rowred_test_OBJECTS = rowred-test.$(OBJEXT)
+rowred_test_OBJECTS = $(am_rowred_test_OBJECTS)
+rowred_test_DEPENDENCIES = ../src/libCbc.la
+am_twomir_bench_OBJECTS = twomir-bench.$(OBJEXT)
+twomir_bench_OBJECTS = $(am_twomir_bench_OBJECTS)
+twomir_bench_DEPENDENCIES = ../src/libCbc.la
+am_zerohalf_bench_OBJECTS = zerohalf-bench.$(OBJEXT)
+zerohalf_bench_OBJECTS = $(am_zerohalf_bench_OBJECTS)
+zerohalf_bench_DEPENDENCIES = ../src/libCbc.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -149,28 +225,24 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/OsiCbc
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
-	./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po ./$(DEPDIR)/dummy.Po \
-	./$(DEPDIR)/gamsTest.Po ./$(DEPDIR)/osiUnitTest.Po
+am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
+	./$(DEPDIR)/cbc_validate_sol.Po ./$(DEPDIR)/clqext-bench.Po \
+	./$(DEPDIR)/coefstr-test.Po ./$(DEPDIR)/final-bound-test.Po \
+	./$(DEPDIR)/gomory-bench.Po ./$(DEPDIR)/impclique-bench.Po \
+	./$(DEPDIR)/impclique-explore.Po \
+	./$(DEPDIR)/impclique-real-bench.Po \
+	./$(DEPDIR)/impclique-vs-clique-bench.Po \
+	./$(DEPDIR)/lagomory-bench.Po ./$(DEPDIR)/landp-bench.Po \
+	./$(DEPDIR)/lazy-constraint-test.Po \
+	./$(DEPDIR)/lp-relaxation-test.Po ./$(DEPDIR)/mip-c-solve.Po \
+	./$(DEPDIR)/mip-debug-cuts.Po ./$(DEPDIR)/mip-root-replay.Po \
+	./$(DEPDIR)/mipstart-test.Po ./$(DEPDIR)/mir2-bench.Po \
+	./$(DEPDIR)/oddwheel-bench.Po ./$(DEPDIR)/probing-bench.Po \
+	./$(DEPDIR)/progress-callback-test.Po \
+	./$(DEPDIR)/rins-bench.Po ./$(DEPDIR)/row-activity-test.Po \
+	./$(DEPDIR)/rowred-test.Po ./$(DEPDIR)/twomir-bench.Po \
+	./$(DEPDIR)/zerohalf-bench.Po
 am__mv = mv -f
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_@AM_V@)
-am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
-CCLD = $(CC)
-LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_@AM_V@)
-am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -189,9 +261,20 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(CInterfaceTest_SOURCES) \
-	$(nodist_EXTRA_CInterfaceTest_SOURCES) $(gamsTest_SOURCES) \
-	$(osiUnitTest_SOURCES)
+SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
+	$(clqext_bench_SOURCES) $(coefstr_test_SOURCES) \
+	$(final_bound_test_SOURCES) $(gomory_bench_SOURCES) \
+	$(impclique_bench_SOURCES) $(impclique_explore_SOURCES) \
+	$(impclique_real_bench_SOURCES) \
+	$(impclique_vs_clique_bench_SOURCES) $(lagomory_bench_SOURCES) \
+	$(landp_bench_SOURCES) $(lazy_constraint_test_SOURCES) \
+	$(lp_relaxation_test_SOURCES) $(mip_c_solve_SOURCES) \
+	$(mip_debug_cuts_SOURCES) $(mip_root_replay_SOURCES) \
+	$(mipstart_test_SOURCES) $(mir2_bench_SOURCES) \
+	$(oddwheel_bench_SOURCES) $(probing_bench_SOURCES) \
+	$(progress_callback_test_SOURCES) $(rins_bench_SOURCES) \
+	$(row_activity_test_SOURCES) $(rowred_test_SOURCES) \
+	$(twomir_bench_SOURCES) $(zerohalf_bench_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -383,30 +466,854 @@ AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 AM_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
-#                         unitTest for Cbc                             #
+#                       Quick tests (make test)                        #
 ########################################################################
-CBC_TEST_TGTS = gamstests ositests $(am__append_1)
-cbcflags = $(am__append_3)
-ositestsflags = $(am__append_2) $(am__append_4)
-gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbc.la
+#
+# `make test` runs quick tests that need neither the mip-sanity-data
+# submodule nor any tools beyond the build environment, so that it works in
+# any build, including out-of-source builds such as those of coinbrew and
+# the generic CI: the in-process tests that build their own fixtures
+# (also run by run-mip-sanity-tests, see below) and, if the Sample data is
+# available, a solve of p0033 with the cbc executable.
+QUICK_TESTS = lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
+	coefstr-test$(EXEEXT) row-activity-test$(EXEEXT)
+
+cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
+cbc_validate_sol_LDADD = ../src/libCbc.la
+mip_c_solve_SOURCES = mip-c-solve.cpp
+mip_c_solve_LDADD = ../src/libCbc.la
+final_bound_test_SOURCES = final-bound-test.cpp
+final_bound_test_LDADD = ../src/libCbc.la
+progress_callback_test_SOURCES = progress-callback-test.cpp
+progress_callback_test_LDADD = ../src/libCbc.la
 
 ########################################################################
-#                         unitTest for OsiCbc                          #
+#           Row-cut-debugger diagnostic for wrong-answer bugs          #
 ########################################################################
-osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
-osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la $(CBCUNITTEST_LFLAGS)
+#
+# mip-debug-cuts: activates Osi's row-cut debugger (Cbc_activateRowCutDebugger)
+# with a known-correct reference solution (e.g. a certified optimum from
+# mip-sanity-data/sols) and solves the instance. Any cut, bound-fixing, or
+# branching decision that would exclude the reference solution is flagged
+# during the search -- useful for diagnosing WRONG_OBJ/INFEASIBLE_WRONG
+# regressions. Requires a --debug (non-NDEBUG) Cbc build for the CoinAssert
+# checks in CbcModel/CglXXX to actually raise. See `mip-debug-cuts --help`.
+mip_debug_cuts_SOURCES = mip-debug-cuts.cpp
+mip_debug_cuts_LDADD = ../src/libCbc.la
 
 ########################################################################
-#                         unitTest for CbcCInterface                   #
+#              LP-relaxation solve/resolve tests (C interface)         #
 ########################################################################
-CInterfaceTest_SOURCES = CInterfaceTest.c
-nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
-CInterfaceTest_LDADD = ../src/libCbc.la
+#
+# lp-relaxation-test: targeted tests for Cbc_solveLinearProgram()/
+# Cbc_resolve() -- root LP relaxation solves under different LPMethod/
+# DualPivot/LPReductions settings (including parallel LP racing and its
+# >= 2 threads precondition), warm-start reoptimization (variable fixing and
+# constraint add/remove), LP solution validation (bounds, reduced-cost
+# complementary slackness), and the LP settings that must survive into a
+# reoptimize -- notably INT_PARAM_PERT_VALUE, where Clp's default is
+# "perturbation off" but Cbc's tuned default is the mild 50 that fast
+# warm-started reoptimization relies on, and DBL_PARAM_PSI, where a Positive
+# Edge pivot rule requested for the root solve must still be installed on
+# every later resolve. Both are pure LP-performance regressions that no
+# objective check would catch, since the LP still reaches the same optimum.
+# Also covers the LP time limit: Clp keeps CPU and wall-clock deadlines as two
+# independent parameters and checks both, so the limit must be armed on the one
+# INT_PARAM_ELAPSED_TIME selects (it defaults to wall clock) and only that one,
+# and "no limit" must disarm rather than arm a far-future deadline -- under LP
+# racing, enforcing a wall-clock budget as CPU time would cut it short by
+# roughly the thread count.
+# Expected LP relaxation objectives were computed independently (two external
+# solvers agreed exactly) and cross-checked against Cbc's own solve. Run as
+# part of the regression suite by run-mip-sanity-tests (--no-lp-tests skips
+# it). See `lp-relaxation-test --help`.
+lp_relaxation_test_SOURCES = lp-relaxation-test.cpp
+lp_relaxation_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#               Lazy-constraint tests (C interface, TSP)               #
+########################################################################
+#
+# lazy-constraint-test: targeted tests for the C interface's lazy-constraint
+# machinery -- Cbc_addLazyConstraint() and Cbc_addCutCallback() with
+# atSolution=1 -- driven by the TSP with subtour elimination, which is the
+# canonical use of the feature (the SEC family is exponential, so it is stated
+# lazily and only violated members ever reach a solver).
+# The failure mode being guarded against is silent: a lazy constraint that is
+# ignored still yields an optimal-looking answer, just to a relaxation. The
+# assignment problem (degree constraints only) is exactly the TSP minus its
+# SECs and is strictly weaker on every instance used, so the two are told apart
+# by the objective alone. No fixture data is needed: instances come from a fixed
+# LCG and each reference optimum is computed in-process three independent ways
+# -- Held-Karp dynamic programming, the same MIP with SECs as ordinary rows, and
+# the same MIP with them lazy -- which must agree while the SEC-free bound must
+# come out strictly below. Published solutions are also walked as a successor
+# array, since an objective check alone would pass on two subtours priced as if
+# they were a tour.
+# Covers enforcement, the LP relaxation staying untightened, repeated Cbc_solve()
+# on one model (where the previous answer returns as a MIPStart, screened before
+# the model is flagged as carrying lazy constraints), constraints registered
+# between solves, Cbc_clone() deep-copying them, a SEC-violating MIPStart being
+# rejected rather than trusted in both objective senses, the cut-callback and
+# iterative-LP-cut-loop formulations, staged rows/columns reaching the solve at
+# all, and the whole solution pool rather than just the best solution. Run as
+# part of the regression suite by run-mip-sanity-tests (--no-lazy-tests skips
+# it). See `lazy-constraint-test --help`.
+lazy_constraint_test_SOURCES = lazy-constraint-test.cpp
+lazy_constraint_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#                  MIP-start tests (C interface)                       #
+########################################################################
+#
+# mipstart-test: targeted tests for MIP starts through Cbc_setMIPStart() and
+# Cbc_setMIPStartI(), which is the path python-mip uses. A MIP start is stated
+# in the *original* problem while Cbc, by default, searches the *preprocessed*
+# one, and callers typically supply only the nonzero integer values -- so
+# CbcMipStart::computeCompleteSolution() has to fix what it recognizes, re-solve
+# the LP to derive the rest, and fall back to a mini branch and bound when
+# integers come back fractional. Each of those steps can fail quietly.
+# The C interface is deliberately the vehicle rather than the -mipstart file:
+# CbcMipStart::read() densifies before returning, building a vector over every
+# column and overwriting the entries the file named, so a file listing three
+# columns and a file listing all of them arrive identically and the input shapes
+# a caller might send cannot be told apart on that path at all. Only the
+# setMIPStart() path keeps them sparse.
+# No fixture data is needed: the model is a small fixed-charge problem whose
+# optimum is enumerated in-process over all open sets, with the continuous flows
+# derived by an independent greedy fill, so a wrong answer is a wrong answer and
+# not a stale expectation. Its continuous columns are undetermined by the
+# integers until the LP runs, which is what makes an integers-only start a real
+# test rather than a restatement of the answer.
+# Covers the three input shapes -- nonzero integers only, the full solution, all
+# nonzeros -- by name and by index, with preprocessing on and off, asserting for
+# each that the start is accepted, the published point is integral and satisfies
+# every row, the objective recomputed from the published columns matches the
+# reported one, and columns the start never mentioned came back derived rather
+# than left at zero. Also covers INT_PARAM_MIPSTART_FIX (the runtime mode that
+# replaced the compile-time JUST_FIX_INTEGER macro, whose fix-continuous-too
+# recovery path was unreachable as shipped), negative integer values -- where a
+# positive-only filter on the solution auto-carried between solves would drop
+# them silently -- an infeasible start being rejected rather than trusted, since
+# accepting one installs a cutoff that can exclude the genuine optimum, starts
+# naming columns the model does not have, and a suboptimal start being improved
+# upon. Run as part of the regression suite by run-mip-sanity-tests
+# (--no-mipstart-tests skips it). See `mipstart-test --help`.
+mipstart_test_SOURCES = mipstart-test.cpp
+mipstart_test_LDADD = ../src/libCbc.la
+
+# coefstr-test: targeted tests for CbcCoefficientStrengthening, the coefficient
+# tightening ("big-M strengthening") step of the pre-root-LP strengthening phase
+# (step 3 of CbcSolver::preRootLPStrenghtening(), per -coefStrengthening).
+#
+# The pass shrinks an integer coefficient exceeding its row's slack down to that
+# slack and adjusts the right-hand side to compensate, which tightens the LP
+# relaxation while leaving the integer-feasible set alone. Both halves of that
+# are asserted: the new coefficient, right-hand side and LP bound against values
+# worked out by hand, and the feasible set by *enumerating* every integer point
+# of the box before and after -- a re-solve reaching the same optimum would say
+# nothing about the points the tightened system silently stopped admitting.
+# Covers the textbook big-M row, a general integer column (the case Cgl's own
+# binary-only `difference <= 1.0` gate skips, i.e. what this pass adds beyond the
+# existing implementation), negative coefficients (right-hand side off the lower
+# bound, not the upper), >= rows (the scale = -1 path), the eight rows and
+# columns the rule must decline -- range and equality rows, infinite max
+# activity, singletons, continuous, fixed and sub-unit-range columns,
+# non-positive slack -- fractional slacks used as-is and near-integral ones
+# snapped up rather than down, idempotence under a second pass, agreement between
+# the row and column matrix views (a modifyCoefficient()-based implementation
+# leaves the cached row copy stale), and the parameter end to end. Every fixture
+# is small enough that Cbc reaches the right answer with the pass disabled, so
+# each assertion was checked by mutation: all thirteen plausible wrong
+# implementations tried are caught, including the three ways the deferred
+# matrix copy (taken only once a change is known, to keep the no-change path
+# off it) could fail to be applied. Run as part of the regression suite by
+# run-mip-sanity-tests (--no-coefstr-tests skips it). See `coefstr-test --help`.
+coefstr_test_SOURCES = coefstr-test.cpp
+coefstr_test_LDADD = ../src/libCbc.la
+
+# rowred-test: targeted tests for CbcRowReductions, the row-reduction step of the
+# same pre-root-LP strengthening phase (step 4 of
+# CbcSolver::preRootLPStrenghtening(), per -rowReductions).
+#
+# The pass deletes rows that cannot constrain the problem: rows all of whose
+# columns are fixed, and rows that are duplicates or scalar multiples of another
+# row -- the survivor inheriting the intersection of the two rows' bounds. Both
+# halves are asserted, as in coefstr-test: the surviving rows and their merged
+# bounds against values worked out by hand, and no integer-feasible point lost
+# *or gained* by enumerating the whole box before and after. "Gained" matters as
+# much as "lost" here, since dropping a row is only sound if the survivor still
+# says everything the dropped row said, and a re-solve reaching the same optimum
+# would show neither.
+#
+# The negative-scale cases carry most of the weight. Scaling a row by lambda < 0
+# swaps its two bounds, and when one side is infinite the infinity has to swap
+# with them rather than be scaled -- Cbc's +/-1e20 sentinel convention makes that
+# an explicit test, unlike HiGHS's kHighsInf where the sign flip falls out of the
+# arithmetic. lambda = -1 also exercises the hash's pivot tie-break: a row and
+# its negation have equal-magnitude candidate pivots, so unless both resolve the
+# tie the same way (largest magnitude, ties broken by smallest column index) they
+# normalise to different vectors, never share a hash bucket and are never
+# compared -- which makes every "1 row removed" assertion on a lambda = -1
+# fixture a tie-break assertion too.
+#
+# Also covered: exact duplicates and duplicates whose indices arrive in a
+# different order (the per-nonzero hashes are combined order-independently
+# because CoinPackedMatrix makes no promise about index order within a vector), a
+# scale factor of 1e6, a whole parallel class collapsing to one row,
+# contradictory merged bounds (infeasible, and nothing deleted) versus bounds
+# crossing by less than the feasibility tolerance (noise, snapped to an
+# equation), duplicate and negated equations, independence from input row order,
+# idempotence under a second pass, the counters adding up, and the eight cases
+# the reduction must decline -- singletons, same support but not proportional,
+# proportional only to 1e-7, disjoint and subset supports, partly-fixed rows, a
+# model with nothing to find, and a model with no rows at all. The two end-to-end
+# fixtures are picked so that the specific plausible bug moves the reported
+# optimum: keeping the looser of two duplicate bounds reads 8 instead of 2, and
+# forgetting the negative-lambda swap reads 6 instead of 8.
+#
+# Checked by mutation, as coefstr-test was: 18 of 26 plausible wrong
+# implementations are caught, and the 8 that are not were each confirmed to be
+# *equivalent* to the original rather than an assertion gap -- for every one, a
+# sharpened variant that does break the underlying invariant is caught. Four are
+# equivalent because OsiClp normalises each row to ascending column order, so the
+# pivot tie-break, the smallest-vs-largest pivot choice, and the order-independent
+# hash combination cannot be distinguished through this interface at all (they are
+# there because CoinPackedMatrix promises no index order and the pass takes an
+# OsiSolverInterface); two are re-checks the hash seed already implies (equal
+# length, equal support); one is an early-out whose weighting is separately
+# asserted; and one only stages a deletion that is never applied. The exercise
+# was worth it for a different reason: it found a real bug, an all-fixed row
+# violated by up to 1e-6 being deleted -- turning an infeasible model into a
+# feasible-looking one -- because the removal test and the infeasibility test
+# both used the feasibility tolerance and left no sliver between them.
+# See `rowred-test --help`.
+rowred_test_SOURCES = rowred-test.cpp
+rowred_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#          Row activity/slack tests after Cbc_solve() (C interface)    #
+########################################################################
+#
+# row-activity-test: regression test for Cbc_getRowActivity()/
+# Cbc_getRowSlack() after Cbc_solve(), covering both the pure-LP dispatch
+# (no integers/SOS -- Cbc_solve() forwards straight to
+# Cbc_solveLinearProgram()) and a genuine MIP solve through branch and bound.
+#
+# The MIP case is the regression test for the "rSlk/rActv null/stale pointer
+# after MIP solve" bug: Cbc_getMIPOptimizationResults() used to hand
+# Cbc_updateSlack() cbcModel.getRowActivity() -- the row activity of
+# CbcModel's own *internal working solver*, i.e. whatever LP was last
+# resolved during the search, which is not necessarily the node that
+# produced the incumbent. That silently reports activity/slack for a
+# different point than model->x (Cbc_getColSolution()'s incumbent) rather
+# than crashing or erroring, so no objective-value check would ever catch
+# it. Every row's expected activity/slack is instead recomputed independently
+# as A * Cbc_getColSolution(), from the same (index, coefficient) pairs the
+# row was built with, and checked against what Cbc_getRowActivity()/
+# Cbc_getRowSlack() actually report. Also covers the smallest possible extra
+# solution pool (INT_PARAM_MAX_SAVED_SOLS = 0) -- CbcModel::numberSavedSolutions()
+# always counts the incumbent itself on top of that pool, so the same
+# activity/slack path is still exercised there. One fast in-process binary with
+# nothing to parallelize; no fixture data needed. Run as part of the
+# regression suite by run-mip-sanity-tests (--no-row-activity-tests skips
+# it). See `row-activity-test --help`.
+row_activity_test_SOURCES = row-activity-test.cpp
+row_activity_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#          Clique separation / extension offline benchmarks            #
+########################################################################
+#
+# bkclique-bench and clqext-bench: replay a single Bron-Kerbosch call captured
+# from inside Cbc, so the BK algorithm can be worked on without paying for a
+# full MIP solve per measurement. Both consume the fixtures written by
+# CbcClqFixtureDump.hpp -- a Cbc built with -DCBC_DUMP_CLQSEP_FIXTURE emits, at
+# each of the two BK call sites, the preprocessed problem, its optimal LP basis
+# and solution, and the conflict graph serialized by
+# CoinStaticConflictGraph::save().
+#
+# The graph is reloaded rather than rebuilt because rebuilding does not
+# reproduce it: Cbc's graph is built before CglCliqueStrengthening deletes and
+# adds rows, and OsiSolverInterface::checkCGraph() only rebuilds when the
+# *column* count changes, so the graph a separator sees is routinely stale with
+# respect to the matrix. That staleness is the behaviour under study, hence
+# OsiSolverInterface::setCGraph() and the serialization. --rebuild-cgraph keeps
+# the rebuild path available for direct comparison, and `bkclique-bench
+# --self-test` asserts the round trip is byte-exact and field-for-field
+# identical, degrees included (they are deliberately approximate, so recomputing
+# them would give different values).
+#
+# bkclique-bench drives CglBKClique over N rounds with an LP re-solve between
+# them, and reports the sum of cut violations as well as the cut count: a
+# separator finding fewer but more violated cliques is doing better work, which
+# a count alone cannot show. It builds a fresh generator each round, because
+# CglBKClique::separateCliques() ends with `maxCallsBK_ = bk->numCalls()` -- a
+# monotonic ratchet that otherwise shrinks the budget of every later round and
+# makes the rounds incomparable.
+#
+# clqext-bench drives CglCliqueStrengthening instead, reporting rows extended
+# and dominated, the change in matrix size, and the LP bound before and after.
+# It refuses to run when the warm start misses optimality: getReducedCost()
+# returns NULL unless the model is proven optimal, and extension methods 4 and 5
+# then silently downgrade to 2.
+#
+# Neither is part of the regression suite; both are measurement tools.
+bkclique_bench_SOURCES = bkclique-bench.cpp
+bkclique_bench_LDADD = ../src/libCbc.la
+clqext_bench_SOURCES = clqext-bench.cpp
+clqext_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#      "Implication clique" cut separator -- explore + replay bench    #
+########################################################################
+#
+# Exploratory idea: a row x_1+...+x_k <= M*y (all binary), modelling
+# "x_1 OR ... OR x_k -> y", is usually left with M == k by coefficient
+# strengthening -- weaker than disaggregating into x_i <= y, and weaker still
+# than grouping mutually-conflicting x_i's: x_i <= y  <=>  x_i conflicts with
+# complement(y) in the conflict graph, so a whole clique of x_i's that all
+# conflict with complement(y) gives the valid, tighter sum x_i <= y. See
+# impclique-explore.cpp's header comment for the full algebraic argument.
+#
+# impclique-explore reads a raw .mps.gz directly, solves the LP itself (no
+# CBC preprocessing), builds the conflict graph via checkCGraph(), and
+# separates -- useful for a first signal check on an arbitrary instance, but
+# it does not see what CBC's own preprocessing does to the row before cut
+# generation runs, which can (and does, on some instances) resolve the
+# fractionality away entirely before this separator would ever fire.
+#
+# impclique-bench replays the same separator against the exact preprocessed
+# root-LP state CBC itself would generate cuts from -- it consumes the
+# identical "sep"-tagged fixtures CbcClqFixtureDump.hpp already writes for
+# bkclique-bench (preprocessed matrix, optimal LP basis, and the *captured*
+# conflict graph; see that header's comment for why loading rather than
+# rebuilding the graph matters). No new fixture format was needed: this
+# separator's inputs are exactly CglBKClique's. --singleton-only disables
+# clique growth (plain disaggregation only), the control that isolates what
+# extension buys, matching bkclique-bench's --ext-method=0.
+#
+# Neither is part of the regression suite; both are measurement tools.
+impclique_explore_SOURCES = impclique-explore.cpp
+impclique_explore_LDADD = ../src/libCbc.la
+impclique_bench_SOURCES = impclique-bench.cpp
+impclique_bench_LDADD = ../src/libCbc.la
+
+# impclique-vs-clique-bench measures this separator's *marginal* value on top
+# of standard clique separation (CglBKClique), not in isolation: every cut it
+# finds is itself a clique inequality in the conflict graph, so a natural
+# question is whether CglBKClique already finds it given enough rounds. It
+# runs two independent round-by-round trajectories from the same fixture --
+# clique-only, and clique+this-separator together each round -- mirroring
+# how CBC's cut loop actually calls every active generator once per pass
+# before a single resolve. A chain-to-convergence-then-run-once design would
+# overstate the marginal contribution, since a cut found in round 1 changes
+# what the other generator finds in round 2.
+impclique_vs_clique_bench_SOURCES = impclique-vs-clique-bench.cpp
+impclique_vs_clique_bench_LDADD = ../src/libCbc.la
+
+# impclique-real-bench replays the same fixtures against the production
+# Cgl/src/CglImpliedClique class (not the ad hoc separate()/toRowCut() logic
+# duplicated in impclique-bench.cpp / impclique-vs-clique-bench.cpp above),
+# to cross-check that the real generator produces the same cuts/bound
+# movement the exploratory tools found. This is the regression check for
+# the actual cut generator that ships in Cgl.
+impclique_real_bench_SOURCES = impclique-real-bench.cpp
+impclique_real_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#          Root-node processing replay (cuts + heuristics fixtures)    #
+########################################################################
+#
+# mip-root-replay loads a fixture written by CbcRootFixtureDump.hpp
+# (CBC_DUMP_ROOT_FIXTURE) -- the preprocessed problem plus its optimal root
+# LP basis -- and rebuilds a CbcModel directly around it, attaching the same
+# default cut generators / heuristics CbcStrategyDefault gives the normal
+# `cbc` command line, then runs branchAndBound() with a small node limit.
+# Since the fixture already sits at the point CBC reaches after
+# pre-processing + the root LP, this is the fast iteration loop for
+# experimenting with root cut generation / heuristics strategies -- see
+# ROOT-FIXTURES.md and `gen-root-fixtures` for how fixtures are produced.
+# Not part of the regression suite; a measurement tool.
+mip_root_replay_SOURCES = mip-root-replay.cpp
+mip_root_replay_LDADD = ../src/libCbc.la
+
+########################################################################
+#              RINS (and VND) heuristic replay/sweep bench             #
+########################################################################
+#
+# rins-bench loads a fixture written by CbcHeuristicRinsFixtureDump.hpp
+# (CBC_DUMP_RINS_FIXTURE) -- the current node's LP relaxation plus the
+# incumbent solution, captured at the exact call site inside
+# CbcHeuristicRINS::solution() -- rebuilds a CbcModel around it, installs the
+# incumbent as the best solution, and calls the REAL CbcHeuristicRINS (or
+# CbcHeuristicVND) class directly with tunable knobs (shallow-fixing mode,
+# close-fix distance, sub-MIP node budget, fractionSmall). This makes a
+# parameter sweep over how aggressively RINS fixes variables a
+# milliseconds-per-point question instead of a full branch-and-bound run --
+# see RINS-FIXTURES.md and `gen-rins-fixtures` for how fixtures are produced.
+# Not part of the regression suite; a measurement tool.
+rins_bench_SOURCES = rins-bench.cpp
+rins_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#        0-1/2 separation replay benchmark (measurement tool)          #
+########################################################################
+#
+# zerohalf-bench replays one CglZeroHalf separation call captured from Cbc by
+# CbcZeroHalfFixtureDump.hpp, so an experiment on the 0-1/2 algorithm costs
+# milliseconds instead of a preprocess plus a root LP.
+#
+# It loads no auxiliary structure, and that is faithful rather than a shortcut:
+# CglZeroHalf::refreshSolver() rebuilds every array it uses from the solver on
+# each call, so reconstructing from the model is exactly what Cbc does. Contrast
+# bkclique-bench, which must load a serialized conflict graph because Cbc caches
+# a stale one.
+#
+# --max-pairs=0 is the control flag: it disables the O(cnt^3) pair-weakening
+# stage, so the difference against the default prices that stage exactly.
+#
+# Not part of the regression suite; it is a measurement tool.
+zerohalf_bench_SOURCES = zerohalf-bench.cpp
+zerohalf_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#          probing replay benchmark (measurement tool)                 #
+########################################################################
+#
+# probing-bench replays one CglProbing call captured from Cbc by
+# CbcProbingFixtureDump.hpp. Same motive as the two benches above -- reaching the
+# root cut pass costs a preprocess plus an LP -- but three things differ enough to
+# be worth stating, because each one is a way to accidentally measure a call Cbc
+# never makes.
+#
+# It reports row cuts and column cuts SEPARATELY. Probing is the only generator
+# here that returns both, and the column cuts (bound tightenings) often carry the
+# bound movement without adding a row at all. A row-cut count alone would score
+# air05 -- 0.75s, 0 row cuts, 62 column cuts -- as pure waste.
+#
+# It calls generateCutsAndModify with a CglTreeProbingInfo, not generateCuts with
+# a plain CglTreeInfo, because CbcCutGenerator.cpp:357-376 special-cases Probing
+# that way. CglTreeProbingInfo::initializeFixing returns nonzero, which switches on
+# the implication-saving path inside probe(); the plain call skips it and is
+# therefore cheaper than Cbc's. --plain-info prices that difference rather than
+# inheriting it silently.
+#
+# Its default --pass=0 is the expensive call, not merely the first: probe() sets
+# justFix = -1 when pass == 0 at the root, which overrides the maxProbe==123
+# candidate subsetting so every candidate column is probed.
+#
+# Control flag: --max-probe=0 disables probing outright (the gate is real, at
+# CglProbing.cpp:2350), leaving tighten() and the column cuts it implies, so
+# time(123) - time(0) prices probing and time(0) is the floor. Note --max-look is
+# NOT a control flag despite appearances -- probe() overwrites maxStack with a
+# hardcoded 80 -- and a positive --max-probe only permutes the candidate order
+# rather than capping it. Both are documented at length in the source.
+#
+# Not part of the regression suite; it is a measurement tool.
+probing_bench_SOURCES = probing-bench.cpp
+probing_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#           gomory replay benchmark (measurement tool)                 #
+########################################################################
+#
+# gomory-bench replays one CglGomory call captured from Cbc by
+# CbcGomoryFixtureDump.hpp. Same motive as the benches above, and the same
+# metric hierarchy, but Gomory differs from all three in a way that changes what
+# the fixture has to carry and what a comparison is even allowed to mean.
+#
+# THE BASIS IS THE ALGORITHM'S INPUT, NOT PROVENANCE. needsOptimalBasis() returns
+# true and a Gomory cut *is* a row of the simplex tableau at the basis handed in:
+# CglGomory factorizes it (CglGomory.cpp:645-677) and BTRANs a unit vector
+# through it. Two distinct optimal bases of one degenerate vertex give entirely
+# different, equally valid cuts. So the .bas is required rather than optional --
+# the bench refuses a fixture without one instead of solving cold, which is what
+# probing-bench does -- and a nonzero warmStartIters means the run is not
+# comparable rather than merely noisy.
+#
+# It reports row cuts and column cuts SEPARATELY, for a different reason than
+# probing-bench does. A Gomory cut over one column is not a row but a bound:
+# CglGomory.cpp:1731-1793 turns a singleton into an OsiColCut, or into a
+# deliberately infeasible 1<=0 row cut when the implied bounds cross. Any
+# exactness gate on a change here must therefore compare both kinds; a row-cut
+# comparison alone would miss every bound change.
+#
+# Its default --pass=0 is the expensive call for two independent reasons, and one
+# is not a budget. CglGomory.cpp:842-875: pass 0 takes limitAtRoot_ (Cbc sets
+# 1000, or 2000 above 5000 columns) rather than limit_ (50), a 20-40x looser cap
+# on cut length; and it sets tolerance1 = 1.0, which makes the accuracy test at
+# :1252 an *absolute* 1e-7 rather than one scaled by the cut's magnitude. Later
+# passes use a different acceptance rule, so a change validated only there has
+# not been validated on Cbc's root call.
+#
+# Control flag: --away-at-root=0.5 admits almost no candidate (the gate at
+# :888-901 is away < frac < 1-away), so time(0.5) is the irreducible per-call
+# floor -- factorization, the dense rowActivity build at :728-738, the rowType
+# classification at :747-795 -- and time(0.005) - time(0.5) prices the whole
+# candidate loop including the dense tableau dot product at :1037-1115. Note
+# --limit-at-root=0 is NOT a control flag despite appearances: :852 turns 0 into
+# numberColumns and :876 adds numberRows, making 0 the loosest setting rather
+# than the tightest.
+#
+# Defaults reproduce Cbc's root configuration from CbcSolverCutSetup.cpp:132-237,
+# not CglGomory's constructor defaults, which differ on away and both limits.
+#
+# Not part of the regression suite; it is a measurement tool.
+gomory_bench_SOURCES = gomory-bench.cpp
+gomory_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#      Lagrangean Gomory replay benchmark (measurement tool)            #
+########################################################################
+#
+# lagomory-bench replays one Lagrangean Gomory separation call captured by
+# CglLagomoryFixtureDump.hpp. It exists because gomory-bench cannot do this job
+# even though it has a --orig-solver flag: that flag passes the *fixture solver
+# itself* to passInOriginalSolver, so originalSolver_ and si are the same LP,
+# numberOriginalRows equals si.getNumRows(), and there is nothing to dualize.
+# Measured over the 330 gomoryFixtures, --gomory-type=11 and =12 return 0 cuts in
+# ~4 us because the whenToDo==1 gate is false, and =21/=22 return statistics
+# byte-identical to plain =0. That is lagomory not running, not lagomory being
+# cheap.
+#
+# The cause is in the capture, not the bench: the Cbc-side Gomory dump fires at
+# currentPassNumber_ == 1, before any generator has contributed a row, and all
+# 330 .meta files confirm it -- rows equals infoFormulationRows in every one. A
+# lagomory call is only defined once the LP already holds cut rows.
+#
+# SO THE FIXTURE IS A PAIR OF LPs, AND BOTH COME FROM DISK. <stem>.mps.gz is the
+# augmented LP whose trailing rows are the cuts to dualize; <stem>.orig.mps.gz is
+# the original formulation the cuts will be rows of. The second cannot be
+# recovered by deleting the first's cut rows, because the Lagrangean pass copies
+# si's *column* bounds into originalSolver_ on every call and never its *row*
+# bounds, so the two drift apart -- the .meta's rowBoundDrift counts the
+# formulation rows where they already disagree, and a nonzero value is proof that
+# the shortcut would replay a different LP.
+#
+# --plain is the baseline any Lagrangean variant has to beat, and the only
+# like-for-like one available: same augmented LP, same basis, same knobs, with the
+# original solver simply not passed in.
+#
+# piMaxDev/solMaxDev are fidelity checks, never injections. The replay reaches its
+# own duals by reading the .bas and resolving, as Cbc does; pi over the cut rows
+# is exactly the vector that perturbs the objective, so a fixture whose replayed
+# duals disagree with the captured ones is separating a different problem and must
+# be filtered out rather than averaged in.
+#
+# The basis is the algorithm's input here for the same reason as in gomory-bench,
+# and objImprove outranks cut count for the same reason as in every bench above.
+# Timing is meaningful only serially: the per-stage accumulators behind --profile
+# are file-static in CglGomory.cpp and would be summed across threads.
+#
+# Not part of the regression suite; it is a measurement tool.
+lagomory_bench_SOURCES = lagomory-bench.cpp
+lagomory_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#           two-step MIR replay benchmark (measurement tool)            #
+########################################################################
+#
+# twomir-bench replays one CglTwomir call captured from Cbc by
+# CbcTwomirFixtureDump.hpp. Same motive and the same metric hierarchy as the
+# benches above -- objImprove decides, totalViol is the pre-resolve proxy, time
+# is third, cut count is the weakest figure and must never be ranked by.
+#
+# THE BASIS IS THE ALGORITHM'S INPUT, as for gomory-bench, though by a different
+# mechanism worth knowing when reading a diff: needsOptimalBasis() is true
+# (CglTwomir.cpp:2241-2246) and DGG_generateTabRowCuts builds its own stack-local
+# CoinFactorization from the warm start (:1564-1569), BTRANs one unit vector per
+# fractional basic integer (:1044), then dots that against the raw column-major
+# matrix (:1056-1067). It never calls getBInvARow. So the .bas is required rather
+# than optional, and a nonzero warmStartIters means the run is not comparable
+# rather than merely noisy.
+#
+# A FREE COLUMN DISQUALIFIES THE INSTANCE, which no other bench here has to deal
+# with. CglTwomir.cpp:95-118 returns with no cuts at all when any column has
+# lb < -1e20 && ub > 1e20. That is the single reason the Gomory or Probing fixture
+# population cannot be reused, and the bench refuses such a fixture: replaying one
+# times the free-column scan and nothing else.
+#
+# It reports row cuts and column cuts SEPARATELY, and here the reason is
+# Twomir-specific: the singleton branch at :455-460 is the only place a bound
+# change can appear (or, when the implied bounds cross, a deliberately infeasible
+# 1<=0 row cut at :443-448). An exactness gate comparing row cuts alone would miss
+# every bound-only change.
+#
+# FOUR INDEPENDENTLY GATEABLE STAGES, which is more control than the other benches
+# offer, and setCutTypes gives two NESTED floors:
+#   --no-tab --no-form  the per-call floor: DGG_getData + an empty emit loop +
+#                       DGG_freeData. No CoinFactorization is built at all -- it is
+#                       a local of DGG_generateTabRowCuts. O(elements+ncol+nrow).
+#   --no-mir --no-2mir  the base-construction floor. These do not disable base
+#                       construction: they set t_max=t_min-1 and q_max=q_min-1
+#                       (:311-312) so no cut body runs while the factorization and
+#                       every DGG_getTableauConstraint still do. This isolates
+#                       exactly the cost of building tableau rows.
+# CAVEAT, not optional when quoting a stage: floor+tab+form accounts for the total
+# only up to the shared emit loop (:332-488), whose cost scales with the number of
+# cuts, which these flags also change. Attribute it separately via rowCuts_n.
+#
+# Its default --pass=0 is the expensive call for THREE reasons, all different from
+# Gomory's. max_elements becomes getNumCols() at :300-302 -- not the 250 Cbc set,
+# not the 50000 default, so the length cap is at its loosest exactly here. The
+# tableau stage is alive only while info.level < 1 && info.pass < 6 (:314), so
+# pass 6 and later is a structurally different call rather than a cheaper one. And
+# Cbc gives TwoMirCuts switches = 1, i.e. setSwitchOffIfLessThan(1)
+# (CbcSolverCutSetup.cpp:383), so returning zero row cuts on the first root pass
+# disables the generator for the whole solve -- pass 0 is the only call that always
+# happens, and the population it defines is exactly what that kill switch judges.
+#
+# Control flags: prefer --no-tab / --no-form. --away-at-root=0.5 looks like the
+# analogue of gomory-bench's control and is weaker: it zeroes tableau candidates
+# (:1578) but leaves the formulation stage running, which needs no fractional
+# basic integer. Worse, setAwayAtRoot silently IGNORES a value outside (0,0.5]
+# rather than clamping it (:2246-2263), so the CSV echoes the getters and a
+# command line asking for 0.6 runs the previous value.
+#
+# Defaults reproduce Cbc's root configuration from CbcSolverCutSetup.cpp:359-418,
+# not CglTwomir's constructor defaults, which differ 20x on away (0.0005 both at
+# the root and in the tree). Note awayAtRoot = 0.005 depends on `#define MORE_CUTS`
+# living inside the *Gomory* block at CbcSolverCutSetup.cpp:139 and never being
+# undef'd -- a cross-generator coupling, not a Twomir decision.
+#
+# Not part of the regression suite; it is a measurement tool.
+twomir_bench_SOURCES = twomir-bench.cpp
+twomir_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#      mixed-integer rounding replay benchmark (measurement tool)      #
+########################################################################
+#
+# mir2-bench replays one CglMixedIntegerRounding2 call captured from Cbc by
+# CbcMirFixtureDump.hpp. Same motive and the same metric hierarchy as the benches
+# above -- objImprove decides, totalViol is the pre-resolve proxy, time is third,
+# cut count is the weakest figure and must never be ranked by.
+#
+# MAXAGGR_ == 1 IS CBC'S REAL CONFIGURATION, and read this before reading the
+# generator: it makes a large part of the file dead. CbcSolverCutSetup.cpp:341
+# constructs CglMixedIntegerRounding2 mixedGen(1, true, 1), and the setMAXAGGR_
+# call at :344 is guarded by `mixedRoundStrategy != 1` while mixedRoundStrategy_
+# DEFAULTS to 1 (CbcSolver.hpp:206, re-asserted at CbcSolver.cpp:10926). So the
+# aggregation loop at CglMixedIntegerRounding2.cpp:868 runs exactly once with
+# iAggregate == 0; selectRowToAggregate (:1124) and aggregateRow (:1209) are NEVER
+# CALLED; both SAFE_ROWS blocks inside that loop are unreachable; and the O(nnz)
+# matrixByCol transpose built unconditionally at :195 has no reachable reader.
+# Reading the generator's documented row aggregation as if it ran is reading dead
+# code. --max-aggr=2 turns all of it back on, which is not Cbc's call and so is not
+# a measurement of Cbc's cost -- but it is the only configuration that exercises
+# those branches, so every exactness run must include it.
+#
+# THE BASIS IS THE ALGORITHM'S INPUT, but not through a factorization, and this is
+# the one place MIR2 differs from every other bench here in a way that could be
+# mistaken for a shortcut. needsOptimalBasis() is NOT overridden, so it returns
+# false: MIR2 never factorizes and never calls getBInvARow. The .bas is required
+# anyway, because mixIntRoundPreprocess reads si.getRowActivity() (:502) to resolve
+# every range ('R') row into a 'G' or an 'L' (:505-518). Land on a different LP
+# point and sense_/RHS_ differ, so the row types differ, so the starting-row set
+# differs -- a different problem, not noise. Hence the bench refuses a fixture with
+# no .bas rather than solving cold, and a nonzero warmStartIters means the run is
+# not comparable rather than merely noisy.
+#
+# It reports ROW CUTS ONLY, and unlike twomir-bench that is not a simplification
+# but the generator's shape: the single insertion point is
+# cs.insertIfNotDuplicateAndClean(cMirCut, 31, tolTest) at :1044 with
+# CoinAbsFltEq tolTest(1.0e-4) at :865, and there is no OsiColCut anywhere in the
+# file. --dump-cuts still dumps column cuts if any ever appear, and warns loudly:
+# that would contradict the reading rather than being a harmless extra. Note the
+# duplicate test makes the OsiCuts SEQUENCE load-bearing -- a reordering changes
+# which of two near-duplicates wins, so the dump is deliberately unsorted.
+#
+# TWO NESTED FLOORS via --level, because the root call runs the generator TWICE.
+# CGL_HAS_CLP is defined (Cgl/src/CglCommon/config.h:11) so `#define MODIFY_LP 2`
+# at :78 is live, and at !info.inTree && objSense == 1.0 && info.level >= 0 the
+# branch deep-copies the whole solver (:126), sign-flips every pure >= row, calls
+# model->setNewRowCopy(NULL) (:150, forcing an O(nnz) row-copy rebuild), then
+# RECURSES with info2.level = -1-info.level and returns (:174-176):
+#   --level=-1  the inner post-flip call: separation only, no deep copy, no flip,
+#               no recursion, ONE preprocess pass. This is the call that separates.
+#   --level=0   Cbc's call: preprocess, deep copy, flip, setNewRowCopy(NULL),
+#               preprocess again, separate. With setDoPreproc(1) the FIRST
+#               preprocess pass is entirely discarded -- nothing between :74 and
+#               :175 reads a member it wrote.
+# CAVEAT, not optional when quoting a stage: these are two different calls, not two
+# stages of one call, so level0 minus level(-1) is an ATTRIBUTION, NOT A PARTITION
+# -- among other things the deep copy changes which LP the separation then runs on.
+# Attribute the accept/emit path separately via rowCuts_n. The CSV's modifyLpFired
+# column says whether the branch fired at all: with no pure >= row it takes the
+# `else { delete [] swap; }` at :177-179 and pays none of that overhead.
+#
+# Its default --pass=0 is the expensive call for ONE reason, and it is not
+# Gomory's or Twomir's. The `#if 1` block at :1001-1008 rejects a cut with
+# n > 0.8*numCols_ -- but only `if (info_->pass || info_->inTree)` (:1002). At the
+# root first pass that filter is OFF, so pass 0 accepts wider cuts than any later
+# pass. It is the analogue of Gomory's limitAtRoot_.
+#
+# MIR2 HAS NO FIRST-PASS KILL SWITCH, the opposite of Twomir and worth knowing
+# before attributing anything to one. CbcSolverCutSetup.cpp:347 passes
+# switches = 0 | (ALL_LAGRANGEAN * lagrangeanFlag) with lagrangeanFlag == 0 by
+# default, so setSwitchOffIfLessThan(0) -- a condition that can never fire. A
+# `disabled` next-run in printGeneratorTable therefore comes from CbcCutGenerator's
+# own frequency tuning after the root, NOT from a zero-cuts veto on the first call.
+#
+# NO CLOCK AND NO RANDOMNESS: nothing in the .cpp reads CoinCpuTime,
+# CoinWallclockTime or getMaximumSeconds, and nothing draws a random number. So
+# replays are reproducible in a way the time-limited generators are not, and the
+# fixture's maxSeconds is provenance only.
+#
+# Defaults reproduce Cbc's root configuration from CbcSolverCutSetup.cpp:341-342,
+# which for MIR2 happens to equal the default constructor's
+# gutsOfConstruct(1, true, 1, -1) except for doPreproc, which Cbc raises from -1 to
+# 1. Note the four setters THROW CoinError on an out-of-range value rather than
+# silently ignoring it (hpp:171-179, :191-199, cpp:1969-1978) -- the opposite hazard
+# from twomir-bench's setAway*, so a bad flag is a hard failure here. And
+# getDoPreproc() returns `doPreproc_ != 0` (cpp:1980-1983), so -1 and 1 are
+# INDISTINGUISHABLE through the getter, which is why the CSV carries both the
+# bench's own doPreproc and the getter's doPreprocNonzero.
+#
+# There is deliberately no --formulation-rows: MIR2 never reads
+# info.formulation_rows. The only CglTreeInfo fields it touches are inTree, pass,
+# level and options.
+#
+# Not part of the regression suite; it is a measurement tool.
+mir2_bench_SOURCES = mir2-bench.cpp
+mir2_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#         odd-wheel replay benchmark (measurement tool)                #
+########################################################################
+#
+# oddwheel-bench replays one CglOddWheel call. It needs NO fixture format of its
+# own: odd-wheel separation consumes exactly what clique separation consumes --
+# the conflict graph, the LP solution and the reduced costs -- so it reads the
+# fixtures CbcClqFixtureDump.hpp already writes, unchanged. Everything the
+# bkclique-bench comment says about why the graph is loaded rather than rebuilt
+# applies here verbatim and is not repeated.
+#
+# WHY IT DRIVES CglOddWheel AND NOT CoinOddWheelSeparator DIRECTLY. The separator
+# is a CoinUtils class with a public constructor, so a probe could build one from a
+# graph in a dozen lines -- and would then measure a structure the real call site
+# never builds. That mistake has already been made once on this stack: a
+# standalone probe of clique extension reported 0.95s against ~19ms actually
+# spent, because it built the full conflict graph where the real path uses a small
+# induced subgraph. So the generator is driven through generateCuts(), which owns
+# the doubled x/rc arrays, the CoinCutPool dominance filter and the duplicate-index
+# rejection, and the separator's internals are read back afterwards through
+# CglOddWheel::stats().
+#
+# THE COUNTERS ARE SELF-CHECKING, which the timers are not. Every
+# CoinShortestPath::find() call ends in exactly one of five outcomes, so
+# ohShort + ohRepeated + ohNotViol + ohDuplicate + oddHoles == spFindCalls must
+# hold; a violation means the instrumentation is wrong, not the algorithm.
+#
+# Control flag: --ext-method=0 turns off wheel-center lifting outright (the gate
+# is real -- searchOddWheels() skips the entire lifting loop when extMethod_ is 0),
+# so time(2) - time(0) prices lifting and time(0) is the floor. This is the
+# analogue of the control that showed clique separation's cost was extension
+# rather than the search, and it is the highest-value flag here.
+#
+# Its --max-seconds defaults to 0, i.e. NO LIMIT, and that is a correctness
+# requirement rather than a convenience. CbcCutGenerator.cpp hands the generator
+# whatever wall clock remains, and the separator checks that budget inside two
+# O(icaCount^2) loops -- so under a nonzero limit the arc count, the odd holes
+# found and the cuts emitted all become functions of machine load, and two runs of
+# one binary stop agreeing. With the limit off the counters are a function of the
+# fixture alone. The timeLimitHit column says whether any round aborted.
+#
+# There is deliberately no --min-viol: the threshold is the compile-time constant
+# ODDWHEEL_SEP_DEF_MIN_VIOL in CoinOddWheelSeparator.cpp with no setter anywhere,
+# and adding one purely to have a flag would change the code under measurement.
+#
+# Not part of the regression suite; it is a measurement tool.
+oddwheel_bench_SOURCES = oddwheel-bench.cpp
+oddwheel_bench_LDADD = ../src/libCbc.la
+
+########################################################################
+#        lift-and-project replay benchmark (measurement tool)          #
+########################################################################
+#
+# landp-bench replays one CglLandP call captured from Cbc. Same motive and the
+# same metric hierarchy as the benches above -- objImprove decides, totalViol is
+# the pre-resolve proxy, time is third, cut count is the weakest figure and must
+# never be ranked by.
+#
+# IT REUSES THE GOMORY FIXTURES, and no CbcLandPFixtureDump.hpp exists. That is a
+# claim about LandP's inputs rather than a convenience: CglLandP reads exactly the
+# matrix and bounds, isContinuous() per column (CglLandP.cpp:297), getWarmStart()
+# (:236) and getColSolution()/getRowActivity() (:329-330), all four of which the
+# five-file fixture carries. It caches nothing across calls that a fresh generator
+# does not rebuild, so unlike lagomory-bench -- whose call is only defined once the
+# LP already holds cut rows -- there is no shape requirement beyond "an optimal
+# basis of the model".
+#
+# THE BASIS IS THE ALGORITHM'S INPUT, and more forcefully than for any other bench
+# here. needsOptimalBasis() is true, and LandP does not merely read a tableau row
+# at that basis: it PIVOTS AWAY FROM IT, up to pivotLimit times, choosing each
+# pivot from the current tableau (CglLandPSimplex.cpp:668-720). So a different
+# optimal basis of the same vertex starts a different search and ends at a
+# different cut after a different amount of work -- warmStartIters != 0 makes a
+# run incomparable rather than merely noisy, and the CSV carries the column so a
+# sweep can be filtered on it.
+#
+# IT CLONES THE SOLVER TWICE PER CANDIDATE ROW AND THE FIRST CLONE IS DEAD, which
+# is the headline reason this bench exists. CglLandP.cpp:721 does
+# `ncSi = t_si->clone(); landpSi.setSi(ncSi)`, and optimize() opens with
+# `delete si_; si_ = cached.solver_->clone()` (CglLandPSimplex.cpp:645-646) without
+# having read si_ in between -- setSi only stores the pointer
+# (CglLandPSimplex.hpp:78-101). So every candidate pays two full
+# OsiClpSolverInterface deep copies where one is used, and the
+# setDblParam(OsiDualObjectiveLimit) and setLogLevel(0) applied at :723-724 never
+# reach the solver that actually pivots. Removing the first clone is not a one-line
+# deletion: it also keeps optimize()'s `delete si_` from destroying the caller's
+# &si, which the CglLandPSimplex constructor stores.
+#
+# A RANGE ROW MAKES LandP SWITCH ITSELF OFF FOR THE REST OF THE SOLVE, independently
+# of Cbc's kill switch, and the bench reports it exactly rather than inferring it.
+# On any row with -1e50 < lower < upper < 1e50, :599-668 clones the solver and
+# appends one slack column per range row, and :880 then negates
+# params_.maximumCutLength, which the guard at :552 turns into an immediate return
+# on every later call. rangeDisabled is read back from
+# parameter().maximumCutLength < 0 after the call; rangeRows counts the rows by the
+# generator's own rule. Note the OTHER range-row switch-off, at :548, is dead --
+# its condition is `if (numberRanges && false)`.
+#
+# TWO CONTROL FLAGS, giving a three-point decomposition no other bench here offers:
+#   --away=0.5           the per-call floor. away gates candidate selection at
+#                        :918-931, so 0.5 admits almost nothing and what remains
+#                        timed is cached_.getData() including its own solver clone
+#                        (:355), the CglLandPSimplex constructor and the candidate
+#                        sort. CHECK rowCuts_n AND benchCandidates BEFORE BELIEVING
+#                        IT: the test is strict, so a basic integer sitting at
+#                        exactly 0.5 still passes, and a half-integral LP admits
+#                        nearly everything.
+#   --pivot-limit=0      the no-pivoting path: generateMig() per candidate, no
+#                        clones, no cut-improving simplex. time(default) - time(0)
+#                        prices the whole L&P search including both per-candidate
+#                        clones. THE CUTS DIFFER at 0 (they are plain MIG cuts), so
+#                        this is a timing control only, never an exactness
+#                        baseline; the bench says so on stderr when it is used.
+#
+# ITS DEFAULTS ARE CBC'S ROOT CALL, not CglLandP's constructor defaults, which
+# differ on two knobs: CbcSolverCutSetup.cpp:431-450 sets maximumCutLength = 2000
+# (library default 10000) and validator().setMinViolation(1e-4) (library default 0,
+# i.e. accept any violation). --self-test pins that the two still differ, so the
+# claim cannot go stale silently. Unlike gomory-bench, --pass=N is COSMETIC here:
+# LandP reads info.pass only for a log message (:558) and info.inTree is the real
+# mode switch (:562-566 lowers pivotLimit to pivotLimitInTree).
+#
+# The validator's rejection counters are reported per code because they say WHY
+# pivoting produced nothing, which no other column does -- but they are a
+# diagnostic, not a census: CglLandPValidator.cpp:56-57 returns SmallViolation
+# without incrementing the counter, so rejSmallViol undercounts and no acceptance
+# rate can be computed from these.
+#
+# Not part of the regression suite; it is a measurement tool.
+landp_bench_SOURCES = landp-bench.cpp
+landp_bench_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .cpp .lo .o .obj
+.SUFFIXES: .cpp .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -436,62 +1343,118 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-install-binPROGRAMS: $(bin_PROGRAMS)
-	@$(NORMAL_INSTALL)
-	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(bindir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(bindir)" || exit 1; \
-	fi; \
-	for p in $$list; do echo "$$p $$p"; done | \
-	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p \
-	 || test -f $$p1 \
-	  ; then echo "$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n;h' \
-	    -e 's|.*|.|' \
-	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
-	sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
-	    else { print "f", $$3 "/" $$4, $$1; } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	    test -z "$$files" || { \
-	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
-	    } \
-	; done
 
-uninstall-binPROGRAMS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
-	      -e 's/$$/$(EXEEXT)/' \
-	`; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(bindir)" && $(am__rm_f) $$files
+clean-noinstPROGRAMS:
+	$(am__rm_f) $(noinst_PROGRAMS)
+	test -z "$(EXEEXT)" || $(am__rm_f) $(noinst_PROGRAMS:$(EXEEXT)=)
 
-clean-binPROGRAMS:
-	$(am__rm_f) $(bin_PROGRAMS)
-	test -z "$(EXEEXT)" || $(am__rm_f) $(bin_PROGRAMS:$(EXEEXT)=)
+bkclique-bench$(EXEEXT): $(bkclique_bench_OBJECTS) $(bkclique_bench_DEPENDENCIES) $(EXTRA_bkclique_bench_DEPENDENCIES) 
+	@rm -f bkclique-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(bkclique_bench_OBJECTS) $(bkclique_bench_LDADD) $(LIBS)
 
-CInterfaceTest$(EXEEXT): $(CInterfaceTest_OBJECTS) $(CInterfaceTest_DEPENDENCIES) $(EXTRA_CInterfaceTest_DEPENDENCIES) 
-	@rm -f CInterfaceTest$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_OBJECTS) $(CInterfaceTest_LDADD) $(LIBS)
+cbc_validate_sol$(EXEEXT): $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_DEPENDENCIES) $(EXTRA_cbc_validate_sol_DEPENDENCIES) 
+	@rm -f cbc_validate_sol$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_LDADD) $(LIBS)
 
-gamsTest$(EXEEXT): $(gamsTest_OBJECTS) $(gamsTest_DEPENDENCIES) $(EXTRA_gamsTest_DEPENDENCIES) 
-	@rm -f gamsTest$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(gamsTest_OBJECTS) $(gamsTest_LDADD) $(LIBS)
+clqext-bench$(EXEEXT): $(clqext_bench_OBJECTS) $(clqext_bench_DEPENDENCIES) $(EXTRA_clqext_bench_DEPENDENCIES) 
+	@rm -f clqext-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(clqext_bench_OBJECTS) $(clqext_bench_LDADD) $(LIBS)
 
-osiUnitTest$(EXEEXT): $(osiUnitTest_OBJECTS) $(osiUnitTest_DEPENDENCIES) $(EXTRA_osiUnitTest_DEPENDENCIES) 
-	@rm -f osiUnitTest$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(osiUnitTest_OBJECTS) $(osiUnitTest_LDADD) $(LIBS)
+coefstr-test$(EXEEXT): $(coefstr_test_OBJECTS) $(coefstr_test_DEPENDENCIES) $(EXTRA_coefstr_test_DEPENDENCIES) 
+	@rm -f coefstr-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(coefstr_test_OBJECTS) $(coefstr_test_LDADD) $(LIBS)
+
+final-bound-test$(EXEEXT): $(final_bound_test_OBJECTS) $(final_bound_test_DEPENDENCIES) $(EXTRA_final_bound_test_DEPENDENCIES) 
+	@rm -f final-bound-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(final_bound_test_OBJECTS) $(final_bound_test_LDADD) $(LIBS)
+
+gomory-bench$(EXEEXT): $(gomory_bench_OBJECTS) $(gomory_bench_DEPENDENCIES) $(EXTRA_gomory_bench_DEPENDENCIES) 
+	@rm -f gomory-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(gomory_bench_OBJECTS) $(gomory_bench_LDADD) $(LIBS)
+
+impclique-bench$(EXEEXT): $(impclique_bench_OBJECTS) $(impclique_bench_DEPENDENCIES) $(EXTRA_impclique_bench_DEPENDENCIES) 
+	@rm -f impclique-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(impclique_bench_OBJECTS) $(impclique_bench_LDADD) $(LIBS)
+
+impclique-explore$(EXEEXT): $(impclique_explore_OBJECTS) $(impclique_explore_DEPENDENCIES) $(EXTRA_impclique_explore_DEPENDENCIES) 
+	@rm -f impclique-explore$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(impclique_explore_OBJECTS) $(impclique_explore_LDADD) $(LIBS)
+
+impclique-real-bench$(EXEEXT): $(impclique_real_bench_OBJECTS) $(impclique_real_bench_DEPENDENCIES) $(EXTRA_impclique_real_bench_DEPENDENCIES) 
+	@rm -f impclique-real-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(impclique_real_bench_OBJECTS) $(impclique_real_bench_LDADD) $(LIBS)
+
+impclique-vs-clique-bench$(EXEEXT): $(impclique_vs_clique_bench_OBJECTS) $(impclique_vs_clique_bench_DEPENDENCIES) $(EXTRA_impclique_vs_clique_bench_DEPENDENCIES) 
+	@rm -f impclique-vs-clique-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(impclique_vs_clique_bench_OBJECTS) $(impclique_vs_clique_bench_LDADD) $(LIBS)
+
+lagomory-bench$(EXEEXT): $(lagomory_bench_OBJECTS) $(lagomory_bench_DEPENDENCIES) $(EXTRA_lagomory_bench_DEPENDENCIES) 
+	@rm -f lagomory-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(lagomory_bench_OBJECTS) $(lagomory_bench_LDADD) $(LIBS)
+
+landp-bench$(EXEEXT): $(landp_bench_OBJECTS) $(landp_bench_DEPENDENCIES) $(EXTRA_landp_bench_DEPENDENCIES) 
+	@rm -f landp-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(landp_bench_OBJECTS) $(landp_bench_LDADD) $(LIBS)
+
+lazy-constraint-test$(EXEEXT): $(lazy_constraint_test_OBJECTS) $(lazy_constraint_test_DEPENDENCIES) $(EXTRA_lazy_constraint_test_DEPENDENCIES) 
+	@rm -f lazy-constraint-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(lazy_constraint_test_OBJECTS) $(lazy_constraint_test_LDADD) $(LIBS)
+
+lp-relaxation-test$(EXEEXT): $(lp_relaxation_test_OBJECTS) $(lp_relaxation_test_DEPENDENCIES) $(EXTRA_lp_relaxation_test_DEPENDENCIES) 
+	@rm -f lp-relaxation-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(lp_relaxation_test_OBJECTS) $(lp_relaxation_test_LDADD) $(LIBS)
+
+mip-c-solve$(EXEEXT): $(mip_c_solve_OBJECTS) $(mip_c_solve_DEPENDENCIES) $(EXTRA_mip_c_solve_DEPENDENCIES) 
+	@rm -f mip-c-solve$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(mip_c_solve_OBJECTS) $(mip_c_solve_LDADD) $(LIBS)
+
+mip-debug-cuts$(EXEEXT): $(mip_debug_cuts_OBJECTS) $(mip_debug_cuts_DEPENDENCIES) $(EXTRA_mip_debug_cuts_DEPENDENCIES) 
+	@rm -f mip-debug-cuts$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(mip_debug_cuts_OBJECTS) $(mip_debug_cuts_LDADD) $(LIBS)
+
+mip-root-replay$(EXEEXT): $(mip_root_replay_OBJECTS) $(mip_root_replay_DEPENDENCIES) $(EXTRA_mip_root_replay_DEPENDENCIES) 
+	@rm -f mip-root-replay$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(mip_root_replay_OBJECTS) $(mip_root_replay_LDADD) $(LIBS)
+
+mipstart-test$(EXEEXT): $(mipstart_test_OBJECTS) $(mipstart_test_DEPENDENCIES) $(EXTRA_mipstart_test_DEPENDENCIES) 
+	@rm -f mipstart-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(mipstart_test_OBJECTS) $(mipstart_test_LDADD) $(LIBS)
+
+mir2-bench$(EXEEXT): $(mir2_bench_OBJECTS) $(mir2_bench_DEPENDENCIES) $(EXTRA_mir2_bench_DEPENDENCIES) 
+	@rm -f mir2-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(mir2_bench_OBJECTS) $(mir2_bench_LDADD) $(LIBS)
+
+oddwheel-bench$(EXEEXT): $(oddwheel_bench_OBJECTS) $(oddwheel_bench_DEPENDENCIES) $(EXTRA_oddwheel_bench_DEPENDENCIES) 
+	@rm -f oddwheel-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(oddwheel_bench_OBJECTS) $(oddwheel_bench_LDADD) $(LIBS)
+
+probing-bench$(EXEEXT): $(probing_bench_OBJECTS) $(probing_bench_DEPENDENCIES) $(EXTRA_probing_bench_DEPENDENCIES) 
+	@rm -f probing-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(probing_bench_OBJECTS) $(probing_bench_LDADD) $(LIBS)
+
+progress-callback-test$(EXEEXT): $(progress_callback_test_OBJECTS) $(progress_callback_test_DEPENDENCIES) $(EXTRA_progress_callback_test_DEPENDENCIES) 
+	@rm -f progress-callback-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(progress_callback_test_OBJECTS) $(progress_callback_test_LDADD) $(LIBS)
+
+rins-bench$(EXEEXT): $(rins_bench_OBJECTS) $(rins_bench_DEPENDENCIES) $(EXTRA_rins_bench_DEPENDENCIES) 
+	@rm -f rins-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(rins_bench_OBJECTS) $(rins_bench_LDADD) $(LIBS)
+
+row-activity-test$(EXEEXT): $(row_activity_test_OBJECTS) $(row_activity_test_DEPENDENCIES) $(EXTRA_row_activity_test_DEPENDENCIES) 
+	@rm -f row-activity-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(row_activity_test_OBJECTS) $(row_activity_test_LDADD) $(LIBS)
+
+rowred-test$(EXEEXT): $(rowred_test_OBJECTS) $(rowred_test_DEPENDENCIES) $(EXTRA_rowred_test_DEPENDENCIES) 
+	@rm -f rowred-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(rowred_test_OBJECTS) $(rowred_test_LDADD) $(LIBS)
+
+twomir-bench$(EXEEXT): $(twomir_bench_OBJECTS) $(twomir_bench_DEPENDENCIES) $(EXTRA_twomir_bench_DEPENDENCIES) 
+	@rm -f twomir-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(twomir_bench_OBJECTS) $(twomir_bench_LDADD) $(LIBS)
+
+zerohalf-bench$(EXEEXT): $(zerohalf_bench_OBJECTS) $(zerohalf_bench_DEPENDENCIES) $(EXTRA_zerohalf_bench_DEPENDENCIES) 
+	@rm -f zerohalf-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(zerohalf_bench_OBJECTS) $(zerohalf_bench_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -499,41 +1462,39 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gamsTest.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osiUnitTest.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bkclique-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc_validate_sol.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clqext-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coefstr-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/final-bound-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gomory-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-explore.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-real-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/impclique-vs-clique-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lagomory-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/landp-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lazy-constraint-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lp-relaxation-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-c-solve.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-debug-cuts.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mip-root-replay.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mipstart-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mir2-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oddwheel-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/probing-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/progress-callback-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rins-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/row-activity-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rowred-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/twomir-bench.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zerohalf-bench.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
 	@: >>$@
 
 am--depfiles: $(am__depfiles_remade)
-
-.c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
-
-.c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
-@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -620,9 +1581,6 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
-	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
-	done
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -655,14 +1613,37 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
+	mostlyclean-am
 
 distclean: distclean-am
-	-rm -f ./$(DEPDIR)/CInterfaceTest.Po
-	-rm -f ./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po
-	-rm -f ./$(DEPDIR)/dummy.Po
-	-rm -f ./$(DEPDIR)/gamsTest.Po
-	-rm -f ./$(DEPDIR)/osiUnitTest.Po
+	-rm -f ./$(DEPDIR)/bkclique-bench.Po
+	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
+	-rm -f ./$(DEPDIR)/clqext-bench.Po
+	-rm -f ./$(DEPDIR)/coefstr-test.Po
+	-rm -f ./$(DEPDIR)/final-bound-test.Po
+	-rm -f ./$(DEPDIR)/gomory-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-explore.Po
+	-rm -f ./$(DEPDIR)/impclique-real-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-vs-clique-bench.Po
+	-rm -f ./$(DEPDIR)/lagomory-bench.Po
+	-rm -f ./$(DEPDIR)/landp-bench.Po
+	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
+	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
+	-rm -f ./$(DEPDIR)/mip-c-solve.Po
+	-rm -f ./$(DEPDIR)/mip-debug-cuts.Po
+	-rm -f ./$(DEPDIR)/mip-root-replay.Po
+	-rm -f ./$(DEPDIR)/mipstart-test.Po
+	-rm -f ./$(DEPDIR)/mir2-bench.Po
+	-rm -f ./$(DEPDIR)/oddwheel-bench.Po
+	-rm -f ./$(DEPDIR)/probing-bench.Po
+	-rm -f ./$(DEPDIR)/progress-callback-test.Po
+	-rm -f ./$(DEPDIR)/rins-bench.Po
+	-rm -f ./$(DEPDIR)/row-activity-test.Po
+	-rm -f ./$(DEPDIR)/rowred-test.Po
+	-rm -f ./$(DEPDIR)/twomir-bench.Po
+	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -685,7 +1666,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS
+install-exec-am:
 
 install-html: install-html-am
 
@@ -708,11 +1689,33 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -f ./$(DEPDIR)/CInterfaceTest.Po
-	-rm -f ./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po
-	-rm -f ./$(DEPDIR)/dummy.Po
-	-rm -f ./$(DEPDIR)/gamsTest.Po
-	-rm -f ./$(DEPDIR)/osiUnitTest.Po
+	-rm -f ./$(DEPDIR)/bkclique-bench.Po
+	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
+	-rm -f ./$(DEPDIR)/clqext-bench.Po
+	-rm -f ./$(DEPDIR)/coefstr-test.Po
+	-rm -f ./$(DEPDIR)/final-bound-test.Po
+	-rm -f ./$(DEPDIR)/gomory-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-explore.Po
+	-rm -f ./$(DEPDIR)/impclique-real-bench.Po
+	-rm -f ./$(DEPDIR)/impclique-vs-clique-bench.Po
+	-rm -f ./$(DEPDIR)/lagomory-bench.Po
+	-rm -f ./$(DEPDIR)/landp-bench.Po
+	-rm -f ./$(DEPDIR)/lazy-constraint-test.Po
+	-rm -f ./$(DEPDIR)/lp-relaxation-test.Po
+	-rm -f ./$(DEPDIR)/mip-c-solve.Po
+	-rm -f ./$(DEPDIR)/mip-debug-cuts.Po
+	-rm -f ./$(DEPDIR)/mip-root-replay.Po
+	-rm -f ./$(DEPDIR)/mipstart-test.Po
+	-rm -f ./$(DEPDIR)/mir2-bench.Po
+	-rm -f ./$(DEPDIR)/oddwheel-bench.Po
+	-rm -f ./$(DEPDIR)/probing-bench.Po
+	-rm -f ./$(DEPDIR)/progress-callback-test.Po
+	-rm -f ./$(DEPDIR)/rins-bench.Po
+	-rm -f ./$(DEPDIR)/row-activity-test.Po
+	-rm -f ./$(DEPDIR)/rowred-test.Po
+	-rm -f ./$(DEPDIR)/twomir-bench.Po
+	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -729,48 +1732,54 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS
+uninstall-am:
 
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-binPROGRAMS clean-generic clean-libtool cscopelist-am \
+	clean-generic clean-libtool clean-noinstPROGRAMS cscopelist-am \
 	ctags ctags-am distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags dvi dvi-am html html-am info \
-	info-am install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS
+	info-am install install-am install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am
 
 .PRECIOUS: Makefile
 
 
-# We are using the solver executables to do the unit test
+test: $(QUICK_TESTS)
+	@for t in $(QUICK_TESTS); do \
+	  echo "Running $$t" ; \
+	  ./$$t > $$t.log 2>&1 || { cat $$t.log ; echo "$$t failed" ; exit 1 ; } ; \
+	done
+@COIN_HAS_SAMPLE_TRUE@	../src/cbc$(EXEEXT) `$(CYGPATH_W) $(SAMPLE_DATA)/p0033.mps` -solve -quit
 
-test: $(CBC_TEST_TGTS)
+########################################################################
+#              mip-sanity-data regression suite for Cbc                #
+########################################################################
+#
+# Self-contained regression suite: solves every instance in the
+# test/mip-sanity-data submodule (one Cbc thread per instance, suggested
+# node/time limits from limits.tsv, up to nproc instances in parallel via
+# GNU parallel) and validates each saved solution with cbc_validate_sol
+# (feasibility, integrality, objective, optimality/infeasibility vs the
+# best-known reference). See run-mip-sanity-tests for full documentation
+# and options (`./run-mip-sanity-tests --help`). `make sanity-test` builds
+# the validator and runs the whole suite; from cbc-workspace, `./test` is a
+# convenience symlink to run-mip-sanity-tests. Besides the submodule, the
+# suite needs GNU parallel, flock, GNU timeout, and bash 4.4 or later, and
+# it looks for its test programs next to the script (in-tree build).
 
-test_cbc: ../src/cbc$(EXEEXT)
-	RUNNING_TEST="test_cbc" ../src/cbc$(EXEEXT) $(cbcflags)
+sanity-test: cbc_validate_sol$(EXEEXT)
+	$(srcdir)/run-mip-sanity-tests
 
-@COIN_HAS_SAMPLE_TRUE@test_cbc_generic: ../src/cbc-generic$(EXEEXT)
-@COIN_HAS_SAMPLE_TRUE@	@echo "A minimal test is all that cbc-generic can manage just yet."
-@COIN_HAS_SAMPLE_TRUE@	RUNNING_TEST="cbc-generic" ../src/cbc-generic$(EXEEXT) -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
-
-gamstests: gamsTest$(EXEEXT)
-	export RUNNING_TEST="gamsTest" ; ./gamsTest$(EXEEXT)
-
-.PHONY: test
-
-ositests: osiUnitTest$(EXEEXT)
-	export RUNNING_TEST="osiUnitTest" ; ./osiUnitTest$(EXEEXT) $(ositestsflags)
-
-ctests: CInterfaceTest$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
+.PHONY: test sanity-test
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

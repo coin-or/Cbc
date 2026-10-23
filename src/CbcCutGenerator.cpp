@@ -22,10 +22,24 @@
 #include "CbcCutGenerator.hpp"
 #include "CbcBranchDynamic.hpp"
 #include "CglProbing.hpp"
+#include "CglGomory.hpp"
+#include "CglTwomir.hpp"
+#include "CglMixedIntegerRounding2.hpp"
+#include "CglGMI.hpp"
+#include "CglLandP.hpp"
+#include "CglRedSplit2.hpp"
+// CglMixedIntegerRounding2.hpp unconditionally #define's CGL_DEBUG 0 (its own
+// internal debug switch) if not already defined -- undo that here so it
+// doesn't spuriously enable this file's own `#ifdef CGL_DEBUG` blocks, which
+// assume CGL_DEBUG is only ever defined via this file's own (commented-out)
+// `#define CGL_DEBUG 1` above and expect OsiRowCutDebugger.hpp to have been
+// included in that case.
+#undef CGL_DEBUG
 #include "CglCliqueStrengthening.hpp"
 #include "CglBKClique.hpp"
 #include "CglOddWheel.hpp"
 #include "CoinTime.hpp"
+#include "CbcCutPoolFilter.hpp"
 #ifdef CBC_THREAD
 // need time on a thread by thread basis
 #include <pthread.h>
@@ -52,6 +66,10 @@ CbcCutGenerator::CbcCutGenerator()
   , numberCutsAtRoot_(0)
   , numberActiveCutsAtRoot_(0)
   , numberShortCutsAtRoot_(0)
+  , numberConsecutiveMisses_(0)
+  , nextRetryPass_(0)
+  , retryPeriod_(0)
+  , rootCallPeriod_(0)
   , switches_(1)
   , maximumTries_(-1)
 {
@@ -75,6 +93,10 @@ CbcCutGenerator::CbcCutGenerator(CbcModel *model, CglCutGenerator *generator,
   , numberCutsAtRoot_(0)
   , numberActiveCutsAtRoot_(0)
   , numberShortCutsAtRoot_(0)
+  , numberConsecutiveMisses_(0)
+  , nextRetryPass_(0)
+  , retryPeriod_(0)
+  , rootCallPeriod_(0)
   , switches_(1)
   , maximumTries_(-1)
 {
@@ -126,6 +148,10 @@ CbcCutGenerator::CbcCutGenerator(const CbcCutGenerator &rhs)
   numberCutsAtRoot_ = rhs.numberCutsAtRoot_;
   numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
   numberShortCutsAtRoot_ = rhs.numberShortCutsAtRoot_;
+  numberConsecutiveMisses_ = rhs.numberConsecutiveMisses_;
+  nextRetryPass_ = rhs.nextRetryPass_;
+  retryPeriod_ = rhs.retryPeriod_;
+  rootCallPeriod_ = rhs.rootCallPeriod_;
 }
 
 // Assignment operator
@@ -157,6 +183,10 @@ CbcCutGenerator::operator=(const CbcCutGenerator &rhs)
     numberCutsAtRoot_ = rhs.numberCutsAtRoot_;
     numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
     numberShortCutsAtRoot_ = rhs.numberShortCutsAtRoot_;
+    numberConsecutiveMisses_ = rhs.numberConsecutiveMisses_;
+    nextRetryPass_ = rhs.nextRetryPass_;
+    retryPeriod_ = rhs.retryPeriod_;
+    rootCallPeriod_ = rhs.rootCallPeriod_;
   }
   return *this;
 }
@@ -208,6 +238,10 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
   if (howOften <= -100 || howOften == 0)
     return false;
   int pass = model_->getCurrentPassNumber() - 1;
+  const bool rootCadence = !node && !model_->parentModel()
+    && !model_->getNodeCount() && rootCallPeriod_ > 0;
+  if (rootCadence && pass >= 0 && pass % rootCallPeriod_)
+    return false;
   if (maximumTries_ > 0) {
     // howOften means what it says
     if ((pass % howOften) != 0 || depth)
@@ -260,6 +294,9 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
     doThis = false;
   }
   if (fullScan || doThis) {
+    if (rootCadence && model_->logLevel() > 1)
+      printf("[root-cadence] generator=%s pass=%d period=%d\n",
+        generatorName_, pass + 1, rootCallPeriod_);
     CoinThreadRandom *randomNumberGenerator = NULL;
     {
       OsiClpSolverInterface *clpSolver
@@ -345,8 +382,13 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       //void * saveData = solver->getApplicationData();
       //solver->setApplicationData(model_);
       // Propagate remaining wall-clock time so cut generators can self-limit.
-      // This uses a lot of time - try and reduce 
-      if (!depth && model_->getMaximumSeconds()<1.0e6) {
+      // Previously root-only (!depth): but a single cut-generation pass at
+      // any depth can be expensive and uninterruptible (e.g. CglRedSplit2
+      // on irish-electricity ran ~39s unconstrained at the root because it
+      // never saw this budget). getMaximumSeconds()<1.0e6 already gates
+      // this to only when a real -sec limit is active, so the extra
+      // CoinCpuTime() call below only fires on time-bounded runs.
+      if (model_->getMaximumSeconds()<1.0e6) {
         double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
         if (remaining > 0.0 && remaining <5.0e7)
           generator_->setMaxSeconds(remaining);
@@ -528,6 +570,24 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
         if ((model_->getThreadMode() & 2) == 0) {
           for (j = 0; j < numberColumns; j++) {
             if (solver->isInteger(j)) {
+              // Only trust CglProbing's tightLower()/tightUpper() for BINARY
+              // variables. These arrays come from CglProbing's internal
+              // tighten() Big-M row-propagation, which is already known (see
+              // CglProbing.cpp's skipGenIntColCuts, added after the nu25-pr12
+              // WRONG_OBJ investigation) to sometimes cascade an incorrect
+              // bound onto GENERAL-INTEGER variables. skipGenIntColCuts only
+              // stops CglProbing from emitting an explicit OsiColCut for
+              // those columns -- it does NOT protect this separate direct
+              // application of tightLower()/tightUpper() straight onto the
+              // solver, which bypasses the cuts framework (and therefore
+              // every cut-validity check) entirely. Applying an unsound
+              // general-integer bound this way was root-caused to be exactly
+              // how column C5865 on nu25-pr12 got wrongly fixed away from
+              // its true-optimal value, producing a wrong (too high on a
+              // minimization) reported objective.
+              bool isBinary = (upper[j] - lower[j] <= 1.0 + 1.0e-8) && lower[j] >= -1.0e-8 && upper[j] <= 1.0 + 1.0e-8;
+              if (!isBinary)
+                continue;
               if (tightUpper[j] < upper[j]) {
                 double nearest = floor(tightUpper[j] + 0.5);
                 //assert (fabs(tightUpper[j]-nearest)<1.0e-5); may be infeasible
@@ -660,6 +720,33 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       }
       delete[] mark;
 #endif
+    }
+
+    // Post-generation cut-pool filtering: these generators can flood
+    // a single round with many redundant/dominated cuts (same rationale
+    // as CglBKClique's own CoinCutPool-based clique-cut filtering, see
+    // insertCuts() there). Applies to both root and in-tree rounds; gated
+    // off for small models/candidate counts inside cbcFilterGeneratedCuts()
+    // itself. Only affects cuts appended by *this* generateCuts() call
+    // (numberRowCutsBefore..cs.sizeRowCuts()). GMI/LandP/RedSplit2 added
+    // 2026-09 alongside the boundStallAware() round-skip -- that mechanism
+    // only decides *whether* a generator fires again next pass, it does
+    // nothing to cap how many cuts a single productive round emits, which
+    // is exactly the gap this filter closes for them too.
+    if (dynamic_cast< CglGomory * >(generator_)
+      || dynamic_cast< CglMixedIntegerRounding2 * >(generator_)
+      || dynamic_cast< CglTwomir * >(generator_)
+      || dynamic_cast< CglGMI * >(generator_)
+      || dynamic_cast< CglLandP * >(generator_)
+      || dynamic_cast< CglRedSplit2 * >(generator_)
+      || generator) {
+      CbcCutPoolFilterSettings filter = model_->cutPoolFilterSettings();
+      if (node || model_->parentModel() || model_->getNodeCount())
+        filter.scoreMode = 0;
+      if (filter.rootScope != 1 || node || model_->parentModel() || model_->getNodeCount())
+        cbcFilterGeneratedCuts(cs, numberRowCutsBefore, solver->getColSolution(),
+          solver->getNumCols(), solver->getNumElements(), generatorName_,
+          filter);
     }
 #ifdef CGL_DEBUG
     if (debugger2) {

@@ -38,6 +38,7 @@ libCbc_la_SOURCES = \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
+	CbcCutPoolFilter.cpp CbcCutPoolFilter.hpp \
 	CbcCutModifier.cpp CbcCutModifier.hpp \
 	CbcCutSubsetModifier.cpp CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
@@ -51,6 +52,7 @@ libCbc_la_SOURCES = \
 	CbcGeneral.cpp CbcGeneral.hpp \
 	CbcGeneralDepth.cpp CbcGeneralDepth.hpp \
 	CbcHeuristic.cpp CbcHeuristic.hpp \
+	CbcHeuristicControl.cpp CbcHeuristicControl.hpp \
 	CbcHeuristicDINS.cpp CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.cpp CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
@@ -63,6 +65,8 @@ libCbc_la_SOURCES = \
 	CbcHeuristicDivePseudoCost.cpp CbcHeuristicDivePseudoCost.hpp \
 	CbcHeuristicDiveVectorLength.cpp CbcHeuristicDiveLength.hpp \
 	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
+	CbcHeuristicFeasibilityJump.cpp CbcHeuristicFeasibilityJump.hpp \
+	feasibilityjump.hh \
 	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
@@ -90,9 +94,12 @@ libCbc_la_SOURCES = \
 	CbcSimpleIntegerPseudoCost.cpp \
 	CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp CbcSolution.cpp \
-	CbcSolver.cpp CbcSolverPreprocess.cpp \
+	CbcPostprocessRepair.cpp CbcPostprocessRepair.hpp \
+	CbcSolver.cpp \
+	CbcLpParamScorer.cpp CbcLpParamScorer.hpp \
 	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverCutSetup.cpp CbcSolverCutSetup.hpp \
+	CbcProblemClassifier.cpp CbcProblemClassifier.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
 	CbcParameters.cpp CbcParameters.hpp \
@@ -100,6 +107,8 @@ libCbc_la_SOURCES = \
 	CbcSolverStatistics.cpp CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.cpp CbcInstanceFeatures.hpp \
 	CbcBoundPropagation.cpp CbcBoundPropagation.hpp \
+	CbcCoefficientStrengthening.cpp CbcCoefficientStrengthening.hpp \
+	CbcRowReductions.cpp CbcRowReductions.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
 	CbcSymmetry.cpp CbcSymmetry.hpp \
@@ -107,8 +116,7 @@ libCbc_la_SOURCES = \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
-	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
-	unitTestClp.cpp
+	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp
 
 # List all additionally required libraries
 libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
@@ -176,6 +184,7 @@ includecoin_HEADERS = \
 	CbcCompare.hpp \
 	CbcCountRowCut.hpp \
 	CbcCutGenerator.hpp \
+	CbcCutPoolFilter.hpp \
 	CbcCutModifier.hpp \
 	CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.hpp \
@@ -190,6 +199,7 @@ includecoin_HEADERS = \
 	CbcGeneralDepth.hpp \
 	CbcGenMessages.hpp \
 	CbcHeuristic.hpp \
+	CbcHeuristicControl.hpp \
 	CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.hpp \
@@ -202,6 +212,7 @@ includecoin_HEADERS = \
 	CbcHeuristicDivePseudoCost.hpp \
 	CbcHeuristicDiveVectorLength.hpp \
 	CbcHeuristicFPump.hpp \
+	CbcHeuristicFeasibilityJump.hpp \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.hpp \
@@ -229,6 +240,7 @@ includecoin_HEADERS = \
 	CbcSolver.hpp \
 	CbcMipStart.hpp \
 	CbcSOS.hpp \
+	CbcPostprocessRepair.hpp \
 	CbcSubProblem.hpp \
 	CbcTree.hpp \
 	CbcLinked.hpp \
@@ -237,6 +249,8 @@ includecoin_HEADERS = \
 	CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.hpp \
 	CbcBoundPropagation.hpp \
+	CbcCoefficientStrengthening.hpp \
+	CbcRowReductions.hpp \
 	ClpAmplObjective.hpp
 
 #######################################################################

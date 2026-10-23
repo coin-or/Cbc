@@ -1383,7 +1383,32 @@ void CbcTree::cleanTree(CbcModel *model, double cutoff, double &bestPossibleObje
       doing more work than needed, modifying the model to match a subproblem
       at a node that will be discarded.  Then again, we seem to need the basis.
     */
+  /*
+      This loop costs O(depth) per deleted node (addCuts1 walks the node's
+      whole ancestor chain), so a tree holding hundreds of thousands of
+      dominated nodes at real depth can take well over a minute here with no
+      chance for the model to notice its time limit was reached -- this is
+      the only per-node bookkeeping loop in this routine, and it runs
+      infrequently (only when the tree is pruned), so a cheap periodic check
+      does not cost anything on the hot per-node solve path. Once the
+      deadline has passed we already know the search is stopping right after
+      this call returns, so the remaining discarded nodes are freed without
+      the expensive addCuts1 restore: their cuts simply are not released
+      early, which is a bounded, harmless memory cost, not a correctness
+      issue.
+    */
+  const double maximumSeconds = model->getMaximumSeconds();
+  int nodesSinceTimeCheck = 0;
   for (j = nNodes - 1; j >= kDelete; j--) {
+    if (((nodesSinceTimeCheck++ & 255) == 0) && model->getCurrentSeconds() > maximumSeconds) {
+      for (; j >= kDelete; j--) {
+        CbcNode *node = nodeArray[j];
+        if (node->nodeInfo())
+          node->nodeInfo()->throwAway();
+        delete node;
+      }
+      break;
+    }
     CbcNode *node = nodeArray[j];
     CoinWarmStartBasis *lastws = model->getEmptyBasis();
 

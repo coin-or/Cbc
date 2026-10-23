@@ -1,0 +1,99 @@
+/**
+ *
+ * This file is part of the COIN-OR CBC MIP Solver
+ *
+ * Generalizes the CoinCutPool-based fitness filtering that CglBKClique
+ * already applies to clique cuts (see Cgl/src/CglBKClique/CglBKClique.cpp,
+ * insertCuts()) to any row-cut generator that can flood a single round with
+ * many cuts of similar/redundant support -- currently used for CglGomory,
+ * CglMixedIntegerRounding2, CglTwomir and CglProbing (see
+ * CbcCutGenerator::generateCuts()).
+ *
+ * Unlike CglBKClique (which builds CoinCuts directly and re-emits fresh
+ * OsiRowCuts from the pool), this filter operates on cuts that already
+ * exist as OsiRowCut objects appended to an OsiCuts collection: it feeds
+ * each candidate's row into a CoinCutPool (tagging it with its original
+ * position), lets the pool's best-fitness-per-column contest (and,
+ * optionally, its parallelism filter) decide which candidates to keep,
+ * then erases the losers directly from the OsiCuts collection -- so
+ * surviving cuts keep their original OsiRowCut identity/metadata
+ * (effectiveness, globally-valid flag, etc.) untouched.
+ *
+ * @file CbcCutPoolFilter.hpp
+ * @brief Generic post-generation cut-pool filter for CbcCutGenerator
+ *
+ **/
+
+#ifndef CBCCUTPOOLFILTER_HPP
+#define CBCCUTPOOLFILTER_HPP
+
+class OsiCuts;
+#include <vector>
+
+/// Thresholds for cbcFilterGeneratedCuts(); the defaults are cbc's.
+struct CbcCutPoolFilterSettings {
+  /// Models with fewer columns are not filtered
+  int minCols;
+  /// Models with at most this many matrix nonzeroes are not filtered (0 = no test)
+  int minElements;
+  /// Rounds with fewer filterable candidates are not filtered
+  int minCandidates;
+  /// Parallelism above which the pool drops the weaker cut
+  double maxParallelism;
+  /// Filter regardless of minCols, minElements and minCandidates
+  bool always;
+  /// 0: legacy; 1/2: efficacy/sparse efficacy; 3/4: no per-column contest.
+  int scoreMode;
+  /// 0: local only; 1: global only; 2: local and global (root only).
+  int rootScope;
+  int rootReusePeriod;
+  int rootReuseMaxCuts;
+  CbcCutPoolFilterSettings()
+    : minCols(500)
+    , minElements(0)
+    , minCandidates(10)
+    , maxParallelism(0.9)
+    , always(false)
+    , scoreMode(0)
+    , rootScope(0)
+    , rootReusePeriod(0)
+    , rootReuseMaxCuts(20)
+  {
+  }
+};
+
+/**
+ * Filter row cuts appended to `cs` at index >= firstRowCut (i.e. the ones
+ * just produced by one generateCuts() call) using a CoinCutPool, keeping
+ * only cuts that win the pool's best-fitness-per-column contest (and,
+ * optionally, its parallelism/orthogonality filter). Cuts that don't fit
+ * the pool's single-sided "ax <= rhs, violated at x" model (genuine ranged
+ * or equality cuts) are left untouched -- only >=/<= cuts are candidates
+ * for removal.
+ *
+ * Gated off (a no-op) for small models and small candidate counts, mirroring
+ * CglBKClique's precedent -- filtering only pays for itself when there are
+ * many candidates to choose among. The thresholds come from `settings`
+ * (cbc parameters -cutFilterMinCols etc.); see CbcCutPoolFilter.cpp for
+ * how the defaults were chosen.
+ *
+ * @param cs cuts collection to filter in place.
+ * @param firstRowCut first index (inclusive) of the row cuts to consider;
+ *        cuts before this index are left untouched.
+ * @param x current LP solution (dense, size numCols), used to score cuts.
+ * @param numCols number of columns of the model `x` refers to.
+ * @param numElements number of nonzero coefficients in the current
+ *        constraint matrix (OsiSolverInterface::getNumElements()), used
+ *        as a secondary "small model" signal alongside numCols -- see
+ *        CbcCutPoolFilter.cpp's smallModel check for the rationale.
+ * @param generatorTag short name of the calling generator (e.g. "Gomory"),
+ *        used only for CBC_CLIQUE_POOL_DEBUG-style diagnostic output.
+ * @param settings gate thresholds and pool parallelism limit.
+ * @return true if any cuts were removed.
+ **/
+bool cbcFilterGeneratedCuts(OsiCuts &cs, int firstRowCut, const double *x,
+  int numCols, int numElements, const char *generatorTag,
+  const CbcCutPoolFilterSettings &settings,
+  std::vector< int > *survivors = nullptr);
+
+#endif // CBCCUTPOOLFILTER_HPP

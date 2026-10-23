@@ -173,11 +173,12 @@ public:
     - ClqOff:
     - ClqAfter:
     - ClqBefore:
+    - ClqBoth:
     - ClqEndMarker:
 
   */
 
-  enum ClqStrMode { ClqStrOff = 0, ClqStrBefore, ClqStrAfter, ClqStrEndMarker };
+  enum ClqStrMode { ClqStrOff = 0, ClqStrBefore, ClqStrAfter, ClqStrBoth, ClqStrEndMarker };
 
   /*! \brief What node strategy to use
 
@@ -302,18 +303,68 @@ public:
     BndPropEndMarker
   };
 
+  /*! \brief Which columns a MIP start fixes before its LP is re-solved
+
+    A MIP start normally names the integer variables and leaves the continuous
+    ones to be recovered by solving the LP with those fixed.
+
+    - MipStartFixIntZero:  fix integers only, and take every integer the start
+                           does not mention to be zero. (default)
+    - MipStartFixInt:      fix integers only, leaving unmentioned ones free
+                           between their own bounds.
+    - MipStartFixAll:      fix supplied continuous values too. Pins down more of
+                           the solution, but a rounding error in a supplied
+                           value can make the LP infeasible; when that happens
+                           the continuous columns are released and the LP is
+                           retried with just the integers fixed.
+  */
+  enum MipStartFixMode {
+    MipStartFixIntZero = 0,
+    MipStartFixInt,
+    MipStartFixAll,
+    MipStartFixEndMarker
+  };
+
   /*! \brief Which LP algorithm to use for initialSolve in -solve and
       -initialSolve paths
 
-    - LPDual:    dual simplex (default)
-    - LPPrimal:  primal simplex
-    - LPBarrier: barrier (interior point)
+    - LPDual:      dual simplex
+    - LPPrimal:    primal simplex
+    - LPBarrier:   barrier (interior point)
+    - LPAuto:      picks between LPRacing and LPRecommend depending on the
+                   number of threads available: LPRacing when running in
+                   parallel (threads >= 2), LPRecommend when running
+                   sequentially (threads == 1). (default)
+    - LPRacing:    opportunistic parallel LP racing (dual simplex, primal
+                   with Idiot crash, primal with Sprint race each other;
+                   the first to finish wins). Requires threads >= 2.
+    - LPRecommend: ML-based per-instance recommendation of a single LP
+                   method/configuration (see CbcLpParamScorer). Runs
+                   sequentially.
   */
   enum LPMethod {
     LPDual = 0,
     LPPrimal,
     LPBarrier,
+    LPAuto,
+    LPRacing,
+    LPRecommend,
     LPEndMarker
+  };
+
+  /*! \brief Problem class mode for auto-tuning */
+  enum ProblemClassMode {
+    ProbClassAuto = 0,
+    ProbClassGeneral,
+    ProbClassPartitioning,
+    ProbClassPacking,
+    ProbClassPartPack,
+    ProbClassCovering,
+    ProbClassMixedSPP,
+    ProbClassMostlySPP,
+    ProbClassKnapsack,
+    ProbClassGeneral01,
+    ProbClassEndMarker
   };
 
   /*! \brief Get bound propagation level */
@@ -327,6 +378,20 @@ public:
   inline int getBoundPropMaxRounds() const
   {
     return parameters_[CbcParam::BOUNDPROPMAXROUNDS]->intVal();
+  }
+
+  /*! \brief Get which columns a MIP start fixes */
+  inline MipStartFixMode getMipStartFixMode() const
+  {
+    return static_cast< MipStartFixMode >(
+      parameters_[CbcParam::MIPSTARTFIX]->modeVal());
+  }
+
+  /*! \brief Get problem class mode */
+  inline ProblemClassMode getProblemClassMode() const
+  {
+    return static_cast< ProblemClassMode >(
+      parameters_[CbcParam::PROBLEMCLASS]->modeVal());
   }
 
   /*
@@ -402,6 +467,12 @@ public:
     CGCleanAsWellRoot,
     CGBothAsWell,
     CGBothAsWellRoot,
+    // Unused, and kept only for its position: it is referenced by no keyword and
+    // no translation table, but it sits mid-enum, so deleting it would renumber
+    // every enumerator below -- all of which are live. It once held the
+    // "bothaswellroot" keyword, which silently disabled the Lagrangean Gomory
+    // generators because no laTranslate entry matched; see the comment at that
+    // keyword in CbcParameters.cpp.
     CGCleanBothAsWellRoot,
     CGOnlyInstead,
     CGCleanInstead,
@@ -484,6 +555,10 @@ public:
    */
 
   enum OnOffMode { ParamOff = 0, ParamOn, ParamEndMarker };
+
+  /// Extra -rowReductions keyword (beyond off/on): also remove rows on the
+  /// LP-only commands (-initialSolve, -dualSimplex, ...).
+  static const int ROWREDUCTIONS_FORCE = ParamEndMarker;
 
   /*! \brief Codes to specify the assignment of branching priorities
 
@@ -1534,12 +1609,6 @@ public:
   /*! \brief Set ProcessTune setting */
   inline void setProcessTune(int processTune) { processTune_ = processTune; }
 
-  /*! \brief Get RacingLP setting */
-  inline int getRacingLP() { return racingLP_; }
-
-  /*! \brief Set RacingLP setting */
-  inline void setRacingLP(int racingLP) { racingLP_ = racingLP; }
-
   /*! \brief Get RandomSeed setting */
   inline int getRandomSeed() { return randomSeed_; }
 
@@ -2559,7 +2628,6 @@ private:
   int options_;
   int outputFormat_;
   int processTune_;
-  int racingLP_ = 0;
   int randomSeed_;
   int strongStrategy_;
   int testOsi_;

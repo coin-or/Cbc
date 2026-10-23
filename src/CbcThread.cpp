@@ -283,7 +283,8 @@ CbcThread::CbcThread()
   , thisModel_(NULL)
   , node_(NULL)
   , // filled in every time
-  createdNode_(NULL)
+  nodeObjectiveValue_(COIN_DBL_MAX)
+  , createdNode_(NULL)
   , // filled in every time on return
   returnCode_(-1)
   , // -1 available, 0 busy, 1 finished , 2??
@@ -575,6 +576,7 @@ CbcBaseModel::CbcBaseModel(CbcModel &model, int type)
     for (int i = 0; i < numberThreads_; i++) {
       //threadModel_[i] = new CbcModel(model, true);
       threadModel_[i] = model.clone(true);
+      threadModel_[i]->shareProgressCsv(model);
       threadModel_[i]->synchronizeHandlers(1);
       // reduce printout
       threadModel_[i]->messageHandler()->setLogLevel(printLevel);
@@ -877,6 +879,7 @@ int CbcBaseModel::waitForThreadsInTree(int type)
       }
     }
     int i;
+    std::vector< CbcNode * > pendingNodes;
     // do statistics
     // Seems to be bug in CoinCpu on Linux - does threads as well despite documentation
     double time = 0.0;
@@ -894,6 +897,19 @@ int CbcBaseModel::waitForThreadsInTree(int type)
       threadModel_[i]->setNumberThreads(0); // say exit
       if (children_[i].deterministic() > 0)
         delete[] children_[i].delNode();
+      // Interrupted workers can have a created node that was never merged.
+      // Return both nodes for depth-ordered tree cleanup and cut accounting.
+      if (baseModel->parallelMode() > 0 && children_[i].returnCode() == 1
+        && baseModel->stoppingCriterionReached()) {
+        if (children_[i].node()) {
+          pendingNodes.push_back(children_[i].node());
+          children_[i].setNode(NULL);
+        }
+        if (children_[i].createdNode()) {
+          pendingNodes.push_back(children_[i].createdNode());
+          children_[i].setCreatedNode(NULL);
+        }
+      }
       if (children_[i].node()) {
         delete children_[i].node();
         children_[i].setNode(NULL);
@@ -920,6 +936,9 @@ int CbcBaseModel::waitForThreadsInTree(int type)
                                                   << children_[i].timeLocked() << children_[i].timeWaitingToLock()
                                                   << CoinMessageEol;
     }
+    // All workers have exited, so no worker can modify the shared heap.
+    for (CbcNode *node : pendingNodes)
+      baseModel->tree()->push(node);
     assert(children_[numberThreads_].numberTimesLocked() == children_[numberThreads_].numberTimesUnlocked());
     baseModel->messageHandler()->message(CBC_THREAD_STATS, baseModel->messages())
       << "Main thread";
@@ -1850,12 +1869,31 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
           baseModel->bestSolution_ = new double[numberColumns];
         CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
         baseModel->setCutoff(getCutoff());
-        baseModel->handler_->message(CBC_ROUNDING, messages_)
-          << bestObjective_
-          << "heuristic"
-          << baseModel->numberIterations_
-          << baseModel->numberNodes_ << getCurrentSeconds()
-          << CoinMessageEol;
+        // Report the real heuristic (if any) instead of a generic
+        // "heuristic" label, mirroring the serial (non-threaded) reporting
+        // in CbcModel::setBestSolution() -- see the analogous opportunistic-
+        // mode fix above/in CbcModel::doOneNode(). Also supply the depth/
+        // ontree arguments the CBC_ROUNDING/CBC_SOLUTION message formats
+        // require; the previous call omitted them, leaving those two %d
+        // conversions unfed.
+        if (lastHeuristic_) {
+          baseModel->handler_->message(CBC_ROUNDING, messages_)
+            << bestObjective_
+            << lastHeuristic_->heuristicName()
+            << baseModel->numberIterations_
+            << baseModel->numberNodes_
+            << currentDepth_ << 0
+            << getCurrentSeconds()
+            << CoinMessageEol;
+        } else {
+          baseModel->handler_->message(CBC_SOLUTION, messages_)
+            << bestObjective_
+            << baseModel->numberIterations_
+            << baseModel->numberNodes_
+            << currentDepth_ << 0
+            << getCurrentSeconds()
+            << CoinMessageEol;
+        }
       }
       //stateOfSearch_
       if (stuff->saveStuff()[0] != searchStrategy_) {

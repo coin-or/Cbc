@@ -1,0 +1,5 @@
+baseline	-
+fj_root	--fj=on
+fj_root_afterfpump	--fj=on --fj-after-fpump=1
+fj_root_only_fpump_off	--fj=on --fpump=off
+no_heur	--fj=off --fpump=off

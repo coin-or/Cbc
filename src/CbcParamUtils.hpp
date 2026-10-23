@@ -47,6 +47,17 @@ int pushCbcSolverCutParam(CoinParam &param);
 
 int pushCbcModelDblParam(CoinParam &param);
 int pushCbcModelIntParam(CoinParam &param);
+int pushCbcModelMaxMemoryParam(CoinParam &param);
+
+/** Parse a memory size specification such as "10gb", "500m", "2.5g", a bare
+    number of bytes, or one of "unlimited"/"off"/"none" (meaning "no memory
+    limit"). Recognized (case-insensitive) unit suffixes are b (bytes,
+    default if omitted), k/kb (KiB, 1024 bytes), m/mb (MiB), g/gb (GiB), and
+    t/tb (TiB). On success, stores the size in bytes (as a double, since
+    byte counts can exceed INT_MAX) in \p bytesOut and returns true;
+    returns false (leaving \p bytesOut unchanged) if \p value could not be
+    parsed. */
+bool parseMemorySize(const std::string &value, double &bytesOut);
 
 void setCbcModelDefaults(CbcModel *model);
 

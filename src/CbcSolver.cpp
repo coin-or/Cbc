@@ -9079,8 +9079,6 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
         extraActions = 0;
       else
         extraActions++;
-      // make sure model knows min/max
-      babModel_->setObjSense(babModel_->solver()->getObjSense());
       int status = CbcMipStart::computeCompleteSolution(
         babModel_, babModel_->solver(), colNames, mipStart, &x[0],
         obj, extraActions, babModel_->messageHandler(),

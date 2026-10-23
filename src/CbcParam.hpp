@@ -37,11 +37,11 @@ class CbcParameters;
     another heuristic under the same control add one line here and apply it
     with applyHeuristicControl() where the heuristic is installed. */
 #define CBC_HEUR_CONTROL_LIST(X) \
-  X(RINS, "rins") \
-  X(VND, "vnd") \
-  X(DINS, "dins") \
-  X(COMBINE, "combine") \
-  X(CROSSOVER, "combine2") \
+  X(RINS, "rins")                \
+  X(VND, "vnd")                  \
+  X(DINS, "dins")                \
+  X(COMBINE, "combine")          \
+  X(CROSSOVER, "combine2")       \
   X(PROXIMITY, "proximity")
 
 class CBCLIB_EXPORT CbcParam : public CoinParam {
@@ -140,6 +140,7 @@ public:
     PRINTMASK,
     OUTPUTPRECISION,
     PUMPROOTPLACES,
+    SPPGRASPTUNINGPROFILE,
     JUMPROOTPLACES,
     LASTSTRINGPARAM,
 
@@ -214,6 +215,7 @@ public:
     CLIQUEFILTERALWAYS,
     IMPLIEDCLIQUEFILTER,
     AUTOTUNECUTS,
+    SPPGRASPROOTKEEPORIGINAL,
     LASTBOOLPARAM,
 
     // Keyword Parameters
@@ -233,13 +235,16 @@ public:
     STRATEGY,
     TIMEMODE,
     USECGRAPH,
+    SPPGRASPFPUMP,
+    SPPGRASPROOTSEQUENCE,
+    SPPGRASPNATIVEPRELP,
     BOUNDPROPLEVEL,
     LPMETHOD,
     NODEBOUNDPROP,
     PROBLEMCLASS,
 #define CBC_HC_KWD(ID, N) HC_##ID##_SCHEDULE,
     CBC_HEUR_CONTROL_LIST(CBC_HC_KWD)
-    LASTKWDPARAM,
+      LASTKWDPARAM,
 
     // Integer Parameters
     FIRSTINTPARAM,
@@ -344,9 +349,12 @@ public:
     CUTSKIPMAXPERIOD,
     CUTSKIPMINCOLS,
     SPPGRASPNOIMPROVE,
+    SPPGRASPDESTROYROWS,
+    SPPGRASPSTALL,
+    SPPGRASPSTAGEFIRSTPERCENT,
 #define CBC_HC_INT(ID, N) HC_##ID##_EVERY, HC_##ID##_WINDOW, HC_##ID##_MAXFAIL, HC_##ID##_NODES,
     CBC_HEUR_CONTROL_LIST(CBC_HC_INT)
-    LASTINTPARAM,
+      LASTINTPARAM,
 
     // Double Parameters
     FIRSTDBLPARAM,
@@ -388,9 +396,14 @@ public:
     MINDROPMULTIPLIER,
     SPPGRASPTIME,
     SPPGRASPWORK,
+    SPPGRASPARTIFICIAL,
+    SPPGRASPDESTROYGROW,
+    SPPGRASPRELATEDROWS,
+    SPPGRASPREALSTALLWORK,
+    SPPGRASPMINNATIVECOVERAGE,
 #define CBC_HC_DBL(ID, N) HC_##ID##_DECAY, HC_##ID##_MINSUCCESS, HC_##ID##_TIMESHARE,
     CBC_HEUR_CONTROL_LIST(CBC_HC_DBL)
-    LASTDBLPARAM,
+      LASTDBLPARAM,
 
     FIRSTMODELPARAM,
     ALLOWABLEGAP,
@@ -486,6 +499,25 @@ public:
 
   /*! \brief Set the parameter code */
   inline void setParamCode(int code) { paramCode_ = code; }
+  /// CoinParam tracks explicit keywords, but not numeric settings. Retain
+  /// explicit numeric overrides for the opt-in SppGrasp tuning profile.
+  inline void markCoverageTuningOverride()
+  {
+    switch (paramCode_) {
+    case SPPGRASPWORK:
+    case SPPGRASPNOIMPROVE:
+    case SPPGRASPARTIFICIAL:
+    case SPPGRASPDESTROYROWS:
+    case SPPGRASPSTALL:
+    case SPPGRASPDESTROYGROW:
+    case SPPGRASPRELATEDROWS:
+    case SPPGRASPREALSTALLWORK:
+      userSet_ = true;
+      break;
+    default:
+      break;
+    }
+  }
 
   /*! \brief Get the associated Cbc parameters object */
   inline CbcParameters *parameters() const { return (parameters_); }

@@ -852,11 +852,21 @@ public:
   }
   /// Current time since start of branchAndbound
   double getCurrentSeconds() const;
+  /// Start the progress-event clock independently of the B&B time-limit clock.
+  void startProgressClock();
+  /// Elapsed time since startProgressClock(), or getCurrentSeconds() if unset.
+  double getProgressElapsedSeconds() const;
+  /** Queue a validated incumbent accepted before branchAndBound for the
+      progress CSV. This does not fire CbcEventHandler callbacks. */
+  void recordPreSearchIncumbent(double objective, const char *source);
   /// Open a CSV recording time,primal,dual,source,nodes at each incumbent and bound update ("" closes it)
   void setProgressCsv(const std::string &fileName, double minRelChange = 1.0e-4, double heartbeatSeconds = 1.0);
   /** Report an improved incumbent (called by whichever thread found it, also
       thread clones). Writes a CSV row and fires CbcEventHandler::progress. */
   void writeProgressCsv(const char *source);
+  /// Finish a CSV on a pre-search/early-return path without dispatching callbacks.
+  /// Does nothing if a final event already exists.
+  void finishPreSearchProgress();
   /** Report a (minimisation-sign) valid dual bound. A significant improvement
       (see minRelChange) is recorded and fires CbcEventHandler::progress; with
       no such event for progressHeartbeat_ seconds a "tick" event is fired. */
@@ -873,7 +883,8 @@ public:
   /// Share the progress CSV with a thread clone
   void shareProgressCsv(CbcModel &owner);
 private:
-  void publishProgress(const char *source, CbcProgressInfo::Kind kind, bool writeRow);
+  void publishProgress(const char *source, CbcProgressInfo::Kind kind, bool writeRow,
+    bool notifyHandler = true);
 public:
 
   /** Set the
@@ -2184,6 +2195,56 @@ public:
   /// Enable/disable two-phase parallel root heuristic schedule
   inline void setUseRootHeuristicSchedule(bool v) { useRootHeuristicSchedule_ = v; }
   inline bool useRootHeuristicSchedule() const { return useRootHeuristicSchedule_; }
+  /// Enable ordered, incumbent-visible root calls for experimental SppGrasp sequences.
+  inline void setSppGraspRootSequence(bool v) { sppGraspRootSequence_ = v; }
+  inline bool sppGraspRootSequence() const { return sppGraspRootSequence_; }
+  inline void setSppGraspStagedWork(double total, double used)
+  {
+    sppGraspStagedWorkEnabled_ = total > 0.0;
+    sppGraspStagedWorkTotal_ = total > 0.0 ? total : 0.0;
+    sppGraspStagedWorkUsed_ = used > 0.0 ? used : 0.0;
+    sppGraspStagedSecondPassDone_ = false;
+  }
+  inline void seedSppGraspStagedWork(double used)
+  {
+    if (!sppGraspStagedWorkEnabled_)
+      return;
+    if (used > sppGraspStagedWorkUsed_)
+      sppGraspStagedWorkUsed_ = used;
+  }
+  inline bool sppGraspStagedWorkEnabled() const
+  {
+    return sppGraspStagedWorkEnabled_;
+  }
+  inline double sppGraspStagedWorkUsed() const
+  {
+    return sppGraspStagedWorkUsed_;
+  }
+  inline double sppGraspStagedWorkTotal() const
+  {
+    return sppGraspStagedWorkTotal_;
+  }
+  inline void addSppGraspStagedWork(double work)
+  {
+    if (sppGraspStagedWorkEnabled_ && work > 0.0) {
+      sppGraspStagedWorkUsed_ += work;
+    }
+  }
+  inline bool beginSppGraspStagedSecondPass(double &remaining)
+  {
+    remaining = 0.0;
+    if (!sppGraspStagedWorkEnabled_ || sppGraspStagedSecondPassDone_)
+      return false;
+    sppGraspStagedSecondPassDone_ = true;
+    remaining = sppGraspStagedWorkTotal_ - sppGraspStagedWorkUsed_;
+    return remaining > 0.0;
+  }
+  inline void setSppGraspPumpGuide(bool v) { sppGraspPumpGuide_ = v; }
+  inline bool sppGraspPumpGuide() const { return sppGraspPumpGuide_; }
+  inline void setSppGraspFpumpOnlyWithoutIncumbent(bool v)
+  {
+    sppGraspFpumpOnlyWithoutIncumbent_ = v;
+  }
   /** Pass in branching priorities.
 
         If ifClique then priorities are on cliques otherwise priorities are
@@ -3658,6 +3719,16 @@ private:
   CbcProgressInfo progressInfo_;
   /// Best incumbent (minimisation sense) already written to the progress CSV
   double progressLastPrimal_ = COIN_DBL_MAX;
+  /// Absolute clock origin for full-solve progress timestamps (not reset with B&B limits).
+  double progressClockOrigin_ = 0.0;
+  bool progressClockOriginSet_ = false;
+  struct PendingProgressIncumbent {
+    double seconds;
+    double objective;
+    std::string source;
+  };
+  /// Accepted MIP starts / original-model heuristic incumbents before CSV setup.
+  std::vector< PendingProgressIncumbent > preSearchProgress_;
   /// Serialises CSV writes and the progress state above between the base model and its thread clones
   std::shared_ptr< std::mutex > progressMutex_;
   /// For thread clones: the base model that owns the CSV (nullptr otherwise)
@@ -3667,6 +3738,15 @@ private:
 
   /// When true, use CbcRootHeuristicSchedule (two-phase parallel) at root
   bool useRootHeuristicSchedule_ = false;
+  /// When true, root constructive heuristics run serially and publish each
+  /// result before the next one, so explicit SppGrasp/FPump orders are real.
+  bool sppGraspRootSequence_ = false;
+  bool sppGraspStagedWorkEnabled_ = false;
+  double sppGraspStagedWorkTotal_ = 0.0;
+  double sppGraspStagedWorkUsed_ = 0.0;
+  bool sppGraspStagedSecondPassDone_ = false;
+  bool sppGraspPumpGuide_ = false;
+  bool sppGraspFpumpOnlyWithoutIncumbent_ = false;
   /// Depth for fast nodes
   int fastNodeDepth_;
   /// Whether to run bound propagation at B&B nodes (0=off, 1=on)

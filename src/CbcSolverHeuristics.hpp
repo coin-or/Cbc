@@ -8,8 +8,13 @@
 
 #ifndef CbcSolverHeuristics_H
 #define CbcSolverHeuristics_H
+#include <string>
 
 void crunchIt(ClpSimplex *model);
+class CbcHeuristicSppGrasp;
+class CbcParameters;
+void configureSppGraspCoverageTuning(CbcHeuristicSppGrasp &heuristic, CbcParameters &parameters,
+  const std::string &stage);
 
 /*
   On input
@@ -34,11 +39,14 @@ fixVubs(CbcModel &model, int skipZero2,
         2 - do heuristics (and set cutoff and best solution)
         3 - legacy reduced-heuristics mode (skip some heuristics)
         (out model later)
-    sppGraspOriginal: 1 if SppGrasp found the original (unpreprocessed)
-        model to be set partitioning/packing with slacks, -1 if not, 0 unknown
+    sppGraspOriginal: 1 if the original (unpreprocessed) model applies
+        natively, 2 if only with artificial slacks, -1 if not, 0 unknown
+    sppGraspOriginalSolution: true if the original-model call returned a
+        real-feasible improving SppGrasp solution
     */
 int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
-  int noPrinting_, int initialPumpTune, int sppGraspOriginal = 0);
+  int noPrinting_, int initialPumpTune, int sppGraspOriginal = 0,
+  bool sppGraspOriginalSolution = false);
 
 #endif // CbcSolverHeuristics_H
 

@@ -174,6 +174,9 @@ CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump &rhs)
   , roundExpensive_(rhs.roundExpensive_)
   , fpOutput_(nullptr) // not copied: caller must reinstall
   , rootPlacesOverride_(rhs.rootPlacesOverride_)
+  , numLpSolves_(rhs.numLpSolves_)
+  , numPumpPasses_(rhs.numPumpPasses_)
+  , lastCallSkipReason_(rhs.lastCallSkipReason_)
 {
 }
 
@@ -202,7 +205,14 @@ CbcHeuristicFPump::operator=(const CbcHeuristicFPump &rhs)
     fpOutput_ = nullptr; // not copied: caller must reinstall
     fjFallback_ = nullptr; // not copied: caller must reinstall
     rootPlacesOverride_ = rhs.rootPlacesOverride_;
+    numLpSolves_ = rhs.numLpSolves_;
+    numPumpPasses_ = rhs.numPumpPasses_;
+    lastCallSkipReason_ = rhs.lastCallSkipReason_;
     bestRoundedAttempt_.clear();
+    bestRoundedSourcePoint_.clear();
+    bestRoundedSourceFractionality_ = 0.0;
+    bestRoundedSourceFractionalCount_ = 0;
+    bestRoundedIntegerColumns_.clear();
   }
   return *this;
 }
@@ -211,6 +221,11 @@ CbcHeuristicFPump::operator=(const CbcHeuristicFPump &rhs)
 void CbcHeuristicFPump::resetModel(CbcModel * model)
 {
   model_ = model;
+  bestRoundedAttempt_.clear();
+  bestRoundedSourcePoint_.clear();
+  bestRoundedSourceFractionality_ = 0.0;
+  bestRoundedSourceFractionalCount_ = 0;
+  bestRoundedIntegerColumns_.clear();
 }
 
 // Propagate the CBC-level remaining time budget (model_->getMaximumSeconds()
@@ -252,6 +267,7 @@ static void propagateRemainingTime(CbcModel *model, OsiSolverInterface *solver)
 int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   double *betterSolution)
 {
+  lastCallSkipReason_ = "not entered";
   // Record start time using the same clock as model_->getCurrentSeconds()
   // so that maximumTime_ budget checks are elapsed-mode-aware.
   startTime_ = model_->getCurrentSeconds();
@@ -273,8 +289,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   FPump also supports some exotic values (11 -- 15) for when, described in
   CbcHeuristicFPump.hpp.
 */
-  if (!when() || (when() == 1 && model_->phase() != 1))
+  if (!when() || (when() == 1 && model_->phase() != 1)) {
+    lastCallSkipReason_ = "heuristic disabled by phase/when";
     return 0; // switched off
+  }
 #ifdef HEURISTIC_INFORM
   printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
     heuristicName(), numRuns_, numCouldRun_, when_);
@@ -283,8 +301,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   bool atRoot = model_->getNodeCount() == 0;
   int passNumber = model_->getCurrentPassNumber();
   // just do once
-  if (!atRoot)
+  if (!atRoot) {
+    lastCallSkipReason_ = "not at root";
     return 0;
+  }
   // Explicit rootPlacesOverride() (see setRootPlacesOverride() / the
   // pumpRootPlaces CLI parameter) replaces the legacy
   // feasibilityPumpOptions()-driven logic below entirely, once configured.
@@ -293,8 +313,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   // 'L'); anything else is an intermediate cut round (hook 'c').
   if (!rootPlacesOverride_.empty()) {
     char hook = (passNumber == 999999) ? 'C' : (passNumber <= 1 ? 'L' : 'c');
-    if (rootPlacesOverride_.find(hook) == std::string::npos)
+    if (rootPlacesOverride_.find(hook) == std::string::npos) {
+      lastCallSkipReason_ = "root placement not selected";
       return 0;
+    }
   }
   int options = feasibilityPumpOptions_;
   if (rootPlacesOverride_.empty()) {
@@ -308,8 +330,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           3 - not used do after every cut round (and after cuts)
           k not used do after every (k-2)th round
         */
-    if (kOption < 10 && model_->getSolutionCount())
+    if (kOption < 10 && model_->getSolutionCount()) {
+      lastCallSkipReason_ = "legacy solution-count guard";
       return 0;
+    }
     if (model_->getSolutionCount())
       kOption = kOption % 10;
     bool good;
@@ -324,13 +348,18 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       //good = (((passNumber-1)%(kOption-2))==0);
       good = false;
     }
-    if (passNumber > 1 && !good)
+    if (passNumber > 1 && !good) {
+      lastCallSkipReason_ = "legacy cut-round guard";
       return 0;
+    }
   } else {
-    if (passNumber > 1)
+    if (passNumber > 1) {
+      lastCallSkipReason_ = "legacy cut-round guard";
       return 0;
+    }
   }
   }
+  lastCallSkipReason_.clear();
   // loop round doing repeated pumps
   double cutoff;
   model_->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
@@ -412,6 +441,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   process them.
 */
   if (general * 3 > 2 * numberIntegers && !doGeneral) {
+    lastCallSkipReason_ = "too many general integers";
     delete[] integerVariable;
     return 0;
   } else if ((accumulate_ & 4) == 0) {
@@ -480,10 +510,14 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   /*
   Obtain a relaxed lp solution.  Bail early if CBC time limit already reached.
 */
-  if (model_->maximumSecondsReached() || model_->eventHappened())
+  if (model_->maximumSecondsReached() || model_->eventHappened()) {
+    lastCallSkipReason_ = "time limit or event before initial LP";
     return 0;
+  }
+  ++numLpSolves_;
   model_->solver()->resolve();
   if (!model_->solver()->isProvenOptimal()) {
+    lastCallSkipReason_ = "initial LP not optimal";
 
     delete[] integerVariable;
     delete[] newSolution;
@@ -749,6 +783,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       OsiHintStrength strength;
       solver->getHintParam(OsiDoDualInResolve, takeHint, strength);
       solver->setHintParam(OsiDoDualInResolve, true, OsiHintDo);
+      ++numLpSolves_;
       solver->resolve();
       solver->setHintParam(OsiDoDualInResolve, takeHint, strength);
       if (!solver->isProvenOptimal()) {
@@ -758,6 +793,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       }
     }
     solver->setDblParam(OsiDualObjectiveLimit, 1.0e50);
+    ++numLpSolves_;
     solver->resolve();
     // Solver may not be feasible
     if (!solver->isProvenOptimal()) {
@@ -794,6 +830,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 	  << CoinMessageEol;
       CoinWarmStartBasis dummy;
       solver->setWarmStart(&dummy);
+      ++numLpSolves_;
       solver->resolve();
       if (!solver->isProvenOptimal()) {
         // presumably max time or some such
@@ -929,11 +966,15 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       // decide whether this pass's rounded candidate is the new
       // "least fractional" one seen so far (see bestRoundedSumInfeas above).
       double thisPassSumInfeas = 0.0;
+      int thisPassFractionalCount = 0;
       for (i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
         double value = solution[iColumn];
         double nearest = floor(value + 0.5);
-        thisPassSumInfeas += fabs(value - nearest);
+        double distance = fabs(value - nearest);
+        thisPassSumInfeas += distance;
+        if (distance > model_->getDblParam(CbcModel::CbcIntegerTolerance))
+          thisPassFractionalCount++;
       }
       int flip;
       if (numberPasses == 0 && false) {
@@ -979,6 +1020,12 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       if (thisPassSumInfeas < bestRoundedSumInfeas) {
         bestRoundedSumInfeas = thisPassSumInfeas;
         bestRoundedAttempt_.assign(newSolution, newSolution + numberColumns);
+        if (model_->sppGraspPumpGuide())
+          bestRoundedSourcePoint_.assign(solution, solution + numberColumns);
+        bestRoundedSourceFractionality_ = thisPassSumInfeas;
+        bestRoundedSourceFractionalCount_ = thisPassFractionalCount;
+        bestRoundedIntegerColumns_.assign(
+          integerVariable, integerVariable + numberIntegers);
       }
       if (numberPasses == 0 && false) {
         // Make sure random will be different
@@ -986,6 +1033,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           randomNumberGenerator_.randomDouble();
       }
       numberPasses++;
+      ++numPumpPasses_;
       if (roundingObjective < realCutoff) {
         if (returnCode) {
           newSolutionValue = -saveOffset;
@@ -1057,6 +1105,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 		const double * upper = solver2->getColUpper();
 		const double * sol = solver2->getColSolution();
 		int numberColumns = solver2->getNumCols();
+		++numLpSolves_;
 		solver2->resolve();
 		char * intVar = solver2->getColType(true);
 		for (int i=0;i<numberColumns;i++) {
@@ -1106,6 +1155,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
               //solver->setHintParam(OsiDoReducePrint, false, OsiHintTry);
               solver->setHintParam(OsiDoDualInResolve, false, OsiHintDo);
               //solver->setHintParam(OsiDoScale, false, OsiHintDo);
+              ++numLpSolves_;
               solver->resolve();
               solver->setHintParam(OsiDoDualInResolve, takeHint, strength);
               if (solver->isProvenOptimal()) {
@@ -1465,6 +1515,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
               solver->setColLower(iColumn, upper[iColumn]);
             }
           }
+          ++numLpSolves_;
           solver->resolve();
           if (!solver->isProvenOptimal()) {
             // presumably max time or some such
@@ -1486,6 +1537,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             /*pumpPrint,*/ numberPasses,
             /*roundExpensive_,*/ defaultRounding_, &flip);
           numberPasses++;
+          ++numPumpPasses_;
           if (returnCode) {
             // solution - but may not be better
             // Compute using dot product
@@ -1634,6 +1686,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             if (firstPerturbedValue > cutoff)
               solver->setHintParam(OsiDoDualInResolve, true); // dual may be better
           }
+          ++numLpSolves_;
           solver->resolve();
           if (!solver->isProvenOptimal()) {
             // presumably max time or some such
@@ -1898,6 +1951,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           delete[] addLower;
           delete[] addUpper;
           delete[] obj;
+          ++numLpSolves_;
           solver2->resolve();
           if (!solver2->isProvenOptimal()) {
             // presumably max time or some such
@@ -2085,9 +2139,11 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             solver->getHintParam(OsiDoDualInResolve, takeHint, strength);
             if (useRhs < oldRhs) {
               solver->setHintParam(OsiDoDualInResolve, true);
+              ++numLpSolves_;
               solver->resolve();
             } else if (useRhs > oldRhs) {
               solver->setHintParam(OsiDoDualInResolve, false);
+              ++numLpSolves_;
               solver->resolve();
             }
             solver->setHintParam(OsiDoDualInResolve, takeHint);
@@ -2222,6 +2278,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             }
           }
         }
+        ++numLpSolves_;
         newSolver->initialSolve();
         if (!newSolver->isProvenOptimal()) {
           //newSolver->writeMps("bad.mps");
@@ -2418,6 +2475,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
               simplex->setLogLevel(logLevel);
               clpSolver->setWarmStart(NULL);
             }
+            ++numLpSolves_;
             newSolver->initialSolve();
             if (newSolver->isProvenOptimal()) {
               double value = newSolver->getObjValue() * newSolver->getObjSenseInCbc();
@@ -2492,6 +2550,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
                 newSolver->setColUpper(iColumn, upper[iColumn]);
               }
             }
+            ++numLpSolves_;
             newSolver->initialSolve();
             if (newSolver->isProvenOptimal()) {
               double value = newSolver->getObjValue() * newSolver->getObjSenseInCbc();
@@ -2668,6 +2727,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     }
   } else {
     bestRoundedAttempt_.clear();
+    bestRoundedSourcePoint_.clear();
+    bestRoundedSourceFractionality_ = 0.0;
+    bestRoundedSourceFractionalCount_ = 0;
+    bestRoundedIntegerColumns_.clear();
   }
   delete clonedSolver;
   delete[] roundingSolution;
@@ -2725,8 +2788,35 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 */
 int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
 {
-  if (model_->maximumSecondsReached())
+  const int lpSolvesBefore = numLpSolves_;
+  const int pumpPassesBefore = numPumpPasses_;
+  const double objectiveBefore = objectiveValue;
+  const bool incumbentBefore = model_ && model_->bestSolution();
+  auto logRootInvocation = [&](int result) {
+    if (!model_ || model_->getNodeCount() != 0
+      || model_->messageHandler()->logLevel() <= 1)
+      return;
+    const int lpSolves = numLpSolves_ - lpSolvesBefore;
+    const int pumpPasses = numPumpPasses_ - pumpPassesBefore;
+    const bool improved = result > 0 && objectiveValue < objectiveBefore - 1.0e-7;
+    printf("FPump invocation: root=yes incumbent=%s LP-solves=%d "
+           "passes=%d incumbent-improved=%s",
+      incumbentBefore ? "yes" : "no", lpSolves, pumpPasses,
+      improved ? "yes" : "no");
+    if (!lastCallSkipReason_.empty())
+      printf(" skip=%s", lastCallSkipReason_.c_str());
+    printf("\n");
+  };
+  bestRoundedAttempt_.clear();
+  bestRoundedSourcePoint_.clear();
+  bestRoundedSourceFractionality_ = 0.0;
+  bestRoundedSourceFractionalCount_ = 0;
+  bestRoundedIntegerColumns_.clear();
+  if (model_->maximumSecondsReached()) {
+    lastCallSkipReason_ = "time limit before call";
+    logRootInvocation(0);
     return 0;
+  }
   double *newSolution2 = NULL;
   double objective2 = COIN_DBL_MAX;
   int returnCode2 = 0;
@@ -2834,6 +2924,7 @@ int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
       delete[] addElement;
       delete[] addLower;
       delete[] addUpper;
+      ++numLpSolves_;
       solver->resolve();
       solver->writeMps("test");
       // new CbcModel
@@ -2865,6 +2956,7 @@ int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
     memcpy(newSolution, newSolution2, numberColumns * sizeof(double));
   }
   delete[] newSolution2;
+  logRootInvocation(returnCode);
   return returnCode;
 }
 
@@ -3074,6 +3166,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
     }
     solver->setColSolution(tempSolution);
     delete[] tempSolution;
+    ++numLpSolves_;
     solver->resolve();
     solver->setColLower(saveLower);
     solver->setColUpper(saveUpper);

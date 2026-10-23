@@ -34,6 +34,7 @@
  */
 
 #include "Cbc_C_Interface.h"
+#include "OsiClpSolverInterface.hpp"
 #include <cctype>
 #include <cerrno>
 #include <cmath>
@@ -510,7 +511,11 @@ int main(int argc, char *argv[])
     }
 
     /* 3. Objective (recomputed vs claimed in .sol) */
-    computedObj = 0.0;
+    // Osi's stored objective offset is subtracted from c x.
+    double objectiveOffset = 0.0;
+    const OsiClpSolverInterface *solver = static_cast< OsiClpSolverInterface * >(Cbc_getSolverPtr(m));
+    solver->getDblParam(OsiObjOffset, objectiveOffset);
+    computedObj = -objectiveOffset;
     for (int i = 0; i < ncols; ++i)
       computedObj += objCoef[i] * x[i];
 

@@ -64,6 +64,14 @@ def run(cbc, mipstart=None):
     )
     if result.returncode:
         raise AssertionError(f"CBC exited {result.returncode}\n{result.stdout}")
+    if "Time (B&C," in result.stdout:
+        raise AssertionError(f"Redundant B&C timing in batch output:\n{result.stdout}")
+    if not re.search(
+        r"^Total time \(CPU seconds\):\s*[0-9.eE+-]+\n"
+        r"Total time \(Wallclock seconds\):\s*[0-9.eE+-]+\n",
+        result.stdout, re.MULTILINE,
+    ):
+        raise AssertionError(f"Missing separate CPU/wallclock totals:\n{result.stdout}")
     if "Objective value:                8" not in result.stdout:
         raise AssertionError(f"Maximization/objective offset changed:\n{result.stdout}")
     with TRACE.open(newline="") as stream:

@@ -533,6 +533,11 @@ void testShape(Shape shape, bool byIndex, bool preprocess)
     std::string("the legacy MIPStart line was suppressed: ") + tag);
   check(!logHas(log, "found by Reduced search"),
     std::string("the duplicate MIPStart incumbent line was suppressed: ") + tag);
+  check(!logHas(log, "Time (B&C,"),
+    std::string("the C API omits redundant B&C timing: ") + tag);
+  check(logHas(log, "Total time (CPU seconds):")
+      && logHas(log, "\nTotal time (Wallclock seconds):"),
+    std::string("the C API reports separate CPU and wallclock totals: ") + tag);
   check(!logHas(log, "Could not construct an integer-feasible solution"),
     std::string("the start was not rejected: ") + tag);
   check(!logHas(log, "not valid, column names do not match"),

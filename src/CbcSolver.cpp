@@ -2407,12 +2407,14 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
       buffer << "Enumerated nodes:           0" << std::endl;
       buffer << "Total iterations:           0" << std::endl;
 #if CBC_QUIET == 0
-      if (model_.useElapsedTime())
-        buffer << "Time (Wallclock seconds):   "
-               << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
-      else
-        buffer << "Time (CPU seconds):         "
-               << CoinCpuTime() - time0_ << std::endl;
+      if (interactiveMode_) {
+        if (model_.useElapsedTime())
+          buffer << "Time (Wallclock seconds):   "
+                 << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
+        else
+          buffer << "Time (CPU seconds):         "
+                 << CoinCpuTime() - time0_ << std::endl;
+      }
 #endif
       printGeneralMessage(model_, buffer.str());
     }
@@ -5790,12 +5792,14 @@ int CbcSolver::postprocess(
         + babModel_->numberExtraIterations()
            << std::endl;
 #if CBC_QUIET == 0
-    if (babModel_->useElapsedTime())
-      buffer << "Time (B&C, Wallclock seconds):  "
-             << CoinGetTimeOfDay() - time1Elapsed << std::endl;
-    else
-      buffer << "Time (B&C, CPU seconds):        "
-             << CoinCpuTime() - time1 << std::endl;
+    if (interactiveMode_) {
+      if (babModel_->useElapsedTime())
+        buffer << "Time (B&C, Wallclock seconds):  "
+               << CoinGetTimeOfDay() - time1Elapsed << std::endl;
+      else
+        buffer << "Time (B&C, CPU seconds):        "
+               << CoinCpuTime() - time1 << std::endl;
+    }
 #endif
     printGeneralMessage(model_, buffer.str());
     int returnCode_local = 0;
@@ -14690,12 +14694,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
   }
 #if CBC_QUIET == 0
   buffer.str("");
-  if (model_.useElapsedTime())
-    buffer << "Total time (Wallclock seconds): " << CoinGetTimeOfDay() - time0Elapsed_
-           << "   (CPU seconds):             " << CoinCpuTime() - time0_ << std::endl;
-  else
-    buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0_
-           << "   (Wallclock seconds):       " << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
+  buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0_ << std::endl;
+  buffer << "Total time (Wallclock seconds): " << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
   printGeneralMessage(model_, buffer.str());
 #endif
 #ifdef COINUTILS_HAS_GLPK

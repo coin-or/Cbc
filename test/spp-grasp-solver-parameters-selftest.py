@@ -13,14 +13,16 @@ MODEL = HERE / "spp-grasp-policy.mps"
 DISABLED = "SppGrasp: set partitioning with slacks - feasibility pump switched off"
 
 
-def solve(cbc, name, options, model=MODEL):
+def solve(cbc, name, options, model=MODEL, log_level=2):
     command = [
         cbc,
         str(model),
         "-log",
-        "2",
+        str(log_level),
         "-preprocess",
         "off",
+        "-sppGrasp",
+        "on",
         "-sppGraspDestroyRows",
         "2",
         "-sppGraspStall",
@@ -118,11 +120,32 @@ def main():
         cbc, "root-sequence-explicit-pump-off",
         ["-sppGraspRootSequence", "spp-fpump", "-feas", "off"],
     )
+    disabled_log_1 = solve(
+        cbc, "disabled-message-log-1", ["-sppGraspFpump", "after"],
+        log_level=1,
+    )
+    failure_log_1 = solve(
+        cbc, "failed-spp-log-1",
+        ["-sppGraspWork", ".001", "-feas", "on"],
+        HERE / "spp-grasp-no-integer-policy.mps", log_level=1,
+    )
+    for output in (disabled_log_1, failure_log_1):
+        if "SppGrasp: first " in output or "SppGrasp: no feasible solution" in output:
+            raise AssertionError("individual SppGrasp diagnostics leaked at log level 1")
+    if not re.search(r"\n\n[^\n]*SPPGrasp \.\.\..*1 (?:→|->) 1 in \d+\.\d+ seconds\.",
+                     disabled_log_1):
+        raise AssertionError(f"missing standalone SppGrasp summary:\n{disabled_log_1}")
+    if failure_log_1.count("SPPGrasp ...") != 1 or "No feasible solution in" not in failure_log_1:
+        raise AssertionError("expected exactly one standalone SppGrasp failure summary")
+    if not re.search(r"SppGrasp\s+no solution", failure_log_1):
+        raise AssertionError("root SppGrasp result is missing from the heuristic table")
 
     if "SppGrasp: first 1, best 1" not in after:
         raise AssertionError("fixture did not produce an original-model SppGrasp solution")
     if DISABLED not in auto or DISABLED not in after:
         raise AssertionError("legacy auto/after-success policies did not disable FPump")
+    if DISABLED in disabled_log_1:
+        raise AssertionError("FPump-disabled notice was printed below log level 2")
     if DISABLED in keep or DISABLED in explicit or DISABLED in no_improvement:
         raise AssertionError("FPump was disabled under a retain/override/failure policy")
     if "SppGrasp: progress gate stopped" not in gated:

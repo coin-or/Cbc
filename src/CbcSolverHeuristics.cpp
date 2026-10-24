@@ -1384,7 +1384,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   if (useSppGrasp && sppShouldDisableFpump
     && !parameters[CbcParam::FPUMP]->isUserSet() && useFpump != CbcParameters::CGOff) {
     sppGraspDisablesFpump = true;
-    if (!noPrinting_ && kType == 1) {
+    if (!noPrinting_ && kType == 1 && generalMessageHandler->logLevel() >= 2) {
       generalMessageHandler->message(CBC_GENERAL, generalMessages)
         << "SppGrasp: set partitioning with slacks - feasibility pump switched off"
         << CoinMessageEol;

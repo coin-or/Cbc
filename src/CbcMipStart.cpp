@@ -13,6 +13,7 @@
 #include "CbcHeuristic.hpp"
 #include <CbcModel.hpp>
 #include "CbcMipStart.hpp"
+#include "CbcOutput.hpp"
 #include "CbcSOS.hpp"
 #include "CbcBoundPropagation.hpp"
 #include "CoinTime.hpp"
@@ -168,7 +169,7 @@ int CbcMipStart::read(OsiSolverInterface *solver, const char *fileName,
       }
       if (!isNumericStr(valueStr)) {
         messHandler->message(CBC_MIPSTART_INVALID_COLUMN, messages) << fileName << nLine
-          << (valueStr == col[2] ? "third" : "second") << CoinMessageEol;
+                                                                    << (valueStr == col[2] ? "third" : "second") << CoinMessageEol;
         continue;
       }
 
@@ -249,8 +250,7 @@ int CbcMipStart::read(OsiSolverInterface *solver, const char *fileName,
     const double *upper = solver->getColUpper();
 
     // check bounds and integrality
-    std::vector< std::pair< std::string, double > > fixedValues =
-      validateMIPStartValues(solver, colValues, messHandler, pcoinmsgs, false);
+    std::vector< std::pair< std::string, double > > fixedValues = validateMIPStartValues(solver, colValues, messHandler, pcoinmsgs, false);
 
     int nBadValues = colValues.size() - fixedValues.size();
     for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
@@ -269,7 +269,8 @@ int CbcMipStart::read(OsiSolverInterface *solver, const char *fileName,
     colValues = fullValues;
   } else {
     sprintf(printLine, "File %s yielded no variable values - expected lines of"
-      " \"index name value\" or \"name value\"; MIPStart ignored.", fileName);
+                       " \"index name value\" or \"name value\"; MIPStart ignored.",
+      fileName);
     messHandler->message(CBC_MIPSTART_WARNING, messages) << printLine << CoinMessageEol;
     fclose(f);
     return 1;
@@ -292,11 +293,18 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
   const bool assumeUnmentionedZero = (fixMode == FixIntegersAssumeZero);
 
   CoinMessages &messages = *pmessages;
+  const int originalLogLevel = messHandler->logLevel();
+  const bool conciseOutput = originalLogLevel == 1;
+  const double startTime = CoinWallclockTime();
+  if (conciseOutput)
+    messHandler->setLogLevel(0);
 
   int status = 0;
   double compObj = COIN_DBL_MAX;
   bool foundIntegerSol = false;
   OsiSolverInterface *lp = solver->clone();
+  if (conciseOutput)
+    lp->messageHandler()->setLogLevel(0);
 
   std::map< std::string, int > colIdx;
   assert((static_cast< int >(colNames.size())) == lp->getNumCols());
@@ -466,15 +474,15 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
         const int iCol = bp.infeasibleCol();
         if (iRow >= 0 && iRow < bpLp->getNumRows())
           sprintf(printLine, "Bound propagation confirms the fixed problem is"
-            " infeasible, detected at row %d (%s).",
+                             " infeasible, detected at row %d (%s).",
             iRow, bpLp->getRowName(iRow).c_str());
         else if (iCol >= 0 && iCol < bpLp->getNumCols())
           sprintf(printLine, "Bound propagation confirms the fixed problem is"
-            " infeasible, detected at column %d (%s).",
+                             " infeasible, detected at column %d (%s).",
             iCol, colNames[iCol].c_str());
         else
           sprintf(printLine, "Bound propagation confirms the fixed problem is"
-            " infeasible (no single row or column identified).");
+                             " infeasible (no single row or column identified).");
         messHandler->message(CBC_GENERAL, messages)
           << printLine << CoinMessageEol;
       }
@@ -580,9 +588,9 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
     messHandler->message(CBC_GENERAL, messages)
       << printLine << CoinMessageEol;
     // seem to be problems when maximizing
-    if (lp->getObjSense()<0) {
+    if (lp->getObjSense() < 0) {
       messHandler->message(CBC_GENERAL, messages)
-	<< "Warning: When maximizing and fractional - seem to be problems." << CoinMessageEol;
+        << "Warning: When maximizing and fractional - seem to be problems." << CoinMessageEol;
       status = 1;
       goto TERMINATE;
     }
@@ -663,6 +671,38 @@ int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *so
 TERMINATE:
   delete[] realObj;
   delete lp;
+  if (conciseOutput) {
+    messHandler->setLogLevel(originalLogLevel);
+    const double elapsed = CoinWallclockTime() - startTime;
+    char elapsedText[32];
+    if (elapsed < 1.0)
+      snprintf(elapsedText, sizeof(elapsedText), "%.3f", elapsed);
+    else if (elapsed < 10.0)
+      snprintf(elapsedText, sizeof(elapsedText), "%.2f", elapsed);
+    else if (elapsed < 100.0)
+      snprintf(elapsedText, sizeof(elapsedText), "%.1f", elapsed);
+    else
+      snprintf(elapsedText, sizeof(elapsedText), "%.0f", elapsed);
+
+    FILE *fp = messHandler->filePointer();
+    const bool utf8 = CbcOutput::useUtf8();
+    if (foundIntegerSol) {
+      if (utf8)
+        fprintf(fp, "\n▶ MIPStart ... ✔ Solution with cost %.15g found in %s s\n",
+          compObj, elapsedText);
+      else
+        fprintf(fp, "\n[>] MIPStart ... [+] Solution with cost %.15g found in %s s\n",
+          compObj, elapsedText);
+    } else {
+      if (utf8)
+        fprintf(fp, "\n▶ MIPStart ... ✘ Could not construct an integer-feasible solution in %s s\n",
+          elapsedText);
+      else
+        fprintf(fp, "\n[>] MIPStart ... [x] Could not construct an integer-feasible solution in %s s\n",
+          elapsedText);
+    }
+    fflush(fp);
+  }
   return status;
 }
 #undef STR_SIZE

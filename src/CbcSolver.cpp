@@ -5307,6 +5307,7 @@ int CbcSolver::postprocess(
           ppfp = stdout;
         const bool u8 = CbcOutput::useUtf8();
         const int ll = babModel_->messageHandler()->logLevel();
+        const bool inlineSummary = ll == 1 && !parameters_[CbcParam::PREPROCTIMES]->modeVal();
 
         // postProcDeadline_ is left at -1.0 (unlimited) for now — aborting
         // postprocessing mid-way would discard the B&B solution just found.
@@ -5316,7 +5317,8 @@ int CbcSolver::postprocess(
 
         double ppStart = CoinWallclockTime();
         if (ll >= 1) {
-          fprintf(ppfp, "\n%s\n\n", CoinTable::phaseStart("Postprocessing", u8).c_str());
+          fprintf(ppfp, inlineSummary ? "\n%s ... " : "\n%s\n\n",
+            CoinTable::phaseStart("Postprocessing", u8).c_str());
           fflush(ppfp);
         }
         process.postProcess(*babModel_->solver());
@@ -5325,7 +5327,7 @@ int CbcSolver::postprocess(
         if (ll >= 1 && parameters_[CbcParam::PREPROCTIMES]->modeVal())
           CbcOutput::printPreprocessTimes(ppfp, u8, process.stats(), true, ppElapsed);
         if (ll >= 1) {
-          fprintf(ppfp, "%s Postprocessing complete \xe2\x80\x94 Time: %.3gs\n",
+          fprintf(ppfp, inlineSummary ? "%s done in %.3gs\n" : "%s Postprocessing complete \xe2\x80\x94 Time: %.3gs\n",
             u8 ? "\xe2\x9c\x94" : "OK", ppElapsed);
           // Warn if postprocessing consumed a surprisingly large amount of
           // time so the anomaly is always visible in logs (this phase runs
@@ -9090,6 +9092,9 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
         obj, extraActions, babModel_->messageHandler(),
         babModel_->messagesPointer(), parameters.getMipStartFixMode());
       if (!status) {
+        CoinMessages *messages = babModel_->messagesPointer();
+        const int roundingDetail = babModel_->messageHandler()->detail(CBC_ROUNDING, *messages);
+        messages->message_[CBC_ROUNDING]->setDetail(std::max(2, roundingDetail));
         // need to check more babModel_->setBestSolution( &x[0],
         // static_cast<int>(x.size()), obj, false );
         OsiBabSolver dummy;
@@ -9166,6 +9171,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
           }
           delete[] sosObjects;
         }
+        messages->message_[CBC_ROUNDING]->setDetail(roundingDetail);
         /* But this is outside branchAndBound so needs to know
            about direction */
         if (babModel_->getObjSense() == -1.0) {
@@ -11283,7 +11289,7 @@ void CbcSolver::babRunSppGraspOriginal()
   const int numberColumns = solver->getNumCols();
   std::vector< double > x(numberColumns, 0.0);
   double obj = model_.getCutoff();
-  const bool found = heuristic.solution(obj, &x[0]);
+  const bool found = heuristic.solution(obj, &x[0], !parameters.noPrinting());
   if (effortControlled && model_.messageHandler()->logLevel() > 0) {
     char line[192];
     if (stagedRequested) {

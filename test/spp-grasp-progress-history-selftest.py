@@ -86,8 +86,12 @@ def run(cbc, mipstart=None):
         if float(event["primal"]) != 2.0 or float(event["dual"]) > -1.0e49:
             raise AssertionError(f"Original-model SppGrasp event is incorrect: {event!r}")
     else:
-        if "MIPStart provided solution with cost 8" not in result.stdout:
+        if "MIPStart ..." not in result.stdout or "Solution with cost 8" not in result.stdout:
             raise AssertionError(f"MIP start was not accepted:\n{result.stdout}")
+        if "found by Reduced search" in result.stdout:
+            raise AssertionError(f"Duplicate MIP-start incumbent message:\n{result.stdout}")
+        if not re.search(r"\n\n[^\n]*MIPStart \.\.\.", result.stdout):
+            raise AssertionError(f"Missing blank line before MIPStart:\n{result.stdout}")
         events = [row for row in rows if row["source"] == "mipstart"]
         if len(events) != 1:
             raise AssertionError(f"Expected one MIP-start event, got {events!r}")

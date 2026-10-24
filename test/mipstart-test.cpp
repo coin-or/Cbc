@@ -494,8 +494,7 @@ void testShape(Shape shape, bool byIndex, bool preprocess)
 
   Cbc_Model *model = buildFixedCharge(m);
   Cbc_setDblParam(model, DBL_PARAM_TIME_LIMIT, 60.0);
-  /* Log level 1 so the MIPStart lines are emitted; the whole solve is captured,
-     so nothing reaches the terminal either way. */
+  /* Log level 1 exercises the concise MIPStart summary. */
   Cbc_setIntParam(model, INT_PARAM_LOG_LEVEL, 1);
   Cbc_setParameter(model, "preprocess", preprocess ? "on" : "off");
 
@@ -528,9 +527,13 @@ void testShape(Shape shape, bool byIndex, bool preprocess)
      entirely: the model is small enough that Cbc reaches the same optimum
      unaided, so "the answer is right" says nothing about whether the start was
      used. The start given here *is* the optimum, so it must be accepted. */
-  check(logHas(log, "MIPStart provided solution"),
-    std::string("the start was accepted and turned into a solution: ") + tag);
-  check(!logHas(log, "could not be used to build a solution"),
+  check(logHas(log, "MIPStart ...") && logHas(log, "Solution with cost"),
+    std::string("the start was accepted and summarized concisely: ") + tag);
+  check(!logHas(log, "MIPStart provided solution"),
+    std::string("the legacy MIPStart line was suppressed: ") + tag);
+  check(!logHas(log, "found by Reduced search"),
+    std::string("the duplicate MIPStart incumbent line was suppressed: ") + tag);
+  check(!logHas(log, "Could not construct an integer-feasible solution"),
     std::string("the start was not rejected: ") + tag);
   check(!logHas(log, "not valid, column names do not match"),
     std::string("the start's columns were matched: ") + tag);
@@ -656,8 +659,8 @@ void testFixAllRecovers()
   for (int mode = 1; mode <= 2; ++mode) {
     Cbc_Model *model = buildFixedCharge(m);
     Cbc_setDblParam(model, DBL_PARAM_TIME_LIMIT, 60.0);
-    /* Log level 1, not 0: the CBC_GENERAL lines asserted on below are the point. */
-    Cbc_setIntParam(model, INT_PARAM_LOG_LEVEL, 1);
+    /* Keep detailed recovery diagnostics visible at log level 2. */
+    Cbc_setIntParam(model, INT_PARAM_LOG_LEVEL, 2);
     Cbc_setIntParam(model, INT_PARAM_MIPSTART_FIX, mode);
     Cbc_setMIPStart(model, (int)cn.size(), cn.data(), vals.data());
 
@@ -757,7 +760,7 @@ void testNegativeIntegers()
      "the start was silently emptied" is that the start is reported as providing
      a solution at its own cost -- with the values gone, the two integers are
      unfixed and there is nothing to complete. */
-  check(logHas(log, "MIPStart provided solution with cost -6"),
+  check(logHas(log, "Solution with cost -6"),
     "the negative-valued start was used, at its own cost");
   check(!logHas(log, "not valid, column names do not match"),
     "the negative-valued start was not discarded as unusable");
@@ -771,7 +774,7 @@ void testNegativeIntegers()
   std::string log2 = cap2.finish();
   check(Cbc_isProvenOptimal(model) != 0, "proven optimal on re-solve (carried start)");
   checkClose(Cbc_getObjValue(model), -6.0, 1e-6, "optimum -6 on re-solve");
-  check(logHas(log2, "MIPStart provided solution with cost -6"),
+  check(logHas(log2, "Solution with cost -6"),
     "the carried-forward start kept its negative values");
   Cbc_deleteModel(model);
 }
@@ -818,7 +821,7 @@ void testMiniBranchAndBound()
 
   Cbc_Model *model = Cbc_newModel();
   Cbc_setDblParam(model, DBL_PARAM_TIME_LIMIT, 60.0);
-  Cbc_setIntParam(model, INT_PARAM_LOG_LEVEL, 1);
+  Cbc_setIntParam(model, INT_PARAM_LOG_LEVEL, 2);
   Cbc_setObjSense(model, 1.0);
   Cbc_setParameter(model, "preprocess", "off");
   /* Mode "integer" (1), not the default: the default takes every integer the
@@ -889,7 +892,6 @@ void testMiniBranchAndBound()
   Cbc_deleteModel(model);
 }
 
-
 /* ── Test 4: an infeasible start must not be trusted ───────────────────── */
 
 /* An accepted start installs a cutoff. If a start that violates a row were
@@ -927,6 +929,8 @@ void testInfeasibleStartRejected()
      that it is never published as a solution at the cost it claims. */
   check(!logHas(log, "MIPStart provided solution with cost 4"),
     "the infeasible start was not published at its own claimed cost");
+  check(logHas(log, "Could not construct an integer-feasible solution"),
+    "the failed start was summarized concisely");
 
   const double *sol = Cbc_getColSolution(model);
   if (sol) {
@@ -970,7 +974,7 @@ void testUnknownColumns()
   {
     Cbc_Model *model = buildFixedCharge(m);
     Cbc_setDblParam(model, DBL_PARAM_TIME_LIMIT, 60.0);
-    Cbc_setIntParam(model, INT_PARAM_LOG_LEVEL, 1);
+    Cbc_setIntParam(model, INT_PARAM_LOG_LEVEL, 2);
     const char *names[2] = { "alpha", "beta" };
     double vals[2] = { 1.0, 1.0 };
     Cbc_setMIPStart(model, 2, names, vals);

@@ -13,6 +13,7 @@
 #include "CbcHeuristicSppGrasp.hpp"
 #include "CbcSppGraspAcceptance.hpp"
 #include "CbcModel.hpp"
+#include "CbcOutput.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinTime.hpp"
 #include "OsiSolverInterface.hpp"
@@ -1967,6 +1968,11 @@ bool CbcHeuristicSppGrasp::isApplicable(const OsiSolverInterface &solver, bool n
 
 int CbcHeuristicSppGrasp::solution(double &objectiveValue, double *newSolution)
 {
+  return solution(objectiveValue, newSolution, false);
+}
+
+int CbcHeuristicSppGrasp::solution(double &objectiveValue, double *newSolution, bool standalone)
+{
   std::vector< double > pumpGuide;
   pumpGuide.swap(pumpFractionalGuide_);
   std::vector< double > rootLpSnapshot;
@@ -2144,6 +2150,13 @@ int CbcHeuristicSppGrasp::solution(double &objectiveValue, double *newSolution)
   // improve on the incumbent if there is one
   std::vector< char > best;
   CbcSppGrasp::RunStats stats;
+  const bool inlineSummary = standalone && model_->messageHandler()->logLevel() == 1;
+  FILE *fp = model_->messageHandler()->filePointer();
+  const bool utf8 = CbcOutput::useUtf8();
+  if (inlineSummary) {
+    fprintf(fp, "\n%s SPPGrasp ... ", utf8 ? "▶" : "[>]");
+    fflush(fp);
+  }
   double bestValue = grasp.run(config, params, best, &stats,
     mappedIncumbentValid ? &incumbent : NULL);
   if (model_->messageHandler()->logLevel() > 1) {
@@ -2158,12 +2171,17 @@ int CbcHeuristicSppGrasp::solution(double &objectiveValue, double *newSolution)
   }
   model_->addSppGraspStagedWork(stats.work);
   if (bestValue == COIN_DBL_MAX || grasp.numberArtificialUsed(best)) {
-    if (model_->messageHandler()->logLevel() > 0) {
+    if (model_->messageHandler()->logLevel() > 1) {
       char line[200];
       sprintf(line, "SppGrasp: no feasible solution (%d artificial rows) after %d LNS iterations in %.2f seconds",
         bestValue == COIN_DBL_MAX ? -1 : grasp.numberArtificialUsed(best), stats.lnsIterations, stats.time);
       model_->messageHandler()->message(CBC_GENERAL, model_->messages())
         << line << CoinMessageEol;
+    }
+    if (inlineSummary) {
+      fprintf(fp, "%s No feasible solution in %.2f seconds.\n",
+        utf8 ? "✘" : "[x]", stats.time);
+      fflush(fp);
     }
     return 0;
   }
@@ -2176,12 +2194,18 @@ int CbcHeuristicSppGrasp::solution(double &objectiveValue, double *newSolution)
   double value = -offset;
   for (int j = 0; j < n; j++)
     value += x[j] * direction * objective[j];
-  if (model_->messageHandler()->logLevel() > 0) {
+  if (model_->messageHandler()->logLevel() > 1) {
     char line[200];
     sprintf(line, "SppGrasp: first %g, best %g (%d slack rows) after %d LNS iterations in %.2f seconds",
       stats.first - offset, value, grasp.numberSlacksUsed(best), stats.lnsIterations, stats.time);
     model_->messageHandler()->message(CBC_GENERAL, model_->messages())
       << line << CoinMessageEol;
+  }
+  if (inlineSummary) {
+    fprintf(fp, "%s %.15g %s %.15g in %.2f seconds.\n",
+      utf8 ? "✔" : "[+]",
+      stats.first - offset, utf8 ? "→" : "->", value, stats.time);
+    fflush(fp);
   }
   if (stats.realStallStop && model_->messageHandler()->logLevel() > 1) {
     char line[200];

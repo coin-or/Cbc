@@ -260,6 +260,7 @@
     <ClCompile Include="..\..\..\src\CbcHeuristicRandRound.cpp" />
     <ClCompile Include="..\..\..\src\CbcHeuristicRENS.cpp" />
     <ClCompile Include="..\..\..\src\CbcHeuristicRINS.cpp" />
+    <ClCompile Include="..\..\..\src\CbcHeuristicSppGrasp.cpp" />
     <ClCompile Include="..\..\..\src\CbcHeuristicVND.cpp" />
     <ClCompile Include="..\..\..\src\CbcMessage.cpp" />
     <ClCompile Include="..\..\..\src\CbcMipStart.cpp" />

@@ -68,6 +68,12 @@ public:
    *  parameter in CbcSolverHeuristics.cpp). */
   void setRootPlacesOverride(const std::string &places) { rootPlacesOverride_ = places; }
   const std::string &rootPlacesOverride() const { return rootPlacesOverride_; }
+  /// Number of LP solves reached by the current/previous FPump calls.
+  inline int numLpSolves() const { return numLpSolves_; }
+  /// Number of main pump passes reached by the current/previous FPump calls.
+  inline int numPumpPasses() const { return numPumpPasses_; }
+  /// Reason the most recent call returned before entering the pump core.
+  inline const std::string &lastCallSkipReason() const { return lastCallSkipReason_; }
 
   /// Whether the last call captured a rounded-but-failed attempt (see
   /// bestRoundedAttempt()). Cleared whenever a call succeeds.
@@ -81,6 +87,35 @@ public:
   const double *bestRoundedAttempt() const
   {
     return bestRoundedAttempt_.empty() ? nullptr : bestRoundedAttempt_.data();
+  }
+  int bestRoundedAttemptSize() const
+  {
+    return static_cast< int >(bestRoundedAttempt_.size());
+  }
+  /// Sum of integer-variable distances in the FPump LP point that produced
+  /// bestRoundedAttempt(), before FPump rounded that point.
+  double bestRoundedSourceFractionality() const
+  {
+    return bestRoundedSourceFractionality_;
+  }
+  int bestRoundedSourceFractionalCount() const
+  {
+    return bestRoundedSourceFractionalCount_;
+  }
+  const std::vector< int > &bestRoundedIntegerColumns() const
+  {
+    return bestRoundedIntegerColumns_;
+  }
+  /// The unrounded FPump LP point which produced bestRoundedAttempt(), with
+  /// the same column ordering and fractional-distance metadata.
+  const double *bestRoundedSourcePoint() const
+  {
+    return bestRoundedSourcePoint_.empty() ? nullptr
+                                           : bestRoundedSourcePoint_.data();
+  }
+  int bestRoundedSourcePointSize() const
+  {
+    return static_cast< int >(bestRoundedSourcePoint_.size());
   }
 
   /// Resets stuff if model changes
@@ -288,8 +323,15 @@ protected:
   CbcHeuristicFeasibilityJump *fjFallback_ = nullptr;
   /// See setRootPlacesOverride().
   std::string rootPlacesOverride_;
+  int numLpSolves_ = 0;
+  int numPumpPasses_ = 0;
+  std::string lastCallSkipReason_;
   /// See bestRoundedAttempt().
   std::vector< double > bestRoundedAttempt_;
+  std::vector< double > bestRoundedSourcePoint_;
+  double bestRoundedSourceFractionality_ = 0.0;
+  int bestRoundedSourceFractionalCount_ = 0;
+  std::vector< int > bestRoundedIntegerColumns_;
   /// Start time
   double startTime_;
   /// Maximum Cpu seconds

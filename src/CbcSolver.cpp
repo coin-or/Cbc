@@ -139,6 +139,7 @@ void CbcCrashHandler(int sig);
 #include "CbcCutGenerator.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicControl.hpp"
+#include "CbcHeuristicSppGrasp.hpp"
 #include "CbcHeuristicDiveCoefficient.hpp"
 #include "CbcHeuristicDiveFractional.hpp"
 #include "CbcHeuristicDiveGuided.hpp"
@@ -3168,7 +3169,8 @@ int CbcSolver::intValue(int code)
 // Set int value
 void CbcSolver::setIntValue(int code, int value)
 {
-  parameters_[code]->setVal(value);
+  if (!parameters_[code]->setVal(value))
+    parameters_[code]->markCoverageTuningOverride();
 }
 
 // ###########################################################################
@@ -3186,7 +3188,8 @@ double CbcSolver::doubleValue(int code)
 // Set double value
 void CbcSolver::setDoubleValue(int code, double value)
 {
-  parameters_[code]->setVal(value);
+  if (!parameters_[code]->setVal(value))
+    parameters_[code]->markCoverageTuningOverride();
 }
 
 // ###########################################################################
@@ -3441,7 +3444,9 @@ void CbcSolver::initialize()
   parameters_[CbcParam::LANDPCUTS]->setVal("root");
   parameters_[CbcParam::RESIDCAPCUTS]->setVal("off");
   parameters_[CbcParam::ROUNDING]->setVal("on");
-  parameters_[CbcParam::FPUMP]->setVal("on");
+  // not setVal: the feasibility pump may be switched off automatically
+  // (e.g. by SppGrasp) unless the user asked for it
+  parameters_[CbcParam::FPUMP]->setModeValAuto(parameters_[CbcParam::FPUMP]->kwdToMode("on"));
   parameters_[CbcParam::GREEDY]->setVal("on");
   parameters_[CbcParam::DIVINGC]->setVal("on");
   parameters_[CbcParam::RINS]->setVal("on");
@@ -7353,7 +7358,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   parameters[CbcParam::LANDPCUTS]->setVal("root");
   parameters[CbcParam::RESIDCAPCUTS]->setVal("off");
   parameters[CbcParam::ROUNDING]->setVal("on");
-  parameters[CbcParam::FPUMP]->setVal("on");
+  parameters[CbcParam::FPUMP]->setModeValAuto(parameters[CbcParam::FPUMP]->kwdToMode("on"));
   parameters[CbcParam::GREEDY]->setVal("on");
   parameters[CbcParam::DIVINGC]->setVal("on");
   parameters[CbcParam::RINS]->setVal("on");
@@ -7502,6 +7507,7 @@ public:
 
   ~BabHandlerGuard()
   {
+    babModel_.finishPreSearchProgress();
     if (cutGenOut_)
       cutGenOut_->close();
     if (fpumpOut_) {
@@ -9168,6 +9174,8 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
         }
         babModel_->clearContinuousSolver();
         babModel_->passInSolverCharacteristics(NULL);
+        babModel_->recordPreSearchIncumbent(
+          babModel_->getMinimizationObjValue(), "mipstart");
         if (useSolution == 0)
           babModel_->setHotstartSolution(&x[0]);
       }
@@ -11028,8 +11036,277 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
 
 int CbcSolver::configureHeuristics(CbcModel *model, int type)
 {
-  return doHeuristics(model, type, parameters_, parameters_.noPrinting(),
-    initialPumpTune_);
+  int result = doHeuristics(model, type, parameters_, parameters_.noPrinting(),
+    initialPumpTune_, sppGraspOriginal_, sppGraspOriginalSolution_);
+  const double totalWork = 1.0e6 * parameters_[CbcParam::SPPGRASPWORK]->dblVal();
+  if (model
+    && parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->modeVal() == 5
+    && model->sppGraspRootSequence()
+    && totalWork > 0.0) {
+    if (!model->sppGraspStagedWorkEnabled())
+      model->setSppGraspStagedWork(totalWork,
+        model_.sppGraspStagedWorkUsed());
+    else
+      model->seedSppGraspStagedWork(model_.sppGraspStagedWorkUsed());
+  }
+  return result;
+}
+
+// Certificate-only pass: no LP information, artificials, or search.
+static bool cbcNativePreLp(CbcModel &model, CbcModel *babModel,
+  CbcParameters &parameters, std::string &reason)
+{
+  auto skip = [&](const std::string &why) {
+    reason = why;
+    return false;
+  };
+  if (!parameters[CbcParam::SPPGRASP]->modeVal())
+    return skip("sppGrasp is off");
+  if (model.getEventHandler() || model.numberCutGenerators())
+    return skip("custom event handler or cut generators");
+  if (model.getProgressElapsedSeconds() >= model.getMaximumSeconds())
+    return skip("time limit reached");
+  const double started = model.getProgressElapsedSeconds();
+  for (int i = 0; i < model.numberObjects(); ++i)
+    if (!dynamic_cast< const CbcSimpleInteger * >(model.object(i)))
+      return skip("noninteger branching objects");
+  const int sequence = parameters[CbcParam::SPPGRASPROOTSEQUENCE]->modeVal();
+  if (sequence != 0)
+    return skip("nonlegacy root sequence");
+  OsiSolverInterface *solver = model.solver();
+  if (!solver || solver->getObjSense() != 1.0
+    || (babModel && babModel->getNumCols() != solver->getNumCols()))
+    return skip("requires a matching minimization model");
+  if (solver->numberObjects())
+    return skip("solver branching objects");
+#ifndef CBC_OTHER_SOLVER
+  OsiClpSolverInterface *clp = getClpSolver(solver);
+  if (!clp || clp->numberSOS()
+    || clp->getModelPtr()->objectiveAsObject()->type() > 1)
+    return skip("requires a linear model without SOS");
+#endif
+  CbcSppGrasp grasp;
+  // tooRestricted() limits search effort, not this validated completion.
+  if (!grasp.load(*solver))
+    return skip(grasp.reason());
+  if (!grasp.meetsNativeCoverage(1.0, &reason))
+    return false;
+  const int n = solver->getNumCols();
+  std::vector< char > best(n, 0);
+  std::vector< double > solution(n), activity(solver->getNumRows(), 0.0);
+  grasp.toOriginal(best, &solution[0]);
+  const double *lower = solver->getColLower();
+  const double *upper = solver->getColUpper();
+  const double *cost = solver->getObjCoefficients();
+  const CoinPackedMatrix *matrix = solver->getMatrixByCol();
+  const CoinBigIndex *starts = matrix->getVectorStarts();
+  const int *lengths = matrix->getVectorLengths();
+  const int *rows = matrix->getIndices();
+  const double *elements = matrix->getElements();
+  const double *rowLower = solver->getRowLower();
+  const double *rowUpper = solver->getRowUpper();
+  const double infinity = solver->getInfinity();
+  for (int j = 0; j < n; ++j)
+    if (solution[j] != 0.0)
+      for (CoinBigIndex k = starts[j]; k < starts[j] + lengths[j]; ++k)
+        activity[rows[k]] += elements[k] * solution[j];
+  std::vector< char > needed(solver->getNumRows(), 0);
+  std::vector< int > choice(solver->getNumRows(), -1);
+  int required = 0;
+  for (int i = 0; i < solver->getNumRows(); ++i)
+    if (rowLower[i] - activity[i] > 1.0e-6
+      && fabs(rowUpper[i] - activity[i] - 1.0) < 1.0e-8) {
+      needed[i] = 1;
+      ++required;
+    }
+  if (required != grasp.numberPartitioningRows())
+    return skip("partitioning rows need unsupported residual activity");
+  // Choose genuine private alternatives across ALL active rows, including
+  // benign restricting rows omitted by the search representation.
+  for (int j = 0; j < n; ++j) {
+    const double target = 1.0 - solution[j];
+    if (target < lower[j] - 1.0e-8 || target > upper[j] + 1.0e-8)
+      continue;
+    int row = -1;
+    double coefficient = 0.0;
+    for (CoinBigIndex k = starts[j]; k < starts[j] + lengths[j]; ++k)
+      if (elements[k] != 0.0
+        && (rowLower[rows[k]] > -infinity || rowUpper[rows[k]] < infinity)) {
+        if (row >= 0) {
+          row = -2;
+          break;
+        }
+        row = rows[k];
+        coefficient = elements[k];
+      }
+    if (row < 0 || !needed[row]
+      || fabs(coefficient * (target - solution[j]) - 1.0) > 1.0e-8)
+      continue;
+    const int old = choice[row];
+    const double change = cost[j] * (target - solution[j]);
+    if (old < 0 || change < cost[old] * (1.0 - 2.0 * solution[old]))
+      choice[row] = j;
+  }
+  for (int i = 0; i < solver->getNumRows(); ++i)
+    if (needed[i]) {
+      if (choice[i] < 0)
+        return skip("partitioning row without a strictly private real column");
+      best[choice[i]] = 1;
+    }
+  if (grasp.numberArtificial() || !(grasp.evaluate(best, false) < COIN_DBL_MAX))
+    return skip("completion fails normalized feasibility");
+  grasp.toOriginal(best, &solution[0]);
+  std::fill(activity.begin(), activity.end(), 0.0);
+  double offset = 0.0;
+  solver->getDblParam(OsiObjOffset, offset);
+  double objective = -offset;
+  for (int j = 0; j < n; ++j) {
+    const double value = solution[j];
+    if (!std::isfinite(value) || value < lower[j] - 1.0e-8
+      || value > upper[j] + 1.0e-8
+      || !std::isfinite(lower[j]) || !std::isfinite(upper[j])
+      || (solver->isInteger(j) && fabs(value - floor(value + 0.5)) > 1.0e-8))
+      return skip("completion fails column bounds or integrality");
+    objective += cost[j] * value;
+    if (value != 0.0 || best[j]) {
+      int degree = 0;
+      for (CoinBigIndex k = starts[j]; k < starts[j] + lengths[j]; ++k) {
+        if (elements[k] != 0.0
+          && (rowLower[rows[k]] > -infinity || rowUpper[rows[k]] < infinity))
+          ++degree;
+        activity[rows[k]] += elements[k] * value;
+      }
+      if (best[j] && degree != 1)
+        return skip("selected column is not strictly private");
+    }
+  }
+  for (int i = 0; i < solver->getNumRows(); ++i)
+    if (!std::isfinite(activity[i]) || std::isnan(rowLower[i]) || std::isnan(rowUpper[i])
+      || activity[i] < rowLower[i] - 1.0e-8
+      || activity[i] > rowUpper[i] + 1.0e-8)
+      return skip("completion fails actual row feasibility");
+  objective *= solver->getObjSense();
+  if (!std::isfinite(objective))
+    return skip("nonfinite completion objective");
+  if (objective >= model.getCutoff()
+    || (model.bestSolution() && objective >= model.getMinimizationObjValue() - 1.0e-8))
+    return skip("completion does not improve the incumbent or cutoff");
+  if (model.getProgressElapsedSeconds() >= model.getMaximumSeconds())
+    return skip("time limit reached during completion");
+  const double cutoff = std::min(model.getCutoff(), objective + 1.0e-4);
+  model.setBestSolution(&solution[0], n, objective, false);
+  model.setCutoff(cutoff);
+  model.setSolutionCount(std::max(1, model.getSolutionCount()));
+  if (babModel) {
+    babModel->setBestSolution(&solution[0], n, objective, false);
+    babModel->setCutoff(cutoff);
+    babModel->setSolutionCount(std::max(1, babModel->getSolutionCount()));
+    babModel->recordPreSearchIncumbent(objective, "SppGraspNativePreLp");
+  }
+  model.recordPreSearchIncumbent(objective, "SppGraspNativePreLp");
+  std::ostringstream message;
+  message << "SppGrasp native pre-LP: real feasible certificate, objective "
+          << model.getObjValue() << ", elapsed " << model.getProgressElapsedSeconds()
+          << ", nativeRows " << required << ", certificateSeconds "
+          << model.getProgressElapsedSeconds() - started;
+  if (!parameters.noPrinting())
+    printGeneralMessage(model, message.str());
+  return true;
+}
+
+void CbcSolver::babRunSppGraspOriginal()
+{
+  CbcParameters &parameters = parameters_;
+  sppGraspOriginal_ = 0;
+  sppGraspOriginalSolution_ = false;
+  const int rootSequence = parameters[CbcParam::SPPGRASPROOTSEQUENCE]->modeVal();
+  const double totalWork = 1.0e6 * parameters[CbcParam::SPPGRASPWORK]->dblVal();
+  const bool effortControlled = rootSequence >= 5 && rootSequence <= 7
+    && parameters[CbcParam::SPPGRASP]->modeVal() != 0
+    && totalWork > 0.0;
+  const bool stagedRequested = effortControlled && rootSequence == 5;
+  model_.setSppGraspStagedWork(effortControlled ? totalWork : 0.0, 0.0);
+  if (!parameters[CbcParam::SPPGRASP]->modeVal() || !babModel_)
+    return;
+  if (rootSequence != 0 && rootSequence < 5
+    && !parameters[CbcParam::SPPGRASPROOTKEEPORIGINAL]->modeVal()) {
+    const int fpumpMode = parameters[CbcParam::FPUMP]->modeVal();
+    if (fpumpMode >= 1 && fpumpMode <= 2)
+      return;
+  }
+  OsiSolverInterface *solver = model_.solver();
+  if (!solver || babModel_->getNumCols() != solver->getNumCols())
+    return;
+  std::string reason;
+  const double artificial = parameters[CbcParam::SPPGRASPARTIFICIAL]->dblVal();
+  const double minimumNativeCoverage = parameters[CbcParam::SPPGRASPMINNATIVECOVERAGE]->dblVal();
+  const int applicability = CbcHeuristicSppGrasp::applicability(*solver, artificial, &reason, minimumNativeCoverage);
+  if (minimumNativeCoverage > 0.0 && model_.messageHandler()->logLevel() > 1 && !parameters.noPrinting())
+    model_.messageHandler()->message(CBC_GENERAL, model_.messages())
+      << "SppGrasp original-entry " + reason << CoinMessageEol;
+  if (!applicability) {
+    sppGraspOriginal_ = -1;
+    if (model_.messageHandler()->logLevel() > 1 && !parameters.noPrinting()) {
+      model_.messageHandler()->message(CBC_GENERAL, model_.messages())
+        << "SppGrasp not applicable: " + reason << CoinMessageEol;
+    }
+    return;
+  }
+  // 2: with artificial slacks
+  sppGraspOriginal_ = applicability;
+  CbcHeuristicSppGrasp heuristic(model_);
+  heuristic.setMinimumNativeCoverage(minimumNativeCoverage);
+  if (applicability == 2)
+    heuristic.setArtificialSlacks(artificial);
+  heuristic.setMaxTime(parameters[CbcParam::SPPGRASPTIME]->dblVal());
+  const int firstPercent = parameters[CbcParam::SPPGRASPSTAGEFIRSTPERCENT]->intVal();
+  const double initialAllocation = rootSequence == 6
+    ? totalWork
+    : (rootSequence == 5 || rootSequence == 7)
+    ? totalWork * firstPercent / 100.0
+    : totalWork;
+  heuristic.setMaxWork(effortControlled ? 0.0 : totalWork);
+  heuristic.setMaxNoImprove(parameters[CbcParam::SPPGRASPNOIMPROVE]->intVal());
+  CbcSppGrasp::RunParams sppParams = heuristic.runParams();
+  sppParams.destroyRows = parameters[CbcParam::SPPGRASPDESTROYROWS]->intVal();
+  sppParams.stallIterations = parameters[CbcParam::SPPGRASPSTALL]->intVal();
+  sppParams.destroyGrowProbability = parameters[CbcParam::SPPGRASPDESTROYGROW]->dblVal();
+  sppParams.relatedRowProbability = parameters[CbcParam::SPPGRASPRELATEDROWS]->dblVal();
+  sppParams.maxRealStallWork = 1.0e6 * parameters[CbcParam::SPPGRASPREALSTALLWORK]->dblVal();
+  if (effortControlled) {
+    sppParams.maxWork = 0.0;
+    sppParams.totalWorkLimit = initialAllocation;
+  }
+  sppParams.relatedAfterFeasible = true;
+  heuristic.setRunParams(sppParams);
+  configureSppGraspCoverageTuning(heuristic, parameters, "original");
+  const int numberColumns = solver->getNumCols();
+  std::vector< double > x(numberColumns, 0.0);
+  double obj = model_.getCutoff();
+  const bool found = heuristic.solution(obj, &x[0]);
+  if (effortControlled && model_.messageHandler()->logLevel() > 0) {
+    char line[192];
+    if (stagedRequested) {
+      sprintf(line, "SppGrasp stage 1 used %.0f of %.0f work (allocation %d%%)",
+        model_.sppGraspStagedWorkUsed(), totalWork, firstPercent);
+    } else {
+      sprintf(line, "SppGrasp initial effort pass used %.0f of %.0f work",
+        model_.sppGraspStagedWorkUsed(), initialAllocation);
+    }
+    model_.messageHandler()->message(CBC_GENERAL, model_.messages())
+      << line << CoinMessageEol;
+  }
+  if (!found)
+    return;
+  sppGraspOriginalSolution_ = true;
+  double newCutoff = std::min(babModel_->getCutoff(), obj + 1.0e-4);
+  babModel_->setBestSolution(&x[0], numberColumns, obj, false);
+  babModel_->setCutoff(newCutoff);
+  babModel_->setSolutionCount(1);
+  model_.setBestSolution(&x[0], numberColumns, obj, false);
+  model_.setCutoff(newCutoff);
+  model_.setSolutionCount(1);
+  babModel_->recordPreSearchIncumbent(obj, "SppGraspOriginal");
 }
 
 void CbcSolver::configureCutGenerators(CbcModel &babModel,
@@ -11850,6 +12127,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         else
           model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
+        // Start the full-solve progress clock on model_, which survives the
+        // BAB model being rebuilt from it after the root LP. Starting it on
+        // the current babModel_ here loses the origin when that object is
+        // replaced, causing pre-search incumbents to be timestamped at zero.
+        model_.startProgressClock();
 
         biLinearProblem = false;
         // check if any integers
@@ -11897,6 +12179,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           printGeneralWarning(model_, message);
           continue;
         } else {
+          cbcParam->markCoverageTuningOverride();
           if (!message.empty())
             paramChanges_.push_back(message);
         }
@@ -12028,6 +12311,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             printGeneralWarning(model_, message);
             continue;
           }
+          cbcParam->markCoverageTuningOverride();
           if (!message.empty())
             paramChanges_.push_back(message);
           if (cbcParamCode == CbcParam::USESOLUTION) {
@@ -12391,6 +12675,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           break;
         case CbcParam::HEURISTICSTRATEGY:
           parameters[CbcParam::ROUNDING]->setVal(mode);
+          parameters[CbcParam::SPPGRASP]->setVal(mode);
           parameters[CbcParam::GREEDY]->setVal(mode);
           parameters[CbcParam::COMBINE]->setVal(mode);
           // parameters[CbcParam::LOCALTREE,numberParameters_,parameters)]->setVal(mode);
@@ -13017,9 +13302,34 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               continue;
           }
           {
+            bool nativePreLp = false;
+            if (parameters[CbcParam::SPPGRASPNATIVEPRELP]->modeVal()) {
+              std::string reason;
+              if (numberSOS || (callBack && callBack != dummyCallback) || info)
+                reason = "SOS, custom solver callback or AMPL model";
+              else if (!mipStart.empty() || !mipStartBefore.empty()
+                || !model_.getMIPStart().empty() || model_.hotstartSolution())
+                reason = "pending MIP start or hot start";
+              else
+                nativePreLp = cbcNativePreLp(model_, babModel_, parameters, reason);
+              if (!nativePreLp && cbcLogLevel > 1 && !parameters.noPrinting())
+                printGeneralMessage(model_, "SppGrasp native pre-LP: skipped: " + reason);
+            }
             int rc = babSetupAndRootLp(logLevel, cbcLogLevel,
               clpSolver, lpSolver, storedAmpl, coinModel, statistics,
               returnCode, callBack);
+            if (rc == 1 && nativePreLp && model_.bestSolution()) {
+              statistics.obj = model_.getObjValue();
+              if (model_.status() == 1 || model_.status() == 2) {
+                // B&B did not run, so transfer the saved integer vector here.
+                integerStatus_ = 3;
+                model_.solver()->setColSolution(model_.bestSolution());
+              }
+              model_.setProgressCsv(parameters[CbcParam::PROGRESSCSVFILE]->fileName(),
+                parameters[CbcParam::PROGRESSMINCHANGE]->dblVal(),
+                parameters[CbcParam::PROGRESSINTERVAL]->dblVal());
+              model_.finishPreSearchProgress();
+            }
             if (rc == 1)
               break;
             if (rc == 2)
@@ -13088,8 +13398,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               model_.setCutoff(newCutoff);
               model_.setMinimizationObjValue(obj2);
               model_.setSolutionCount(1);
+              babModel_->recordPreSearchIncumbent(obj, "mipstart");
             }
           }
+          babRunSppGraspOriginal();
           // Do heuristics if asked for
           // HEURSTART
           // Do heuristics if asked for
@@ -14054,6 +14366,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         } break;
         case CbcParam::PUMPROOTPLACES:
         case CbcParam::JUMPROOTPLACES:
+        case CbcParam::SPPGRASPTUNINGPROFILE:
           if ((status = cbcParam->readValue(inputQueue, field, &message))) {
             printGeneralMessage(model_, message);
             continue;

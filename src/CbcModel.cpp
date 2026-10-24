@@ -7196,6 +7196,9 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   strongInfo_[6] = rhs.strongInfo_[6];
   keepNamesPreproc = rhs.keepNamesPreproc;
   mipStart_ = rhs.mipStart_;
+  progressClockOrigin_ = rhs.progressClockOrigin_;
+  progressClockOriginSet_ = rhs.progressClockOriginSet_;
+  preSearchProgress_ = rhs.preSearchProgress_;
   solverCharacteristics_ = nullptr;
   if (rhs.emptyWarmStart_)
     emptyWarmStart_ = rhs.emptyWarmStart_->clone();
@@ -7745,6 +7748,9 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     maximumDepth_ = rhs.maximumDepth_;
     keepNamesPreproc = rhs.keepNamesPreproc;
     mipStart_ = rhs.mipStart_;
+    progressClockOrigin_ = rhs.progressClockOrigin_;
+    progressClockOriginSet_ = rhs.progressClockOriginSet_;
+    preSearchProgress_ = rhs.preSearchProgress_;
     delete[] addedCuts_;
     delete[] walkback_;
     // These are only used as temporary arrays so need not be filled
@@ -8080,6 +8086,14 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
     rhs.numberSavedSolutions_, maximumSavedSolutions_, solver_->getNumCols());
   continuousPriority_ = rhs.continuousPriority_;
   numberThreads_ = rhs.numberThreads_;
+  sppGraspRootSequence_ = rhs.sppGraspRootSequence_;
+  sppGraspStagedWorkEnabled_ = rhs.sppGraspStagedWorkEnabled_;
+  sppGraspStagedWorkTotal_ = rhs.sppGraspStagedWorkTotal_;
+  sppGraspStagedWorkUsed_ = rhs.sppGraspStagedWorkUsed_;
+  sppGraspStagedSecondPassDone_ = rhs.sppGraspStagedSecondPassDone_;
+  sppGraspPumpGuide_ = rhs.sppGraspPumpGuide_;
+  sppGraspFpumpOnlyWithoutIncumbent_ =
+    rhs.sppGraspFpumpOnlyWithoutIncumbent_;
   threadMode_ = rhs.threadMode_;
   numberGlobalCutsIn_ = rhs.numberGlobalCutsIn_;
   roundIntVars_ = rhs.roundIntVars_;
@@ -10878,10 +10892,15 @@ void CbcModel::doRootHeuristicsAfterCuts(bool feasible, CbcNode *node,
     double heuristicValue = getCutoff();
     int found = -1; // no solution found
     if (feasible) {
-      if (useRootHeuristicSchedule_ && !node) {
-        // Use parallel schedule after cuts at root
+      if ((useRootHeuristicSchedule_ || sppGraspRootSequence_) && !node) {
+        // Use the configured root schedule (sequential for explicit
+        // SppGrasp/FPump sequences) after cuts at root.
         CbcRootHeuristicSchedule schedule(*this);
-        schedule.setMaxSolutionsPhase1(1);
+        schedule.setSequentialCalls(sppGraspRootSequence_);
+        schedule.setPumpGuide(sppGraspPumpGuide_);
+        schedule.setPumpOnlyWithoutIncumbent(
+          sppGraspFpumpOnlyWithoutIncumbent_);
+        schedule.setMaxSolutionsPhase1(sppGraspRootSequence_ ? 2 : 1);
         schedule.setNumThreads(numberThreads_);
         int nFound = schedule.run('C');
         if (nFound > 0)
@@ -17216,6 +17235,43 @@ double CbcModel::getCurrentSeconds() const
   else
     return CoinGetTimeOfDay() - getDblParam(CbcStartSeconds);
 }
+
+void CbcModel::startProgressClock()
+{
+  progressClockOrigin_ = useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime();
+  progressClockOriginSet_ = true;
+}
+
+double CbcModel::getProgressElapsedSeconds() const
+{
+  if (!progressClockOriginSet_)
+    return getCurrentSeconds();
+  const double now = useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime();
+  return std::max(0.0, now - progressClockOrigin_);
+}
+
+void CbcModel::recordPreSearchIncumbent(double objective, const char *source)
+{
+  if (!std::isfinite(objective) || fabs(objective) >= 1.0e30 || !source)
+    return;
+  if (!progressClockOriginSet_)
+    startProgressClock();
+  if (objective >= progressLastPrimal_)
+    return;
+  const double seconds = getProgressElapsedSeconds();
+  progressLastPrimal_ = objective;
+  if (progressCsv_) {
+    // The CSV may already be open when an early heuristic accepts a solution.
+    // Record it without invoking progress callbacks before branchAndBound.
+    fprintf(progressCsv_.get(), "%.9f,%.10g,-1e+50,%s,0\n", seconds,
+      trueObjValue(objective), source);
+    fflush(progressCsv_.get());
+    progressLastNotify_ = seconds;
+  } else {
+    preSearchProgress_.push_back({ seconds, objective, source });
+  }
+}
+
 /* Encapsulates choosing a variable -
    anyAction: -2 infeasible
               -1 round again
@@ -17927,14 +17983,18 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
        heuristic.
         */
     // Modify based on size etc
-    if (!useRootHeuristicSchedule_)
+    if (!useRootHeuristicSchedule_ && !sppGraspRootSequence_)
       adjustHeuristics();
 
-    // Two-phase parallel root heuristic schedule
-    if (useRootHeuristicSchedule_) {
+    // Two-phase root heuristic schedule (parallel by default).
+    if (useRootHeuristicSchedule_ || sppGraspRootSequence_) {
       CbcRootHeuristicSchedule schedule(*this);
       schedule.addDefaultDivingConfigs();
-      schedule.setMaxSolutionsPhase1(1);
+      schedule.setSequentialCalls(sppGraspRootSequence_);
+      schedule.setPumpGuide(sppGraspPumpGuide_);
+      schedule.setPumpOnlyWithoutIncumbent(
+        sppGraspFpumpOnlyWithoutIncumbent_);
+      schedule.setMaxSolutionsPhase1(sppGraspRootSequence_ ? 2 : 1);
       schedule.setNumThreads(numberThreads_);
       schedule.run('L');
       // Add conflict cuts discovered during diving to the LP
@@ -22811,13 +22871,25 @@ void CbcModel::setProgressCsv(const std::string &fileName, double minRelChange, 
   progressHeartbeat_ = heartbeatSeconds > 0.0 ? heartbeatSeconds : COIN_DBL_MAX;
   if (fileName.empty())
     return;
+  if (!progressClockOriginSet_)
+    startProgressClock();
   FILE *fp = fopen(fileName.c_str(), "w");
   if (!fp)
     return;
   fprintf(fp, "time,primal,dual,source,nodes\n");
   progressCsv_.reset(fp, fclose);
+  progressInfo_ = CbcProgressInfo();
   // initial state; the dual bound is unknown until the first LP is solved
   fprintf(fp, "0.000,1e+50,-1e+50,start,0\n");
+  // These incumbents were accepted before branchAndBound() opened the CSV.
+  // Write them as data only: progress callbacks retain their existing B&B-only
+  // firing semantics.
+  for (const PendingProgressIncumbent &event : preSearchProgress_) {
+    fprintf(fp, "%.9f,%.10g,-1e+50,%s,0\n", event.seconds,
+      trueObjValue(event.objective), event.source.c_str());
+    progressLastNotify_ = event.seconds;
+  }
+  preSearchProgress_.clear();
   fflush(fp);
 }
 
@@ -22832,11 +22904,12 @@ void CbcModel::shareProgressCsv(CbcModel &owner)
 
 // Caller holds *progressMutex_ (when there is one). Delivery is serialised and
 // always goes through the base model, so handlers need not be thread safe.
-void CbcModel::publishProgress(const char *source, CbcProgressInfo::Kind kind, bool writeRow)
+void CbcModel::publishProgress(const char *source, CbcProgressInfo::Kind kind, bool writeRow,
+  bool notifyHandler)
 {
   CbcModel *owner = progressOwner_ ? progressOwner_ : this;
   CbcProgressInfo &info = owner->progressInfo_;
-  info.seconds = owner->getCurrentSeconds();
+  info.seconds = owner->getProgressElapsedSeconds();
   info.primal = owner->progressLastPrimal_ < 1.0e30 ? trueObjValue(owner->progressLastPrimal_) : 1.0e50;
   info.dual = owner->progressDualSeen_ > -1.0e30 ? trueObjValue(owner->progressDualSeen_) : -1.0e50;
   info.nodes = owner->numberNodes_ + owner->numberExtraNodes_;
@@ -22844,11 +22917,11 @@ void CbcModel::publishProgress(const char *source, CbcProgressInfo::Kind kind, b
   info.kind = kind;
   owner->progressLastNotify_ = info.seconds;
   if (writeRow && progressCsv_) {
-    fprintf(progressCsv_.get(), "%.3f,%.10g,%.10g,%s,%d\n", info.seconds, info.primal, info.dual,
+    fprintf(progressCsv_.get(), "%.9f,%.10g,%.10g,%s,%d\n", info.seconds, info.primal, info.dual,
       source, info.nodes);
     fflush(progressCsv_.get());
   }
-  if (owner->eventHandler_ && owner->eventHandler_->event(CbcEventHandler::progress) == CbcEventHandler::stop)
+  if (notifyHandler && owner->eventHandler_ && owner->eventHandler_->event(CbcEventHandler::progress) == CbcEventHandler::stop)
   {
     owner->progressStopRequested_ = true;
     owner->sayEventHappened(); // worker threads notice it through the base model
@@ -22876,6 +22949,20 @@ void CbcModel::writeProgressCsv(const char *source)
   publishProgress(source, CbcProgressInfo::incumbent, true);
 }
 
+void CbcModel::finishPreSearchProgress()
+{
+  if (!progressCsv_ || parentModel_
+    || progressInfo_.kind == CbcProgressInfo::final)
+    return;
+  progressLastPrimal_ = std::min(progressLastPrimal_, bestObjective_);
+  if (isProvenOptimal() && bestSolution_)
+    progressDualSeen_ = bestObjective_;
+  else if (bestPossibleObjective_ > -1.0e30 && bestPossibleObjective_ < 1.0e30)
+    progressDualSeen_ = std::max(progressDualSeen_,
+      std::min(bestPossibleObjective_, bestObjective_));
+  publishProgress("final", CbcProgressInfo::final, true, false);
+}
+
 void CbcModel::reportDualBound(double minObjValue, const char *source)
 {
   if (parentModel_ || minObjValue >= 1.0e30 || (!progressCsv_ && !eventHandler_))
@@ -22892,7 +22979,7 @@ void CbcModel::reportDualBound(double minObjValue, const char *source)
   if (significant && minObjValue > progressLastDual_ + 1.0e-9 * scale) {
     progressLastDual_ = minObjValue;
     publishProgress(source, CbcProgressInfo::bound, true);
-  } else if (getCurrentSeconds() - progressLastNotify_ >= progressHeartbeat_) {
+  } else if (getProgressElapsedSeconds() - progressLastNotify_ >= progressHeartbeat_) {
     publishProgress("tick", CbcProgressInfo::tick, false);
   }
 }
@@ -22903,7 +22990,7 @@ void CbcModel::sampleParallelDualBound()
 #ifdef CBC_THREAD
   if (parentModel_ || !master_ || parallelMode() <= 0 || (!progressCsv_ && !eventHandler_))
     return;
-  const double now = getCurrentSeconds();
+  const double now = getProgressElapsedSeconds();
   if (now - progressLastSample_ < 0.1)
     return;
   progressLastSample_ = now;
@@ -22926,7 +23013,7 @@ void CbcModel::sampleTreeDualBound()
   // at which the periodic printout refreshes bestPossibleObjective_). Scanning
   // it is linear in the tree size: do it at every node while the tree is
   // small, otherwise at most every 0.1 s.
-  const double now = getCurrentSeconds();
+  const double now = getProgressElapsedSeconds();
   if (tree_->size() >= 1000 && now - progressLastSample_ < 0.1)
     return;
   progressLastSample_ = now;

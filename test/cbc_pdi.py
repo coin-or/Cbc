@@ -32,6 +32,13 @@ and the final summary line. Incumbents printed without a timestamp in the
 root-heuristics table are placed at the end of the preceding timed row, which
 is approximate (a few ms to a few hundred ms).
 
+For single-threaded runs, `auto` uses the complete progress CSV, including
+pre-search incumbents and its common-origin final timestamp. For runs with
+multiple CBC threads, `auto` uses the timestamped log because worker clones
+may omit tree events from the CSV; the output `events` column labels that
+different, approximate source. Do not pool those sources as if their clocks
+were identical.
+
 Examples
   cbc_pdi.py run --out /tmp/base --sec 60 'bpc_*' 'cvrp_*'
   cbc_pdi.py run --out /tmp/new  --sec 60 --cbc ~/prog/cbc-new/bin/cbc 'bpc_*' 'cvrp_*'
@@ -43,6 +50,7 @@ import argparse
 import concurrent.futures as cf
 import csv
 import fnmatch
+import json
 import math
 import os
 import re
@@ -143,6 +151,15 @@ def parse_log(path):
                                "Infeasible" if "infeasible" in s.lower() else "Stopped")
                 if res["kind"] == "Infeasible":
                     infeasible = True
+            elif s.lower().startswith("problem is infeasible"):
+                res["kind"] = "Infeasible"
+                infeasible = True
+                m = re.search(r"-\s*([\d.eE+-]+)\s*seconds", s)
+                if m:
+                    res["time"] = num(m.group(1))
+            elif "bound tightening: infeasibility proved" in s.lower():
+                res["kind"] = "Infeasible"
+                infeasible = True
             m = re.match(r"Objective value:\s*(\S+)", s)
             if m:
                 res["obj"] = num(m.group(1))
@@ -219,18 +236,29 @@ def parse_log(path):
 
 
 def apply_progress_csv(ev, path):
-    """Replace log-derived bound events by the exact timestamps of -progressCsv."""
+    """Replace log events by progress CSV times, including the global final clock."""
     prim, bnb = [], []
+    final_event = None
     with open(path) as f:
         for r in csv.DictReader(f):
             t, p, d = float(r["time"]), float(r["primal"]), float(r["dual"])
             pv = p if p < 1e49 else None
             dv = d if d > -1e49 else None
+            if r["source"] == "final":
+                final_event = (t, pv, dv)
             if pv is not None:
                 prim.append((t, pv))
             if dv is not None:
                 bnb.append((t, pv, dv))
+    if final_event is None:
+        ev["event_source"] = "timestampedLog (progress CSV missing final event)"
+        return ev
     ev["prim"], ev["bnb"], ev["root_lp"], ev["cuts"] = prim, bnb, None, []
+    ev["event_source"] = "progressCsv"
+    t, primal, dual = final_event
+    ev["final"]["time"] = t
+    ev["final"]["obj"] = primal
+    ev["final"]["bound"] = dual
     return ev
 
 
@@ -259,7 +287,7 @@ def build_trace(ev, sense_max):
         tr.add_dual(t, v)
     tr.end_time = final.get("time")
     kind = final.get("kind")
-    if ev["infeasible"] or kind == "Infeasible":
+    if kind == "Infeasible" or (ev["infeasible"] and kind is None):
         tr.status = "infeasible"
     elif kind == "Optimal":
         tr.status = "optimal"
@@ -269,10 +297,11 @@ def build_trace(ev, sense_max):
     tr.final_dual = None if final.get("bound") is None else sg * final["bound"]
     if tr.status == "stopped" and tr.final_dual is not None and tr.end_time:
         tr.add_dual(tr.end_time, tr.final_dual)
-    if tr.status == "optimal" and tr.final_primal is not None:
-        tr.add_primal(tr.end_time or 0.0, tr.final_primal)
+    if tr.status == "optimal" and tr.final_primal is not None \
+            and tr.end_time is not None and tr.end_time > 0.0:
+        tr.add_primal(tr.end_time, tr.final_primal)
         # a proof closes the gap exactly at the end
-        tr.dual.append((tr.end_time or 0.0, tr.final_primal))
+        tr.dual.append((tr.end_time, tr.final_primal))
         tr.dual.sort()
     elif tr.final_dual is not None and tr.dual and tr.dual[-1][1] > tr.final_dual:
         # never claim a bound stronger than the one Cbc ends with
@@ -319,10 +348,20 @@ def step_at(points, t):
 
 def integrate(trace, T, bks=None):
     """Return dict of metrics over horizon T."""
-    times = sorted({0.0, T} | {t for t, _ in trace.primal if t <= T}
-                   | {t for t, _ in trace.dual if t <= T})
-    end = trace.end_time if trace.end_time is not None else (times[-2] if len(times) > 1 else 0.0)
     solved = trace.status in ("optimal", "infeasible")
+    if solved and (trace.end_time is None or trace.end_time <= 0.0):
+        out = dict(pdi=None, t_first=None, t_gap10=None, t_gap1=None,
+                   final_gap=0.0, primal=trace.final_primal, dual=trace.final_dual)
+        if bks is not None:
+            out["primal_int"] = None
+            out["dual_int"] = None
+        return out
+    times = {0.0, T} | {t for t, _ in trace.primal if t <= T}
+    times |= {t for t, _ in trace.dual if t <= T}
+    if solved and trace.end_time is not None and 0.0 <= trace.end_time <= T:
+        times.add(trace.end_time)
+    times = sorted(times)
+    end = trace.end_time if trace.end_time is not None else (times[-2] if len(times) > 1 else 0.0)
     pdi = pint = dint = 0.0
     t_first = t10 = t1 = None
     for a, b in zip(times[:-1], times[1:]):
@@ -429,7 +468,7 @@ def cmd_run(a):
 
 # ---------------------------------------------------------------- analyze
 
-COLS = ["instance", "status", "T", "pdi", "primal_int", "dual_int", "t_first", "t_gap10",
+COLS = ["instance", "status", "events", "T", "pdi", "primal_int", "dual_int", "t_first", "t_gap10",
         "t_gap1", "final_gap", "primal", "dual", "bks"]
 
 
@@ -443,24 +482,45 @@ def log_limit(path):
 
 
 def log_threads(path):
-    """Value of -threads in the '# cmd:' header written by `run`, 0 if absent."""
+    """Value of -threads in a cbc_pdi command header, or 0 if absent."""
     with open(path, errors="replace") as f:
-        for _ in range(3):
-            m = re.match(r"# cmd:.*\s-threads\s+(\d+)", f.readline())
-            if m:
-                return int(m.group(1))
+        for line in f:
+            if line.startswith("# command:"):
+                try:
+                    command = json.loads(line.split(":", 1)[1].strip())
+                except (ValueError, TypeError):
+                    command = []
+                if "-threads" in command:
+                    try:
+                        return int(command[command.index("-threads") + 1])
+                    except (ValueError, IndexError):
+                        pass
+            if line.startswith("# cmd:"):
+                match = re.search(r"\s-threads\s+(\d+)", line)
+                if match:
+                    return int(match.group(1))
+            if line.startswith("CBC ") or line.startswith("CBC version"):
+                break
     return 0
 
 
 def run_events(path, pcsv, mode):
-    """Events of one run. -progressCsv is exact, but with -threads N>0 the tree
-    runs on clones that do not write it (only root events and the final line
-    survive), so auto mode falls back to the timestamped log rows there."""
+    """Choose one event source; parallel log fallback has a distinct label."""
     ev = parse_log(path)
     have = os.path.exists(pcsv) and os.path.getsize(pcsv) > 0
-    if mode == "csv" or (mode == "auto" and have and log_threads(path) == 0):
+    threads = log_threads(path)
+    if mode == "csv" or (mode == "auto" and have and threads <= 1):
         if have:
             ev = apply_progress_csv(ev, pcsv)
+        else:
+            ev["event_source"] = "timestampedLog (no progress CSV)"
+    elif mode == "auto":
+        ev["event_source"] = (
+            "timestampedLog (parallel CSV incomplete)"
+            if have else "timestampedLog (no progress CSV)"
+        )
+    else:
+        ev["event_source"] = "timestampedLog"
     return ev
 
 
@@ -483,10 +543,10 @@ def analyze_dir(d, a):
             print("WARNING %s: incumbent %g beats best-known %g (parse error or stale bks)" % (
                 name, tr.primal[-1][1], ref_min), file=sys.stderr)
         m = integrate(tr, T, ref_min)
-        if tr.status == "infeasible":
-            m.update(pdi=None, primal_int=None, dual_int=None)
         sg = -1.0 if maximize else 1.0
-        row = dict(instance=name, status=tr.status, T=T, bks="" if ref is None else ref, **m)
+        row = dict(instance=name, status=tr.status,
+                   events=ev.get("event_source", "unknown"),
+                   T=T, bks="" if ref is None else ref, **m)
         row["primal"] = "" if m["primal"] is None else sg * m["primal"]
         row["dual"] = "" if m["dual"] is None else sg * m["dual"]
         rows.append(row)

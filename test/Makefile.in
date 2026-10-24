@@ -109,7 +109,8 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	impclique-explore$(EXEEXT) impclique-bench$(EXEEXT) \
 	impclique-vs-clique-bench$(EXEEXT) \
 	impclique-real-bench$(EXEEXT) mip-root-replay$(EXEEXT) \
-	oddwheel-bench$(EXEEXT) rins-bench$(EXEEXT)
+	oddwheel-bench$(EXEEXT) rins-bench$(EXEEXT) \
+	spp-grasp-bench$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -204,6 +205,9 @@ row_activity_test_DEPENDENCIES = ../src/libCbc.la
 am_rowred_test_OBJECTS = rowred-test.$(OBJEXT)
 rowred_test_OBJECTS = $(am_rowred_test_OBJECTS)
 rowred_test_DEPENDENCIES = ../src/libCbc.la
+am_spp_grasp_bench_OBJECTS = spp-grasp-bench.$(OBJEXT)
+spp_grasp_bench_OBJECTS = $(am_spp_grasp_bench_OBJECTS)
+spp_grasp_bench_DEPENDENCIES = ../src/libCbc.la
 am_twomir_bench_OBJECTS = twomir-bench.$(OBJEXT)
 twomir_bench_OBJECTS = $(am_twomir_bench_OBJECTS)
 twomir_bench_DEPENDENCIES = ../src/libCbc.la
@@ -240,8 +244,8 @@ am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
 	./$(DEPDIR)/oddwheel-bench.Po ./$(DEPDIR)/probing-bench.Po \
 	./$(DEPDIR)/progress-callback-test.Po \
 	./$(DEPDIR)/rins-bench.Po ./$(DEPDIR)/row-activity-test.Po \
-	./$(DEPDIR)/rowred-test.Po ./$(DEPDIR)/twomir-bench.Po \
-	./$(DEPDIR)/zerohalf-bench.Po
+	./$(DEPDIR)/rowred-test.Po ./$(DEPDIR)/spp-grasp-bench.Po \
+	./$(DEPDIR)/twomir-bench.Po ./$(DEPDIR)/zerohalf-bench.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -274,7 +278,8 @@ SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
 	$(oddwheel_bench_SOURCES) $(probing_bench_SOURCES) \
 	$(progress_callback_test_SOURCES) $(rins_bench_SOURCES) \
 	$(row_activity_test_SOURCES) $(rowred_test_SOURCES) \
-	$(twomir_bench_SOURCES) $(zerohalf_bench_SOURCES)
+	$(spp_grasp_bench_SOURCES) $(twomir_bench_SOURCES) \
+	$(zerohalf_bench_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -837,6 +842,11 @@ impclique_real_bench_LDADD = ../src/libCbc.la
 # Not part of the regression suite; a measurement tool.
 mip_root_replay_SOURCES = mip-root-replay.cpp
 mip_root_replay_LDADD = ../src/libCbc.la
+
+# spp-grasp-bench: runs the set partitioning/packing GRASP heuristic
+# (CbcHeuristicSppGrasp) standalone on one instance to tune its criteria.
+spp_grasp_bench_SOURCES = spp-grasp-bench.cpp
+spp_grasp_bench_LDADD = ../src/libCbc.la
 
 ########################################################################
 #              RINS (and VND) heuristic replay/sweep bench             #
@@ -1448,6 +1458,10 @@ rowred-test$(EXEEXT): $(rowred_test_OBJECTS) $(rowred_test_DEPENDENCIES) $(EXTRA
 	@rm -f rowred-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(rowred_test_OBJECTS) $(rowred_test_LDADD) $(LIBS)
 
+spp-grasp-bench$(EXEEXT): $(spp_grasp_bench_OBJECTS) $(spp_grasp_bench_DEPENDENCIES) $(EXTRA_spp_grasp_bench_DEPENDENCIES) 
+	@rm -f spp-grasp-bench$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(spp_grasp_bench_OBJECTS) $(spp_grasp_bench_LDADD) $(LIBS)
+
 twomir-bench$(EXEEXT): $(twomir_bench_OBJECTS) $(twomir_bench_DEPENDENCIES) $(EXTRA_twomir_bench_DEPENDENCIES) 
 	@rm -f twomir-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(twomir_bench_OBJECTS) $(twomir_bench_LDADD) $(LIBS)
@@ -1487,6 +1501,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rins-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/row-activity-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rowred-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spp-grasp-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/twomir-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zerohalf-bench.Po@am__quote@ # am--include-marker
 
@@ -1642,6 +1657,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/rins-bench.Po
 	-rm -f ./$(DEPDIR)/row-activity-test.Po
 	-rm -f ./$(DEPDIR)/rowred-test.Po
+	-rm -f ./$(DEPDIR)/spp-grasp-bench.Po
 	-rm -f ./$(DEPDIR)/twomir-bench.Po
 	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
 	-rm -f Makefile
@@ -1714,6 +1730,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/rins-bench.Po
 	-rm -f ./$(DEPDIR)/row-activity-test.Po
 	-rm -f ./$(DEPDIR)/rowred-test.Po
+	-rm -f ./$(DEPDIR)/spp-grasp-bench.Po
 	-rm -f ./$(DEPDIR)/twomir-bench.Po
 	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
 	-rm -f Makefile

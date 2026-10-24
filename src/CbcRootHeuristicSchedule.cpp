@@ -7,9 +7,13 @@
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicDive.hpp"
 #include "CbcHeuristicDiveConfigurable.hpp"
+#include "CbcHeuristicFPump.hpp"
+#include "CbcHeuristicSppGrasp.hpp"
+#include "CbcSppGraspGuide.hpp"
 #include "CoinTime.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <mutex>
 #include <set>
 #include <thread>
@@ -20,6 +24,9 @@ CbcRootHeuristicSchedule::CbcRootHeuristicSchedule(CbcModel &model)
   , stopFlag_(false)
   , maxSolutionsPhase1_(1)
   , numThreads_(0)
+  , sequentialCalls_(false)
+  , pumpGuide_(false)
+  , pumpOnlyWithoutIncumbent_(false)
   , solutionsFound_(0)
   , conflictMinViol_(0.05)
   , conflictMaxSize_(10)
@@ -107,6 +114,13 @@ int CbcRootHeuristicSchedule::run(char hookCode)
     if (!h->runsAtRootHook(hookCode))
       continue;
     if (!h->solutionCountAllowsStart(numberSolutions))
+      continue;
+    // Experimental SppGrasp/FPump sequences isolate their pair: otherwise
+    // default constructive heuristics could run between the requested calls
+    // and contaminate both ordering and incumbent handoff.
+    if (sequentialCalls_
+      && !dynamic_cast< CbcHeuristicSppGrasp * >(h)
+      && !dynamic_cast< CbcHeuristicFPump * >(h))
       continue;
 
     switch (h->category()) {
@@ -200,6 +214,7 @@ int CbcRootHeuristicSchedule::runParallel(
   int nHeur = static_cast<int>(heuristics.size());
   if (nHeur == 0)
     return 0;
+  const bool sequential = sequentialCalls_ && maxSolutions > 0;
 
   int nThreads = numThreads_;
   if (nThreads <= 0)
@@ -209,6 +224,28 @@ int CbcRootHeuristicSchedule::runParallel(
 
   int nCols = model_.solver()->getNumCols();
   stopFlag_.store(false);
+  std::vector< double > rootLp;
+  std::vector< double > rootReducedCosts;
+  std::vector< double > rootLower;
+  std::vector< double > rootUpper;
+  std::vector< int > rootIntegerColumns;
+  bool rootLpCaptured = false;
+  if (sequential && pumpGuide_ && model_.solver()->isProvenOptimal()) {
+    const double *lp = model_.solver()->getColSolution();
+    const double *reducedCosts = model_.solver()->getReducedCost();
+    if (lp && reducedCosts) {
+      rootLp.assign(lp, lp + nCols);
+      rootReducedCosts.assign(reducedCosts, reducedCosts + nCols);
+      rootLower.assign(model_.solver()->getColLower(),
+        model_.solver()->getColLower() + nCols);
+      rootUpper.assign(model_.solver()->getColUpper(),
+        model_.solver()->getColUpper() + nCols);
+      for (int j = 0; j < nCols; j++)
+        if (model_.solver()->isInteger(j))
+          rootIntegerColumns.push_back(j);
+      rootLpCaptured = true;
+    }
+  }
 
   // Set abort flag and enable conflict collection on dive heuristics
   for (auto *h : heuristics) {
@@ -223,6 +260,7 @@ int CbcRootHeuristicSchedule::runParallel(
   // Results storage
   struct Result {
     int status = 0;
+    bool invoked = false;
     double obj = COIN_DBL_MAX;
     std::vector<double> solution;
     double time = 0;
@@ -235,20 +273,146 @@ int CbcRootHeuristicSchedule::runParallel(
   auto worker = [&](int idx) {
     if (maxSolutions > 0 && solutionCount.load() >= maxSolutions)
       return;
+    if (sequential && pumpOnlyWithoutIncumbent_
+      && dynamic_cast< CbcHeuristicFPump * >(heuristics[idx])
+      && model_.bestSolution()) {
+      if (model_.messageHandler()->logLevel() > 1)
+        printf("  Root sequence: skipped %s (incumbent already present)\n",
+          heuristics[idx]->heuristicName());
+      return;
+    }
+    if (sequential
+      && !heuristics[idx]->solutionCountAllowsStart(model_.getSolutionCount())) {
+      if (model_.messageHandler()->logLevel() > 1)
+        printf("  Root sequence: skipped %s (solution-count policy)\n",
+          heuristics[idx]->heuristicName());
+      return;
+    }
     if (model_.maximumSecondsReached() || model_.eventHappened()) {
       stopFlag_.store(true);
       return;
+    }
+    CbcHeuristicSppGrasp *stagedSpp =
+      model_.sppGraspStagedWorkEnabled()
+      ? dynamic_cast< CbcHeuristicSppGrasp * >(heuristics[idx])
+      : nullptr;
+    double stagedWorkBefore = 0.0;
+    if (stagedSpp) {
+      double remaining = 0.0;
+      if (!model_.beginSppGraspStagedSecondPass(remaining)) {
+        if (model_.messageHandler()->logLevel() > 1)
+          printf("  Root sequence: skipped SppGrasp (staged budget exhausted "
+                 "or pass already run)\n");
+        return;
+      }
+      stagedWorkBefore = model_.sppGraspStagedWorkUsed();
+      stagedSpp->setMaxWork(0.0);
+      stagedSpp->setTotalWorkLimit(remaining);
+    }
+    if (sequential && pumpGuide_ && rootLpCaptured
+      && dynamic_cast< CbcHeuristicSppGrasp * >(heuristics[idx])
+      && !model_.bestSolution()) {
+      CbcHeuristicFPump *pump = nullptr;
+      for (int prior = idx - 1; prior >= 0; prior--) {
+        CbcHeuristicFPump *candidate = dynamic_cast< CbcHeuristicFPump * >(heuristics[prior]);
+        if (candidate && results[prior].invoked
+          && results[prior].status == 0
+          && candidate->hasBestRoundedAttempt()) {
+          pump = candidate;
+          break;
+        }
+      }
+      if (pump && pump->bestRoundedAttemptSize() == nCols
+        && pump->bestRoundedSourcePointSize() == nCols
+        && pump->bestRoundedSourceFractionalCount() > 0) {
+        OsiSolverInterface *solver = model_.solver();
+        std::vector< int > currentIntegerColumns;
+        std::vector< double > currentLower(
+          solver->getColLower(), solver->getColLower() + nCols);
+        std::vector< double > currentUpper(
+          solver->getColUpper(), solver->getColUpper() + nCols);
+        for (int j = 0; j < nCols; j++)
+          if (solver->isInteger(j))
+            currentIntegerColumns.push_back(j);
+        const bool sameBounds = CbcSppGraspGuide::unchangedBounds(
+          rootLower, rootUpper, currentLower, currentUpper);
+        double rootFractionality = 0.0;
+        int rootFractionalCount = 0;
+        const double integerTolerance = model_.getDblParam(CbcModel::CbcIntegerTolerance);
+        if (sameBounds
+          && CbcSppGraspGuide::preferRawSourcePoint(rootLp,
+            std::vector< double >(pump->bestRoundedSourcePoint(),
+              pump->bestRoundedSourcePoint() + nCols),
+            rootLower, rootUpper, rootIntegerColumns,
+            currentIntegerColumns, pump->bestRoundedSourceFractionality(),
+            pump->bestRoundedSourceFractionalCount(), integerTolerance,
+            1.0e-7, rootFractionality,
+            rootFractionalCount)) {
+          dynamic_cast< CbcHeuristicSppGrasp * >(heuristics[idx])
+            ->setPumpFractionalGuide(pump->bestRoundedSourcePoint(),
+              rootLp.data(), rootReducedCosts.data(), nCols,
+              pump->bestRoundedSourceFractionality(),
+              pump->bestRoundedSourceFractionalCount(),
+              rootFractionality, rootFractionalCount);
+        }
+      }
     }
 
     results[idx].solution.resize(nCols);
     results[idx].obj = model_.getCutoff();
 
+    if (sequential && model_.messageHandler()->logLevel() > 1) {
+      const char *incumbent = model_.bestSolution() ? "incumbent available" : "no incumbent";
+      printf("  Root sequence: calling %s (%s)\n",
+        heuristics[idx]->heuristicName(), incumbent);
+    }
+    CbcHeuristicFPump *pumpTelemetry =
+      dynamic_cast< CbcHeuristicFPump * >(heuristics[idx]);
+    const bool hadIncumbent = model_.bestSolution() != NULL;
+    const double incumbentBefore = hadIncumbent
+      ? model_.getMinimizationObjValue()
+      : COIN_DBL_MAX;
+    const int pumpRunsBefore = pumpTelemetry ? pumpTelemetry->numRuns() : 0;
+    const int pumpLpBefore = pumpTelemetry ? pumpTelemetry->numLpSolves() : 0;
+    const int pumpPassesBefore = pumpTelemetry ? pumpTelemetry->numPumpPasses() : 0;
     double t0 = CoinGetTimeOfDay();
+    results[idx].invoked = true;
     results[idx].status = heuristics[idx]->solution(
       results[idx].obj, results[idx].solution.data());
     results[idx].time = CoinGetTimeOfDay() - t0;
+    if (sequential && pumpTelemetry
+      && model_.messageHandler()->logLevel() > 1) {
+      const int pumpRuns = pumpTelemetry->numRuns() - pumpRunsBefore;
+      const int pumpLpSolves = pumpTelemetry->numLpSolves() - pumpLpBefore;
+      const int pumpPasses = pumpTelemetry->numPumpPasses() - pumpPassesBefore;
+      const bool improved = results[idx].status > 0
+        && results[idx].obj < incumbentBefore - 1.0e-7;
+      const std::string &skipReason = pumpTelemetry->lastCallSkipReason();
+      printf("  FPump execution: invoked=yes core=%s LP-solves=%d "
+             "passes=%d incumbent-improved=%s",
+        pumpLpSolves > 0 ? "entered" : "not-entered",
+        pumpLpSolves, pumpPasses, improved ? "yes" : "no");
+      if (!skipReason.empty())
+        printf(" skip=%s", skipReason.c_str());
+      else if (pumpRuns == 0)
+        printf(" skip=FPump core did not complete an initial LP");
+      printf("\n");
+    }
+    if (stagedSpp && model_.messageHandler()->logLevel() > 0) {
+      printf("  SppGrasp stage 2 used %.0f of %.0f total work\n",
+        model_.sppGraspStagedWorkUsed() - stagedWorkBefore,
+        model_.sppGraspStagedWorkTotal());
+    }
+    if (sequential && model_.messageHandler()->logLevel() > 1) {
+      printf("  Root sequence: completed %s (status %d, %.3f seconds)\n",
+        heuristics[idx]->heuristicName(), results[idx].status,
+        results[idx].time);
+    }
 
     if (results[idx].status > 0) {
+      if (sequential)
+        model_.setBestSolution(CBC_ROUNDING, results[idx].obj,
+          results[idx].solution.data());
       solutionCount.fetch_add(1);
       if (maxSolutions > 0 && solutionCount.load() >= maxSolutions)
         stopFlag_.store(true);
@@ -256,7 +420,13 @@ int CbcRootHeuristicSchedule::runParallel(
   };
 
   // Dispatch
-  if (nThreads == 1 || nHeur == 1) {
+  if (sequential) {
+    for (int i = 0; i < nHeur; i++) {
+      if (maxSolutions > 0 && solutionCount.load() >= maxSolutions)
+        break;
+      worker(i);
+    }
+  } else if (nThreads == 1 || nHeur == 1) {
     for (int i = 0; i < nHeur; i++) {
       if (maxSolutions > 0 && solutionCount.load() >= maxSolutions)
         break;
@@ -362,7 +532,7 @@ int CbcRootHeuristicSchedule::runParallel(
 
   // Register solutions with model (best first)
   int accepted = 0;
-  if (bestIdx >= 0) {
+  if (!sequential && bestIdx >= 0) {
     double before = model_.getObjValue();
     model_.setBestSolution(CBC_ROUNDING, results[bestIdx].obj,
       results[bestIdx].solution.data());
@@ -370,7 +540,7 @@ int CbcRootHeuristicSchedule::runParallel(
       accepted++;
   }
   // Register other solutions too
-  for (int i = 0; i < nHeur; i++) {
+  for (int i = 0; !sequential && i < nHeur; i++) {
     if (results[i].status > 0 && i != bestIdx) {
       double before = model_.getObjValue();
       model_.setBestSolution(CBC_ROUNDING, results[i].obj,

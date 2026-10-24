@@ -70,6 +70,9 @@ libCbc_la_SOURCES = \
 	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
+	CbcHeuristicSppGrasp.cpp CbcHeuristicSppGrasp.hpp \
+	CbcSppGraspAcceptance.hpp \
+	CbcSppGraspGuide.hpp \
 	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
 	CbcHeuristicRENS.cpp CbcHeuristicRENS.hpp \
 	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
@@ -216,6 +219,7 @@ includecoin_HEADERS = \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.hpp \
+	CbcHeuristicSppGrasp.hpp \
 	CbcHeuristicRandRound.hpp \
 	CbcHeuristicRENS.hpp \
 	CbcHeuristicRINS.hpp \

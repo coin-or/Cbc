@@ -227,6 +227,11 @@ protected:
   std::vector< std::pair< std::string, double > > mipStart_;
   std::vector< std::pair< std::string, double > > mipStartBefore_;
   std::string mipStartFile_;
+  /// SppGrasp on the original model: 0 not tried, 1 applicable, 2 applicable
+  /// with artificial slacks, -1 not applicable
+  int sppGraspOriginal_ = 0;
+  /// Whether the original-model SppGrasp call returned a real-feasible solution
+  bool sppGraspOriginalSolution_ = false;
 
   // --- Import control ---
   /// Whether MPS/LP read errors are tolerated (0=fail on error, nonzero=continue)
@@ -535,6 +540,11 @@ public:
               registration-only calls
   */
   int configureHeuristics(CbcModel *model, int type);
+  /** Runs SppGrasp on the original (not yet preprocessed) model when it is a
+      set partitioning/packing problem with slacks (or, with
+      sppGraspArtificial, artificial ones where missing), installing any solution
+      found as incumbent of model_ and babModel_. Sets sppGraspOriginal_. */
+  void babRunSppGraspOriginal();
 
   /** Register all cut generators on babModel based on this solver's
       current parameter, conflict-graph, and clique-detection settings.
@@ -1250,7 +1260,7 @@ private:
 // ###########################################################################
 
 /// Default no-op user callback: always returns 0 (never requests early exit)
-static int dummyCallback(CbcModel * /*model*/, int /*whereFrom*/) { return 0; }
+inline int dummyCallback(CbcModel * /*model*/, int /*whereFrom*/) { return 0; }
 
 // #############################################################################
 //  Backward-compatible free functions (delegate to CbcSolver internally)

@@ -7675,6 +7675,10 @@ int CbcMain1(int argc, const char *argv[],
                   // put back any saved solutions
                   putBackOtherSolutions(babModel_, &model_, &process);
                   process.postProcess(*babModel_->solver());
+                  // solution is now back in saveSolver. Keep it: the resolves below only polish it
+                  // with the integers fixed, and they can stop short (time limit already spent,
+                  // numerical trouble), leaving an infeasible iterate in the solver's column solution
+                  memcpy(bestSolution, saveSolver->getColSolution(), n * sizeof(double));
 #ifdef COIN_DEVELOP
                   if (model_.bestSolution() && fabs(model_.getMinimizationObjValue() - babModel_->getMinimizationObjValue()) < 1.0e-8) {
                     const double *b1 = model_.bestSolution();
@@ -7825,7 +7829,15 @@ int CbcMain1(int argc, const char *argv[],
                   //assert(originalSolver->isProvenOptimal());
 #endif
                   babModel_->assignSolver(saveSolver);
-                  memcpy(bestSolution, babModel_->solver()->getColSolution(), n * sizeof(double));
+                  // assignSolver took the pointer, the solver lives on as babModel_'s
+                  if (babModel_->solver()->isProvenOptimal()) {
+                    memcpy(bestSolution, babModel_->solver()->getColSolution(), n * sizeof(double));
+                  } else {
+                    sprintf(generalPrint, "Final resolve did not finish, keeping postprocessed solution\n");
+                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                      << generalPrint
+                      << CoinMessageEol;
+                  }
                 } else {
                   n = babModel_->solver()->getNumCols();
                   bestSolution = new double[n];

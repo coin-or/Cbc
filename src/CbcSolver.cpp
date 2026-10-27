@@ -13328,20 +13328,21 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             int rc = babSetupAndRootLp(logLevel, cbcLogLevel,
               clpSolver, lpSolver, storedAmpl, coinModel, statistics,
               returnCode, callBack);
-            if (rc == 1 && nativePreLp && model_.bestSolution()) {
-              statistics.obj = model_.getObjValue();
-              if (model_.status() == 1 || model_.status() == 2) {
-                // B&B did not run, so transfer the saved integer vector here.
-                integerStatus_ = 3;
-                model_.solver()->setColSolution(model_.bestSolution());
+            if (rc == 1) {
+              if (nativePreLp && model_.bestSolution()) {
+                statistics.obj = model_.getObjValue();
+                if (model_.status() == 1 || model_.status() == 2) {
+                  // B&B did not run, so transfer the saved integer vector here.
+                  integerStatus_ = 3;
+                  model_.solver()->setColSolution(model_.bestSolution());
+                }
               }
               model_.setProgressCsv(parameters[CbcParam::PROGRESSCSVFILE]->fileName(),
                 parameters[CbcParam::PROGRESSMINCHANGE]->dblVal(),
                 parameters[CbcParam::PROGRESSINTERVAL]->dblVal());
               model_.finishPreSearchProgress();
-            }
-            if (rc == 1)
               break;
+            }
             if (rc == 2)
               continue;
             if (rc == 3)

@@ -4485,6 +4485,15 @@ int CbcSolver::preprocess(
     babModel_->setProblemStatus(1);
     babModel_->setSecondaryStatus(4);
     statistics.result = "Stopped on time limit";
+    if (model_.bestSolution()) {
+      statistics.obj = model_.getObjValue();
+      // B&B/postprocessing will not copy the incumbent into the output solver.
+      model_.solver()->setColSolution(model_.bestSolution());
+    }
+    babModel_->setProgressCsv(parameters_[CbcParam::PROGRESSCSVFILE]->fileName(),
+      parameters_[CbcParam::PROGRESSMINCHANGE]->dblVal(),
+      parameters_[CbcParam::PROGRESSINTERVAL]->dblVal());
+    babModel_->finishPreSearchProgress();
     printStoppedOnTimeResult(model_);
   } else if (!solver2) {
     printGeneralMessage(model_,

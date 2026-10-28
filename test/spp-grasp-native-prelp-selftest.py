@@ -10,6 +10,8 @@ import shlex
 import subprocess
 import tempfile
 
+import cbc_pdi
+
 
 HERE = Path(__file__).resolve().parent
 
@@ -200,10 +202,63 @@ def main():
             assert "real feasible certificate" not in result.stdout, (mode, result.stdout)
             if trace.exists():
                 assert "SppGraspNativePreLp" not in trace.read_text(), mode
+        timeout_model = work / "preprocess-timeout.mps"
+        timeout_columns = [
+            (2, [(0, 1)]), (2, [(1, 1)]), (2, [(2, 1)]),
+            (1, [(0, 1), (1, 1)]), (1, [(1, 1), (2, 1)]),
+            (1, [(0, 1), (2, 1)]),
+        ]
+        fixtures.write_mps(timeout_model, ["E"] * 3, timeout_columns)
+        for mode in ("preprocess-empty", "preprocess-original", "preprocess-existing"):
+            trace = work / (mode + ".csv")
+            result = subprocess.run(
+                [str(guards), str(timeout_model), mode, str(trace)],
+                capture_output=True, text=True, timeout=15, check=True)
+            assert "Pre-processing stopped on time limit" in result.stdout, result.stdout
+            log = work / (mode + ".log")
+            log.write_text(result.stdout)
+            events = list(csv.DictReader(trace.open()))
+            assert events[0]["source"] == "start" and events[-1]["source"] == "final", events
+            assert sum(e["source"] == "final" for e in events) == 1, events
+            times = [float(e["time"]) for e in events]
+            assert times == sorted(times) and times[-1] > 0, events
+            lines = Path(str(trace) + ".sol").read_text().splitlines()
+            assert lines[0].startswith("Stopped on time"), lines[0]
+            parsed = cbc_pdi.build_trace(cbc_pdi.run_events(log, trace, "csv"), False)
+            metrics = cbc_pdi.integrate(parsed, 10.0)
+            assert parsed.status == "stopped", parsed.status
+            if mode == "preprocess-empty":
+                assert "no integer solution" in lines[0], lines[0]
+                assert float(events[-1]["primal"]) >= 1e49, events
+                assert metrics["pdi"] == 2.0 and metrics["primal"] is None, metrics
+                continue
+            assert "no integer solution" not in lines[0], lines[0]
+            values = {}
+            for line in lines[1:]:
+                fields = line.split()
+                if len(fields) >= 3:
+                    values[int(fields[0])] = float(fields[1])
+            activity = [0.0] * 3
+            objective = 0.0
+            for j, (cost, entries) in enumerate(timeout_columns):
+                value = values.get(j, 0.0)
+                assert value in (0, 1), (mode, j, value)
+                objective += cost * value
+                for i, coefficient in entries:
+                    activity[i] += coefficient * value
+            assert activity == [1, 1, 1], (mode, activity, lines)
+            saved = float(re.search(r"objective value\s+(\S+)", lines[0])[1])
+            assert abs(saved - objective) < 1e-7, (mode, saved, objective)
+            assert abs(float(events[-1]["primal"]) - objective) < 1e-7, events
+            assert metrics["primal"] == objective, metrics
+            if mode == "preprocess-original":
+                original = [e for e in events if e["source"] == "SppGraspOriginal"]
+                assert len(original) == 1 and 0 < float(original[0]["time"]) < times[-1], events
         print("PASS: strict actual-row native completion, cheapest private choice, "
               "complements, offsets, saved-vector feasibility, progress ordering, "
               "cutoff, MIP starts, opt-out, callbacks, custom objects/cuts, "
-              "existing incumbents, unsupported modes, default auto and off parity")
+              "existing incumbents, unsupported modes, default auto and off parity; "
+              "preprocessing timeouts preserve progress and saved integer vectors")
 
 
 if __name__ == "__main__":

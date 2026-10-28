@@ -15,9 +15,55 @@
 #include <cmath>
 #include <cstdio>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace {
+int checkIncumbentOutput()
+{
+  FILE *stream = tmpfile();
+  if (!stream) {
+    perror("tmpfile");
+    return 1;
+  }
+  bool duplicateReopened = false;
+  {
+    CbcBnBOutput output(stream, false, 1);
+    output.onHeurIncumbent(134640.0565, "test", 0, 0, 0, 0.1);
+    output.onBnBIncumbent(134639.7725, 1, 0, 0, 0.2);
+    output.onHeurIncumbent(100000000.0565, "test", 0, 0, 2, 0.3);
+    output.onRestartNote(10, 10);
+    output.onBnBIncumbent(100000000.0565, 2, 0, 0, 0.4);
+    fflush(stream);
+    const long beforeImprovement = ftell(stream);
+    rewind(stream);
+    std::string first;
+    for (int c; (c = fgetc(stream)) != EOF;)
+      first += static_cast< char >(c);
+    duplicateReopened = first.find("continued") != std::string::npos;
+    fseek(stream, beforeImprovement, SEEK_SET);
+    output.onBnBIncumbent(100000000.0065, 3, 0, 0, 0.5);
+    output.onComplete(false, 100000000.0065, 0.0, 0, 3, 0.6);
+    output.onBnBIncumbent(100000000.0065, 0, 0, 0, 0.1);
+  }
+  rewind(stream);
+  std::string text;
+  for (int c; (c = fgetc(stream)) != EOF;)
+    text += static_cast< char >(c);
+  fclose(stream);
+  int incumbents = 0;
+  for (size_t pos = 0; (pos = text.find(" *", pos)) != std::string::npos; pos += 2)
+    ++incumbents;
+  const bool passed = !duplicateReopened && incumbents == 5
+    && text.find("134640.0565") != std::string::npos
+    && text.find("134639.7725") != std::string::npos
+    && text.find("100000000.0565") != std::string::npos
+    && text.find("100000000.0065") != std::string::npos;
+  if (!passed)
+    fprintf(stderr, "FAIL: incumbent precision, duplicate suppression or solve reuse\n%s", text.c_str());
+  return !passed;
+}
+
 int runRootCutPurge(const char *filename)
 {
   Cbc_Model *model = Cbc_newModel();
@@ -191,7 +237,9 @@ int main(int argc, char **argv)
     fprintf(stderr, "Usage: %s [decomp2.mps.gz]\n", argv[0]);
     return 1;
   }
-  int failures = argc == 2 ? runRootCutPurge(argv[1]) : 0;
+  int failures = checkIncumbentOutput();
+  if (argc == 2)
+    failures += runRootCutPurge(argv[1]);
   {
     OsiClpSolverInterface solver;
     CbcModel model(solver);

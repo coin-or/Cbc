@@ -2501,13 +2501,19 @@ static CoinTable makeBnBTable(bool utf8, bool compact)
     utf8, /*indent=*/2, compact);
 }
 
-// Format an objective value: "—" for 1e49+, otherwise %.6g
+// Keep fractional objectives visible without overflowing the table columns.
 static std::string bnbFmtObj(double v, bool utf8)
 {
   if (v >= 1e49)
     return utf8 ? "\xe2\x80\x94" : "-";
   char buf[32];
-  std::snprintf(buf, sizeof(buf), "%.6g", v);
+  const double a = std::fabs(v);
+  if (a >= 1e9 || (a > 0.0 && a < 1e-3))
+    std::snprintf(buf, sizeof(buf), "%.6e", v);
+  else if (std::fabs(v - std::floor(v + 0.5)) <= 1e-9)
+    std::snprintf(buf, sizeof(buf), "%.0f", v);
+  else
+    std::snprintf(buf, sizeof(buf), "%.4f", v);
   return buf;
 }
 
@@ -2582,6 +2588,12 @@ void CbcBnBOutput::startPhase()
 void CbcBnBOutput::printRow(bool isIncumbent, long nodes, int onTree, int depth,
   double bestSol, const char *method, double bestBound, double wallclock)
 {
+  if (isIncumbent) {
+    if (bestSol == lastIncumbent_)
+      return;
+    lastIncumbent_ = bestSol;
+  }
+
   if (!inPhase_)
     startPhase();
   else if (!tableOpen_)
@@ -2734,6 +2746,7 @@ void CbcBnBOutput::onComplete(bool optimal, double bestSol, double bestBound,
   }
   closeTable();
   inPhase_ = false;
+  lastIncumbent_ = 1e50;
 
   // Use the elapsed time parsed from CbcModel's own "Search completed"/
   // "Partial search" message (sourced from model->getCurrentSeconds(), the

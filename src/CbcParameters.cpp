@@ -911,7 +911,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::TIGHTENFACTOR]->setDefault(0.0);
     parameters_[CbcParam::RINSCLOSEMAXDIST]->setDefault(0.4);
     parameters_[CbcParam::SPPGRASPTIME]->setDefault(60.0);
-    parameters_[CbcParam::SPPGRASPWORK]->setDefault(1500.0);
+    parameters_[CbcParam::SPPGRASPWORK]->setDefault(500.0);
     parameters_[CbcParam::SPPGRASPARTIFICIAL]->setDefault(1.1);
     parameters_[CbcParam::SPPGRASPDESTROYROWS]->setDefault(5);
     parameters_[CbcParam::SPPGRASPSTALL]->setDefault(200);
@@ -1108,8 +1108,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::RENS]->setDefault("off");
     parameters_[CbcParam::RINS]->setDefault("on");
     parameters_[CbcParam::ROUNDING]->setDefault("on");
-    // incredibly slow on some very easy problems
-    parameters_[CbcParam::SPPGRASP]->setDefault("off");
+    parameters_[CbcParam::SPPGRASP]->setDefault("auto");
     parameters_[CbcParam::VND]->setDefault("on");
     parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-6);
     parameters_[CbcParam::CUTOFF]->setDefault(1.0e50);
@@ -3615,16 +3614,16 @@ void CbcParameters::addCbcSolverIntParams()
 
   parameters_[CbcParam::SPPGRASPFPUMP]->setup(
     "sppGraspFpump", "Feasibility Pump policy when SppGrasp applies",
-    "auto: preserve the current behavior (switch FPump off for native "
+    "auto: restore the historical behavior (switch FPump off for native "
     "singleton-slack SPP unless explicitly set by the user).\n"
-    "  on: keep the configured FPump setting; do not disable it automatically.\n"
+    "  on (default): keep the configured FPump setting; do not disable it automatically.\n"
     "  after: disable FPump only after original-model SppGrasp returns a "
     "real-feasible improving solution. Explicit -feas always takes precedence.",
     CoinParam::displayPriorityLow);
   parameters_[CbcParam::SPPGRASPFPUMP]->appendKwd("auto", 0);
   parameters_[CbcParam::SPPGRASPFPUMP]->appendKwd("on", 1);
   parameters_[CbcParam::SPPGRASPFPUMP]->appendKwd("after", 2);
-  parameters_[CbcParam::SPPGRASPFPUMP]->setDefault("auto");
+  parameters_[CbcParam::SPPGRASPFPUMP]->setDefault("on");
 
   parameters_[CbcParam::SPPGRASPROOTSEQUENCE]->setup(
     "sppGraspRootSequence", "Experimental root ordering for SppGrasp and FPump",
@@ -3676,7 +3675,7 @@ void CbcParameters::addCbcSolverIntParams()
     "No LP solve, artificial variables, GRASP or LNS are used in this pass. "
     "Its time counts toward the solve limit; an accepted incumbent survives "
     "an initial-LP timeout. Existing search settings are unchanged. "
-    "Requires sppGrasp on; custom callbacks, event handlers, cut generators, "
+    "Requires sppGrasp auto or on; custom callbacks, event handlers, cut generators, "
     "SOS/noninteger objects, pending MIP starts/hot starts, maximization and "
     "nonlegacy root sequences are conservatively skipped. "
     "Off disables completion; on is an alias for auto with the same safety "
@@ -4350,17 +4349,20 @@ void CbcParameters::addCbcSolverHeurParams()
 
   parameters_[CbcParam::SPPGRASP]->setup(
     "sppGrasp", "Whether to use the set partitioning slack GRASP heuristic",
-    "Only applies to set partitioning/packing problems (binary variables, "
-    "0-1 coefficients, rows sum x = 1 or sum x <= 1) in which every "
-    "partitioning row has a singleton (slack) column, so that a trivial "
-    "solution always exists. A greedy construction guided by the LP "
+    "The default auto mode enables the heuristic subject to its structural "
+    "applicability checks, with 500 million counted work units per call and "
+    "the feasibility pump retained by default. On is an alias for auto; "
+    "off disables it. Explicit sppGraspWork, sppGraspFpump and feasibilityPump "
+    "settings override these defaults. "
+    "Applies to supported set partitioning/packing structure (binary variables, "
+    "0-1 coefficients, rows sum x = 1 or sum x <= 1), using native singleton "
+    "slacks or automatic artificial slacks as controlled by sppGraspArtificial. "
+    "A greedy construction guided by the LP "
     "solution followed by local search and a large neighbourhood search "
     "around rows left to their slacks builds good solutions in seconds. "
     "It runs on the original model, before preprocessing (which usually "
     "destroys the structure), and its solution is passed on as incumbent. "
-    "When it applies and feasibilityPump was not set by the user, the "
-    "feasibility pump is switched off, as it is expensive and rarely "
-    "useful on these problems. See also sppGraspTime." HEURISTICS_LONGHELP);
+    "See also sppGraspTime and sppGraspNoImprove." HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::VND]->setup(
     "Vnd!VariableNeighborhoodSearch",
@@ -4408,6 +4410,9 @@ void CbcParameters::addCbcSolverHeurParams()
     }
     // Check the unique keywords
     switch (code) {
+    case CbcParam::SPPGRASP:
+      parameters_[code]->appendKwd("auto", CbcParameters::CGOn);
+      break;
     case CbcParam::COMBINE:
       parameters_[code]->appendKwd("onequick", CbcParameters::HeurOneQuick);
       parameters_[code]->appendKwd("bothquick", CbcParameters::HeurBothQuick);

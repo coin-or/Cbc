@@ -66,6 +66,45 @@ def main():
     args = parser.parse_args()
     cbc = str(pathlib.Path(args.cbc).resolve())
 
+    def default_policy(options):
+        result = subprocess.run(
+            [cbc, str(MODEL), "-threads", "0", "-log", "2",
+             "-randomSeed", "71", "-randomCbcSeed", "71",
+             "-preprocess", "off", *options, "-solve", "-quit"],
+            capture_output=True, text=True, check=True, timeout=20,
+        )
+        output = result.stdout + result.stderr
+        if any(error in output for error in (
+                "No match for", "Illegal keyword", "String of", "unrecognized")):
+            raise AssertionError(output)
+        return output
+
+    for options in ([], ["-sppGrasp", "auto"],
+                    ["-sppGrasp", "on", "-sppGraspWork", "500",
+                     "-sppGraspFpump", "on"]):
+        output = default_policy(options)
+        if "SppGrasp run result: stage original;" not in output or DISABLED in output:
+            raise AssertionError(f"default/AUTO did not run with FPump retained:\n{output}")
+        if not re.search(r"Objective value:\s+1(?:\.0*)?\s", output):
+            raise AssertionError(f"default/AUTO produced the wrong objective:\n{output}")
+    for options in (["-sppGrasp", "off"], ["-heur", "off"]):
+        output = default_policy(options)
+        if "SppGrasp run result:" in output:
+            raise AssertionError(f"explicit opt-out ran SppGrasp:\n{output}")
+    for options in (
+            ["-sppGraspWork", ".001", "-sppGrasp", "auto"],
+            ["-sppGrasp", "auto", "-sppGraspWork", ".001"]):
+        output = default_policy(options)
+        work = re.search(r"SppGrasp run result: stage original; work (\S+);", output)
+        if not work or float(work[1]) >= 1e6:
+            raise AssertionError(f"AUTO ignored explicit work override:\n{output}")
+    output = default_policy(["-sppGraspFpump", "auto", "-sppGrasp", "auto"])
+    if DISABLED not in output:
+        raise AssertionError(f"AUTO ignored explicit legacy pump policy:\n{output}")
+    output = default_policy(["-feas", "off"])
+    if "Heuristic feasibility pump:" in output or "Feasibility pump (" in output:
+        raise AssertionError(f"AUTO ignored explicit pump off:\n{output}")
+
     auto = solve(cbc, "auto", ["-sppGraspFpump", "auto"])
     keep = solve(cbc, "on", ["-sppGraspFpump", "on"])
     after = solve(cbc, "after", ["-sppGraspFpump", "after"])
@@ -201,7 +240,8 @@ def main():
     if "calling feasibility pump (no incumbent)" not in root_spp_then_pump_no_integer:
         raise AssertionError("conditional sequence did not run FPump after SppGrasp failed")
     print("SppGrasp solver parameter and FPump policy selftest: PASS")
-    print("  auto preserves legacy native-SPP behavior")
+    print("  default/AUTO matches the measured candidate and respects work/pump/off overrides")
+    print("  sppGraspFpump auto preserves legacy native-SPP behavior")
     print("  on retains FPump; after disables only after a real SppGrasp solution")
     print("  explicit -feas on and no-improvement cases retain FPump")
     print("  root orderings call/skip FPump from genuine incumbent availability")

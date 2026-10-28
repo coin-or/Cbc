@@ -2400,9 +2400,11 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
         "Problem proven infeasible"
       };
       std::ostringstream buffer;
+      // status 5 is a user event (ctrl-c); statusName[5] names it on its own,
+      // and any minor[] appended to it garbles the line
       buffer << std::endl
              << "Result - " << statusName[iStatus]
-             << minor[iStatus2] << std::endl
+             << (iStatus == 5 ? "" : minor[iStatus2]) << std::endl
              << std::endl;
       buffer << "Enumerated nodes:           0" << std::endl;
       buffer << "Total iterations:           0" << std::endl;

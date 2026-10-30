@@ -86,7 +86,11 @@ int fdMakeTemp(char *tmpl)
 {
   if (_mktemp_s(tmpl, std::strlen(tmpl) + 1) != 0)
     return -1;
-  return _open(tmpl, _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY, _S_IREAD | _S_IWRITE);
+  int fd;
+  errno_t err = _sopen_s(&fd, tmpl, _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+  if (err != 0)
+    return -1;
+  return fd;
 }
 int fdDup(int fd) { return _dup(fd); }
 int fdDup2(int fd, int fd2) { return _dup2(fd, fd2); }

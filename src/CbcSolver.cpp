@@ -2400,9 +2400,11 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
         "Problem proven infeasible"
       };
       std::ostringstream buffer;
+      // status 5 is a user event (ctrl-c); statusName[5] names it on its own,
+      // and any minor[] appended to it garbles the line
       buffer << std::endl
              << "Result - " << statusName[iStatus]
-             << minor[iStatus2] << std::endl
+             << (iStatus == 5 ? "" : minor[iStatus2]) << std::endl
              << std::endl;
       buffer << "Enumerated nodes:           0" << std::endl;
       buffer << "Total iterations:           0" << std::endl;
@@ -5761,11 +5763,13 @@ int CbcSolver::postprocess(
     statistics.tighter = babModel_->rootObjectiveAfterCuts();
     statistics.nodes = babModel_->getNodeCount();
     statistics.iterations = babModel_->getIterationCount();
-    statistics.result = statusName[iStat] + minor[iStat2];
+    // status 5 is a user event (ctrl-c); statusName[5] names it on its own,
+    // and any minor[] appended to it garbles the line
+    statistics.result = statusName[iStat] + (iStat == 5 ? "" : minor[iStat2]);
     buffer.str("");
     buffer << std::endl
            << "Result - "
-           << statusName[iStat].c_str() << minor[iStat2].c_str()
+           << statistics.result
            << std::endl;
     printGeneralMessage(model_, buffer.str());
     buffer.str("");

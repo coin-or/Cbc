@@ -74,12 +74,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		..\..\.github\workflows\linux-ci.yml = ..\..\.github\workflows\linux-ci.yml
 		..\..\.github\workflows\release.yml = ..\..\.github\workflows\release.yml
 		..\..\.github\workflows\windows-ci.yml = ..\..\.github\workflows\windows-ci.yml
+		..\..\.github\workflows\windows-msvs-ci.yml = ..\..\.github\workflows\windows-msvs-ci.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{8611E933-9020-4D93-A72B-984AAB27425C}"
 	ProjectSection(SolutionItems) = preProject
 		CbcTest.cmd = CbcTest.cmd
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CbcMakeTest", "CbcMakeTest\CbcMakeTest.vcxproj", "{FB60CCAF-A0F0-4557-9586-58524835E2BF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -199,6 +202,18 @@ Global
 		{22911998-FEDD-44AC-902F-CFEFA060C36A}.ReleaseParallel|x64.Build.0 = Release|x64
 		{22911998-FEDD-44AC-902F-CFEFA060C36A}.ReleaseParallel|x86.ActiveCfg = Release|Win32
 		{22911998-FEDD-44AC-902F-CFEFA060C36A}.ReleaseParallel|x86.Build.0 = Release|Win32
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.Debug|x64.ActiveCfg = Debug|x64
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.Debug|x64.Build.0 = Debug|x64
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.Debug|x86.ActiveCfg = Debug|Win32
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.Debug|x86.Build.0 = Debug|Win32
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.Release|x64.ActiveCfg = Release|x64
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.Release|x64.Build.0 = Release|x64
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.Release|x86.ActiveCfg = Release|Win32
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.Release|x86.Build.0 = Release|Win32
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.ReleaseParallel|x64.ActiveCfg = ReleaseParallel|x64
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.ReleaseParallel|x64.Build.0 = ReleaseParallel|x64
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.ReleaseParallel|x86.ActiveCfg = ReleaseParallel|Win32
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.ReleaseParallel|x86.Build.0 = ReleaseParallel|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -207,6 +222,7 @@ Global
 		{EAF01AC1-8D19-4E37-9852-736DCFF67865} = {8611E933-9020-4D93-A72B-984AAB27425C}
 		{02DAC099-45E6-4442-BA79-684D98557861} = {FAA08B0C-E9D4-4A64-AB36-B18DB3112D87}
 		{8611E933-9020-4D93-A72B-984AAB27425C} = {FAA08B0C-E9D4-4A64-AB36-B18DB3112D87}
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF} = {8611E933-9020-4D93-A72B-984AAB27425C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {58BF7BE6-13A3-455C-B63E-2799224131D5}

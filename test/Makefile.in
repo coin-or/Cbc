@@ -101,11 +101,11 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
 	coefstr-test$(EXEEXT) rowred-test$(EXEEXT) \
 	row-activity-test$(EXEEXT) final-bound-test$(EXEEXT) \
-	progress-callback-test$(EXEEXT) bkclique-bench$(EXEEXT) \
-	clqext-bench$(EXEEXT) zerohalf-bench$(EXEEXT) \
-	probing-bench$(EXEEXT) gomory-bench$(EXEEXT) \
-	lagomory-bench$(EXEEXT) landp-bench$(EXEEXT) \
-	twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
+	progress-callback-test$(EXEEXT) cbcmain1-test$(EXEEXT) \
+	bkclique-bench$(EXEEXT) clqext-bench$(EXEEXT) \
+	zerohalf-bench$(EXEEXT) probing-bench$(EXEEXT) \
+	gomory-bench$(EXEEXT) lagomory-bench$(EXEEXT) \
+	landp-bench$(EXEEXT) twomir-bench$(EXEEXT) mir2-bench$(EXEEXT) \
 	impclique-explore$(EXEEXT) impclique-bench$(EXEEXT) \
 	impclique-vs-clique-bench$(EXEEXT) \
 	impclique-real-bench$(EXEEXT) mip-root-replay$(EXEEXT) \
@@ -134,6 +134,9 @@ am__v_lt_1 =
 am_cbc_validate_sol_OBJECTS = cbc_validate_sol.$(OBJEXT)
 cbc_validate_sol_OBJECTS = $(am_cbc_validate_sol_OBJECTS)
 cbc_validate_sol_DEPENDENCIES = ../src/libCbc.la
+am_cbcmain1_test_OBJECTS = cbcmain1-test.$(OBJEXT)
+cbcmain1_test_OBJECTS = $(am_cbcmain1_test_OBJECTS)
+cbcmain1_test_DEPENDENCIES = ../src/libCbc.la
 am_clqext_bench_OBJECTS = clqext-bench.$(OBJEXT)
 clqext_bench_OBJECTS = $(am_clqext_bench_OBJECTS)
 clqext_bench_DEPENDENCIES = ../src/libCbc.la
@@ -230,9 +233,10 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/Osi
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
-	./$(DEPDIR)/cbc_validate_sol.Po ./$(DEPDIR)/clqext-bench.Po \
-	./$(DEPDIR)/coefstr-test.Po ./$(DEPDIR)/final-bound-test.Po \
-	./$(DEPDIR)/gomory-bench.Po ./$(DEPDIR)/impclique-bench.Po \
+	./$(DEPDIR)/cbc_validate_sol.Po ./$(DEPDIR)/cbcmain1-test.Po \
+	./$(DEPDIR)/clqext-bench.Po ./$(DEPDIR)/coefstr-test.Po \
+	./$(DEPDIR)/final-bound-test.Po ./$(DEPDIR)/gomory-bench.Po \
+	./$(DEPDIR)/impclique-bench.Po \
 	./$(DEPDIR)/impclique-explore.Po \
 	./$(DEPDIR)/impclique-real-bench.Po \
 	./$(DEPDIR)/impclique-vs-clique-bench.Po \
@@ -266,10 +270,10 @@ am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
-	$(clqext_bench_SOURCES) $(coefstr_test_SOURCES) \
-	$(final_bound_test_SOURCES) $(gomory_bench_SOURCES) \
-	$(impclique_bench_SOURCES) $(impclique_explore_SOURCES) \
-	$(impclique_real_bench_SOURCES) \
+	$(cbcmain1_test_SOURCES) $(clqext_bench_SOURCES) \
+	$(coefstr_test_SOURCES) $(final_bound_test_SOURCES) \
+	$(gomory_bench_SOURCES) $(impclique_bench_SOURCES) \
+	$(impclique_explore_SOURCES) $(impclique_real_bench_SOURCES) \
 	$(impclique_vs_clique_bench_SOURCES) $(lagomory_bench_SOURCES) \
 	$(landp_bench_SOURCES) $(lazy_constraint_test_SOURCES) \
 	$(lp_relaxation_test_SOURCES) $(mip_c_solve_SOURCES) \
@@ -481,7 +485,7 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 # (also run by run-mip-sanity-tests, see below) and, if the Sample data is
 # available, a solve of p0033 with the cbc executable.
 QUICK_TESTS = lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
-	coefstr-test$(EXEEXT) row-activity-test$(EXEEXT)
+	coefstr-test$(EXEEXT) row-activity-test$(EXEEXT) cbcmain1-test$(EXEEXT)
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 cbc_validate_sol_LDADD = ../src/libCbc.la
@@ -725,6 +729,22 @@ rowred_test_LDADD = ../src/libCbc.la
 # it). See `row-activity-test --help`.
 row_activity_test_SOURCES = row-activity-test.cpp
 row_activity_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#                What CbcMain1() leaves in the caller's model           #
+########################################################################
+#
+# cbcmain1-test: CbcMain1() solves in a CbcSolver with its own copy of the
+# caller's model and copies the results back. Programs that call CbcMain1()
+# query the caller's model afterwards, as they could when CbcMain1() worked
+# on it directly: isNodeLimitReached()/isSolutionLimitReached() (which
+# compare against the limits set by -maxNodes/-maxSolutions), the solution
+# count, the best possible objective and the other parameters set on the
+# command line. Solves a small multidimensional knapsack built in-process
+# under a node limit, a solution limit and to optimality, and checks all of
+# these on the caller's model. No fixture data needed.
+cbcmain1_test_SOURCES = cbcmain1-test.cpp
+cbcmain1_test_LDADD = ../src/libCbc.la
 
 ########################################################################
 #          Clique separation / extension offline benchmarks            #
@@ -1366,6 +1386,10 @@ cbc_validate_sol$(EXEEXT): $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_DEPEND
 	@rm -f cbc_validate_sol$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(cbc_validate_sol_OBJECTS) $(cbc_validate_sol_LDADD) $(LIBS)
 
+cbcmain1-test$(EXEEXT): $(cbcmain1_test_OBJECTS) $(cbcmain1_test_DEPENDENCIES) $(EXTRA_cbcmain1_test_DEPENDENCIES) 
+	@rm -f cbcmain1-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(cbcmain1_test_OBJECTS) $(cbcmain1_test_LDADD) $(LIBS)
+
 clqext-bench$(EXEEXT): $(clqext_bench_OBJECTS) $(clqext_bench_DEPENDENCIES) $(EXTRA_clqext_bench_DEPENDENCIES) 
 	@rm -f clqext-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clqext_bench_OBJECTS) $(clqext_bench_LDADD) $(LIBS)
@@ -1478,6 +1502,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bkclique-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc_validate_sol.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbcmain1-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clqext-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coefstr-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/final-bound-test.Po@am__quote@ # am--include-marker
@@ -1634,6 +1659,7 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/bkclique-bench.Po
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
+	-rm -f ./$(DEPDIR)/cbcmain1-test.Po
 	-rm -f ./$(DEPDIR)/clqext-bench.Po
 	-rm -f ./$(DEPDIR)/coefstr-test.Po
 	-rm -f ./$(DEPDIR)/final-bound-test.Po
@@ -1707,6 +1733,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/bkclique-bench.Po
 	-rm -f ./$(DEPDIR)/cbc_validate_sol.Po
+	-rm -f ./$(DEPDIR)/cbcmain1-test.Po
 	-rm -f ./$(DEPDIR)/clqext-bench.Po
 	-rm -f ./$(DEPDIR)/coefstr-test.Po
 	-rm -f ./$(DEPDIR)/final-bound-test.Po

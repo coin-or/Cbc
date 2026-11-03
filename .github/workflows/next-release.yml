@@ -115,7 +115,7 @@ jobs:
 
   macos-arm64:
     name: macOS arm64 (Apple Silicon)
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -186,7 +186,7 @@ jobs:
     #     .pc files (a pure text-processing, build-time-only tool never
     #     linked into the Cbc binary) and ships pre-installed on the runner
     #     image (`pkgconf`) regardless of architecture.
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:

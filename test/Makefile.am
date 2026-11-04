@@ -20,7 +20,7 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 # available, a solve of p0033 with the cbc executable.
 
 QUICK_TESTS = lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
-	coefstr-test$(EXEEXT) row-activity-test$(EXEEXT)
+	coefstr-test$(EXEEXT) row-activity-test$(EXEEXT) cbcmain1-test$(EXEEXT)
 
 test: $(QUICK_TESTS)
 	@for t in $(QUICK_TESTS); do \
@@ -70,6 +70,7 @@ sanity-test: cbc_validate_sol$(EXEEXT)
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
 	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test final-bound-test progress-callback-test \
+	cbcmain1-test \
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
 	lagomory-bench landp-bench \
 	twomir-bench mir2-bench impclique-explore impclique-bench impclique-vs-clique-bench \
@@ -338,6 +339,24 @@ rowred_test_LDADD = ../src/libCbc.la
 row_activity_test_SOURCES = row-activity-test.cpp
 
 row_activity_test_LDADD = ../src/libCbc.la
+
+########################################################################
+#                What CbcMain1() leaves in the caller's model           #
+########################################################################
+#
+# cbcmain1-test: CbcMain1() solves in a CbcSolver with its own copy of the
+# caller's model and copies the results back. Programs that call CbcMain1()
+# query the caller's model afterwards, as they could when CbcMain1() worked
+# on it directly: isNodeLimitReached()/isSolutionLimitReached() (which
+# compare against the limits set by -maxNodes/-maxSolutions), the solution
+# count, the best possible objective and the other parameters set on the
+# command line. Solves a small multidimensional knapsack built in-process
+# under a node limit, a solution limit and to optimality, and checks all of
+# these on the caller's model. No fixture data needed.
+
+cbcmain1_test_SOURCES = cbcmain1-test.cpp
+
+cbcmain1_test_LDADD = ../src/libCbc.la
 
 ########################################################################
 #          Clique separation / extension offline benchmarks            #

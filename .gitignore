@@ -33,6 +33,7 @@ dist
 
 # mip-sanity-data regression suite (test/)
 /test/cbc_validate_sol
+/test/cbcmain1-test
 /test/coefstr-test
 /test/final-bound-test
 /test/final-bound-test.exe

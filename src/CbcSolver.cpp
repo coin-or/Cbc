@@ -16605,15 +16605,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
   CbcSolver *solver = new CbcSolver(model);
   solver->parameters() = parameters;
   int rc = solver->run(inputQueue, callBack, info);
-  // Copy essential results back to the caller's model
+  // Copy the results back to the caller's model
   CbcModel *solved = solver->model();
-  model.setProblemStatus(solved->status());
-  model.setSecondaryStatus(solved->secondaryStatus());
-  model.setMinimizationObjValue(solved->getMinimizationObjValue());
-  model.setContinuousObjective(solved->getContinuousObjective());
-  model.setRootObjectiveAfterCuts(solved->rootObjectiveAfterCuts());
-  model.setNodeCount(solved->getNodeCount() + solved->getExtraNodeCount());
-  model.setIterationCount(solved->getIterationCount() + solved->numberExtraIterations());
   if (solved->bestSolution()) {
     int n = solved->solver()->getNumCols();
     int nc = model.solver()->getNumCols();
@@ -16624,7 +16617,26 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       model.setBestSolution(solved->bestSolution(), std::min(n, nc),
         solved->getMinimizationObjValue(), false);
   }
-  model.setNumberHeuristicSolutions(solved->getNumberHeuristicSolutions());
+  // CbcMain1 used to work on the caller's model and end with moveInfo()
+  // from the branch-and-bound model, so callers rely on all of moveInfo()'s
+  // results (such as the solution count and the best possible objective)
+  // and on the parameters set by the command line (such as -maxNodes, which
+  // isNodeLimitReached() compares against).
+  model.moveInfo(*solved);
+  for (int i = 0; i < CbcModel::CbcLastIntParam; i++) {
+    CbcModel::CbcIntParam key = static_cast< CbcModel::CbcIntParam >(i);
+    model.setIntParam(key, solved->getIntParam(key));
+  }
+  for (int i = 0; i < CbcModel::CbcLastDblParam; i++) {
+    CbcModel::CbcDblParam key = static_cast< CbcModel::CbcDblParam >(i);
+    model.setDblParam(key, solved->getDblParam(key));
+  }
+  model.setRootObjectiveAfterCuts(solved->rootObjectiveAfterCuts());
+  // Count the nodes and iterations of complete fathoming inside Clp in the
+  // totals, not separately
+  model.setNodeCount(solved->getNodeCount() + solved->getExtraNodeCount());
+  model.setIterationCount(solved->getIterationCount() + solved->numberExtraIterations());
+  model.zeroExtra();
   {
     OsiClpSolverInterface *srcClp = dynamic_cast< OsiClpSolverInterface * >(solved->solver());
     OsiClpSolverInterface *dstClp = dynamic_cast< OsiClpSolverInterface * >(model.solver());

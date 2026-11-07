@@ -10237,7 +10237,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
       if (size < iSize) {
         babModel_->setFastNodeDepth(iDepth);
       } else {
-        if (iDepth == -12)
+        if (iDepth == -12 || size > 2*iSize)
           babModel_->setFastNodeDepth(-1);
         else
           babModel_->setFastNodeDepth(8);

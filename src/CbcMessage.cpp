@@ -85,9 +85,9 @@ static Cbc_message us_english[] = {
   { CBC_OTHER_STATS, 35, 1, "Maximum depth %d, %g variables fixed on reduced cost" },
   { CBC_HEURISTICS_OFF, 36, 1, "Heuristics switched off as %d branching objects are of wrong type" },
 #ifndef CBC_MANY_NODE_COUNTS
-  { CBC_STATUS2, 37, 1, "%d nodes, %d on tree, best %g - possible %g depth %d unsat %d value %g its %d (%.2f seconds)" },
+  { CBC_STATUS2, 37, 1, "%d nodes, %d on tree, best %.10g - possible %.10g depth %d unsat %d value %g its %d (%.2f seconds)" },
 #else
-  { CBC_STATUS2, 37, 1, "%ld nodes, %d on tree, best %g - possible %g depth %d unsat %d value %g its %ld (%.2f seconds)" },
+  { CBC_STATUS2, 37, 1, "%ld nodes, %d on tree, best %.10g - possible %.10g depth %d unsat %d value %g its %ld (%.2f seconds)" },
 #endif
   { CBC_FPUMP1, 38, 1, "%s" },
   { CBC_FPUMP2, 39, 2, "%s" },

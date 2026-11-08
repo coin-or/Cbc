@@ -8,13 +8,48 @@
 #include "OsiClpSolverInterface.hpp"
 
 #include <cmath>
+#include <chrono>
 #include <deque>
 #include <iostream>
 #include <string>
+#include <thread>
 
 namespace {
 int callbackCalls = 0;
 bool callbackSawNative = false;
+bool preprocessingArmed = false;
+bool preprocessingTimedOut = false;
+
+class PreprocessingTimeoutSolver : public OsiClpSolverInterface {
+public:
+  OsiSolverInterface *clone(bool copyData = true) const override
+  {
+    return copyData ? new PreprocessingTimeoutSolver(*this)
+                    : new PreprocessingTimeoutSolver;
+  }
+
+  void initialSolve() override
+  {
+    bool inBranchAndCut = false;
+    getHintParam(OsiDoInBranchAndCut, inBranchAndCut);
+    if (preprocessingArmed && inBranchAndCut) {
+      // Inject an LP time limit only after CBC has entered preprocessing.
+      std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+      getModelPtr()->setProblemStatus(3);
+      getModelPtr()->setSecondaryStatus(9);
+      preprocessingTimedOut = true;
+      return;
+    }
+    OsiClpSolverInterface::initialSolve();
+  }
+};
+
+int preprocessingCallback(CbcModel *, int where)
+{
+  if (where == 1)
+    preprocessingArmed = true;
+  return 0;
+}
 
 int callback(CbcModel *model, int where)
 {
@@ -30,10 +65,34 @@ int main(int argc, char **argv)
   if (argc != 4)
     return 2;
   const std::string mode(argv[2]);
-  OsiClpSolverInterface osi;
+  PreprocessingTimeoutSolver osi;
   if (osi.readMps(argv[1], ""))
     return 2;
   CbcModel model(osi);
+  if (mode.find("preprocess-") == 0) {
+    if (mode == "preprocess-existing") {
+      const double incumbent[] = { 1, 1, 1, 0, 0, 0 };
+      model.setBestSolution(incumbent, 6, 6.0, false);
+    }
+    CbcSolver solver(model);
+    solver.initialize();
+    const std::string solution = std::string(argv[3]) + ".sol";
+    std::deque< std::string > arguments = {
+      "-log", "2", "-timeMode", "elapsed", "-threads", "0",
+      "-presolve", "off", "-preprocess", "on",
+      "-preRootLPStrenghtening", "off", "-sppGrasp",
+      mode == "preprocess-original" ? "on" : "off",
+      "-sppGraspWork", ".001", "-sppGraspNoImprove", "1",
+      "-sec", "1", "-progressCsv", argv[3],
+      "-solve", "-solu", solution, "-quit"
+    };
+    const int result = solver.run(arguments, preprocessingCallback);
+    if (result || !preprocessingTimedOut) {
+      std::cerr << "did not reach the preprocessing LP time limit\n";
+      return 1;
+    }
+    return 0;
+  }
   const double better[] = { 0.0, 0.0, 1.0 };
   const double worse[] = { 1.0, 1.0, 0.0 };
   if (mode == "better" || mode == "worse") {

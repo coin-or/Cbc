@@ -7,6 +7,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -64,6 +65,14 @@ def run(cbc, mipstart=None):
     )
     if result.returncode:
         raise AssertionError(f"CBC exited {result.returncode}\n{result.stdout}")
+    if "Time (B&C," in result.stdout:
+        raise AssertionError(f"Redundant B&C timing in batch output:\n{result.stdout}")
+    if not re.search(
+        r"^Total time \(CPU seconds\):\s*[0-9.eE+-]+\n"
+        r"Total time \(Wallclock seconds\):\s*[0-9.eE+-]+\n",
+        result.stdout, re.MULTILINE,
+    ):
+        raise AssertionError(f"Missing separate CPU/wallclock totals:\n{result.stdout}")
     if "Objective value:                8" not in result.stdout:
         raise AssertionError(f"Maximization/objective offset changed:\n{result.stdout}")
     with TRACE.open(newline="") as stream:
@@ -86,8 +95,12 @@ def run(cbc, mipstart=None):
         if float(event["primal"]) != 2.0 or float(event["dual"]) > -1.0e49:
             raise AssertionError(f"Original-model SppGrasp event is incorrect: {event!r}")
     else:
-        if "MIPStart provided solution with cost 8" not in result.stdout:
+        if "MIPStart ..." not in result.stdout or "Solution with cost 8" not in result.stdout:
             raise AssertionError(f"MIP start was not accepted:\n{result.stdout}")
+        if "found by Reduced search" in result.stdout:
+            raise AssertionError(f"Duplicate MIP-start incumbent message:\n{result.stdout}")
+        if not re.search(r"\n\n[^\n]*MIPStart \.\.\.", result.stdout):
+            raise AssertionError(f"Missing blank line before MIPStart:\n{result.stdout}")
         events = [row for row in rows if row["source"] == "mipstart"]
         if len(events) != 1:
             raise AssertionError(f"Expected one MIP-start event, got {events!r}")
@@ -261,6 +274,44 @@ def check_infeasible_proof_closes_pdi_gap():
         INFEASIBLE_LOG.unlink(missing_ok=True)
 
 
+def check_root_timeout_csv_without_incumbent(cbc):
+    with tempfile.TemporaryDirectory(prefix="cbc-root-timeout-") as directory:
+        work = pathlib.Path(directory)
+        for mode, controls in (
+                ("off", ("-sppGrasp", "off")),
+                ("no-native", ("-sppGrasp", "on", "-sppGraspNativePreLp", "off")),
+                ("auto-native", ("-sppGrasp", "on"))):
+            progress = work / (mode + ".csv")
+            solution = work / (mode + ".sol")
+            log = work / (mode + ".log")
+            command = [
+                str(cbc), str(MODEL), "-maximize", "-timeMode", "elapsed",
+                "-threads", "0", "-presolve", "off", "-preprocess", "off",
+                "-preRootLPStrenghtening", "off", *controls, "-sec", "0",
+                "-progressCsv", str(progress), "-solve", "-solu", str(solution),
+                "-quit",
+            ]
+            result = subprocess.run(command, capture_output=True, text=True,
+                                    check=True, timeout=15)
+            log.write_text(result.stdout)
+            if "LP relaxation stopped on time limit" not in result.stdout:
+                raise AssertionError(f"{mode}: did not stop in the initial LP:\n{result.stdout}")
+            with progress.open() as stream:
+                rows = list(csv.DictReader(stream))
+            if [row["source"] for row in rows] != ["start", "final"]:
+                raise AssertionError(f"{mode}: missing or duplicate progress events: {rows!r}")
+            if float(rows[-1]["time"]) <= 0 or float(rows[-1]["primal"]) < 1e49:
+                raise AssertionError(f"{mode}: fabricated incumbent or invalid final clock: {rows!r}")
+            if "no integer solution" not in solution.read_text().splitlines()[0]:
+                raise AssertionError(f"{mode}: fractional relaxation exported as an incumbent")
+            events = cbc_pdi.run_events(log, progress, "csv")
+            trace = cbc_pdi.build_trace(events, True)
+            metrics = cbc_pdi.integrate(trace, 120.0)
+            if events["event_source"] != "progressCsv" or trace.status != "stopped" \
+                    or metrics["pdi"] != 2.0 or metrics["primal"] is not None:
+                raise AssertionError(f"{mode}: root timeout PDI is incorrect: {metrics!r}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--cbc", default=str(HERE.parent / "src" / "cbc"))
@@ -273,6 +324,7 @@ def main():
         check_empty_progress_no_incumbent_fallback()
         check_start_only_csv_falls_back_to_log()
         check_infeasible_proof_closes_pdi_gap()
+        check_root_timeout_csv_without_incumbent(cbc)
     finally:
         TRACE.unlink(missing_ok=True)
         EMPTY_TRACE.unlink(missing_ok=True)
@@ -287,6 +339,7 @@ def main():
     print("  empty/start-only CSVs use an explicitly labeled log fallback")
     print("  an infeasibility proof closes PDI at proof time without inventing a primal")
     print("  missing/rounded-zero proof times do not fabricate time-zero events or PDI values")
+    print("  initial-LP timeouts without incumbents emit a final CSV event and retain PDI 2")
 
 
 if __name__ == "__main__":

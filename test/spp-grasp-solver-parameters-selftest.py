@@ -13,14 +13,16 @@ MODEL = HERE / "spp-grasp-policy.mps"
 DISABLED = "SppGrasp: set partitioning with slacks - feasibility pump switched off"
 
 
-def solve(cbc, name, options, model=MODEL):
+def solve(cbc, name, options, model=MODEL, log_level=2):
     command = [
         cbc,
         str(model),
         "-log",
-        "2",
+        str(log_level),
         "-preprocess",
         "off",
+        "-sppGrasp",
+        "on",
         "-sppGraspDestroyRows",
         "2",
         "-sppGraspStall",
@@ -63,6 +65,45 @@ def main():
     )
     args = parser.parse_args()
     cbc = str(pathlib.Path(args.cbc).resolve())
+
+    def default_policy(options):
+        result = subprocess.run(
+            [cbc, str(MODEL), "-threads", "0", "-log", "2",
+             "-randomSeed", "71", "-randomCbcSeed", "71",
+             "-preprocess", "off", *options, "-solve", "-quit"],
+            capture_output=True, text=True, check=True, timeout=20,
+        )
+        output = result.stdout + result.stderr
+        if any(error in output for error in (
+                "No match for", "Illegal keyword", "String of", "unrecognized")):
+            raise AssertionError(output)
+        return output
+
+    for options in ([], ["-sppGrasp", "auto"],
+                    ["-sppGrasp", "on", "-sppGraspWork", "500",
+                     "-sppGraspFpump", "on"]):
+        output = default_policy(options)
+        if "SppGrasp run result: stage original;" not in output or DISABLED in output:
+            raise AssertionError(f"default/AUTO did not run with FPump retained:\n{output}")
+        if not re.search(r"Objective value:\s+1(?:\.0*)?\s", output):
+            raise AssertionError(f"default/AUTO produced the wrong objective:\n{output}")
+    for options in (["-sppGrasp", "off"], ["-heur", "off"]):
+        output = default_policy(options)
+        if "SppGrasp run result:" in output:
+            raise AssertionError(f"explicit opt-out ran SppGrasp:\n{output}")
+    for options in (
+            ["-sppGraspWork", ".001", "-sppGrasp", "auto"],
+            ["-sppGrasp", "auto", "-sppGraspWork", ".001"]):
+        output = default_policy(options)
+        work = re.search(r"SppGrasp run result: stage original; work (\S+);", output)
+        if not work or float(work[1]) >= 1e6:
+            raise AssertionError(f"AUTO ignored explicit work override:\n{output}")
+    output = default_policy(["-sppGraspFpump", "auto", "-sppGrasp", "auto"])
+    if DISABLED not in output:
+        raise AssertionError(f"AUTO ignored explicit legacy pump policy:\n{output}")
+    output = default_policy(["-feas", "off"])
+    if "Heuristic feasibility pump:" in output or "Feasibility pump (" in output:
+        raise AssertionError(f"AUTO ignored explicit pump off:\n{output}")
 
     auto = solve(cbc, "auto", ["-sppGraspFpump", "auto"])
     keep = solve(cbc, "on", ["-sppGraspFpump", "on"])
@@ -118,11 +159,32 @@ def main():
         cbc, "root-sequence-explicit-pump-off",
         ["-sppGraspRootSequence", "spp-fpump", "-feas", "off"],
     )
+    disabled_log_1 = solve(
+        cbc, "disabled-message-log-1", ["-sppGraspFpump", "after"],
+        log_level=1,
+    )
+    failure_log_1 = solve(
+        cbc, "failed-spp-log-1",
+        ["-sppGraspWork", ".001", "-feas", "on"],
+        HERE / "spp-grasp-no-integer-policy.mps", log_level=1,
+    )
+    for output in (disabled_log_1, failure_log_1):
+        if "SppGrasp: first " in output or "SppGrasp: no feasible solution" in output:
+            raise AssertionError("individual SppGrasp diagnostics leaked at log level 1")
+    if not re.search(r"\n\n[^\n]*SPPGrasp \.\.\..*1 (?:→|->) 1 in \d+\.\d+ seconds\.",
+                     disabled_log_1):
+        raise AssertionError(f"missing standalone SppGrasp summary:\n{disabled_log_1}")
+    if failure_log_1.count("SPPGrasp ...") != 1 or "No feasible solution in" not in failure_log_1:
+        raise AssertionError("expected exactly one standalone SppGrasp failure summary")
+    if not re.search(r"SppGrasp\s+no solution", failure_log_1):
+        raise AssertionError("root SppGrasp result is missing from the heuristic table")
 
     if "SppGrasp: first 1, best 1" not in after:
         raise AssertionError("fixture did not produce an original-model SppGrasp solution")
     if DISABLED not in auto or DISABLED not in after:
         raise AssertionError("legacy auto/after-success policies did not disable FPump")
+    if DISABLED in disabled_log_1:
+        raise AssertionError("FPump-disabled notice was printed below log level 2")
     if DISABLED in keep or DISABLED in explicit or DISABLED in no_improvement:
         raise AssertionError("FPump was disabled under a retain/override/failure policy")
     if "SppGrasp: progress gate stopped" not in gated:
@@ -178,7 +240,8 @@ def main():
     if "calling feasibility pump (no incumbent)" not in root_spp_then_pump_no_integer:
         raise AssertionError("conditional sequence did not run FPump after SppGrasp failed")
     print("SppGrasp solver parameter and FPump policy selftest: PASS")
-    print("  auto preserves legacy native-SPP behavior")
+    print("  default/AUTO matches the measured candidate and respects work/pump/off overrides")
+    print("  sppGraspFpump auto preserves legacy native-SPP behavior")
     print("  on retains FPump; after disables only after a real SppGrasp solution")
     print("  explicit -feas on and no-improvement cases retain FPump")
     print("  root orderings call/skip FPump from genuine incumbent availability")

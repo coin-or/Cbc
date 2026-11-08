@@ -508,6 +508,8 @@ public:
 
   using CbcHeuristic::solution;
   virtual int solution(double &objectiveValue, double *newSolution) override;
+  /// Standalone calls print a compact summary at log level 1.
+  int solution(double &objectiveValue, double *newSolution, bool standalone);
 
   /// True if the model's solver has the structure the heuristic needs
   static bool isApplicable(const OsiSolverInterface &solver, bool needSlacks,

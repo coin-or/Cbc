@@ -632,6 +632,7 @@ private:
   int lastOnTree_ = 0;
   int lastDepth_ = 0;
   double lastBestBound_ = 1e50;
+  double lastIncumbent_ = 1e50; ///< Last printed incumbent; retained across restarts
 
   // Incumbents found before the first onProgress() call (e.g. during root cut gen).
   // Emitted as ★ rows at the top of the B&B table, using the bound from

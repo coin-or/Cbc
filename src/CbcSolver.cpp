@@ -2407,12 +2407,14 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
       buffer << "Enumerated nodes:           0" << std::endl;
       buffer << "Total iterations:           0" << std::endl;
 #if CBC_QUIET == 0
-      if (model_.useElapsedTime())
-        buffer << "Time (Wallclock seconds):   "
-               << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
-      else
-        buffer << "Time (CPU seconds):         "
-               << CoinCpuTime() - time0_ << std::endl;
+      if (interactiveMode_) {
+        if (model_.useElapsedTime())
+          buffer << "Time (Wallclock seconds):   "
+                 << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
+        else
+          buffer << "Time (CPU seconds):         "
+                 << CoinCpuTime() - time0_ << std::endl;
+      }
 #endif
       printGeneralMessage(model_, buffer.str());
     }
@@ -4483,6 +4485,15 @@ int CbcSolver::preprocess(
     babModel_->setProblemStatus(1);
     babModel_->setSecondaryStatus(4);
     statistics.result = "Stopped on time limit";
+    if (model_.bestSolution()) {
+      statistics.obj = model_.getObjValue();
+      // B&B/postprocessing will not copy the incumbent into the output solver.
+      model_.solver()->setColSolution(model_.bestSolution());
+    }
+    babModel_->setProgressCsv(parameters_[CbcParam::PROGRESSCSVFILE]->fileName(),
+      parameters_[CbcParam::PROGRESSMINCHANGE]->dblVal(),
+      parameters_[CbcParam::PROGRESSINTERVAL]->dblVal());
+    babModel_->finishPreSearchProgress();
     printStoppedOnTimeResult(model_);
   } else if (!solver2) {
     printGeneralMessage(model_,
@@ -5307,6 +5318,7 @@ int CbcSolver::postprocess(
           ppfp = stdout;
         const bool u8 = CbcOutput::useUtf8();
         const int ll = babModel_->messageHandler()->logLevel();
+        const bool inlineSummary = ll == 1 && !parameters_[CbcParam::PREPROCTIMES]->modeVal();
 
         // postProcDeadline_ is left at -1.0 (unlimited) for now — aborting
         // postprocessing mid-way would discard the B&B solution just found.
@@ -5316,7 +5328,8 @@ int CbcSolver::postprocess(
 
         double ppStart = CoinWallclockTime();
         if (ll >= 1) {
-          fprintf(ppfp, "\n%s\n\n", CoinTable::phaseStart("Postprocessing", u8).c_str());
+          fprintf(ppfp, inlineSummary ? "\n%s ... " : "\n%s\n\n",
+            CoinTable::phaseStart("Postprocessing", u8).c_str());
           fflush(ppfp);
         }
         process.postProcess(*babModel_->solver());
@@ -5325,7 +5338,7 @@ int CbcSolver::postprocess(
         if (ll >= 1 && parameters_[CbcParam::PREPROCTIMES]->modeVal())
           CbcOutput::printPreprocessTimes(ppfp, u8, process.stats(), true, ppElapsed);
         if (ll >= 1) {
-          fprintf(ppfp, "%s Postprocessing complete \xe2\x80\x94 Time: %.3gs\n",
+          fprintf(ppfp, inlineSummary ? "%s done in %.3gs\n" : "%s Postprocessing complete \xe2\x80\x94 Time: %.3gs\n",
             u8 ? "\xe2\x9c\x94" : "OK", ppElapsed);
           // Warn if postprocessing consumed a surprisingly large amount of
           // time so the anomaly is always visible in logs (this phase runs
@@ -5788,12 +5801,14 @@ int CbcSolver::postprocess(
         + babModel_->numberExtraIterations()
            << std::endl;
 #if CBC_QUIET == 0
-    if (babModel_->useElapsedTime())
-      buffer << "Time (B&C, Wallclock seconds):  "
-             << CoinGetTimeOfDay() - time1Elapsed << std::endl;
-    else
-      buffer << "Time (B&C, CPU seconds):        "
-             << CoinCpuTime() - time1 << std::endl;
+    if (interactiveMode_) {
+      if (babModel_->useElapsedTime())
+        buffer << "Time (B&C, Wallclock seconds):  "
+               << CoinGetTimeOfDay() - time1Elapsed << std::endl;
+      else
+        buffer << "Time (B&C, CPU seconds):        "
+               << CoinCpuTime() - time1 << std::endl;
+    }
 #endif
     printGeneralMessage(model_, buffer.str());
     int returnCode_local = 0;
@@ -9090,6 +9105,9 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
         obj, extraActions, babModel_->messageHandler(),
         babModel_->messagesPointer(), parameters.getMipStartFixMode());
       if (!status) {
+        CoinMessages *messages = babModel_->messagesPointer();
+        const int roundingDetail = babModel_->messageHandler()->detail(CBC_ROUNDING, *messages);
+        messages->message_[CBC_ROUNDING]->setDetail(std::max(2, roundingDetail));
         // need to check more babModel_->setBestSolution( &x[0],
         // static_cast<int>(x.size()), obj, false );
         OsiBabSolver dummy;
@@ -9166,6 +9184,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
           }
           delete[] sosObjects;
         }
+        messages->message_[CBC_ROUNDING]->setDetail(roundingDetail);
         /* But this is outside branchAndBound so needs to know
            about direction */
         if (babModel_->getObjSense() == -1.0) {
@@ -10218,7 +10237,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
       if (size < iSize) {
         babModel_->setFastNodeDepth(iDepth);
       } else {
-        if (iDepth == -12)
+        if (iDepth == -12 || size > 2*iSize)
           babModel_->setFastNodeDepth(-1);
         else
           babModel_->setFastNodeDepth(8);
@@ -11283,7 +11302,7 @@ void CbcSolver::babRunSppGraspOriginal()
   const int numberColumns = solver->getNumCols();
   std::vector< double > x(numberColumns, 0.0);
   double obj = model_.getCutoff();
-  const bool found = heuristic.solution(obj, &x[0]);
+  const bool found = heuristic.solution(obj, &x[0], !parameters.noPrinting());
   if (effortControlled && model_.messageHandler()->logLevel() > 0) {
     char line[192];
     if (stagedRequested) {
@@ -13318,20 +13337,21 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             int rc = babSetupAndRootLp(logLevel, cbcLogLevel,
               clpSolver, lpSolver, storedAmpl, coinModel, statistics,
               returnCode, callBack);
-            if (rc == 1 && nativePreLp && model_.bestSolution()) {
-              statistics.obj = model_.getObjValue();
-              if (model_.status() == 1 || model_.status() == 2) {
-                // B&B did not run, so transfer the saved integer vector here.
-                integerStatus_ = 3;
-                model_.solver()->setColSolution(model_.bestSolution());
+            if (rc == 1) {
+              if (nativePreLp && model_.bestSolution()) {
+                statistics.obj = model_.getObjValue();
+                if (model_.status() == 1 || model_.status() == 2) {
+                  // B&B did not run, so transfer the saved integer vector here.
+                  integerStatus_ = 3;
+                  model_.solver()->setColSolution(model_.bestSolution());
+                }
               }
               model_.setProgressCsv(parameters[CbcParam::PROGRESSCSVFILE]->fileName(),
                 parameters[CbcParam::PROGRESSMINCHANGE]->dblVal(),
                 parameters[CbcParam::PROGRESSINTERVAL]->dblVal());
               model_.finishPreSearchProgress();
-            }
-            if (rc == 1)
               break;
+            }
             if (rc == 2)
               continue;
             if (rc == 3)
@@ -14684,12 +14704,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
   }
 #if CBC_QUIET == 0
   buffer.str("");
-  if (model_.useElapsedTime())
-    buffer << "Total time (Wallclock seconds): " << CoinGetTimeOfDay() - time0Elapsed_
-           << "   (CPU seconds):             " << CoinCpuTime() - time0_ << std::endl;
-  else
-    buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0_
-           << "   (Wallclock seconds):       " << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
+  buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0_ << std::endl;
+  buffer << "Total time (Wallclock seconds): " << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
   printGeneralMessage(model_, buffer.str());
 #endif
 #ifdef COINUTILS_HAS_GLPK
@@ -16589,15 +16605,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
   CbcSolver *solver = new CbcSolver(model);
   solver->parameters() = parameters;
   int rc = solver->run(inputQueue, callBack, info);
-  // Copy essential results back to the caller's model
+  // Copy the results back to the caller's model
   CbcModel *solved = solver->model();
-  model.setProblemStatus(solved->status());
-  model.setSecondaryStatus(solved->secondaryStatus());
-  model.setMinimizationObjValue(solved->getMinimizationObjValue());
-  model.setContinuousObjective(solved->getContinuousObjective());
-  model.setRootObjectiveAfterCuts(solved->rootObjectiveAfterCuts());
-  model.setNodeCount(solved->getNodeCount() + solved->getExtraNodeCount());
-  model.setIterationCount(solved->getIterationCount() + solved->numberExtraIterations());
   if (solved->bestSolution()) {
     int n = solved->solver()->getNumCols();
     int nc = model.solver()->getNumCols();
@@ -16608,7 +16617,26 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       model.setBestSolution(solved->bestSolution(), std::min(n, nc),
         solved->getMinimizationObjValue(), false);
   }
-  model.setNumberHeuristicSolutions(solved->getNumberHeuristicSolutions());
+  // CbcMain1 used to work on the caller's model and end with moveInfo()
+  // from the branch-and-bound model, so callers rely on all of moveInfo()'s
+  // results (such as the solution count and the best possible objective)
+  // and on the parameters set by the command line (such as -maxNodes, which
+  // isNodeLimitReached() compares against).
+  model.moveInfo(*solved);
+  for (int i = 0; i < CbcModel::CbcLastIntParam; i++) {
+    CbcModel::CbcIntParam key = static_cast< CbcModel::CbcIntParam >(i);
+    model.setIntParam(key, solved->getIntParam(key));
+  }
+  for (int i = 0; i < CbcModel::CbcLastDblParam; i++) {
+    CbcModel::CbcDblParam key = static_cast< CbcModel::CbcDblParam >(i);
+    model.setDblParam(key, solved->getDblParam(key));
+  }
+  model.setRootObjectiveAfterCuts(solved->rootObjectiveAfterCuts());
+  // Count the nodes and iterations of complete fathoming inside Clp in the
+  // totals, not separately
+  model.setNodeCount(solved->getNodeCount() + solved->getExtraNodeCount());
+  model.setIterationCount(solved->getIterationCount() + solved->numberExtraIterations());
+  model.zeroExtra();
   {
     OsiClpSolverInterface *srcClp = dynamic_cast< OsiClpSolverInterface * >(solved->solver());
     OsiClpSolverInterface *dstClp = dynamic_cast< OsiClpSolverInterface * >(model.solver());

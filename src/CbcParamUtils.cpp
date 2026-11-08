@@ -546,6 +546,8 @@ int pushCbcSolverIntParam(CoinParam &param)
     parameters->setVubTry(val);
     break;
   }
+  case CbcParam::REOPTPERTVALUE:
+    break;
   default: {
     std::cerr << "pushCbcSolverInt: no method for storing "
               << "parameter code `" << cbcParamCode << "'." << std::endl;

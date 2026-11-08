@@ -352,6 +352,18 @@ public:
     LPEndMarker
   };
 
+  /*! Algorithm for ordinary warm-start resolve() calls, not the initial LP
+      or specialized strong-branching hot starts. Auto preserves existing hints.
+      Barrier includes crossover; racing compares warm dual and primal simplex.
+  */
+  enum ReoptMethod {
+    ReoptAuto = 0,
+    ReoptDual,
+    ReoptPrimal,
+    ReoptBarrier,
+    ReoptRacing
+  };
+
   /*! \brief Problem class mode for auto-tuning */
   enum ProblemClassMode {
     ProbClassAuto = 0,
@@ -1832,6 +1844,31 @@ public:
 
   /*! \brief Set LP method for initial solve */
   inline void setLpMethod(CbcParameters::LPMethod method) { lpMethod_ = method;
+  }
+
+  inline ReoptMethod getReoptMethod() const
+  {
+    return static_cast< ReoptMethod >(parameters_[CbcParam::REOPTMETHOD]->modeVal());
+  }
+  inline void setReoptMethod(ReoptMethod method)
+  {
+    parameters_[CbcParam::REOPTMETHOD]->setVal(static_cast< int >(method));
+  }
+  inline int getReoptPresolve() const
+  {
+    return parameters_[CbcParam::REOPTPRESOLVE]->modeVal() - 1;
+  }
+  inline void setReoptPresolve(int mode)
+  {
+    parameters_[CbcParam::REOPTPRESOLVE]->setVal(mode + 1);
+  }
+  inline int getReoptPertValue() const
+  {
+    return parameters_[CbcParam::REOPTPERTVALUE]->intVal();
+  }
+  inline void setReoptPertValue(int value)
+  {
+    parameters_[CbcParam::REOPTPERTVALUE]->setVal(value);
   }
 
   /*! \brief Get threshold for artificial costs */

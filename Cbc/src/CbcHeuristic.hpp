@@ -352,7 +352,7 @@ public:
       return solver->isInteger(iColumn);
   }
 #else
-  inline bool isHeuristicInteger(const OsiSolverInterface *solver, int iColumn)
+  inline bool isHeuristicInteger(const OsiSolverInterface *solver, int iColumn) const
   {
     return solver->isInteger(iColumn);
   }

@@ -4609,12 +4609,12 @@ int CbcSolver::preprocess(
     double newCutoff = model_.getCutoff();
     babModel_->setBestSolution(bestSolution, numberColumns, 1.0e10, false);
     double obj2;
-    if (babModel_->getObjSense()!=-1.0) {
-      newCutoff = std::min(newCutoff, obj+1.0e-4);
+    if (babModel_->getObjSense() != -1.0) {
+      newCutoff = std::min(newCutoff, obj + 1.0e-4);
       obj2 = obj;
     } else {
       obj2 = -obj;
-      newCutoff = std::min(newCutoff, obj2+1.0e-4);
+      newCutoff = std::min(newCutoff, obj2 + 1.0e-4);
     }
     babModel_->setCutoff(newCutoff);
     babModel_->setMinimizationObjValue(obj2);
@@ -10291,7 +10291,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
       if (size < iSize) {
         babModel_->setFastNodeDepth(iDepth);
       } else {
-        if (iDepth == -12 || size > 2*iSize)
+        if (iDepth == -12 || size > 2 * iSize)
           babModel_->setFastNodeDepth(-1);
         else
           babModel_->setFastNodeDepth(8);

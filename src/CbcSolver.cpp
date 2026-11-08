@@ -1804,6 +1804,56 @@ bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn,
   return true;
 }
 
+void CbcSolver::configureReoptimization(OsiClpSolverInterface *solver,
+  CbcParameters::ReoptMethod method, int perturbation,
+  int presolve, int threads, int barrierOptions)
+{
+  if (!solver)
+    throw CoinError("Reoptimization options require OsiClp",
+      "configureReoptimization", "CbcSolver");
+  if (method == CbcParameters::ReoptRacing && threads % 100 < 2)
+    throw CoinError("reoptMethod=racing requires at least 2 threads",
+      "configureReoptimization", "CbcSolver");
+  ClpSolve options;
+  options.setSpecialOption(4, barrierOptions);
+  solver->setResolveOptions(
+    static_cast< OsiClpSolverInterface::ResolveMethod >(method), options,
+    std::min(2, threads % 100), perturbation, presolve);
+}
+
+void CbcSolver::applyReoptimizationOptions(OsiClpSolverInterface *targetSolver)
+{
+#ifndef CBC_OTHER_SOLVER
+  OsiClpSolverInterface *si = targetSolver ? targetSolver : getClpSolver(model_.solver());
+  if (!si) {
+    if (parameters_.getReoptMethod() != CbcParameters::ReoptAuto
+      || parameters_.getReoptPertValue() != -1 || parameters_.getReoptPresolve() != -1)
+      throw CoinError("Reoptimization options require OsiClp",
+        "applyReoptimizationOptions", "CbcSolver");
+    return;
+  }
+  int threads = 0;
+#ifdef CBC_THREAD
+  threads = parameters_[CbcParam::THREADS]->intVal();
+#endif
+  int barrierOptions = choleskyType_;
+  if (scaleBarrier_)
+    barrierOptions |= 8;
+  if (doKKT_)
+    barrierOptions |= 16;
+  if (gamma_)
+    barrierOptions |= 32 * gamma_;
+  configureReoptimization(si, parameters_.getReoptMethod(),
+    parameters_.getReoptPertValue(), parameters_.getReoptPresolve(),
+    threads, barrierOptions);
+#else
+  if (parameters_.getReoptMethod() != CbcParameters::ReoptAuto
+    || parameters_.getReoptPertValue() != -1 || parameters_.getReoptPresolve() != -1)
+    throw CoinError("Reoptimization options require OsiClp",
+      "applyReoptimizationOptions", "CbcSolver");
+#endif
+}
+
 // Unified LP-solve entry point: model-level LP settings → racing → full
 // ClpSolve with all user options. (Bound propagation and clique merging
 // "before" used to be steps 1-2 here; they are now the standalone
@@ -1816,6 +1866,7 @@ bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn,
 //
 // The caller is responsible for setting up any LP-progress message handler
 // on the ClpSimplex model before calling this function.
+// Reoptimization settings are installed after the initial LP has finished.
 int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMethod)
 {
   OsiSolverInterface *solver = targetSolver ? static_cast< OsiSolverInterface * >(targetSolver) : model_.solver();
@@ -1989,6 +2040,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
       // no separate message needed here (a standalone print here used to
       // interleave with, and visually break, that table).
       basisHasValues_ = 1;
+      applyReoptimizationOptions(si);
       return 0;
     }
     // All racers failed — fall through to the standard single-threaded solve.
@@ -2007,6 +2059,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
       method != CbcParameters::LPPrimal, OsiHintDo);
     solver->initialSolve();
     basisHasValues_ = 1;
+    applyReoptimizationOptions();
     return 0;
   }
 
@@ -2255,6 +2308,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   basisHasValues_ = 1;
 #endif
 
+  applyReoptimizationOptions(targetSolver);
   return 0;
 }
 
@@ -4555,12 +4609,12 @@ int CbcSolver::preprocess(
     double newCutoff = model_.getCutoff();
     babModel_->setBestSolution(bestSolution, numberColumns, 1.0e10, false);
     double obj2;
-    if (babModel_->getObjSense()!=-1.0) {
-      newCutoff = std::min(newCutoff, obj+1.0e-4);
+    if (babModel_->getObjSense() != -1.0) {
+      newCutoff = std::min(newCutoff, obj + 1.0e-4);
       obj2 = obj;
     } else {
       obj2 = -obj;
-      newCutoff = std::min(newCutoff, obj2+1.0e-4);
+      newCutoff = std::min(newCutoff, obj2 + 1.0e-4);
     }
     babModel_->setCutoff(newCutoff);
     babModel_->setMinimizationObjValue(obj2);
@@ -10237,7 +10291,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
       if (size < iSize) {
         babModel_->setFastNodeDepth(iDepth);
       } else {
-        if (iDepth == -12 || size > 2*iSize)
+        if (iDepth == -12 || size > 2 * iSize)
           babModel_->setFastNodeDepth(-1);
         else
           babModel_->setFastNodeDepth(8);

@@ -29,6 +29,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [I/O](#i/o) (37 parameters)
 - [Parallelism](#parallelism) (1 parameters)
 - [General](#general) (51 parameters)
+- [LP Reoptimization](#lp-reoptimization) (3 parameters)
 
 ---
 
@@ -3107,3 +3108,70 @@ Solve entire netlib test set with 'best' algorithm
 
 This exercises the unit test for clp and then solves the netlib test set using whatever works best. I know this is cheating but it also stresses the code better by doing a mixture of stuff. The best algorithm was chosen on a Linux ThinkPad using native cholesky with University of Florida ordering.
 
+## LP Reoptimization
+
+These settings are independent of `lpMethod`, which selects the initial LP
+algorithm. They apply to ordinary `resolve()` calls in cut loops, node LPs and
+the C interface. Specialized strong-branching hot starts and fast fathoming
+retain their existing algorithms.
+
+### `-reoptMethod`
+
+**Values:** `auto`, `dual`, `primal`, `barrier`, `racing` (default: `auto`)
+
+`auto` preserves existing algorithm hints and optimized simplex paths: normally
+dual simplex, with primal used by some heuristics. Explicit `dual` or `primal`
+overrides those hints but retains numerical-recovery fallbacks. Both start from
+the current basis. Adding columns typically preserves primal feasibility but
+invalidates dual feasibility, so `primal` can be useful for column generation;
+adding cuts or tightening bounds often favors `dual`.
+
+`barrier` runs interior point with crossover to a new basis; it does not
+warm-start the interior-point iteration from the simplex basis. `racing`
+requires at least two threads and races warm dual and primal simplex on clones.
+It does not use the initial LP's recommendation, Idiot crash or Sprint portfolio.
+Barrier and racing may be much more expensive than simplex on small node LPs.
+
+### `-reoptPresolve`
+
+**Values:** `auto`, `off`, `on` (default: `auto`)
+
+`auto` inherits the existing resolve presolve hint, normally off. `off` reuses
+the model without presolve; `on` presolves each reoptimization and postsolves
+back to the original rows and columns, adding overhead and potentially losing
+warm-start benefits.
+
+### `-reoptPertValue`
+
+**Range:** -5000 to 102 (default: -1)
+
+`-1` inherits the persistent `pertValue`, normally 50. Other values override
+perturbation on every ordinary resolve without changing the initial LP.
+`100` disables perturbation. Existing pivot, scaling, PSI and tolerance options
+remain applicable.
+
+For example:
+
+```sh
+cbc model.mps -lpMethod dual -reoptMethod primal -reoptPertValue 100 -reoptPresolve off -solve
+```
+
+Programmatically, set `CbcSolver::parameters().setReoptMethod()`,
+`setReoptPertValue()` and `setReoptPresolve()` (the latter takes -1, 0 or 1).
+The normal solve pipeline installs these after the initial LP; callers driving
+an arbitrary solver can call `applyReoptimizationOptions()` explicitly.
+
+The C interface exposes `Cbc_setReoptMethod(model, REOPT_Primal)`. String
+parameters also work for both LP and MIP calls, including changing the settings
+between resolves:
+
+```c
+Cbc_setParameter(model, "reoptMethod", "primal");
+Cbc_setParameter(model, "reoptPertValue", "100");
+Cbc_setParameter(model, "reoptPresolve", "off");
+Cbc_resolve(model);
+```
+
+This string-parameter path can be used by Python-MIP bindings without binding a
+new function. `Cbc_setParam()` returns nonzero for invalid reoptimization values;
+invalid racing/thread combinations return -1 from the LP solve entry points.

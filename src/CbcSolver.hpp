@@ -616,6 +616,20 @@ public:
   int applyLpMethod(OsiClpSolverInterface *targetSolver = nullptr,
     int forcedMethod = -1);
 
+  /** Install reoptMethod/reoptPertValue/reoptPresolve on a solver.
+      Called after the initial LP; can also be called explicitly before
+      resolving a caller-owned solver. Settings survive solver clones.
+  */
+  void applyReoptimizationOptions(OsiClpSolverInterface *targetSolver = nullptr);
+
+  /** Shared CLI/C interface translation. presolve is -1 (inherit), 0 or 1;
+      perturbation is -1 (inherit) or a Clp perturbation value. Barrier always
+      includes crossover, irrespective of the root-LP crossover setting.
+  */
+  static void configureReoptimization(OsiClpSolverInterface *solver,
+    CbcParameters::ReoptMethod method, int perturbation = -1,
+    int presolve = -1, int threads = 0, int barrierOptions = 0);
+
   /** Run the currently configured bound propagation (singletons / fixpoint
       / MILP-based bound tightening, per -boundPropLevel and
       -boundPropMaxRounds) on \p solver in place.

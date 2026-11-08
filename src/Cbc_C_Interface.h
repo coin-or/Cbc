@@ -55,6 +55,17 @@ enum LPMethod {
   LPM_Recommend      = 6   /*! ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features. Runs sequentially. */
 };
 
+/*! Algorithm for ordinary LP reoptimization, independent of LPMethod.
+ * Specialized strong-branching hot starts and fast fathoming are unchanged.
+ */
+enum ReoptMethod {
+  REOPT_Auto = 0, /*! Existing algorithm hints and optimized simplex paths (default). */
+  REOPT_Dual = 1, /*! Warm-start dual simplex, overriding algorithm hints. */
+  REOPT_Primal = 2, /*! Warm-start primal simplex, overriding algorithm hints. */
+  REOPT_Barrier = 3, /*! Barrier with crossover to a new basis; not a warm-start interior-point solve. */
+  REOPT_Racing = 4 /*! Race warm dual and primal simplex; requires INT_PARAM_THREADS >= 2. */
+};
+
 /*! Whether specific presolve reductions should be disabled
  * */
 enum LPReductions {
@@ -1153,10 +1164,25 @@ Cbc_getCutoff(Cbc_Model *model);
 CBCLIB_EXPORT void CBC_LINKAGE
 Cbc_setCutoff(Cbc_Model *model, double cutoff);
 
-/** sets which method will be used to solve the linear programming problem
+/** Sets the initial LP method; does not select the reoptimization method.
  */
 CBCLIB_EXPORT void CBC_LINKAGE
 Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm );
+
+/** Selects the algorithm for later Cbc_resolve()/Cbc_solveLinearProgram()
+ * calls and ordinary MIP resolve() calls. Can be changed between solves.
+ * Equivalent to Cbc_setParameter(model, "reoptMethod", "primal"), etc.,
+ * and the cbc command line's -reoptMethod. Does not change the initial LP.
+ *
+ * Optional phase-specific overrides are available through Cbc_setParameter():
+ *   "reoptPertValue": "-1" (inherit, default), "100" (off), or a Clp value.
+ *   "reoptPresolve": "auto" (inherit, normally off), "off", or "on".
+ * Existing tolerances, DualPivot and PSI remain applicable. Barrier always
+ * crosses over so subsequent resolves have a basis. Invalid values are
+ * diagnosed; Cbc_setParam() returns nonzero instead of aborting.
+ */
+CBCLIB_EXPORT void CBC_LINKAGE
+Cbc_setReoptMethod(Cbc_Model *model, enum ReoptMethod method);
 
 /**
  * gets type of dual reductions to use when solving the LP
@@ -1298,8 +1324,8 @@ Cbc_solve(Cbc_Model *model);
  *
  * If a basis is already available (from a previous solve), this is a fast
  * warm-start reoptimization (OsiSolverInterface::resolve()) -- in that case
- * the configured LP method (Cbc_setLPmethod()/lpMethod parameter) has no
- * effect, since Clp simply continues from the existing basis.
+ * Cbc_setReoptMethod()/reoptMethod selects the algorithm; the initial LP
+ * method (Cbc_setLPmethod()) has no effect on this path.
  *
  * Otherwise this performs a full "cold" initial solve, using
  * CbcSolver::runSolveContinuous()/applyLpMethod() -- the same machinery
@@ -1326,7 +1352,9 @@ Cbc_solveLinearProgram(Cbc_Model *model);
  *
  * This is the fast path for reoptimization after bound changes,
  * adding/removing rows, or modifying coefficients: it reuses the current
- * basis, so the configured LP method has no effect on this path.
+ * basis for simplex. Cbc_setReoptMethod()/reoptMethod controls this path,
+ * independently of the initial LP method. Barrier uses crossover to create
+ * a new basis, rather than warm-starting the interior-point iteration.
  *
  * Like Cbc_solveLinearProgram(), respects the configured log level: at
  * INT_PARAM_LOG_LEVEL >= 1 a modern progress table is printed for this

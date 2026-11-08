@@ -676,6 +676,9 @@ void CbcParameters::addCbcParams()
   parameters_[CbcParam::TIMEMODE]->setTopic("Output");
   parameters_[CbcParam::CHECKTIMEFREQ]->setTopic("Output");
   parameters_[CbcParam::LPMETHOD]->setTopic("Solving");
+  parameters_[CbcParam::REOPTMETHOD]->setTopic("LP Reoptimization");
+  parameters_[CbcParam::REOPTPRESOLVE]->setTopic("LP Reoptimization");
+  parameters_[CbcParam::REOPTPERTVALUE]->setTopic("LP Reoptimization");
 
   // Double params
   parameters_[CbcParam::ARTIFICIALCOST]->setTopic("Heuristics");
@@ -894,6 +897,9 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::USECGRAPH]->setDefault("on");
     parameters_[CbcParam::BOUNDPROPLEVEL]->setDefault("milpbt");
     parameters_[CbcParam::LPMETHOD]->setDefault("auto");
+    parameters_[CbcParam::REOPTMETHOD]->setDefault("auto");
+    parameters_[CbcParam::REOPTPRESOLVE]->setDefault("auto");
+    parameters_[CbcParam::REOPTPERTVALUE]->setDefault(-1);
     parameters_[CbcParam::MIPSTARTFIX]->setDefault("integerZero");
     parameters_[CbcParam::NODEBOUNDPROP]->setDefault("on");
     parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setDefault(100);
@@ -2273,6 +2279,36 @@ void CbcParameters::addCbcSolverKwdParams()
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "recommend", CbcParameters::LPRecommend);
 
+  parameters_[CbcParam::REOPTMETHOD]->setup(
+    "reoptM!ethod", "LP algorithm for reoptimization after the initial LP",
+    "Independent of lpMethod. Applies to ordinary resolve() calls, including "
+    "cut-loop and node LPs and Cbc_resolve(), but not specialized strong-branching "
+    "hot starts or fast fathoming.\n"
+    "  auto: preserves existing algorithm hints and optimized simplex paths "
+    "(normally dual, with primal used by some heuristics). This is the default.\n"
+    "  dual/primal: starts from the current basis using the selected simplex "
+    "algorithm, overriding algorithm hints. Numerical recovery may switch algorithms.\n"
+    "  barrier: interior point with crossover to a new basis; does not warm-start "
+    "the interior-point iteration from the simplex basis.\n"
+    "  racing: races warm dual and primal simplex on basis-preserving clones. "
+    "Requires at least 2 threads. No Idiot crash, Sprint or root-LP recommendation.\n"
+    "Existing dualPivot, primalPivot, scaling, psi and tolerances still apply. "
+    "Use reoptPertValue and reoptPresolve for phase-specific overrides.");
+  parameters_[CbcParam::REOPTMETHOD]->appendKwd("auto", CbcParameters::ReoptAuto);
+  parameters_[CbcParam::REOPTMETHOD]->appendKwd("dual", CbcParameters::ReoptDual);
+  parameters_[CbcParam::REOPTMETHOD]->appendKwd("primal", CbcParameters::ReoptPrimal);
+  parameters_[CbcParam::REOPTMETHOD]->appendKwd("barrier", CbcParameters::ReoptBarrier);
+  parameters_[CbcParam::REOPTMETHOD]->appendKwd("racing", CbcParameters::ReoptRacing);
+  parameters_[CbcParam::REOPTPRESOLVE]->setup(
+    "reoptP!resolve", "Presolve for reoptimization",
+    "auto: retain the existing resolve presolve hint (normally off). "
+    "off: reuse the current model and basis without presolve. "
+    "on: presolve each reoptimization and postsolve back to the original rows "
+    "and columns; this adds overhead and can lose warm-start benefits.");
+  parameters_[CbcParam::REOPTPRESOLVE]->appendKwd("auto", 0);
+  parameters_[CbcParam::REOPTPRESOLVE]->appendKwd("off", 1);
+  parameters_[CbcParam::REOPTPRESOLVE]->appendKwd("on", 2);
+
   parameters_[CbcParam::RANKCONFLICTTYPE]->setup(
     "rankConflictType",
     "Formula for combining directional conflict degrees into a single score.",
@@ -2696,6 +2732,14 @@ void CbcParameters::addCbcSolverIntParams()
     code < CbcParam::LASTINTPARAM; code++) {
     getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverIntParam);
   }
+
+  parameters_[CbcParam::REOPTPERTVALUE]->setup(
+    "reoptPertV!alue", "Perturbation value for reoptimization only",
+    -5000, 102,
+    "-1 (default): inherit the persistent pertValue setting, normally 50. "
+    "Other values override perturbation on each ordinary resolve() without "
+    "changing the initial LP settings. 100 disables perturbation. "
+    "This override takes precedence over temporary resolve perturbation options.");
 
 #define CBC_HC_INT_SETUP(ID, N)                                                                                                     \
   parameters_[CbcParam::HC_##ID##_EVERY]->setup(N "Every",                                                                          \

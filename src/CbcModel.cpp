@@ -9077,7 +9077,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 */
 
 {
-#define STOP_CUTS_NOW 6
+#define STOP_CUTS_NOW 0
 #define START_FATHOM 6
   // Not if some branching objects come from another solver (e.g.,
   // Couenne's spatial branching): it relies on cuts deep in the tree.

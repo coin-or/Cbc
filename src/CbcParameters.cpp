@@ -141,7 +141,7 @@ void CbcParameters::init(int strategy)
   strategyMode_ = CbcParameters::StrategyDefault; // "default"
   clockType_ = CbcParameters::ClockElapsed; // "elapsed"
   cgraphMode_ = CbcParameters::CGraphOn; // "on"
-  lpMethod_ = CbcParameters::LPAuto; // "auto"
+  lpMethod_ = CbcParameters::LPDual; // "dual"
 
   preProcess_ = CbcParameters::IPPSOS;
   cutDepth_ = -1;
@@ -158,7 +158,7 @@ void CbcParameters::init(int strategy)
   probing_.maxElements_ = 200;
   probing_.rowCuts_ = 3;
 
-  clique_.mode_ = CbcParameters::CGIfMove;
+  clique_.mode_ = CbcParameters::CGRoot;
   clique_.proto_ = 0;
   clique_.starCliqueReport_ = false;
   clique_.rowCliqueReport_ = false;
@@ -896,7 +896,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::TIMEMODE]->setDefault("elapsed");
     parameters_[CbcParam::USECGRAPH]->setDefault("on");
     parameters_[CbcParam::BOUNDPROPLEVEL]->setDefault("milpbt");
-    parameters_[CbcParam::LPMETHOD]->setDefault("auto");
+    parameters_[CbcParam::LPMETHOD]->setDefault("dual");
     parameters_[CbcParam::REOPTMETHOD]->setDefault("auto");
     parameters_[CbcParam::REOPTPRESOLVE]->setDefault("auto");
     parameters_[CbcParam::REOPTPERTVALUE]->setDefault(-1);
@@ -1065,7 +1065,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::SPPGRASPROOTKEEPORIGINAL]->setDefault("off");
     parameters_[CbcParam::SPPGRASPNATIVEPRELP]->setDefault("auto");
     parameters_[CbcParam::CUTSTRATEGY]->setDefault("off");
-    parameters_[CbcParam::CLIQUECUTS]->setDefault("ifmove");
+    parameters_[CbcParam::CLIQUECUTS]->setDefault("root");
     parameters_[CbcParam::FLOWCUTS]->setDefault("ifmove");
     parameters_[CbcParam::GMICUTS]->setDefault("root");
     parameters_[CbcParam::GOMORYCUTS]->setDefault("ifmove");
@@ -2253,7 +2253,7 @@ void CbcParameters::addCbcSolverKwdParams()
     "Which LP algorithm to use for the initial LP relaxation solve",
     "Controls which LP algorithm is used when -solve or -initialSolve "
     "triggers the root LP relaxation.\n"
-    "  dual:      dual simplex.\n"
+    "  dual:      dual simplex. (default)\n"
     "  primal:    primal simplex.\n"
     "  barrier:   interior-point (barrier) method.\n"
     "  racing:    opportunistic parallel LP racing -- multiple LP method "
@@ -2265,7 +2265,7 @@ void CbcParameters::addCbcSolverKwdParams()
     "(see CbcLpParamScorer) to pick the settings expected to solve fastest. "
     "Runs sequentially.\n"
     "  auto:      picks racing when running in parallel (threads >= 2) or "
-    "recommend when running sequentially (threads == 1). (default)");
+    "recommend when running sequentially (threads == 1).");
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "dual", CbcParameters::LPDual);
   parameters_[CbcParam::LPMETHOD]->appendKwd(

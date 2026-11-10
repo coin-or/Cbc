@@ -20987,20 +20987,24 @@ bool CbcModel::maximumSecondsReached() const
   if (numberSolutions_ && (!hitMaxTime)) {
     hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= dblParam_[CbcMaxSecondsNotImproving];
   }
-  if (parentModel_ && !hitMaxTime) {
+  // In a sub tree, the parent's limits apply too. Only those are passed on
+  // to the parent: this model's own limit can be one that should stop this
+  // model alone, such as the -COIN_DBL_MAX that resolve() sets after an
+  // abandoned LP.
+  bool parentHit = false;
+  if (parentModel_) {
     // In a sub tree
-    assert(parentModel_);
-    maxSeconds = parentModel_->getMaximumSeconds();
-    hitMaxTime = (totalTime >= maxSeconds);
-    if (numberSolutions_ && (!hitMaxTime)) {
+    parentHit = (totalTime >= parentModel_->getMaximumSeconds());
+    if (numberSolutions_ && (!parentHit)) {
       double maxSecondsNotImprFS = parentModel_->getDblParam(CbcMaxSecondsNotImproving);
-      hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= maxSecondsNotImprFS;
+      parentHit = totalTime - lastTimeImprovingFeasSol_ >= maxSecondsNotImprFS;
     }
   }
+  hitMaxTime = hitMaxTime || parentHit;
   if (hitMaxTime) {
     // Set eventHappened_ so will by-pass as much stuff as possible
     eventHappened_ = true;
-    if (parentModel_) {
+    if (parentHit) {
       // need to set stuff
       // Multiple worker threads of this (possibly multi-threaded) model can
       // reach here concurrently and all try to propagate the same event to

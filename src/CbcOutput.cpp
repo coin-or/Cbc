@@ -1331,6 +1331,22 @@ int CbcOutputHandler::print()
       return 0;
     }
 
+    // CBC_INTEGERINCREMENT (ext=9): "Objective coefficients multiple of %g".
+    // The objective can then only take values on that grid, so the cutoff
+    // increment is raised to just under it; worth knowing when reading a run
+    // (2.10 printed "Cutoff increment increased from ..." here).
+    if (ext == 9) {
+      FILE *fp = filePointer();
+      if (fp) {
+        const char *p = std::strstr(buf, "Objective coefficients multiple of ");
+        if (p) {
+          fprintf(fp, "  %s (cutoff increment raised to match)\n", p);
+          fflush(fp);
+        }
+      }
+      return 0;
+    }
+
     // CBC_GENERAL_WARNING (ext=3009): strip the raw prefix and print as indented warning.
     if (ext == 3009) {
       FILE *fp = filePointer();
@@ -2766,7 +2782,18 @@ void CbcBnBOutput::onComplete(bool optimal, double bestSol, double bestBound,
   const char *dash = CoinTable::dashSep(utf8_);
   const std::string nowStr = fmtTime(now);
   char detail[512];
-  if (optimal) {
+  // No solution is reported as +1e50, or -1e50 when maximizing (the value is
+  // printed with its true sign).
+  const bool noSolution = std::fabs(bestSol) >= 1e49;
+  if (optimal && noSolution) {
+    // The search finished without an integer solution: the problem is infeasible.
+    std::snprintf(detail, sizeof(detail),
+      "Infeasible%s%sNo integer solution   Nodes: %s   Iters: %s   Time: %ss",
+      reasonPart.c_str(), dash,
+      bnbFmtCount(nodes).c_str(),
+      bnbFmtCount(iters).c_str(),
+      nowStr.c_str());
+  } else if (optimal) {
     std::snprintf(detail, sizeof(detail),
       "Optimal%s%sObj: %s   Bound: %s   Gap: %s   Nodes: %s   Iters: %s   Time: %ss",
       reasonPart.c_str(), dash,
@@ -2776,7 +2803,7 @@ void CbcBnBOutput::onComplete(bool optimal, double bestSol, double bestBound,
       bnbFmtCount(nodes).c_str(),
       bnbFmtCount(iters).c_str(),
       nowStr.c_str());
-  } else if (bestSol >= 1e49) {
+  } else if (noSolution) {
     std::snprintf(detail, sizeof(detail),
       "Stopped%s%sNo integer solution   Bound: %s   Nodes: %s   Iters: %s   Time: %ss",
       reasonPart.c_str(), dash,

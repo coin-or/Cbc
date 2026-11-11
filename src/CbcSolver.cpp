@@ -5786,8 +5786,12 @@ int CbcSolver::postprocess(
     delete saveSolver_;
     saveSolver_ = nullptr;
     delete[] bestSolution;
+    // Status 5 (the search was stopped by an event, a ctrl-c among them) is
+    // set together with secondary status 5, "user event" below, so it needs
+    // the same prefix as status 1; "User ctrl-c" ran into it ("User
+    // ctrl-cuser event").
     std::string statusName[] = {
-      "", "Stopped on ", "Run abandoned", "", "", "User ctrl-c"
+      "", "Stopped on ", "Run abandoned", "", "", "Stopped on "
     };
     std::string minor[] = {
       "Optimal solution found",
@@ -13098,23 +13102,22 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             continue;
           }
           clpParam->readValue(inputQueue, fileName, &message);
+          // An output file: don't ask whether it can be read (it usually
+          // doesn't exist yet), as the other write commands don't.
           CoinParamUtils::processFile(fileName,
-            parameters[CbcParam::DIRECTORY]->dirName(),
-            &canOpen);
-          if (!canOpen) {
-            buffer.str("");
-            buffer << "Unable to open file " << fileName.c_str();
-            printGeneralMessage(model_, buffer.str());
-            continue;
-          }
+            parameters[CbcParam::DIRECTORY]->dirName());
           if (fileName == "") {
             fileName = clpParameters[ClpParam::BASISFILE]->fileName();
           } else {
             clpParameters[ClpParam::BASISFILE]->setFileName(fileName);
           }
           ClpSimplex *model2 = lpSolver;
-          model2->writeBasis(fileName.c_str(), outputFormat > 1,
-            outputFormat - 2);
+          if (model2->writeBasis(fileName.c_str(), outputFormat > 1,
+                outputFormat - 2)) {
+            buffer.str("");
+            buffer << "Unable to write basis file " << fileName.c_str();
+            printGeneralMessage(model_, buffer.str());
+          }
           time2 = CoinCpuTime();
           totalTime += time2 - time1;
           time1 = time2;

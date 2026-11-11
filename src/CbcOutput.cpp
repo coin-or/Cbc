@@ -2520,7 +2520,7 @@ static CoinTable makeBnBTable(bool utf8, bool compact)
 // Keep fractional objectives visible without overflowing the table columns.
 static std::string bnbFmtObj(double v, bool utf8)
 {
-  if (v >= 1e49)
+  if (std::fabs(v) >= 1e49) // no solution, or no bound
     return utf8 ? "\xe2\x80\x94" : "-";
   char buf[32];
   const double a = std::fabs(v);

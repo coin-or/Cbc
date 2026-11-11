@@ -7,6 +7,9 @@
 #include "CbcEventHandler.hpp"
 #include "CbcTree.hpp"
 #include "Cbc_C_Interface.h"
+#include "CglCutGenerator.hpp"
+#include "CglGomory.hpp"
+#include "CglKnapsackCover.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinPackedVector.hpp"
 #include "OsiClpSolverInterface.hpp"
@@ -145,7 +148,9 @@ private:
   int stopMode_;
 };
 
-int run(int threads, double sense, int limit, double frequency, int stopMode = 0, int threadMode = 0)
+// An 18-binary multidimensional knapsack, with its optimum (in minimization
+// sense) found by enumeration.
+void makeKnapsack(double sense, OsiClpSolverInterface &solver, double &optimum)
 {
   const int columns = 18, rows = 6;
   CoinPackedMatrix matrix(false, 0, 0);
@@ -165,7 +170,7 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
     matrix.appendRow(row);
     rowUpper[i] = std::floor(total * 0.43);
   }
-  double optimum = 0.0;
+  optimum = 0.0;
   for (unsigned int mask = 0; mask < (1U << columns); ++mask) {
     double cost = 0.0;
     bool feasible = true;
@@ -185,12 +190,18 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
       optimum = std::min(optimum, cost);
     }
   }
-  OsiClpSolverInterface solver;
   solver.loadProblem(matrix, lower.data(), upper.data(), objective.data(), rowLower.data(), rowUpper.data());
   solver.setObjSense(sense);
   for (int j = 0; j < columns; ++j)
     solver.setInteger(j);
   solver.messageHandler()->setLogLevel(0);
+}
+
+int run(int threads, double sense, int limit, double frequency, int stopMode = 0, int threadMode = 0)
+{
+  OsiClpSolverInterface solver;
+  double optimum;
+  makeKnapsack(sense, solver, optimum);
   solver.initialSolve();
   const double rootBound = sense * solver.getObjValue();
   CbcModel model(solver);
@@ -231,6 +242,59 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
 }
 }
 
+// Sets the model's time limit to zero when called in root cut pass `pass_`
+// (0-based), so that the resolve after that pass's cuts is cut short.
+class TimeLimitAtRootPass : public CglCutGenerator {
+public:
+  TimeLimitAtRootPass(CbcModel *model, int pass)
+    : model_(model)
+    , pass_(pass)
+  {
+  }
+  CglCutGenerator *clone() const override
+  {
+    return new TimeLimitAtRootPass(*this);
+  }
+  void generateCuts(const OsiSolverInterface &, OsiCuts &,
+    const CglTreeInfo info = CglTreeInfo()) override
+  {
+    if (!info.inTree && info.pass == pass_)
+      model_->setMaximumSeconds(0.0);
+  }
+
+private:
+  CbcModel *model_;
+  int pass_;
+};
+
+// When the time limit stops a resolve in the root cut loop, the reported bound
+// must come from the last LP that was solved, not from the unfinished one.
+int runRootTimeLimit(double sense, int pass)
+{
+  OsiClpSolverInterface solver;
+  double optimum;
+  makeKnapsack(sense, solver, optimum);
+  solver.initialSolve();
+  const double rootBound = sense * solver.getObjValue();
+  CbcModel model(solver);
+  model.setLogLevel(0);
+  CglGomory gomory;
+  CglKnapsackCover knapsack;
+  model.addCutGenerator(&gomory, -99, "Gomory");
+  model.addCutGenerator(&knapsack, -99, "KnapsackCover");
+  TimeLimitAtRootPass limit(&model, pass);
+  model.addCutGenerator(&limit, -99, "TimeLimitAtRootPass");
+  model.branchAndBound();
+  const double bound = sense * model.getBestPossibleObjValue();
+  // rootObjectiveAfterCuts() is in minimization sense already.
+  const double afterCuts = model.rootObjectiveAfterCuts();
+  const bool passed = model.isSecondsLimitReached() && bound <= optimum + 1.0e-7
+    && bound >= rootBound - 1.0e-7 && afterCuts <= optimum + 1.0e-7;
+  printf("  %s: root time limit sense=%.0f pass=%d nodes=%d bound=%.10g afterCuts=%.10g root=%.10g optimum=%.10g\n",
+    passed ? "ok" : "FAIL", sense, pass, model.getNodeCount(), bound, afterCuts, rootBound, optimum);
+  return !passed;
+}
+
 int main(int argc, char **argv)
 {
   if (argc > 2) {
@@ -247,6 +311,8 @@ int main(int argc, char **argv)
       ++failures;
   }
   for (double sense : { 1.0, -1.0 }) {
+    for (int pass : { 0, 1 })
+      failures += runRootTimeLimit(sense, pass);
     for (int threads : { 0, 2 }) {
       if (threads && !CbcModel::haveMultiThreadSupport())
         continue;

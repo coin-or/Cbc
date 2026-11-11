@@ -1988,6 +1988,16 @@ int *get_All_trueseq;
 // proven infeasibility, so callers don't misreport "infeasible" for what
 // was really just running out of time.
 static bool resolveHitTimeLimit(const OsiSolverInterface *solver);
+// True when the solver's objective value is not a bound because the time
+// limit stopped the LP before it was solved (timeUp is
+// maximumSecondsReached()). getObjValue() then belongs to whatever point the
+// LP had reached, often its starting point, and can lie above the optimum.
+static bool lpStoppedOnTimeLimit(const OsiSolverInterface *solver, bool timeUp)
+{
+  return !solver->isProvenOptimal() && !solver->isProvenPrimalInfeasible()
+    && !solver->isProvenDualInfeasible()
+    && (timeUp || resolveHitTimeLimit(solver));
+}
 void CbcModel::branchAndBound(int doStatistics)
 
 {
@@ -2823,6 +2833,8 @@ void CbcModel::branchAndBound(int doStatistics)
   // Save objective (just so user can access it)
   originalContinuousObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
   bestPossibleObjective_ = originalContinuousObjective_;
+  if (lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    bestPossibleObjective_ = -COIN_DBL_MAX; // no bound yet
   sumChangeObjective1_ = 0.0;
   sumChangeObjective2_ = 0.0;
   /*
@@ -3413,7 +3425,8 @@ void CbcModel::branchAndBound(int doStatistics)
     eventHappened_ = true; // stop as fast as possible
   stoppedOnGap_ = false;
   // See if can stop on gap
-  bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
+  if (!lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
   if (canStopOnGap()) {
     if (bestPossibleObjective_ < getCutoff())
       stoppedOnGap_ = true;
@@ -4136,8 +4149,10 @@ void CbcModel::branchAndBound(int doStatistics)
       solver_->initialSolve();
     }
   }
-  // See if can stop on gap
-  bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
+  // See if can stop on gap. If the time limit cut the last root resolve
+  // short, keep the bound solveWithCuts recorded from the last LP it solved.
+  if (!lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
   if (canStopOnGap()) {
     if (bestPossibleObjective_ < getCutoff())
       stoppedOnGap_ = true;
@@ -4908,6 +4923,8 @@ void CbcModel::branchAndBound(int doStatistics)
       Continuous data to be used later
     */
   continuousObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
+  if (lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    continuousObjective_ = bestPossibleObjective_;
   continuousInfeasibilities_ = 0;
   if (newNode) {
     continuousObjective_ = newNode->objectiveValue();
@@ -6625,6 +6642,8 @@ void CbcModel::initialSolve()
   secondaryStatus_ = -1;
   originalContinuousObjective_ = solver_->getObjValue() * solver_->getObjSense();
   bestPossibleObjective_ = originalContinuousObjective_;
+  if (lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    bestPossibleObjective_ = -COIN_DBL_MAX; // the LP wasn't solved: no bound
   if (solver_->isProvenDualInfeasible())
     originalContinuousObjective_ = -COIN_DBL_MAX;
   delete[] continuousSolution_;
@@ -9658,6 +9677,9 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 
   double direction = solver_->getObjSenseInCbc();
   double startObjective = solver_->getObjValue() * direction;
+  // At the root, the objective of the last LP solved to optimality: a valid
+  // bound if the time limit stops a later resolve.
+  double lastSolvedObjective = solver_->isProvenOptimal() ? startObjective : -COIN_DBL_MAX;
 
   currentPassNumber_ = 0;
   // Really primalIntegerTolerance; relates to an illposed problem with various
@@ -10413,6 +10435,8 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         // within the same run.
         double resolveStart = CoinCpuTime();
         feasible = (resolve(node ? node->nodeInfo() : nullptr, 2) != 0);
+        if (feasible && solver_->isProvenOptimal())
+          lastSolvedObjective = solver_->getObjValue() * direction;
         lastCutRoundResolveTime_ = CoinCpuTime() - resolveStart;
         if (!node && getenv("CBC_LOG_ROOT_RESOLVE_TIME")) {
           fprintf(stderr, "CBC_ROOT_RESOLVE_TIME pass=%d rows=%d cols=%d resolveTime=%.6f\n",
@@ -10809,6 +10833,9 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
             << ", sol value : " << solver_->getObjValue() << std::endl;
 #endif
   // End of cut generation loop.
+  if (!node && lastSolvedObjective > -COIN_DBL_MAX
+    && lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    bestPossibleObjective_ = std::max(bestPossibleObjective_, lastSolvedObjective);
   tuneCutGeneratorFrequency(cuts, fullScan, direction, startObjective,
     numberRowsAtStart, numberColumns, numberElementsAtStart, feasible,
     onOptimalPath);
@@ -11001,6 +11028,10 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
            update matrix and leave all in */
     int willBeCutsInTree = 0;
     double thisObjective = solver_->getObjValue() * direction;
+    // A resolve cut short by the time limit has no meaningful objective; report
+    // the bound solveWithCuts kept from the last LP it solved.
+    if (!numberNodes_ && lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+      thisObjective = bestPossibleObjective_;
     // get sizes
     int numberRowsAdded = solver_->getNumRows() - numberRowsAtStart;
     CoinBigIndex numberElementsAdded = solver_->getNumElements() - numberElementsAtStart;

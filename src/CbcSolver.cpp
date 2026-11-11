@@ -5842,9 +5842,15 @@ int CbcSolver::postprocess(
     if (iStat2 >= 2 && iStat2 <= 6) {
       bool minimizing = babModel_->solver()->getObjSense() > 0.0;
       std::string tmp = minimizing ? "Lower" : "Upper";
-      buffer << tmp << " bound:                    "
-             << babModel_->getBestPossibleObjValue() << std::endl;
-      if (babModel_->bestSolution()) {
+      const double bound = babModel_->getBestPossibleObjValue();
+      // No bound is known when the time limit stopped the first LP.
+      const bool haveBound = fabs(bound) < 1.0e50;
+      buffer << tmp << " bound:                    ";
+      if (haveBound)
+        buffer << bound << std::endl;
+      else
+        buffer << (minimizing ? "-inf" : "inf") << std::endl;
+      if (babModel_->bestSolution() && haveBound) {
         buffer << "Gap:                            "
                << (babModel_->getObjValue() - babModel_->getBestPossibleObjValue()) / fabs(babModel_->getBestPossibleObjValue()) << std::endl;
       }

@@ -11403,6 +11403,12 @@ void CbcSolver::configureCutGenerators(CbcModel &babModel,
 //    6 after a user called heuristic phase
 // ###########################################################################
 
+// The MIPLIB 3 / sample-problem test behind -unitTest (unitTestClp.cpp)
+int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
+  int testSwitch, const double *stuff, std::deque< std::string > inputQueue,
+  int callBack(CbcModel *currentSolver, int whereFrom),
+  CbcParameters &parameters);
+
 int CbcSolver::run(std::deque< std::string > inputQueue,
   int callBack(CbcModel *currentSolver, int whereFrom),
   ampl_info *info)
@@ -14561,6 +14567,23 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           while (!inputQueue.empty())
             inputQueue.pop_front();
           break;
+        case CbcParam::UNITTEST: {
+          int returnCode = -1;
+          std::string dirMiplib = parameters[CbcParam::DIRMIPLIB]->dirName();
+          std::string dirSample = parameters[CbcParam::DIRSAMPLE]->dirName();
+          if (dirMiplib != "") {
+            returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL,
+              saveInputQueue, callBack, parameters);
+          } else if (dirSample != "") {
+            returnCode = CbcClpUnitTest(model_, dirSample, -2, NULL,
+              saveInputQueue, callBack, parameters);
+          } else {
+            printGeneralMessage(model_,
+              "No directory for -unitTest: set one with -dirMiplib or -dirSample");
+          }
+          babModel_ = NULL;
+          return returnCode;
+        }
         case CbcParam::USERCBC: {
 #ifdef USER_HAS_FAKE_CBC
           // Replace the sample code by whatever you want

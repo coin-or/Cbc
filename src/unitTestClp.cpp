@@ -112,6 +112,9 @@ bool CbcTestMpsFile(std::string &fname)
        0: solve nothing
        k: execute sets j:k, where j is determined by the value of stuff[6]
   The last parameter of PUSH_MPS specifies the test set membership.
+  -dirMiplib <dir>++levelA-B,C chooses the sets. In a MIPLIB 2017 benchmark
+  directory the sets are the levels of the MIPLIB 2017 table below, and the
+  default is levels 1 and 2.
 
   For -miplib, -extra2 sets testSwitch, -extra3 sets stuff[6]. The command
     cbc -extra2 -2 -miplib
@@ -149,10 +152,12 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
   size_t found = dirMiplib.find("++level");
   size_t length = dirMiplib.size();
   int hiSet = 0;
+  bool levelGiven = false;
   if (found<length) {
     // yes
     doThisSet[0]=0; doThisSet[1]=0;
     oldStyle = false;
+    levelGiven = true;
     std::string sub = dirMiplib.substr(found+7,length-(found+8));
     dirMiplib = dirMiplib.substr(0,found+1);
     dirMiplib[found] = dirMiplibIn[length-1];
@@ -225,6 +230,39 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
   // Do an existence check.
   std::string test1 = dirMiplib + "p0033";
   bool doTest = CbcTestMpsFile(test1);
+  /*
+    The MIPLIB 2017 benchmark set (miplib.zib.de, .mps.gz files): recognised
+    by the directory's name or by one of its instances that isn't in MIPLIB 3
+    or 2010. It has its own levels (see the table below); without ++level,
+    levels 1 and 2 are done.
+  */
+  bool miplib2017 = false;
+  if (!doTest && testSwitch < 1000000) {
+    std::string lower = dirMiplib;
+    for (size_t i = 0; i < lower.size(); i++)
+      lower[i] = static_cast<char>(tolower(lower[i]));
+    miplib2017 = lower.find("miplib2017") != std::string::npos;
+    const char *only2017[] = {"neos-3083819-nubu", "neos-2987310-joes",
+                              "neos-5104907-jarama"};
+    for (int i = 0; i < 3 && !miplib2017; i++) {
+      std::string name = dirMiplib + only2017[i];
+      miplib2017 = CbcTestMpsFile(name);
+    }
+    if (miplib2017) {
+      doTest = true;
+      if (!levelGiven) {
+        doThisSet[0] = 0;
+        doThisSet[1] = 1;
+        doThisSet[2] = 1;
+      }
+      std::cout << "MIPLIB 2017 benchmark set: testing levels";
+      for (int i = 0; i < 30; i++) {
+        if (doThisSet[i])
+          std::cout << " " << i;
+      }
+      std::cout << std::endl;
+    }
+  }
   if (!doTest) {
     if (!strstr(dirMiplib.c_str(),"miplib"))
       testSwitch = 1000001; // user test set
@@ -290,6 +328,266 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     PUSH_MPS("p0033", 16, 33, 3089, 2520.57, 0, false);
     PUSH_MPS("p0201", 133, 201, 7615, 6875.0, 0, false);
     // PUSH_MPS("flugpl", 18, 18, 1201500, 1167185.7, 0, false);
+  } else if (miplib2017) {
+    /*
+      The 239 MIPLIB 2017 benchmark instances with a known optimum or proven
+      infeasible (supportcase22, still open, is left out). Rows and columns
+      are as read, without the objective. The continuous objective is the LP
+      relaxation as read (0 where it wasn't recorded); the test doesn't use it.
+      Infeasible instances have 1.0e50.
+
+      Levels, from one-thread, one-hour runs with default settings (Cbc master
+      of November 2026 and Cbc 2.10, on a cluster node; times are master's):
+        1  master solves in under 10 s
+        2  10-30 s (1 and 2, the default, take about 3 minutes)
+        3  30-120 s
+        4  120-600 s
+        5  600-3600 s, or only 2.10 solves within the hour
+        6  neither solves within the hour
+        7  infeasible
+      e.g. -dirMiplib ~/miplib2017++level3-4 -unitTest
+    */
+    // BEGIN MIPLIB 2017 TABLE
+    PUSH_MPS("30n20b8", 576, 18380, 302.0, 1.56641, 5, false);
+    PUSH_MPS("50v-10", 233, 2013, 3311.1799841, 2879.07, 6, false);
+    PUSH_MPS("academictimetablesmall", 23294, 28926, 0.0, 0, 6, false);
+    PUSH_MPS("air05", 426, 7195, 26374.0, 25877.6, 2, false);
+    PUSH_MPS("app1-1", 4926, 2480, -3.0, -22.8244, 1, false);
+    PUSH_MPS("app1-2", 53467, 26871, -41.0, -264.602, 6, false);
+    PUSH_MPS("assign1-5-8", 161, 156, 211.999999999998, 183.363, 6, false);
+    PUSH_MPS("atlanta-ip", 21732, 48738, 90.009878614, 81.2432, 6, false);
+    PUSH_MPS("b1c1s1", 3904, 3872, 24544.25, 2866.86, 6, false);
+    PUSH_MPS("bab2", 17245, 147912, -357544.3115, -432166, 6, false);
+    PUSH_MPS("bab6", 29904, 114240, -284248.2307000001, -321641, 6, false);
+    PUSH_MPS("beasleyC3", 1750, 2500, 753.9999999999128, 40.4268, 6, false);
+    PUSH_MPS("binkar10_1", 1026, 2298, 6742.1998835, 6637.19, 5, false);
+    PUSH_MPS("blp-ar98", 1128, 16021, 6205.2147104, 5891.23, 6, false);
+    PUSH_MPS("blp-ic98", 717, 13640, 4491.44758395, 4331.17, 6, false);
+    PUSH_MPS("bnatt400", 5614, 3600, 1.0, 0, 6, false);
+    PUSH_MPS("bnatt500", 7029, 4500, 1.0e50, 0, 7, false);
+    PUSH_MPS("bppc4-08", 111, 1456, 53.0, 51.59, 6, false);
+    PUSH_MPS("brazil3", 14646, 23968, 24.0, 1.99999, 6, false);
+    PUSH_MPS("buildingenergy", 277594, 154978, 33283.853236, 33246.2, 6, false);
+    PUSH_MPS("cbs-cta", 10112, 24793, 0.0, 0, 2, false);
+    PUSH_MPS("chromaticindex1024-7", 67583, 73728, 4.0, 3, 6, false);
+    PUSH_MPS("chromaticindex512-7", 33791, 36864, 4.0, 3, 6, false);
+    PUSH_MPS("cmflsp50-24-8-8", 3520, 16392, 55789389.886, 5.46331e+07, 6, false);
+    PUSH_MPS("CMS750_4", 16381, 11697, 252.0, 250, 6, false);
+    PUSH_MPS("co-100", 2187, 48417, 2639942.06, 917102, 6, false);
+    PUSH_MPS("cod105", 1024, 1024, -12.0, -18.2857, 6, false);
+    PUSH_MPS("comp07-2idx", 21235, 17264, 6.0, 0, 5, false);
+    PUSH_MPS("comp21-2idx", 14038, 10863, 74.0, 0, 6, false);
+    PUSH_MPS("cost266-UUE", 1446, 4161, 25148940.55999998, 2.01615e+07, 6, false);
+    PUSH_MPS("cryptanalysiskb128n5obj14", 98021, 48950, 1.0e50, 0, 7, false);
+    PUSH_MPS("cryptanalysiskb128n5obj16", 98021, 48950, 0.0, 0, 6, false);
+    PUSH_MPS("csched007", 351, 1758, 350.9999999999955, 269.252, 6, false);
+    PUSH_MPS("csched008", 351, 1536, 173.0, 171, 6, false);
+    PUSH_MPS("cvs16r128-89", 4633, 3472, -97.0, -128, 6, false);
+    PUSH_MPS("dano3_3", 3202, 13873, 576.34463303, 576.232, 3, false);
+    PUSH_MPS("dano3_5", 3202, 13873, 576.9249159565619, 576.232, 4, false);
+    PUSH_MPS("decomp2", 10765, 14387, -160.0, -160, 1, false);
+    PUSH_MPS("drayage-100-23", 4630, 11090, 103333.87407, 11714.1, 1, false);
+    PUSH_MPS("drayage-25-23", 4630, 11090, 101282.647018, 11714.1, 6, false);
+    PUSH_MPS("dws008-01", 6064, 11096, 37412.60458794508, 584.5, 6, false);
+    PUSH_MPS("eil33-2", 32, 4516, 934.007915999999, 811.279, 3, false);
+    PUSH_MPS("eilA101-2", 100, 65832, 880.9201079999999, 803.374, 6, false);
+    PUSH_MPS("enlight_hard", 100, 200, 37.0, 0, 3, false);
+    PUSH_MPS("ex10", 69608, 17680, 100.0, 100, 6, false);
+    PUSH_MPS("ex9", 40962, 10404, 81.0, 81, 6, false);
+    PUSH_MPS("exp-1-500-5-5", 550, 990, 65887.0, 28427, 6, false);
+    PUSH_MPS("fast0507", 507, 63009, 174.0, 172.146, 4, false);
+    PUSH_MPS("fastxgemm-n2r6s0t2", 5998, 784, 230.0, 27, 6, false);
+    PUSH_MPS("fhnw-binpack4-4", 620, 520, 1.0e50, 0, 7, false);
+    PUSH_MPS("fhnw-binpack4-48", 4480, 3710, 0.0, 0, 6, false);
+    PUSH_MPS("fiball", 3707, 34219, 138.0, 137.069, 3, false);
+    PUSH_MPS("gen-ip002", 24, 41, -4783.733392, -4840.54, 4, false);
+    PUSH_MPS("gen-ip054", 27, 30, 6840.96564179, 6765.21, 4, false);
+    PUSH_MPS("germanrr", 10779, 10813, 47095869.649, 4.59801e+07, 6, false);
+    PUSH_MPS("gfd-schedulen180f7d50m30k18", 457985, 227535, 1.0, 1, 6, false);
+    PUSH_MPS("glass-sc", 6119, 214, 23.0, 14.0803, 6, false);
+    PUSH_MPS("glass4", 396, 322, 1200012599.972384, 8.00002e+08, 6, false);
+    PUSH_MPS("gmu-35-40", 424, 1205, -2406733.3688, -2.40694e+06, 6, false);
+    PUSH_MPS("gmu-35-50", 435, 1919, -2607958.33, -2.60807e+06, 6, false);
+    PUSH_MPS("graph20-20-1rand", 5587, 2183, -9.0, -37, 6, false);
+    PUSH_MPS("graphdraw-domain", 865, 254, 19685.99997550038, 12672, 6, false);
+    PUSH_MPS("h80x6320d", 6558, 12640, 6382.099048245999, 5325.16, 6, false);
+    PUSH_MPS("highschool1-aigio", 92568, 320404, 0.0, 2.39234e-13, 6, false);
+    PUSH_MPS("hypothyroid-k1", 5195, 2602, -2851.0, -2902.85, 3, false);
+    PUSH_MPS("ic97_potential", 1046, 728, 3941.99993090225, 3868, 6, false);
+    PUSH_MPS("icir97_tension", 1203, 2494, 6375.0, 6302, 6, false);
+    PUSH_MPS("irish-electricity", 104259, 61728, 3723497.591396, 2.45479e+06, 6, false);
+    PUSH_MPS("irp", 39, 20315, 12159.49283539698, 12123.5, 2, false);
+    PUSH_MPS("istanbul-no-cutoff", 20346, 5282, 204.08170701, 51.11, 5, false);
+    PUSH_MPS("k1mushroom", 16419, 8211, -3288.0, -4165.06, 6, false);
+    PUSH_MPS("lectsched-5-obj", 38884, 21805, 24.0, 0, 6, false);
+    PUSH_MPS("leo1", 593, 6731, 404227536.16, 3.88573e+08, 6, false);
+    PUSH_MPS("leo2", 593, 11100, 404077441.12, 3.86421e+08, 6, false);
+    PUSH_MPS("lotsize", 1920, 2985, 1480195.0, 348385, 6, false);
+    PUSH_MPS("mad", 51, 220, 0.0268, 0, 6, false);
+    PUSH_MPS("map10", 328818, 164547, -495.0, -602.176, 5, false);
+    PUSH_MPS("map16715-04", 328818, 164547, -111.0, -296.268, 6, false);
+    PUSH_MPS("markshare2", 7, 74, 1.0, 0, 6, false);
+    PUSH_MPS("markshare_4_0", 4, 34, 1.0, 0, 3, false);
+    PUSH_MPS("mas74", 13, 151, 11801.18572, 10482.8, 4, false);
+    PUSH_MPS("mas76", 12, 151, 40005.05398999999, 38893.9, 3, false);
+    PUSH_MPS("mc11", 1920, 3040, 11688.99999999966, 608.844, 6, false);
+    PUSH_MPS("mcsched", 2107, 1747, 211913.0, 193775, 5, false);
+    PUSH_MPS("mik-250-20-75-4", 195, 270, -52301.0, -61651.2, 3, false);
+    PUSH_MPS("milo-v12-6-r2-40-1", 5628, 2688, 326481.14282799, 205532, 6, false);
+    PUSH_MPS("momentum1", 42680, 5174, 109143.4935, 72793.3, 6, false);
+    PUSH_MPS("mushroom-best", 8580, 8468, 0.0553337612, 1.26829e-05, 6, false);
+    PUSH_MPS("mzzv11", 9499, 10240, -21718.0, -22945.2, 4, false);
+    PUSH_MPS("mzzv42z", 10460, 11717, -20540.0, -21623, 3, false);
+    PUSH_MPS("n2seq36q", 2565, 22480, 52200.0, 52000, 6, false);
+    PUSH_MPS("n3div36", 4484, 22120, 130800.0, 114333, 6, false);
+    PUSH_MPS("n5-3", 1062, 2550, 8104.999999993999, 2883.82, 6, false);
+    PUSH_MPS("neos-1122047", 57791, 5100, 161.0, 161, 1, false);
+    PUSH_MPS("neos-1171448", 13206, 4914, -309.0, -309, 3, false);
+    PUSH_MPS("neos-1171737", 4179, 2340, -195.0, -195, 3, false);
+    PUSH_MPS("neos-1354092", 3135, 13702, 46.0, 13.2857, 6, false);
+    PUSH_MPS("neos-1445765", 2147, 20617, -17783.0, -24699.2, 6, false);
+    PUSH_MPS("neos-1456979", 6770, 4605, 176.0, 154, 6, false);
+    PUSH_MPS("neos-1582420", 10180, 10100, 90.99999999999996, 87.5761, 2, false);
+    PUSH_MPS("neos-2075418-temuka", 349602, 122304, 1.0e50, 0, 7, false);
+    PUSH_MPS("neos-2657525-crna", 342, 524, 1.810748, 0, 6, false);
+    PUSH_MPS("neos-2746589-doon", 31530, 50936, 2008.199999999999, 1985.75, 6, false);
+    PUSH_MPS("neos-2978193-inde", 396, 20800, -2.38806169, -2.41852, 6, false);
+    PUSH_MPS("neos-2987310-joes", 29015, 27837, -607702988.3, -6.10797e+08, 2, false);
+    PUSH_MPS("neos-3004026-krka", 12545, 17030, 0.0, 0, 6, false);
+    PUSH_MPS("neos-3024952-loue", 3705, 3255, 26756.0, 22882, 6, false);
+    PUSH_MPS("neos-3046615-murg", 498, 274, 1600.0, 192, 6, false);
+    PUSH_MPS("neos-3083819-nubu", 4725, 8644, 6307996.0, 6.29058e+06, 1, false);
+    PUSH_MPS("neos-3216931-puriri", 5989, 3555, 71320.0, 58817.4, 6, false);
+    PUSH_MPS("neos-3381206-awhea", 479, 2375, 453.0, 415.24, 5, false);
+    PUSH_MPS("neos-3402294-bobin", 591076, 2904, 0.06724999999999949, 0, 4, false);
+    PUSH_MPS("neos-3402454-bohle", 2897380, 2904, 1.0e50, 0, 7, false);
+    PUSH_MPS("neos-3555904-turama", 146493, 37461, -34.7, -41.45, 6, false);
+    PUSH_MPS("neos-3627168-kasai", 1655, 1462, 988585.6199999998, 945808, 6, false);
+    PUSH_MPS("neos-3656078-kumeu", 17656, 14870, -13172.2, -18774.7, 6, false);
+    PUSH_MPS("neos-3754480-nidda", 402, 253, 12941.73838561778, -1.21692e+06, 6, false);
+    PUSH_MPS("neos-3988577-wolgan", 44662, 25870, 1.0e50, 119, 7, false);
+    PUSH_MPS("neos-4300652-rahue", 76992, 33003, 2.1416, 0, 6, false);
+    PUSH_MPS("neos-4338804-snowy", 1701, 1344, 1471.0, 1447, 6, false);
+    PUSH_MPS("neos-4387871-tavua", 4554, 4004, 33.384729927, 10.1438, 6, false);
+    PUSH_MPS("neos-4413714-turia", 2303, 190402, 45.3701670199998, 43.4747, 3, false);
+    PUSH_MPS("neos-4532248-waihi", 167322, 86842, 61.59999999999999, 0, 6, false);
+    PUSH_MPS("neos-4647030-tutaki", 8382, 12600, 27265.70599999996, 26911.6, 6, false);
+    PUSH_MPS("neos-4722843-widden", 113555, 77723, 25009.662227, -1603.54, 6, false);
+    PUSH_MPS("neos-4738912-atrato", 1947, 6216, 283627956.595, 6.51435e+07, 5, false);
+    PUSH_MPS("neos-4763324-toguru", 106954, 53593, 1613.03884585, 1120.99, 6, false);
+    PUSH_MPS("neos-4954672-berkel", 1848, 1533, 2612710.0, 1.15023e+06, 6, false);
+    PUSH_MPS("neos-5049753-cuanza", 322248, 242736, 561.9999971689, 0, 6, false);
+    PUSH_MPS("neos-5052403-cygnet", 38268, 32868, 182.0, 179.5, 6, false);
+    PUSH_MPS("neos-5093327-huahum", 51840, 40640, 6259.999997125895, 3934, 6, false);
+    PUSH_MPS("neos-5104907-jarama", 489818, 345856, 935.0, 0, 6, false);
+    PUSH_MPS("neos-5107597-kakapo", 6498, 3114, 3644.99999999952, 0, 6, false);
+    PUSH_MPS("neos-5114902-kasavu", 961170, 710164, 655.0, 0, 6, false);
+    PUSH_MPS("neos-5188808-nattai", 29452, 14544, 0.110283622999984, 0, 6, false);
+    PUSH_MPS("neos-5195221-niemur", 42256, 14546, 0.0038354326, 0, 6, false);
+    PUSH_MPS("neos-631710", 169576, 167056, 203.0, 188.25, 6, false);
+    PUSH_MPS("neos-662469", 1085, 18235, 184379.9999999999, 184341, 6, false);
+    PUSH_MPS("neos-787933", 1897, 236376, 30.0, 3, 6, false);
+    PUSH_MPS("neos-827175", 14187, 32504, 112.00152, 112.002, 1, false);
+    PUSH_MPS("neos-848589", 1484, 550539, 2351.40309999697, 0, 6, false);
+    PUSH_MPS("neos-860300", 850, 1385, 3200.999999999998, 1666.07, 3, false);
+    PUSH_MPS("neos-873061", 93360, 175288, 113.6562385063, 5.52781, 6, false);
+    PUSH_MPS("neos-911970", 107, 888, 54.76, 23.26, 6, false);
+    PUSH_MPS("neos-933966", 12047, 31762, 318.0, 318, 4, false);
+    PUSH_MPS("neos-950242", 34224, 5760, 4.0, 1, 5, false);
+    PUSH_MPS("neos-957323", 3757, 57756, -237.7566815, -237.758, 3, false);
+    PUSH_MPS("neos-960392", 4744, 59376, -238.0, -238, 3, false);
+    PUSH_MPS("neos17", 486, 535, 0.1500025774, 0.000681499, 3, false);
+    PUSH_MPS("neos5", 63, 63, 15.0, 13, 5, false);
+    PUSH_MPS("neos8", 46324, 23228, -3719.0, -3773.51, 3, false);
+    PUSH_MPS("neos859080", 164, 160, 1.0e50, 1, 7, false);
+    PUSH_MPS("net12", 14021, 14115, 214.0, 17.2495, 5, false);
+    PUSH_MPS("netdiversion", 119589, 129180, 242.0, 230.8, 6, false);
+    PUSH_MPS("nexp-150-20-8-5", 4620, 20115, 231.0, 18.2268, 6, false);
+    PUSH_MPS("ns1116954", 131991, 12648, 0.0, 0, 6, false);
+    PUSH_MPS("ns1208400", 4289, 2883, 2.0, 0, 5, false);
+    PUSH_MPS("ns1644855", 40698, 30200, -1524.33333333333, -1524.33, 5, false);
+    PUSH_MPS("ns1760995", 615388, 17956, -549.21438505, -1379.17, 6, false);
+    PUSH_MPS("ns1830653", 2932, 1629, 20622.0, 6153, 6, false);
+    PUSH_MPS("ns1952667", 41, 13264, 0.0, 0, 6, false);
+    PUSH_MPS("nu25-pr12", 2313, 5868, 53904.99999999999, 52757.5, 2, false);
+    PUSH_MPS("nursesched-medium-hint03", 14062, 34248, 115.0, 33.4685, 6, false);
+    PUSH_MPS("nursesched-sprint02", 3522, 10250, 57.99999999999999, 54.4167, 3, false);
+    PUSH_MPS("nw04", 36, 87482, 16862.0, 16310.7, 1, false);
+    PUSH_MPS("opm2-z10-s4", 160633, 6250, -33269.0, -46921.5, 6, false);
+    PUSH_MPS("p200x1188c", 1388, 2376, 15078.0, 5678.61, 5, false);
+    PUSH_MPS("peg-solitaire-a3", 4587, 4552, 1.0, 1, 6, false);
+    PUSH_MPS("pg", 125, 2700, -8674.34260712, -11824.7, 3, false);
+    PUSH_MPS("pg5_34", 225, 2600, -14339.35345, -16646.6, 5, false);
+    PUSH_MPS("physiciansched3-3", 266227, 79555, 2623271.326667, 0, 6, false);
+    PUSH_MPS("physiciansched6-2", 168336, 111827, 49324.0, 43012.5, 2, false);
+    PUSH_MPS("piperout-08", 14589, 10399, 125054.9999999999, 99128.9, 4, false);
+    PUSH_MPS("piperout-27", 18442, 11659, 8123.999999999973, 6970, 3, false);
+    PUSH_MPS("pk1", 45, 86, 11.0, 0, 3, false);
+    PUSH_MPS("proteindesign121hz512p9", 301, 159145, 1473.0, 1423.9, 6, false);
+    PUSH_MPS("proteindesign122trx11p8", 254, 127326, 1747.0, 1720.46, 6, false);
+    PUSH_MPS("qap10", 1820, 4150, 339.9999999983871, 332.566, 3, false);
+    PUSH_MPS("radiationm18-12-05", 40935, 40623, 17566.0, 17554.5, 6, false);
+    PUSH_MPS("radiationm40-10-02", 173603, 172013, 155328.0, 155307, 6, false);
+    PUSH_MPS("rail01", 46843, 117527, -70.5699643, -92.0873, 6, false);
+    PUSH_MPS("rail02", 95791, 270869, -200.4499077, -206.61, 6, false);
+    PUSH_MPS("rail507", 509, 63019, 174.0, 172.146, 5, false);
+    PUSH_MPS("ran14x18-disj-8", 447, 504, 3712.0, 3444.42, 6, false);
+    PUSH_MPS("rd-rplusc-21", 125899, 622, 165395.275295, 100, 6, false);
+    PUSH_MPS("reblock115", 4735, 1150, -36800603.2332, -3.9366e+07, 6, false);
+    PUSH_MPS("rmatr100-p10", 7260, 7359, 423.0, 360.593, 3, false);
+    PUSH_MPS("rmatr200-p5", 37617, 37816, 4521.0, 3283.65, 6, false);
+    PUSH_MPS("rocI-4-11", 10883, 6839, -6020203.0, -1.11111e+07, 6, false);
+    PUSH_MPS("rocII-5-11", 26897, 11523, -6.675504731538, -11.9497, 6, false);
+    PUSH_MPS("rococoB10-011000", 1667, 4456, 19449.0, 8350.2, 6, false);
+    PUSH_MPS("rococoC10-001000", 1293, 3117, 11460.0, 7515.27, 5, false);
+    PUSH_MPS("roi2alpha3n4", 1251, 6816, -63.20849503, -83.881, 5, false);
+    PUSH_MPS("roi5alpha10n8", 4665, 106150, -52.322274351, -91.9164, 6, false);
+    PUSH_MPS("roll3000", 2295, 1166, 12889.999992, 11097.1, 5, false);
+    PUSH_MPS("s100", 14733, 364417, -0.1697235270583, -0.171087, 6, false);
+    PUSH_MPS("s250r10", 10962, 273142, -0.1717804834232, -0.172677, 5, false);
+    PUSH_MPS("satellites2-40", 20916, 35378, -19.0, -30, 6, false);
+    PUSH_MPS("satellites2-60-fs", 16516, 35378, -19.0000000001, -30, 6, false);
+    PUSH_MPS("savsched1", 295989, 328575, 3217.7, 217.404, 6, false);
+    PUSH_MPS("sct2", 2151, 5885, -230.9891623, -231.117, 6, false);
+    PUSH_MPS("seymour", 4944, 1372, 423.0, 403.846, 6, false);
+    PUSH_MPS("seymour1", 4944, 1372, 410.76370139, 403.846, 4, false);
+    PUSH_MPS("sing326", 50781, 55156, 7753674.85376, 7.71767e+06, 6, false);
+    PUSH_MPS("sing44", 54745, 59708, 8128831.1772, 8.10251e+06, 6, false);
+    PUSH_MPS("snp-02-004-104", 126512, 228350, 586803238.6567289, 5.48045e+08, 6, false);
+    PUSH_MPS("sorrell3", 169162, 1024, -16.0, -512, 6, false);
+    PUSH_MPS("sp150x300d", 450, 600, 69.0, 4.89111, 5, false);
+    PUSH_MPS("sp97ar", 1761, 14101, 660705645.759, 6.5256e+08, 6, false);
+    PUSH_MPS("sp98ar", 1435, 15085, 529740623.2, 5.24401e+08, 6, false);
+    PUSH_MPS("splice1k1", 6505, 3253, -394.0, -1646.78, 6, false);
+    PUSH_MPS("square41", 40160, 62234, 15.0, 8.83961, 6, false);
+    PUSH_MPS("square47", 61591, 95030, 15.9999999997877, 8.75581, 6, false);
+    PUSH_MPS("supportcase10", 165684, 14770, 7.0, 3.38392, 6, false);
+    PUSH_MPS("supportcase12", 166781, 799616, -7559.533053817, -7609.53, 6, false);
+    PUSH_MPS("supportcase18", 240, 13410, 48.0, 47.1867, 6, false);
+    PUSH_MPS("supportcase19", 10713, 1429098, 12677205.99992052, 1.26772e+07, 6, false);
+    PUSH_MPS("supportcase26", 870, 436, 1745.123813, 1288.1, 6, false);
+    PUSH_MPS("supportcase33", 20489, 20203, -345.0, -552.5, 6, false);
+    PUSH_MPS("supportcase40", 38192, 16440, 24256.3122898, 22536.5, 6, false);
+    PUSH_MPS("supportcase42", 18439, 19466, 7.75863072227, 7.34356, 6, false);
+    PUSH_MPS("supportcase6", 771, 130052, 51906.47737, 45090.7, 6, false);
+    PUSH_MPS("supportcase7", 6532, 138844, -1132.223177, -2396.22, 5, false);
+    PUSH_MPS("swath1", 884, 6805, 379.07129575, 334.497, 2, false);
+    PUSH_MPS("swath3", 884, 6805, 397.76134365, 334.497, 5, false);
+    PUSH_MPS("tbfp-network", 2436, 72747, 24.16319444, 23.2615, 5, false);
+    PUSH_MPS("thor50dday", 53360, 106261, 40417.0, 4174.49, 6, false);
+    PUSH_MPS("timtab1", 171, 397, 764771.99999978, 28694, 6, false);
+    PUSH_MPS("tr12-30", 750, 1080, 130595.9999999999, 14210.4, 6, false);
+    PUSH_MPS("traininstance2", 15603, 12890, 71820.0, 0, 6, false);
+    PUSH_MPS("traininstance6", 12309, 10218, 28290.0, 0, 6, false);
+    PUSH_MPS("trento1", 1265, 7687, 5189487.0, 5.18276e+06, 6, false);
+    PUSH_MPS("triptim1", 15706, 30055, 22.8680999999999, 22.8681, 3, false);
+    PUSH_MPS("uccase12", 121161, 62529, 11507.4050616, 11507.3, 4, false);
+    PUSH_MPS("uccase9", 49565, 33242, 10993.131409, 10819.6, 6, false);
+    PUSH_MPS("uct-subprob", 1973, 2256, 314.0, 242, 6, false);
+    PUSH_MPS("unitcal_7", 48939, 25755, 19635558.244, 1.93876e+07, 5, false);
+    PUSH_MPS("var-smallemery-m6j6", 13416, 5608, -149.37501, -156.056, 6, false);
+    PUSH_MPS("wachplan", 1553, 3361, -8.0, -9, 5, false);
+    // END MIPLIB 2017 TABLE
   } else {
 /*
   Load up the problem vector. Note that the row counts here include the

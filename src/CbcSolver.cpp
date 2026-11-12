@@ -12741,6 +12741,20 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           parameters[CbcParam::ZEROHALFCUTS]->setVal(mode);
           parameters[CbcParam::ODDWHEELCUTS]->setVal(mode);
           if (!mode) {
+            // "off" means all cuts, as in 2.10: also the generators that
+            // default to the root (GMI, reduce-and-split 2, lift-and-project)
+            // and those the list above leaves out
+            redsplitMode = mode;
+            redsplit2Mode = mode;
+            GMIMode = mode;
+            landpMode = mode;
+            residualCapacityMode = mode;
+            parameters[CbcParam::REDSPLITCUTS]->setVal(mode);
+            parameters[CbcParam::REDSPLIT2CUTS]->setVal(mode);
+            parameters[CbcParam::GMICUTS]->setVal(mode);
+            parameters[CbcParam::LANDPCUTS]->setVal(mode);
+            parameters[CbcParam::RESIDCAPCUTS]->setVal(mode);
+            parameters[CbcParam::IMPLIEDCLIQUECUTS]->setVal(mode);
             // switch off clique strengthening
             clqstrMode = "off";
             cgraphMode = "off";

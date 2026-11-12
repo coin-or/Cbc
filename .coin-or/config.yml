@@ -42,7 +42,7 @@ Dependencies:
     Required: Required
   - Description: COIN-OR Utilities
     URL: https://github.com/coin-or/CoinUtils
-    Version: master
+    Version: en-tabular-messages
     Required: Required
   - Description: Open Solver Interface
     URL: https://github.com/coin-or/Osi
@@ -50,7 +50,7 @@ Dependencies:
     Required: Required
   - Description: COIN-OR LP Solver
     URL: https://github.com/coin-or/Clp
-    Version: master
+    Version: en-tabular-output
     Required: Required
   - Description: The Cut Generator Library
     URL: https://github.com/coin-or/Cgl

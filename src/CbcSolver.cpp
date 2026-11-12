@@ -2396,10 +2396,14 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   bool lpScMsgOldDefault = false;
   CoinMessageHandler *lpScSavedMsg = nullptr;
   ClpLpEventHandler *lpScProg = nullptr;
+  CoinMessages::Language lpScSavedLanguage = CoinMessages::us_en;
   if (lpSolver && !parameters_.noPrinting()) {
     lpScSavedMsg = lpSolver->pushMessageHandler(&lpScMsgH, lpScMsgOldDefault);
     lpSolver->passInEventHandler(&lpScEvtH);
     lpScProg = dynamic_cast< ClpLpEventHandler * >(lpSolver->eventHandler());
+    // The progress table is Clp's tabular output style
+    lpScSavedLanguage = lpSolver->messagesPointer()->language();
+    lpSolver->newLanguage(CoinMessages::en_tabular);
   }
 #endif
 #endif
@@ -2408,8 +2412,10 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
 #ifndef CBC_OTHER_SOLVER
   if (lpScProg)
     lpScProg->printFinalStatus();
-  if (lpSolver && lpScSavedMsg)
+  if (lpSolver && lpScSavedMsg) {
     lpSolver->popMessageHandler(lpScSavedMsg, lpScMsgOldDefault);
+    lpSolver->newLanguage(lpScSavedLanguage);
+  }
   if (lpSolver) {
     ClpEventHandler defEvt;
     lpSolver->passInEventHandler(&defEvt);
@@ -6111,6 +6117,7 @@ int CbcSolver::solveInitialLp(
   ClpLpMsgHandler *lpMsgHandler = nullptr;
   bool lpMsgOldDefault = false;
   bool lpSavedOsiDefault = true;
+  CoinMessages::Language lpSavedLanguage = CoinMessages::us_en;
   if (cbcLogLevel >= 1 && logLevel >= 1 && si && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
     ClpSimplex *clpModel = si->getModelPtr();
     // Do NOT setLogLevel(0) — Idiot checks model log level before
@@ -6147,6 +6154,9 @@ int CbcSolver::solveInitialLp(
     si->setDefaultHandler(true);
     clpModel->passInEventHandler(&tmpEvt);
     lpProgressHandler = dynamic_cast< ClpLpEventHandler * >(clpModel->eventHandler());
+    // The progress table is Clp's tabular output style
+    lpSavedLanguage = clpModel->messagesPointer()->language();
+    clpModel->newLanguage(CoinMessages::en_tabular);
   }
 #endif
   // Capture integer variable info before solve (solver may relax types internally)
@@ -6196,8 +6206,9 @@ int CbcSolver::solveInitialLp(
     }
 #endif
 #ifndef CLP_OLD_STYLE
-    // Restore message handler and remove LP event handler
+    // Restore message handler and language, and remove LP event handler
     clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
+    clpModel->newLanguage(lpSavedLanguage);
     si->setDefaultHandler(lpSavedOsiDefault);
     delete lpMsgHandler;
     lpMsgHandler = nullptr;

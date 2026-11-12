@@ -711,7 +711,7 @@ void CbcParameters::addCbcParams()
 
   // Integer params — Cuts
   for (int code : { CbcParam::CUTDEPTH, CbcParam::CUTLENGTH,
-         CbcParam::CUTPASSINTREE, CbcParam::MAXSLOWCUTS,
+         CbcParam::CUTPASSINTREE, CbcParam::STOPCUTSDEPTH, CbcParam::MAXSLOWCUTS,
          CbcParam::AGGREGATEMIXED })
     parameters_[code]->setTopic("Cuts");
 
@@ -939,6 +939,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::CUTDEPTH]->setDefault(getCutDepth());
     parameters_[CbcParam::CUTLENGTH]->setDefault(-1);
     parameters_[CbcParam::CUTPASSINTREE]->setDefault(4);
+    parameters_[CbcParam::STOPCUTSDEPTH]->setDefault(0);
     parameters_[CbcParam::CUTPASSSMALL]->setDefault(-100);
     parameters_[CbcParam::CUTPASSMEDIUM]->setDefault(100);
     parameters_[CbcParam::CUTPASSLARGE]->setDefault(50);
@@ -1240,6 +1241,7 @@ void CbcParameters::synchronizeModel()
       { CbcParam::NUMBERBEFORE, &CbcModel::setNumberBeforeTrust, &CbcModel::numberBeforeTrust },
       { CbcParam::NUMBERANALYZE, &CbcModel::setNumberAnalyzeIterations, &CbcModel::numberAnalyzeIterations },
       { CbcParam::CUTPASSINTREE, &CbcModel::setMaximumCutPasses, &CbcModel::getMaximumCutPasses },
+      { CbcParam::STOPCUTSDEPTH, &CbcModel::setStopCutsDepth, &CbcModel::getStopCutsDepth },
       { CbcParam::CUTPASS, &CbcModel::setMaximumCutPassesAtRoot, &CbcModel::getMaximumCutPassesAtRoot },
 #ifdef CBC_THREAD
       { CbcParam::THREADS, &CbcModel::setNumberThreads, &CbcModel::getNumberThreads },
@@ -2819,6 +2821,16 @@ void CbcParameters::addCbcSolverIntParams()
                                  "stopping early once the objective stops dropping. "
                                  "A negative value -n means that n passes are also applied if "
                                  "the objective does not drop.");
+
+  parameters_[CbcParam::STOPCUTSDEPTH]->setup(
+    "stopC!utsDepth",
+    "Depth in the tree at which nodes stop getting cut passes",
+    0, COIN_INT_MAX,
+    "0, the default, sets no limit: tree nodes get the passes that "
+    "passTreeCuts allows at every depth, as in Cbc 2.10. A value n > 0 "
+    "limits nodes that would get more than one pass: those at depths 1 "
+    "to n-1 get one pass and those at depth n or more get none. The root "
+    "is not affected. Earlier versions of master had n = 6 compiled in.");
 
   parameters_[CbcParam::ROOTCUTFILTERSCOPE]->setup(
     "rootCutFilterSc!ope", "Root selection: 0 local, 1 global, 2 both",

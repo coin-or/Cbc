@@ -8742,6 +8742,7 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   babModel_->setMinimumDrop(minimumDrop);
   babModel_->setRootCutDropPatience(rootCuts.dropPatience);
   babModel_->setMaximumCutPasses(parameters[CbcParam::CUTPASSINTREE]->intVal());
+  babModel_->setStopCutsDepth(parameters[CbcParam::STOPCUTSDEPTH]->intVal());
   // Do more strong branching if small
   // if (babModel_->getNumCols()<5000)
   // babModel_->setNumberStrong(20);

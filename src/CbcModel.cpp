@@ -6810,6 +6810,7 @@ CbcModel::CbcModel()
   , continuousInfeasibilities_(COIN_INT_MAX)
   , maximumCutPassesAtRoot_(20)
   , maximumCutPasses_(10)
+  , stopCutsDepth_(0)
   , preferredWay_(0)
   , currentPassNumber_(0)
   , maximumWhich_(INITIAL_MAXIMUM_WHICH)
@@ -7146,6 +7147,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , continuousInfeasibilities_(rhs.continuousInfeasibilities_)
   , maximumCutPassesAtRoot_(rhs.maximumCutPassesAtRoot_)
   , maximumCutPasses_(rhs.maximumCutPasses_)
+  , stopCutsDepth_(rhs.stopCutsDepth_)
   , preferredWay_(rhs.preferredWay_)
   , currentPassNumber_(rhs.currentPassNumber_)
   , maximumWhich_(rhs.maximumWhich_)
@@ -7556,6 +7558,7 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     continuousInfeasibilities_ = rhs.continuousInfeasibilities_;
     maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
     maximumCutPasses_ = rhs.maximumCutPasses_;
+    stopCutsDepth_ = rhs.stopCutsDepth_;
     randomSeed_ = rhs.randomSeed_;
     solverRandomSeed_ = rhs.solverRandomSeed_;
     multipleRootTries_ = rhs.multipleRootTries_;
@@ -8074,6 +8077,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
   maximumCutPasses_ = rhs.maximumCutPasses_;
+  stopCutsDepth_ = rhs.stopCutsDepth_;
   randomSeed_ = rhs.randomSeed_;
   solverRandomSeed_ = rhs.solverRandomSeed_;
   multipleRootTries_ = rhs.multipleRootTries_;
@@ -9077,15 +9081,15 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 */
 
 {
-#define STOP_CUTS_NOW 0
 #define START_FATHOM 6
+  // Limit cut passes in the tree by depth (stopCutsDepth_, default 0: no limit).
   // Not if some branching objects come from another solver (e.g.,
   // Couenne's spatial branching): it relies on cuts deep in the tree.
-  if ((specialOptions_ & 2048) == 0 && STOP_CUTS_NOW > 0 && !hasNonCbcObjects_) {
+  if ((specialOptions_ & 2048) == 0 && stopCutsDepth_ > 0 && !hasNonCbcObjects_) {
     if (node && numberTries > 1) {
       // in main model
       if (currentDepth_ == 0) {
-      } else if (currentDepth_ < STOP_CUTS_NOW) {
+      } else if (currentDepth_ < stopCutsDepth_) {
         numberTries = 1; // std::min(numberTries,4);
         //} else if ((currentDepth_%2)==0) {
         // numberTries = 1;

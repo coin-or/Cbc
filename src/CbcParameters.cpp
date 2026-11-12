@@ -141,7 +141,7 @@ void CbcParameters::init(int strategy)
   strategyMode_ = CbcParameters::StrategyDefault; // "default"
   clockType_ = CbcParameters::ClockElapsed; // "elapsed"
   cgraphMode_ = CbcParameters::CGraphOn; // "on"
-  lpMethod_ = CbcParameters::LPAuto; // "auto"
+  lpMethod_ = CbcParameters::LPDual; // "dual"
 
   preProcess_ = CbcParameters::IPPSOS;
   cutDepth_ = -1;
@@ -158,7 +158,7 @@ void CbcParameters::init(int strategy)
   probing_.maxElements_ = 200;
   probing_.rowCuts_ = 3;
 
-  clique_.mode_ = CbcParameters::CGIfMove;
+  clique_.mode_ = CbcParameters::CGRoot;
   clique_.proto_ = 0;
   clique_.starCliqueReport_ = false;
   clique_.rowCliqueReport_ = false;
@@ -711,7 +711,7 @@ void CbcParameters::addCbcParams()
 
   // Integer params — Cuts
   for (int code : { CbcParam::CUTDEPTH, CbcParam::CUTLENGTH,
-         CbcParam::CUTPASSINTREE, CbcParam::MAXSLOWCUTS,
+         CbcParam::CUTPASSINTREE, CbcParam::STOPCUTSDEPTH, CbcParam::MAXSLOWCUTS,
          CbcParam::AGGREGATEMIXED })
     parameters_[code]->setTopic("Cuts");
 
@@ -896,7 +896,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::TIMEMODE]->setDefault("elapsed");
     parameters_[CbcParam::USECGRAPH]->setDefault("on");
     parameters_[CbcParam::BOUNDPROPLEVEL]->setDefault("milpbt");
-    parameters_[CbcParam::LPMETHOD]->setDefault("auto");
+    parameters_[CbcParam::LPMETHOD]->setDefault("dual");
     parameters_[CbcParam::REOPTMETHOD]->setDefault("auto");
     parameters_[CbcParam::REOPTPRESOLVE]->setDefault("auto");
     parameters_[CbcParam::REOPTPERTVALUE]->setDefault(-1);
@@ -939,6 +939,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::CUTDEPTH]->setDefault(getCutDepth());
     parameters_[CbcParam::CUTLENGTH]->setDefault(-1);
     parameters_[CbcParam::CUTPASSINTREE]->setDefault(4);
+    parameters_[CbcParam::STOPCUTSDEPTH]->setDefault(0);
     parameters_[CbcParam::CUTPASSSMALL]->setDefault(-100);
     parameters_[CbcParam::CUTPASSMEDIUM]->setDefault(100);
     parameters_[CbcParam::CUTPASSLARGE]->setDefault(50);
@@ -1065,7 +1066,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::SPPGRASPROOTKEEPORIGINAL]->setDefault("off");
     parameters_[CbcParam::SPPGRASPNATIVEPRELP]->setDefault("auto");
     parameters_[CbcParam::CUTSTRATEGY]->setDefault("off");
-    parameters_[CbcParam::CLIQUECUTS]->setDefault("ifmove");
+    parameters_[CbcParam::CLIQUECUTS]->setDefault("root");
     parameters_[CbcParam::FLOWCUTS]->setDefault("ifmove");
     parameters_[CbcParam::GMICUTS]->setDefault("root");
     parameters_[CbcParam::GOMORYCUTS]->setDefault("ifmove");
@@ -1240,6 +1241,7 @@ void CbcParameters::synchronizeModel()
       { CbcParam::NUMBERBEFORE, &CbcModel::setNumberBeforeTrust, &CbcModel::numberBeforeTrust },
       { CbcParam::NUMBERANALYZE, &CbcModel::setNumberAnalyzeIterations, &CbcModel::numberAnalyzeIterations },
       { CbcParam::CUTPASSINTREE, &CbcModel::setMaximumCutPasses, &CbcModel::getMaximumCutPasses },
+      { CbcParam::STOPCUTSDEPTH, &CbcModel::setStopCutsDepth, &CbcModel::getStopCutsDepth },
       { CbcParam::CUTPASS, &CbcModel::setMaximumCutPassesAtRoot, &CbcModel::getMaximumCutPassesAtRoot },
 #ifdef CBC_THREAD
       { CbcParam::THREADS, &CbcModel::setNumberThreads, &CbcModel::getNumberThreads },
@@ -2253,7 +2255,7 @@ void CbcParameters::addCbcSolverKwdParams()
     "Which LP algorithm to use for the initial LP relaxation solve",
     "Controls which LP algorithm is used when -solve or -initialSolve "
     "triggers the root LP relaxation.\n"
-    "  dual:      dual simplex.\n"
+    "  dual:      dual simplex. (default)\n"
     "  primal:    primal simplex.\n"
     "  barrier:   interior-point (barrier) method.\n"
     "  racing:    opportunistic parallel LP racing -- multiple LP method "
@@ -2265,7 +2267,7 @@ void CbcParameters::addCbcSolverKwdParams()
     "(see CbcLpParamScorer) to pick the settings expected to solve fastest. "
     "Runs sequentially.\n"
     "  auto:      picks racing when running in parallel (threads >= 2) or "
-    "recommend when running sequentially (threads == 1). (default)");
+    "recommend when running sequentially (threads == 1).");
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "dual", CbcParameters::LPDual);
   parameters_[CbcParam::LPMETHOD]->appendKwd(
@@ -2819,6 +2821,16 @@ void CbcParameters::addCbcSolverIntParams()
                                  "stopping early once the objective stops dropping. "
                                  "A negative value -n means that n passes are also applied if "
                                  "the objective does not drop.");
+
+  parameters_[CbcParam::STOPCUTSDEPTH]->setup(
+    "stopC!utsDepth",
+    "Depth in the tree at which nodes stop getting cut passes",
+    0, COIN_INT_MAX,
+    "0, the default, sets no limit: tree nodes get the passes that "
+    "passTreeCuts allows at every depth, as in Cbc 2.10. A value n > 0 "
+    "limits nodes that would get more than one pass: those at depths 1 "
+    "to n-1 get one pass and those at depth n or more get none. The root "
+    "is not affected. Earlier versions of master had n = 6 compiled in.");
 
   parameters_[CbcParam::ROOTCUTFILTERSCOPE]->setup(
     "rootCutFilterSc!ope", "Root selection: 0 local, 1 global, 2 both",

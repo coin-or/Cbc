@@ -428,6 +428,10 @@ int pushCbcSolverIntParam(CoinParam &param)
     parameters->setCutPassInTree(val);
     break;
   }
+  case CbcParam::STOPCUTSDEPTH: {
+    // read from the parameter by CbcSolver, which sets it on the model
+    break;
+  }
   case CbcParam::DEPTHMINIBAB: {
     parameters->setDepthMiniBaB(val);
     break;

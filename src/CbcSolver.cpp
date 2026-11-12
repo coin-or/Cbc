@@ -11056,6 +11056,14 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
     if (!suppressCutStats)
       printGeneralMessage(model_, buffer.str());
   }
+  // The formatted root section shows the root only. When there was a tree,
+  // show what each generator did over the whole search (the old "was tried"
+  // lines above, which that section replaces, did).
+  if (suppressCutStats && babModel_->getNodeCount() > 0) {
+    FILE *fp = babModel_->messageHandler()->filePointer();
+    CbcOutput::printCutGeneratorTotals(fp ? fp : stdout, CbcOutput::useUtf8(),
+      *babModel_);
+  }
   // Capture cgraph stats if built lazily by cut generators
   // (only if not already captured from explicit buildConflictGraph calls)
   if (statistics.cgraph_time == 0.0 && statistics.cgraph_density == 0.0) {
@@ -12741,6 +12749,20 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           parameters[CbcParam::ZEROHALFCUTS]->setVal(mode);
           parameters[CbcParam::ODDWHEELCUTS]->setVal(mode);
           if (!mode) {
+            // "off" means all cuts, as in 2.10: also the generators that
+            // default to the root (GMI, reduce-and-split 2, lift-and-project)
+            // and those the list above leaves out
+            redsplitMode = mode;
+            redsplit2Mode = mode;
+            GMIMode = mode;
+            landpMode = mode;
+            residualCapacityMode = mode;
+            parameters[CbcParam::REDSPLITCUTS]->setVal(mode);
+            parameters[CbcParam::REDSPLIT2CUTS]->setVal(mode);
+            parameters[CbcParam::GMICUTS]->setVal(mode);
+            parameters[CbcParam::LANDPCUTS]->setVal(mode);
+            parameters[CbcParam::RESIDCAPCUTS]->setVal(mode);
+            parameters[CbcParam::IMPLIEDCLIQUECUTS]->setVal(mode);
             // switch off clique strengthening
             clqstrMode = "off";
             cgraphMode = "off";

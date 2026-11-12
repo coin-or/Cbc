@@ -11244,7 +11244,14 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
           // If large number of probing - can be biased
           smallProblem = (0.2 * (totalCuts - generator_[i]->numberCutsInTotal())) / static_cast< double >(numberActiveGenerators - 1 + 1.0e-100);
         }
-        if (probing->rowCuts() == -3) {
+        // In 2.10, -3 marked only the forceOnBut modes. Since 7254cd18 the
+        // setup code uses -3 for every mode, so that probing makes only
+        // column cuts in the tree, and this test caught every mode. Leave
+        // out the two whose meaning it overrode: root only (-99), which this
+        // turned into -98 (keep going in the tree while the objective
+        // improves), and on (-1). The default ifmove (-98) and the force
+        // modes (1) go on as before.
+        if (probing->rowCuts() == -3 && howOften != -99 && howOften != -1) {
           probingWasOnBut = true;
           howOften = -98;
           probing->setRowCuts(3);

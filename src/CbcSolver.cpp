@@ -11056,6 +11056,14 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
     if (!suppressCutStats)
       printGeneralMessage(model_, buffer.str());
   }
+  // The formatted root section shows the root only. When there was a tree,
+  // show what each generator did over the whole search (the old "was tried"
+  // lines above, which that section replaces, did).
+  if (suppressCutStats && babModel_->getNodeCount() > 0) {
+    FILE *fp = babModel_->messageHandler()->filePointer();
+    CbcOutput::printCutGeneratorTotals(fp ? fp : stdout, CbcOutput::useUtf8(),
+      *babModel_);
+  }
   // Capture cgraph stats if built lazily by cut generators
   // (only if not already captured from explicit buildConflictGraph calls)
   if (statistics.cgraph_time == 0.0 && statistics.cgraph_density == 0.0) {

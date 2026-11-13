@@ -5813,7 +5813,7 @@ int CbcSolver::postprocess(
       iStat2 = 0; // solution and search completed
     statistics.seconds = time2 - time1;
     statistics.sys_seconds = CoinSysTime();
-    statistics.elapsed_seconds = CoinWallclockTime();
+    statistics.elapsed_seconds = CoinWallclockTime() - time1Elapsed;
     statistics.obj = babModel_->getObjValue();
     statistics.continuous = babModel_->getContinuousObjective();
     statistics.tighter = babModel_->rootObjectiveAfterCuts();

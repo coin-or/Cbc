@@ -2824,8 +2824,8 @@ void CbcParameters::addCbcSolverIntParams()
     "rootCutFilterSc!ope", "Root selection: 0 local, 1 global, 2 both",
     0, 2,
     "Combined-round selection using rootCutFilterScore (default 1: global). "
-    "Score must be nonzero for global selection; 0 restores the per-generator "
-    "filters only. Mode 1 bypasses the generic "
+    "Global selection needs a nonzero score: with rootCutFilterScore 0, scope 0 "
+    "is used. 0 restores the per-generator filters only. Mode 1 bypasses the generic "
     "per-generator filter at root; mode 2 retains it. Generator-internal "
     "filters remain active. Mandatory/branch cuts are protected. Existing "
     "cutFilter eligibility and parallelism settings apply. Tree and "
@@ -2867,7 +2867,9 @@ void CbcParameters::addCbcSolverIntParams()
   parameters_[CbcParam::ROOTCUTFILTERSCORE]->setup(
     "rootCutFilterS!core", "Root cut score: legacy, efficacy or sparse efficacy",
     0, 4,
-    "Root-only selection score (default 1). 0 preserves legacy fitness; "
+    "Root-only selection score (default 1). 0 preserves legacy fitness, "
+    "which only the per-generator filters use, so it also sets "
+    "rootCutFilterScope to 0; "
     "1 uses violation divided by the coefficient Euclidean norm; 2 also "
     "divides by total cut nonzeros. Modes 3 and 4 use the scores of 1 and 2 "
     "respectively but omit the best-per-column contest. All apply "

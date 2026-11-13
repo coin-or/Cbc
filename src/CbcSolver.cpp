@@ -8651,6 +8651,14 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
   int bothFlags = std::max(std::min(experimentFlag, 1), strategyFlag);
   // add cut generators if wanted
+  // installCutGenerators() uses rootCutFilterScope 0 whenever rootCutFilterScore
+  // is 0 (the legacy fitness exists only in the per-generator filters). Say so
+  // if the scope was set explicitly, since the two options then disagree.
+  if (!parameters[CbcParam::ROOTCUTFILTERSCORE]->intVal()
+    && parameters[CbcParam::ROOTCUTFILTERSCOPE]->intVal()
+    && !parameters[CbcParam::ROOTCUTFILTERSCOPE]->isDefault())
+    printGeneralWarning(model_, "rootCutFilterScore 0 (legacy fitness) needs the "
+                                "per-generator filters; using rootCutFilterScope 0");
   std::string switchOffChoice;
   configureCutGenerators(*babModel_, bkPivotingStrategy, &switchOffChoice);
   if (model_.messageHandler()->logLevel() >= 2)

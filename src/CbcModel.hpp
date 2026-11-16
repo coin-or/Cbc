@@ -1093,6 +1093,22 @@ public:
   {
     return maximumCutPasses_;
   }
+  /** Set the depth at which tree nodes stop getting cut passes (default 0: no limit).
+
+      With n > 0, when a tree node would get more than one cut pass,
+      nodes at depths 1 to n-1 get one pass and nodes at depth n or more
+      get none. The root is not affected. Master used n = 6 as a compiled-in
+      define (STOP_CUTS_NOW) before this was a parameter; 2.10 had no limit.
+  */
+  inline void setStopCutsDepth(int value)
+  {
+    stopCutsDepth_ = value;
+  }
+  /** Get the depth at which tree nodes stop getting cut passes (0: no limit) */
+  inline int getStopCutsDepth() const
+  {
+    return stopCutsDepth_;
+  }
   /** Get current cut pass number in this round of cuts.
         (1 is first pass) */
   inline int getCurrentPassNumber() const
@@ -3828,6 +3844,8 @@ private:
   int maximumCutPassesAtRoot_;
   /// Maximum number of cut passes
   int maximumCutPasses_;
+  /// Depth at which tree nodes stop getting cut passes (0: no limit)
+  int stopCutsDepth_;
   /// Preferred way of branching
   int preferredWay_;
   /// Current cut pass number

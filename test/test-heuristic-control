@@ -39,26 +39,34 @@ read -r r0 b0 p0 t0 k0 <<<"$(stat RINS)"
 read -r r1 b1 p1 t1 k1 <<<"$(stat RINS -rinsSchedule auto -rinsEvery auto -rinsDecay auto -rinsMaxFail auto)"
 echo "default: runs=$r0 backoffs=$b0 K=$k0"
 check "auto parameters equal the defaults" $([ "$r0 $b0 $k0" = "$r1 $b1 $k1" ] && echo 0 || echo 1)
+read -r r1 b1 p1 t1 k1 <<<"$(stat RINS -rinsSchedule legacy)"
+check "the default schedule is legacy (runs=$r1)" $([ "$r0 $b0 $k0" = "$r1 $b1 $k1" ] && echo 0 || echo 1)
 
-read -r r b p t k <<<"$(stat RINS -rinsDecay 0)"
-check "rinsDecay 0 switches the back-off off (K stays 100, runs=$r >= default $r0)" $([ "$b" -eq 0 ] && [ "$k" -eq 100 ] && [ "$r" -ge "$r0" ] && echo 0 || echo 1)
+# The legacy schedule ignores K and the back-off, so the checks below use the
+# noimprove schedule (every K nodes and straight after each new incumbent).
+NI="-rinsSchedule noimprove"
+read -r r0 b0 p0 t0 k0 <<<"$(stat RINS $NI)"
+echo "noimprove: runs=$r0 backoffs=$b0 K=$k0"
 
-read -r r b p t k <<<"$(stat RINS -rinsDecay 2)"
+read -r r b p t k <<<"$(stat RINS $NI -rinsDecay 0)"
+check "rinsDecay 0 switches the back-off off (K stays 100, runs=$r >= noimprove default $r0)" $([ "$b" -eq 0 ] && [ "$k" -eq 100 ] && [ "$r" -ge "$r0" ] && echo 0 || echo 1)
+
+read -r r b p t k <<<"$(stat RINS $NI -rinsDecay 2)"
 check "rinsDecay 2 triples K per back-off (backoffs=$b K=$k)" $([ "$b" -ge 1 ] && [ "$k" -eq $((100 * 3 ** b)) ] && echo 0 || echo 1)
 
-read -r r b p t k <<<"$(stat RINS -rinsDecay 0 -rinsEvery 20)"
+read -r r b p t k <<<"$(stat RINS $NI -rinsDecay 0 -rinsEvery 20)"
 check "rinsEvery 20 runs more often than 100 (runs=$r)" $([ "$r" -gt 0 ] && [ "$k" -eq 20 ] && echo 0 || echo 1)
-read -r rr b p t k <<<"$(stat RINS -rinsDecay 0 -rinsEvery 1000)"
+read -r rr b p t k <<<"$(stat RINS $NI -rinsDecay 0 -rinsEvery 1000)"
 check "rinsEvery 1000 runs less often than 20 (runs=$rr < $r)" $([ "$rr" -lt "$r" ] && echo 0 || echo 1)
 
-read -r r b p t k <<<"$(stat RINS -rinsDecay 0 -rinsMaxFail 1)"
+read -r r b p t k <<<"$(stat RINS $NI -rinsDecay 0 -rinsMaxFail 1)"
 check "rinsMaxFail 1 pauses RINS (paused skips=$p)" $([ "$p" -gt 0 ] && echo 0 || echo 1)
 
-read -r r b p t k <<<"$(stat RINS -rinsTimeShare 0.00001)"
+read -r r b p t k <<<"$(stat RINS $NI -rinsTimeShare 0.00001)"
 check "tiny rinsTimeShare stops RINS (runs=$r time-share skips=$t)" $([ "$t" -gt 0 ] && [ "$r" -le 3 ] && echo 0 || echo 1)
 
-read -r r b p t k <<<"$(stat VND -vndEvery 10 -vndDecay 0)"
-read -r rv b p t k <<<"$(stat VND -vndEvery 1000 -vndDecay 0)"
+read -r r b p t k <<<"$(stat VND -vndSchedule noimprove -vndEvery 10 -vndDecay 0)"
+read -r rv b p t k <<<"$(stat VND -vndSchedule noimprove -vndEvery 1000 -vndDecay 0)"
 check "vndEvery controls VND (runs $r vs $rv)" $([ "$r" -gt "$rv" ] && echo 0 || echo 1)
 
 read -r r b p t k <<<"$(stat RINS -rinsSchedule nodes -rinsEvery 50 -rinsDecay 0)"

@@ -72,8 +72,7 @@ was retained. The final measurements include Clp's November dual-cycling fix.
   Per-instance cost is the arithmetic mean of three seed costs; the shifted
   geometric mean (SGM) uses a one-second shift.
 
-`trdta5581` consistently terminates infeasible during propagation, before
-selection, so policy metrics cover the other **402 instances / 1,206 seeds**.
+Policy metrics cover **402 instances / 1,206 seeds** reaching LP selection.
 
 Frozen source revisions:
 

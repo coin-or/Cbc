@@ -14612,8 +14612,16 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           std::string dirMiplib = parameters[CbcParam::DIRMIPLIB]->dirName();
           std::string dirSample = parameters[CbcParam::DIRSAMPLE]->dirName();
           if (dirMiplib != "") {
+	    /* If inputQueue not empty - 
+	       modify queue so can carry on after unittest */
+	    if (!inputQueue.empty()) {
+	      for (int i=0;i<inputQueue.size();i++)
+ 		saveInputQueue.pop_back();
+	    }
             returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL,
               saveInputQueue, callBack, parameters);
+	    if (!inputQueue.empty())
+	      break; // to carry on
           } else if (dirSample != "") {
             returnCode = CbcClpUnitTest(model_, dirSample, -2, NULL,
               saveInputQueue, callBack, parameters);

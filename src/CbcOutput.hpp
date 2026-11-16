@@ -482,6 +482,15 @@ public:
     const CglPreProcessStats &stats, bool postprocessing,
     double wallSeconds = -1.0);
 
+  /** Print each cut generator's totals over the whole search (root and
+   *  tree): calls, row cuts, column cuts and time, the
+   *  numbers 2.10 printed as "<generator> was tried N times and created M
+   *  cuts". The root's own table shows only the root, so without this the
+   *  log says nothing about what the generators did in the tree.
+   *  Generators never called are left out. No-op if none was called.
+   */
+  static void printCutGeneratorTotals(FILE *fp, bool utf8, CbcModel &model);
+
 #ifdef CBC_HAS_NAUTY
   /** Print a clean symmetry-detection (nauty) section.
    *  Called from CbcSolver.cpp after running setupSymmetry/statsOrbits silently.

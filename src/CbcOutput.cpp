@@ -4,6 +4,7 @@
 
 #include "CbcOutput.hpp"
 #include "CbcModel.hpp"
+#include "CbcCutGenerator.hpp"
 #include "OsiSolverInterface.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "CoinPackedMatrix.hpp"
@@ -1193,6 +1194,49 @@ void CbcOutput::printPreprocessTimes(FILE *fp, bool utf8,
   }
   printTableClose(fp, passes);
   fprintf(fp, "\n");
+  fflush(fp);
+}
+
+void CbcOutput::printCutGeneratorTotals(FILE *fp, bool utf8, CbcModel &model)
+{
+  if (!fp)
+    return;
+  const int numberGenerators = model.numberCutGenerators();
+  bool any = false;
+  for (int i = 0; i < numberGenerators; i++) {
+    if (model.cutGenerator(i)->numberTimesEntered())
+      any = true;
+  }
+  if (!any)
+    return;
+  const bool compact = useCompact();
+  const char *bar = tableBar(utf8, compact);
+  // the root generator table's name and time widths (defined further down)
+  const int nameWidth = 22;
+  const int timeWidth = 9;
+  CoinTable totals({ { "Generator", nameWidth, true }, { "Calls", 9 },
+                     { "Row cuts", 9 }, { "Col cuts", 9 },
+                     { "Time(s)", timeWidth } },
+    utf8, /*indent=*/2, compact);
+  fprintf(fp, "\n  Cut generators, whole search (root and tree):\n");
+  printTableOpen(fp, totals);
+  for (int i = 0; i < numberGenerators; i++) {
+    CbcCutGenerator *generator = model.cutGenerator(i);
+    if (!generator->numberTimesEntered())
+      continue;
+    char nameBuf[23];
+    std::snprintf(nameBuf, sizeof(nameBuf), "%-*s", nameWidth,
+      generator->cutGeneratorName());
+    const std::string timeBuf = generator->timing()
+      ? fmtTime(generator->timeInCutGenerator())
+      : std::string();
+    fprintf(fp, "  %s%s%*d%s%*d%s%*d%s%*s\n", nameBuf, bar,
+      9, generator->numberTimesEntered(), bar,
+      9, generator->numberCutsInTotal(), bar,
+      9, generator->numberColumnCuts(), bar,
+      timeWidth, timeBuf.c_str());
+  }
+  printTableClose(fp, totals);
   fflush(fp);
 }
 

@@ -46,13 +46,13 @@ typedef struct Cbc_Model Cbc_Model;
  *  If a problem with integer variables, this affects only the root node.
  * */
 enum LPMethod {
-  LPM_Auto           = 0,  /*! Solver will decide automatically which method to use: picks LPM_Racing when running in parallel (threads >= 2) or LPM_Recommend when running sequentially (threads == 1) */
+  LPM_Auto           = 0,  /*! Picks LPM_Racing with threads >= 2, otherwise LPM_Recommend. Root settings do not replace the independent reoptimization settings. */
   LPM_Dual           = 1,  /*! Dual simplex */
   LPM_Primal         = 2,  /*! Primal simplex */
   LPM_Barrier        = 3,  /*! The barrier algorithm */
   LPM_BarrierNoCross = 4,  /*! Barrier algorithm, not to be followed by crossover */
   LPM_Racing         = 5,  /*! Opportunistic parallel LP racing: multiple LP method configurations (dual simplex, primal with Idiot crash, primal with Sprint) run in parallel threads and the first to reach optimality wins. Requires at least 2 threads (INT_PARAM_THREADS); with fewer it silently degrades to LPM_Recommend. */
-  LPM_Recommend      = 6   /*! ML-based per-instance recommendation of a single LP method/configuration, using a classifier trained on instance features. Runs sequentially. */
+  LPM_Recommend      = 6   /*! Sequential root LP policy: four feature-based primal/Idiot exceptions, otherwise dual simplex with perturbation 72. */
 };
 
 /*! Algorithm for ordinary LP reoptimization, independent of LPMethod.

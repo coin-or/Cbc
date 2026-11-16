@@ -40,6 +40,8 @@
  */
 
 #include "Cbc_C_Interface.h"
+#include "CbcLpParamScorer.hpp"
+#include "OsiFeatures.hpp"
 #include "CbcSolver.hpp"
 #include "ClpOutput.hpp"
 #include "CoinPackedMatrix.hpp"
@@ -51,6 +53,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <typeinfo>
 #include <vector>
@@ -70,6 +73,76 @@ void check(bool cond, const std::string &msg)
     ++g_failures;
     printf("  FAIL: %s\n", msg.c_str());
   }
+}
+
+void testLpAutoRules()
+{
+  printf("\n=== Sequential root LP: ordered exception boundaries ===\n");
+  struct Condition {
+    OsiFeature feature;
+    double threshold;
+    bool greater;
+  };
+  const std::vector< std::vector< Condition > > rules = {
+    { { OFnzPercRowsCovering, 50.7092105993763, true },
+      { OFcolsLeast4Nz, 1056.5, true },
+      { OFpercRowsLeast4096Nz, 0.0445202274795385, false } },
+    { { OFnzPercRowsHubImplication, 55.30788084035105, true },
+      { OFpercBin, 99.04976740485506, true },
+      { OFcols, 810.0, true } },
+    { { OFnzpercRowsPartPacking, 99.82268606961816, true },
+      { OFrowsLeast8Nz, 1135.5, true } },
+    { { OFobjStdDev, 0.001552965637549735, false },
+      { OFnzrowsPartPacking, 2026.0, true } }
+  };
+  const char *tags[] = { "primal_idiot60", "primal_idiot50",
+    "primal_idiot60", "primal_idiot50_pertv50" };
+  std::vector< double > none(OFCount, 0.0);
+  check(!strcmp(cbcRecommendLpParam(none.data()), "dual_pertv72"),
+    "unmatched features use the best single setting");
+  std::vector< double > overlap = none;
+  for (size_t r = 0; r < rules.size(); ++r) {
+    std::vector< double > matching = none;
+    for (const Condition &c : rules[r])
+      matching[c.feature] = c.greater
+        ? std::nextafter(c.threshold, std::numeric_limits< double >::infinity())
+        : c.threshold;
+    check(!strcmp(cbcRecommendLpParam(matching.data()), tags[r]),
+      "matching rule " + std::to_string(r + 1));
+    for (const Condition &c : rules[r]) {
+      std::vector< double > boundary = matching;
+      boundary[c.feature] = c.greater ? c.threshold
+        : std::nextafter(c.threshold, std::numeric_limits< double >::infinity());
+      check(!strcmp(cbcRecommendLpParam(boundary.data()), "dual_pertv72"),
+        "reject outside boundary of rule " + std::to_string(r + 1));
+      overlap[c.feature] = matching[c.feature];
+    }
+  }
+  check(!strcmp(cbcRecommendLpParam(overlap.data()), tags[0]),
+    "overlapping rules keep the first action");
+  overlap[OFnzPercRowsCovering] = 0.0;
+  check(!strcmp(cbcRecommendLpParam(overlap.data()), tags[1]),
+    "second rule precedes the third and fourth");
+  const double nan = std::numeric_limits< double >::quiet_NaN();
+  std::vector< double > missing(OFCount, nan);
+  check(!strcmp(cbcRecommendLpParam(missing.data()), "dual_pertv72"),
+    "all missing features use discovery imputations and fall back");
+  missing = none;
+  missing[OFnzPercRowsCovering] = 60.0;
+  missing[OFcolsLeast4Nz] = nan;
+  missing[OFpercRowsLeast4096Nz] = nan;
+  check(!strcmp(cbcRecommendLpParam(missing.data()), tags[0]),
+    "first rule keeps its original missing-value imputations");
+  missing = none;
+  missing[OFnzPercRowsHubImplication] = 60.0;
+  missing[OFpercBin] = nan;
+  missing[OFcols] = nan;
+  check(!strcmp(cbcRecommendLpParam(missing.data()), tags[1]),
+    "second rule keeps its original missing-value imputations");
+  missing = none;
+  missing[OFnzrowsPartPacking] = nan;
+  check(!strcmp(cbcRecommendLpParam(missing.data()), tags[3]),
+    "fourth rule keeps its original missing-value imputation");
 }
 
 void checkClose(double actual, double expected, double tol, const std::string &msg)
@@ -1118,14 +1191,81 @@ void testLpTimeLimitClock(const std::string &dataDir, const std::string &inst)
 
 } // namespace
 
+void testAutoCampaignInstances(const std::string &directory)
+{
+  printf("\n=== Sequential auto: measured examples of all four exceptions ===\n");
+  for (const char *name : { "scpk1_core", "qap10", "neos-3226448-wkra", "neos-807456" }) {
+    const std::string filename = directory + "/" + name + ".mps.gz";
+    Cbc_Model *baseline = Cbc_newModel();
+    const int readStatus = Cbc_readMps(baseline, filename.c_str());
+    checkEqInt(readStatus, 0, "read " + filename);
+    if (readStatus != 0) {
+      Cbc_deleteModel(baseline);
+      continue;
+    }
+    Cbc_setLogLevel(baseline, 0);
+    Cbc_setMaximumSeconds(baseline, 120.0);
+    Cbc_setLPmethod(baseline, LPM_Dual);
+    Cbc_setIntParam(baseline, INT_PARAM_PERT_VALUE, 72);
+    Cbc_setParameter(baseline, "rowReductions", "force");
+    const int baselineStatus = Cbc_solveLinearProgram(baseline);
+    checkEqInt(baselineStatus, 0, std::string(name) + ": reference dual LP");
+    const double objective = Cbc_getObjValue(baseline);
+    Cbc_deleteModel(baseline);
+    if (baselineStatus != 0)
+      continue;
+    for (bool overrideReopt : { false, true }) {
+      Cbc_Model *m = Cbc_newModel();
+      const int statusRead = Cbc_readMps(m, filename.c_str());
+      checkEqInt(statusRead, 0, "read " + filename);
+      if (statusRead != 0) {
+        Cbc_deleteModel(m);
+        continue;
+      }
+      Cbc_setLogLevel(m, 1);
+      Cbc_setMaximumSeconds(m, 120.0);
+      Cbc_setLPmethod(m, overrideReopt ? LPM_Recommend : LPM_Auto);
+      Cbc_setIntParam(m, INT_PARAM_THREADS, overrideReopt ? 2 : 0);
+      Cbc_setParameter(m, "rowReductions", "force");
+      if (overrideReopt) {
+        Cbc_setReoptMethod(m, REOPT_Primal);
+        Cbc_setParameter(m, "reoptPertValue", "61");
+        Cbc_setParameter(m, "reoptPresolve", "off");
+      }
+      const int status = Cbc_solveLinearProgram(m);
+      checkEqInt(status, 0, std::string(name) + ": sequential auto/recommend root");
+      if (status == 0) {
+        const double tolerance = 1e-6 * (1.0 + std::fabs(objective));
+        checkClose(Cbc_getObjValue(m), objective, tolerance,
+          std::string(name) + ": auto root agrees with dual");
+        checkEqInt(clpPerturbation(m), 50, "root restores the default perturbation");
+        const double value = Cbc_getColSolution(m)[0];
+        Cbc_setColLower(m, 0, value);
+        Cbc_setColUpper(m, 0, value);
+        checkEqInt(Cbc_resolve(m), 0, std::string(name) + ": warm resolve");
+        checkClose(Cbc_getObjValue(m), objective, tolerance,
+          std::string(name) + ": warm resolve retains the optimum");
+        checkEqInt(clpPerturbation(m), overrideReopt ? 61 : 50,
+          "resolve uses independent perturbation, not root settings");
+        if (overrideReopt) {
+          OsiClpSolverInterface *si = static_cast< OsiClpSolverInterface * >(Cbc_getSolverPtr(m));
+          checkEqInt(si->lastAlgorithm(), 1, "resolve honors explicit primal method");
+        }
+      }
+      Cbc_deleteModel(m);
+    }
+  }
+}
+
 int main(int argc, char *argv[])
 {
   std::string dataDir;
+  std::string autoInstanceDir;
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     if (arg == "--help" || arg == "-h") {
       printf(
-        "Usage: lp-relaxation-test [--data-dir=PATH]\n"
+        "Usage: lp-relaxation-test [--data-dir=PATH] [--auto-instance-dir=PATH]\n"
         "\n"
         "Targeted tests for the C interface's LP-relaxation-only entry points,\n"
         "Cbc_solveLinearProgram() and Cbc_resolve(). Covers:\n"
@@ -1148,6 +1288,8 @@ int main(int argc, char *argv[])
         "\n"
         "  --data-dir=PATH  mip-sanity-data checkout to read instances from\n"
         "                   (default: <dir of this executable>/mip-sanity-data)\n"
+        "  --auto-instance-dir=PATH  Also test four real auto-rule examples from\n"
+        "                   the MIPLIB 2017 + additional-instances campaign\n"
         "\n"
         "Exit code: 0 = all checks passed, 1 = one or more checks failed.\n");
       return 0;
@@ -1156,12 +1298,20 @@ int main(int argc, char *argv[])
       dataDir = arg.substr(strlen("--data-dir="));
       continue;
     }
+    if (arg.rfind("--auto-instance-dir=", 0) == 0) {
+      autoInstanceDir = arg.substr(strlen("--auto-instance-dir="));
+      continue;
+    }
     fprintf(stderr, "lp-relaxation-test: unrecognized argument '%s' "
       "(try --help)\n", arg.c_str());
     return 1;
   }
   if (dataDir.empty())
     dataDir = exeDir() + "/mip-sanity-data";
+
+  testLpAutoRules();
+  if (!autoInstanceDir.empty())
+    testAutoCampaignInstances(autoInstanceDir);
 
   /* Reference LP relaxation objectives below were computed independently
    * (two different external LP/MIP solvers agreed exactly) and cross-checked

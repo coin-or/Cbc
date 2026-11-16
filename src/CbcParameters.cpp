@@ -2290,12 +2290,12 @@ void CbcParameters::addCbcSolverKwdParams()
     "configurations (dual simplex, primal with Idiot crash, primal with "
     "Sprint) are run in parallel threads and the first to reach optimality "
     "wins. Requires at least 2 threads (-threads).\n"
-    "  recommend: ML-based per-instance recommendation of a single LP "
-    "method/configuration, using a classifier trained on instance features "
-    "(see CbcLpParamScorer) to pick the settings expected to solve fastest. "
-    "Runs sequentially.\n"
+    "  recommend: sequential feature-based selection using four ordered "
+    "primal/Idiot exceptions and dual simplex with perturbation 72 otherwise "
+    "(see CbcLpParamScorer). These settings apply only to the initial LP; "
+    "reoptMethod/reoptPertValue/reoptPresolve control later resolves.\n"
     "  auto:      picks racing when running in parallel (threads >= 2) or "
-    "recommend when running sequentially (threads == 1).");
+    "recommend when fewer than two threads are available.");
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "dual", CbcParameters::LPDual);
   parameters_[CbcParam::LPMETHOD]->appendKwd(

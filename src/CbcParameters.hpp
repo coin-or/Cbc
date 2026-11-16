@@ -334,13 +334,14 @@ public:
     - LPAuto:      picks between LPRacing and LPRecommend depending on the
                    number of threads available: LPRacing when running in
                    parallel (threads >= 2), LPRecommend when running
-                   sequentially (threads == 1). (default)
+                   sequentially (fewer than two threads). (default)
     - LPRacing:    opportunistic parallel LP racing (dual simplex, primal
                    with Idiot crash, primal with Sprint race each other;
                    the first to finish wins). Requires threads >= 2.
-    - LPRecommend: ML-based per-instance recommendation of a single LP
-                   method/configuration (see CbcLpParamScorer). Runs
-                   sequentially.
+    - LPRecommend: four ordered feature-based primal/Idiot exceptions to
+                   dual simplex with perturbation 72 (see CbcLpParamScorer).
+                   Runs sequentially; later resolves use the independent
+                   reoptimization settings.
   */
   enum LPMethod {
     LPDual = 0,

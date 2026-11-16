@@ -1558,8 +1558,14 @@ sets name for file to store solution in binary format
 .BI \-directory
 Set Default directory for import etc.
 .TP
+.BI \-dirSample
+Set directory where the COIN\-OR sample problems are.
+.TP
 .BI \-dirNetlib
 Set directory where the netlib problems are.
+.TP
+.BI \-dirMiplib
+Set directory where the MIPLIB 3 problems are.
 .TP
 .BI \-errorsAllowed
 Whether to allow import errors
@@ -1617,6 +1623,9 @@ Stops cbc execution
 .TP
 .BI \-version
 Print version
+.TP
+.BI \-unitTest
+Do unit test
 .TP
 .BI \-cutSwitchOff
 When a cut generator is switched off for the whole solve

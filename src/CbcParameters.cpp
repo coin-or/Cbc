@@ -1543,6 +1543,16 @@ void CbcParameters::addCbcSolverActionParams()
     "stdin", "Switch to interactive command line mode", "",
     CoinParam::displayPriorityNone);
 
+  parameters_[CbcParam::UNITTEST]->setup(
+    "unitTest", "Do unit test",
+    "With -dirMiplib, solves the MIPLIB 3 problems in that directory, one "
+    "after another, with the options given on the command line, and "
+    "prints a summary of results and times. With -dirSample instead, solves "
+    "p0033 and p0201 from the COIN-OR sample problems. Put the directory and "
+    "any options before -unitTest, for example: cbc -dirMiplib "
+    "../Data/miplib3 -aggregate 5 -unitTest",
+    CoinParam::displayPriorityHigh);
+
   parameters_[CbcParam::WRITEGMPLSOL]->setup(
     "writeGSolu!tion", "Puts glpk solution to file",
     "Will write a glpk solution file to the given file name.  It will use "
@@ -1730,6 +1740,24 @@ void CbcParameters::addCbcSolverDirParams()
     "the remaining work budget available to one post-cuts SppGrasp pass.",
     CoinParam::displayPriorityLow);
   parameters_[CbcParam::DIRNETLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DIRSAMPLE]->setup(
+    "dirSample", "Set directory where the COIN-OR sample problems are.",
+    "This sets the directory where the COIN-OR sample problems reside. It is "
+    "used only when -unitTest is passed to cbc without -dirMiplib. cbc will "
+    "pick up the test problems from this directory.",
+    CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIRSAMPLE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DIRMIPLIB]->setup(
+    "dirMiplib", "Set directory where the MIPLIB 3 problems are.",
+    "This sets the directory where the MIPLIB 3 problems reside (for "
+    "example, the Data/miplib3 project from COIN-OR). It is used only when "
+    "-unitTest is passed to cbc. cbc will pick up the problems from this "
+    "directory. If cbc is built without zlib support then the problems must "
+    "be uncompressed.",
+    CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIRMIPLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 }
 
 // ###########################################################################

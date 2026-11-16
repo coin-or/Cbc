@@ -93,6 +93,7 @@ public:
     SOLVECONTINUOUS,
     STATISTICS,
     STDIN,
+    UNITTEST,
     WRITEGMPLSOL,
     WRITEGMPLSOL_OLD, // For backward compatibility
     WRITEMODEL,
@@ -130,7 +131,9 @@ public:
     // Directory Paramaters
     FIRSTDIRECTORYPARAM,
     DIRECTORY,
+    DIRSAMPLE,
     DIRNETLIB,
+    DIRMIPLIB,
     LASTDIRECTORYPARAM,
 
     // String Parameters

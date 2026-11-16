@@ -281,16 +281,16 @@
 <a href="#barrier" class="sb-link">Barrier<span class="sb-count">3</span></a>
 <a href="#scaling" class="sb-link">Scaling<span class="sb-count">4</span></a>
 <a href="#output" class="sb-link">Output<span class="sb-count">24</span></a>
-<a href="#i-o" class="sb-link">I/O<span class="sb-count">37</span></a>
+<a href="#i-o" class="sb-link">I/O<span class="sb-count">39</span></a>
 <a href="#parallelism" class="sb-link">Parallelism<span class="sb-count">1</span></a>
-<a href="#general" class="sb-link">General<span class="sb-count">51</span></a>
+<a href="#general" class="sb-link">General<span class="sb-count">52</span></a>
     </nav>
   </aside>
 
   <div class="main-content">
     <header class="page-header">
       <h1>Parameter Reference</h1>
-      <p>CBC v2.933-140-g6c69fc09-dirty &mdash; October 2026 &mdash; 378 parameters across 18 sections</p>
+      <p>CBC v2.933-140-g6c69fc09-dirty &mdash; October 2026 &mdash; 381 parameters across 18 sections</p>
     </header>
 
 <section id="stopping" class="topic-section">
@@ -2052,9 +2052,17 @@ All features are computed in O(nz) time.</p></div>
   <summary><span class="pname"><code>-directory</code></span><span class="badge badge-file">Directory</span><span class="pshort">Set Default directory for import etc.</span></summary>
   <div class="pbody"><p class="plong">This sets the directory which import, export, saveModel, restoreModel etc. will use. It is initialized to the current directory.</p></div>
 </details>
+<details class="param" data-search="dirsample set directory where the coin-or sample problems are.">
+  <summary><span class="pname"><code>-dirSample</code></span><span class="badge badge-file">Directory</span><span class="pshort">Set directory where the COIN-OR sample problems are.</span></summary>
+  <div class="pbody"><p class="plong">This sets the directory where the COIN-OR sample problems reside. It is used only when -unitTest is passed to cbc without -dirMiplib. cbc will pick up the test problems from this directory.</p></div>
+</details>
 <details class="param" data-search="dirnetlib set directory where the netlib problems are.">
   <summary><span class="pname"><code>-dirNetlib</code></span><span class="badge badge-file">Directory</span><span class="pshort">Set directory where the netlib problems are.</span></summary>
   <div class="pbody"><p class="plong">This sets the directory where the netlib problems reside. One can get the netlib problems from COIN-OR or from the main netlib site. This parameter is used only when -netlib is passed to cbc. cbc will pick up the netlib problems from this directory. If cbc is built without zlib support then the problems must be uncompressed.</p></div>
+</details>
+<details class="param" data-search="dirmiplib set directory where the miplib 3 problems are.">
+  <summary><span class="pname"><code>-dirMiplib</code></span><span class="badge badge-file">Directory</span><span class="pshort">Set directory where the MIPLIB 3 problems are.</span></summary>
+  <div class="pbody"><p class="plong">This sets the directory where the MIPLIB 3 problems reside (for example, the Data/miplib3 project from COIN-OR). It is used only when -unitTest is passed to cbc. cbc will pick up the problems from this directory. If cbc is built without zlib support then the problems must be uncompressed.</p></div>
 </details>
 <details class="param" data-search="errorsallowed whether to allow import errors">
   <summary><span class="pname"><code>-errorsAllowed</code></span><span class="badge badge-kw">Keyword</span><span class="pshort">Whether to allow import errors</span><span class="pmeta">default:&nbsp;<code>off</code></span></summary>
@@ -2131,6 +2139,10 @@ All features are computed in O(nz) time.</p></div>
 <div class="param param-flat" data-search="version print version">
   <span class="pname"><code>-version</code></span><span class="badge badge-act">Action</span><span class="pshort">Print version</span>
 </div>
+<details class="param" data-search="unittest do unit test">
+  <summary><span class="pname"><code>-unitTest</code></span><span class="badge badge-act">Action</span><span class="pshort">Do unit test</span></summary>
+  <div class="pbody"><p class="plong">With -dirMiplib, solves the MIPLIB 3 problems in that directory, one after another, with the options given on the command line, and prints a summary of results and times. With -dirSample instead, solves p0033 and p0201 from the COIN-OR sample problems. Put the directory and any options before -unitTest, for example: cbc -dirMiplib ../Data/miplib3 -aggregate 5 -unitTest</p></div>
+</details>
 <details class="param" data-search="cutswitchoff when a cut generator is switched off for the whole solve">
   <summary><span class="pname"><code>-cutSwitchOff</code></span><span class="badge badge-str">String</span><span class="pshort">When a cut generator is switched off for the whole solve</span><span class="pmeta">default:&nbsp;<code>auto</code></span></summary>
   <div class="pbody"><p class="plong">A generator in ifmove or root mode (or with a limited number of tries) is given a threshold N. If N &gt; 0, it is switched off for the rest of the solve when its first root call adds fewer than N cuts; an ifmove generator with N &gt; 0 is also switched off after the root cut loop if the root objective moved by less than 0.5%. N = 0 never switches it off this way, and -1 or -2 give its cut count a weight of 2 or 5 when the root decides whether to keep it. Generators in on or forceOn mode are not affected, and other rules can still switch a generator off (e.g. an ifmove generator none of whose root cuts is short). The value is a comma-separated list: an item VALUE applies to every generator, and NAME:VALUE to one, where NAME is the generator&#x27;s cut option without &quot;Cuts&quot; (probing, gomory, lagomory, knapsack, reduceAndSplit, reduce2AndSplit, GMI, clique, oddWheel, impliedClique, mixedIntegerRounding, flowCover, twoMir, latwomir, liftAndProject, residualCapacity, zeroHalf). VALUE is an integer &gt;= -2 or auto. NAME:VALUE items take precedence over a VALUE item. The default, auto, keeps each generator&#x27;s built-in value: 1 for latwomir, reduceAndSplit, reduce2AndSplit, liftAndProject and residualCapacity, 2 for zeroHalf, -2 for knapsack and 0 for the rest. Examples: &#x27;twoMir:1&#x27;, &#x27;0&#x27; (never), &#x27;0,zeroHalf:2&#x27;. The values in effect are logged.</p></div>

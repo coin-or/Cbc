@@ -9,6 +9,7 @@
 #include "CoinPackedMatrix.hpp"
 #include "CbcConfig.h"
 #include "ClpSimplex.hpp"
+#include "ClpNonLinearCost.hpp"
 #include "CoinTable.hpp"
 #include "CoinTime.hpp"
 #include "CglPreProcess.hpp"
@@ -492,18 +493,41 @@ bool CbcOutput::useUtf8()
 // CbcRootLpEventHandler — tabular LP progress for the root node
 // ---------------------------------------------------------------------------
 
-// Column widths for the progress table:
+// The progress table, the same as Clp's (ClpOutput.cpp):
 //
-//   Phase   │     Iter │       Objective │   Primal inf │    Dual inf │    Time
-//   ─────────┬──────────┬─────────────────┬──────────────┬─────────────┬─────────
-//   Dual     │     3123 │     3.709408e+01 │  1.7376e+02  │  2.8598e+14 │    5.0s
+//   ──────── ──────── ─────────────── ──────────────────── ──────────────────── ────────
+//   Phase        Iter       Objective  Primal inf    (num)    Dual inf    (num)  Time(s)
+//   ──────── ──────── ─────────────── ──────────────────── ──────────────────── ────────
+//   Dual            0    1.267985e+03  1.7403e+04    (239)  1.0932e+03     (53)    0.020
+//
+// Primal inf and Dual inf are the sums of the infeasibilities, each followed
+// by their number in parentheses, as in Clp's classic status line. The
+// number is left out when the sum is zero.
 //
 static const int LP_W_PHASE = 8;
 static const int LP_W_ITER = 8;
 static const int LP_W_OBJ = 15;
-static const int LP_W_PINF = 12;
-static const int LP_W_DINF = 12;
+static const int LP_W_SUM = 11; // sum of infeasibilities
+static const int LP_W_NUM = 8; // "(n)", the number of infeasibilities
+static const int LP_W_PINF = LP_W_SUM + 1 + LP_W_NUM;
+static const int LP_W_DINF = LP_W_SUM + 1 + LP_W_NUM;
 static const int LP_W_TIME = 8;
+
+// A heading over the sum, and "(num)" over the number, in one column
+static std::string infHeading(const char *name)
+{
+  return std::string(name) + std::string(LP_W_NUM + 1 - 5, ' ') + "(num)";
+}
+
+// The number of infeasibilities as "(n)", or empty if it isn't shown
+static std::string infNumber(double sum, int number)
+{
+  if (!(sum > 0.0) || number <= 0)
+    return std::string();
+  char buf[32];
+  std::snprintf(buf, sizeof(buf), "(%d)", number);
+  return buf;
+}
 
 static CoinTable makeLpTable(bool utf8, bool compact)
 {
@@ -511,8 +535,8 @@ static CoinTable makeLpTable(bool utf8, bool compact)
                      { "Phase", LP_W_PHASE, /*leftAlign=*/true },
                      { "Iter", LP_W_ITER },
                      { "Objective", LP_W_OBJ },
-                     { "Primal inf", LP_W_PINF },
-                     { "Dual inf", LP_W_DINF },
+                     { infHeading("Primal inf"), LP_W_PINF },
+                     { infHeading("Dual inf"), LP_W_DINF },
                      { "Time(s)", LP_W_TIME },
                    },
     utf8, /*indent=*/2, compact);
@@ -570,8 +594,30 @@ void CbcRootLpEventHandler::printHeader() const
   printTableOpen(fp, tbl);
 }
 
+// A row for the model in the middle of a solve, with the same values as
+// Clp's classic status line: during the primal, the objective and the
+// primal infeasibilities come from the nonlinear cost, because the model's
+// objective includes the penalty on the relaxed bounds and its sum of
+// primal infeasibilities is zero.
+void CbcRootLpEventHandler::printIterationRow(int iter, double elapsed) const
+{
+  const ClpNonLinearCost *nonLinearCost = model_->nonLinearCost();
+  if (model_->algorithm() > 0 && nonLinearCost)
+    printRow(iter, nonLinearCost->feasibleReportCost(),
+      nonLinearCost->sumInfeasibilities(),
+      nonLinearCost->numberInfeasibilities(),
+      model_->sumDualInfeasibilities(), model_->numberDualInfeasibilities(),
+      elapsed);
+  else
+    printRow(iter, model_->objectiveValue(),
+      model_->sumPrimalInfeasibilities(), model_->numberPrimalInfeasibilities(),
+      model_->sumDualInfeasibilities(), model_->numberDualInfeasibilities(),
+      elapsed);
+}
+
 void CbcRootLpEventHandler::printRow(int iter, double obj, double primalInf,
-  double dualInf, double elapsed) const
+  int numberPrimalInf, double dualInf, int numberDualInf,
+  double elapsed) const
 {
   if (!msgHandler_)
     return;
@@ -597,12 +643,14 @@ void CbcRootLpEventHandler::printRow(int iter, double obj, double primalInf,
     break;
   }
   const std::string tbuf = fmtTime(elapsed);
-  fprintf(fp, "  %-*s%s%*d%s%*.6e%s%*.4e%s%*.4e%s%*s\n",
+  fprintf(fp, "  %-*s%s%*d%s%*.6e%s%*.4e %*s%s%*.4e %*s%s%*s\n",
     LP_W_PHASE, phase, bar,
     LP_W_ITER, iter, bar,
     LP_W_OBJ, obj, bar,
-    LP_W_PINF, (primalInf > 0.0 ? primalInf : 0.0), bar,
-    LP_W_DINF, (dualInf > 0.0 ? dualInf : 0.0), bar,
+    LP_W_SUM, (primalInf > 0.0 ? primalInf : 0.0),
+    LP_W_NUM, infNumber(primalInf, numberPrimalInf).c_str(), bar,
+    LP_W_SUM, (dualInf > 0.0 ? dualInf : 0.0),
+    LP_W_NUM, infNumber(dualInf, numberDualInf).c_str(), bar,
     LP_W_TIME, tbuf.c_str());
   fflush(fp);
 }
@@ -628,8 +676,9 @@ void CbcRootLpEventHandler::printFinalStatus(int numInts, int numFrac) const
   // Always show the last iteration if frequency limiting skipped it.
   if (shared_->lastPrintIter < iters) {
     printRow(iters, model_->objectiveValue(),
-      model_->sumPrimalInfeasibilities(),
-      model_->sumDualInfeasibilities(), elapsed);
+      model_->sumPrimalInfeasibilities(), model_->numberPrimalInfeasibilities(),
+      model_->sumDualInfeasibilities(), model_->numberDualInfeasibilities(),
+      elapsed);
   }
 
   printTableClose(fp, tbl);
@@ -695,9 +744,7 @@ int CbcRootLpEventHandler::event(Event whichEvent)
     // printed "Time(s)" column must be elapsed time since this root LP
     // relaxation started (shared_->startTime), not a raw wall-clock reading.
     double now = CoinWallclockTime();
-    printRow(0, model_->objectiveValue(),
-      model_->sumPrimalInfeasibilities(),
-      model_->sumDualInfeasibilities(), now - shared_->startTime);
+    printIterationRow(0, now - shared_->startTime);
     shared_->lastPrintTime = now;
     shared_->lastPrintIter = 0;
     return -1;
@@ -733,9 +780,7 @@ int CbcRootLpEventHandler::event(Event whichEvent)
   const bool doForce = (shared_->lastPrintIter < 0);
 
   if (doIter || doTime || doForce) {
-    printRow(iter, model_->objectiveValue(),
-      model_->sumPrimalInfeasibilities(),
-      model_->sumDualInfeasibilities(), now - shared_->startTime);
+    printIterationRow(iter, now - shared_->startTime);
     shared_->lastPrintTime = now;
     shared_->lastPrintIter = iter;
   }

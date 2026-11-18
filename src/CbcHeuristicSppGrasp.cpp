@@ -18,6 +18,10 @@
 #include "CoinTime.hpp"
 #include "OsiSolverInterface.hpp"
 
+#ifdef CBC_THREAD
+#include <future>
+#endif
+
 namespace {
 const double kNoOption = 1.0e20;
 
@@ -1741,6 +1745,7 @@ CbcHeuristicSppGrasp::CbcHeuristicSppGrasp()
   , needSlacks_(true)
   , artificialFactor_(0.0)
   , minimumNativeCoverage_(0.0)
+  , rootThreadLimit_(1)
   , numberCalls_(0)
 {
   setHeuristicName("SppGrasp");
@@ -1755,6 +1760,7 @@ CbcHeuristicSppGrasp::CbcHeuristicSppGrasp(CbcModel &model)
   , needSlacks_(true)
   , artificialFactor_(0.0)
   , minimumNativeCoverage_(0.0)
+  , rootThreadLimit_(1)
   , numberCalls_(0)
 {
   setHeuristicName("SppGrasp");
@@ -1771,6 +1777,7 @@ CbcHeuristicSppGrasp::CbcHeuristicSppGrasp(const CbcHeuristicSppGrasp &rhs)
   , needSlacks_(rhs.needSlacks_)
   , artificialFactor_(rhs.artificialFactor_)
   , minimumNativeCoverage_(rhs.minimumNativeCoverage_)
+  , rootThreadLimit_(rhs.rootThreadLimit_)
   , coverageTuningProfile_(rhs.coverageTuningProfile_)
   , coverageTuningStage_(rhs.coverageTuningStage_)
   , coverageTuningValues_(rhs.coverageTuningValues_)
@@ -1796,6 +1803,7 @@ CbcHeuristicSppGrasp &CbcHeuristicSppGrasp::operator=(const CbcHeuristicSppGrasp
     needSlacks_ = rhs.needSlacks_;
     artificialFactor_ = rhs.artificialFactor_;
     minimumNativeCoverage_ = rhs.minimumNativeCoverage_;
+    rootThreadLimit_ = rhs.rootThreadLimit_;
     coverageTuningProfile_ = rhs.coverageTuningProfile_;
     coverageTuningStage_ = rhs.coverageTuningStage_;
     coverageTuningValues_ = rhs.coverageTuningValues_;
@@ -1899,6 +1907,8 @@ void CbcHeuristicSppGrasp::generateCpp(FILE *fp)
   fprintf(fp, "0#include \"CbcHeuristicSppGrasp.hpp\"\n");
   fprintf(fp, "3  CbcHeuristicSppGrasp heuristicSppGrasp(*cbcModel);\n");
   CbcHeuristic::generateCpp(fp, "heuristicSppGrasp");
+  if (rootThreadLimit_ != other.rootThreadLimit_)
+    fprintf(fp, "3  heuristicSppGrasp.setRootThreadLimit(%d);\n", rootThreadLimit_);
   fprintf(fp, "3  cbcModel->addHeuristic(&heuristicSppGrasp);\n");
 }
 
@@ -1972,6 +1982,12 @@ int CbcHeuristicSppGrasp::solution(double &objectiveValue, double *newSolution)
 }
 
 int CbcHeuristicSppGrasp::solution(double &objectiveValue, double *newSolution, bool standalone)
+{
+  return solution(objectiveValue, newSolution, standalone, -1);
+}
+
+int CbcHeuristicSppGrasp::solution(double &objectiveValue, double *newSolution,
+  bool standalone, int availableThreads)
 {
   std::vector< double > pumpGuide;
   pumpGuide.swap(pumpFractionalGuide_);
@@ -2135,7 +2151,9 @@ int CbcHeuristicSppGrasp::solution(double &objectiveValue, double *newSolution, 
         << line << CoinMessageEol;
     }
   }
-  grasp.setSeed(static_cast< unsigned int >(1234567 + 7919 * numberCalls_ + model_->getNodeCount()));
+  const unsigned int seed = 1234567u + 7919u * numberCalls_
+    + static_cast< unsigned int >(model_->getNodeCount());
+  grasp.setSeed(seed);
   const int n = grasp.numberOriginalColumns();
   if (model_->getMaximumSeconds() < 1.0e10)
     params.timeLimit = std::min(params.timeLimit,
@@ -2157,8 +2175,72 @@ int CbcHeuristicSppGrasp::solution(double &objectiveValue, double *newSolution, 
     fprintf(fp, "\n%s SPPGrasp ... ", utf8 ? "▶" : "[>]");
     fflush(fp);
   }
-  double bestValue = grasp.run(config, params, best, &stats,
-    mappedIncumbentValid ? &incumbent : NULL);
+  const std::vector< char > *initial = mappedIncumbentValid ? &incumbent : NULL;
+  double bestValue;
+#ifdef CBC_THREAD
+  int restarts = 1;
+  if (rootThreadLimit_ != 1 && !model_->getNodeCount() && !model_->parentModel()) {
+    if (availableThreads < 0)
+      availableThreads = (model_->getThreadMode() & 4) ? 1 : model_->getNumberThreads();
+    restarts = std::max(1, rootThreadLimit_ > 0
+        ? std::min(rootThreadLimit_, availableThreads)
+        : availableThreads);
+  }
+  if (restarts > 1) {
+    const double start = CoinGetTimeOfDay();
+    if (params.totalWorkLimit > 0.0)
+      params.totalWorkLimit /= restarts;
+    struct RestartResult {
+      std::vector< char > solution;
+      CbcSppGrasp::RunStats stats;
+      double value;
+      bool feasible;
+    };
+    // The restart engines own their scratch arrays, RNG and artificial costs.
+    // No worker reads or updates CBC model/solver state.
+    auto runRestart = [&](CbcSppGrasp &engine) {
+      RestartResult result;
+      result.value = engine.run(config, params, result.solution, &result.stats, initial);
+      result.feasible = std::isfinite(result.value) && result.value != COIN_DBL_MAX
+        && !engine.numberArtificialUsed(result.solution);
+      return result;
+    };
+    std::vector< CbcSppGrasp > engines(restarts - 1, grasp);
+    std::vector< std::future< RestartResult > > workers;
+    workers.reserve(restarts - 1);
+    for (int i = 1; i < restarts; ++i) {
+      CbcSppGrasp &engine = engines[i - 1];
+      engine.setSeed(seed + 2654435761u * i);
+      workers.push_back(std::async(std::launch::async, runRestart, std::ref(engine)));
+    }
+    RestartResult winner = runRestart(grasp);
+    double work = winner.stats.work;
+    int selected = 0;
+    for (int i = 1; i < restarts; ++i) {
+      RestartResult result = workers[i - 1].get();
+      work += result.stats.work;
+      if (result.feasible && (!winner.feasible || result.value < winner.value)) {
+        winner = std::move(result);
+        selected = i;
+      }
+    }
+    bestValue = winner.value;
+    best.swap(winner.solution);
+    stats = std::move(winner.stats);
+    stats.work = work;
+    stats.time = CoinGetTimeOfDay() - start;
+    if (model_->messageHandler()->logLevel() > 1) {
+      std::ostringstream message;
+      message << "SppGrasp parallel: " << restarts << " restarts, winner "
+              << selected + 1 << (winner.feasible ? "" : " (no real solution)");
+      model_->messageHandler()->message(CBC_GENERAL, model_->messages())
+        << message.str() << CoinMessageEol;
+    }
+  } else
+#else
+  (void)availableThreads;
+#endif
+    bestValue = grasp.run(config, params, best, &stats, initial);
   if (model_->messageHandler()->logLevel() > 1) {
     std::ostringstream message;
     message << (coverageTuningProfile_.empty() ? "SppGrasp run result: stage " : "SppGrasp coverage tuning result: stage ")

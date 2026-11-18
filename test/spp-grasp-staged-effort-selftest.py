@@ -7,7 +7,6 @@ import re
 import subprocess
 import sys
 
-
 HERE = pathlib.Path(__file__).resolve().parent
 MODEL = HERE / "spp-grasp-stage-policy.mps"
 AIR04 = HERE / "mip-sanity-data" / "mips" / "air04.mps.gz"
@@ -60,7 +59,7 @@ def solve(cbc, model, extra, timeout=20):
     return result.stdout
 
 
-def policy(cbc, sequence, work="0.01", stage_parameter=True, fpump=False):
+def policy(cbc, sequence, work="0.01", stage_parameter=True, fpump=False, extra=()):
     options = [
         "-feas",
         "on" if fpump else "off",
@@ -74,7 +73,7 @@ def policy(cbc, sequence, work="0.01", stage_parameter=True, fpump=False):
     return solve(
         cbc,
         MODEL,
-        options,
+        [*options, *extra],
     )
 
 
@@ -84,6 +83,37 @@ def spp_result(output):
         output,
     )
     return match.groups() if match else None
+
+
+def check_parallel(cbc):
+    def run(threads, restarts, sequence="legacy"):
+        return policy(
+            cbc, sequence,
+            extra=["-threads", str(threads), "-sppGraspThreads", str(restarts)],
+        )
+
+    marker = "SppGrasp parallel:"
+    single = run(3, 1)
+    if marker in single or spp_result(single) != spp_result(run(1, 0)):
+        raise AssertionError("the single restart changed with the thread setting")
+    parallel = run(3, 0)
+    if (f"{marker} 3 restarts" not in parallel
+            or f"{marker} 2 restarts" not in run(3, 2)
+            or marker in run(0, 0) or marker in run(1, 0)):
+        raise AssertionError(f"restart count did not respect CBC threads and the cap:\n{parallel}")
+    best, control = spp_result(parallel), spp_result(single)
+    if not best or not control or float(best[1]) > float(control[1]) or best != spp_result(run(3, 0)):
+        raise AssertionError(f"parallel selection lost the single restart or varied across runs:\n{parallel}")
+
+    staged = run(3, 0, "spp-fpump-staged")
+    if f"{marker} 3 restarts" not in staged or "SppGrasp stage 1 used" not in staged:
+        raise AssertionError(f"parallel staged work was not accounted for:\n{staged}")
+    root = solve(cbc, HERE / "spp-grasp-policy.mps", [
+        "-threads", "3", "-sppGraspThreads", "0",
+        "-sppGraspRootSequence", "spp-fpump", "-feas", "on",
+    ])
+    if not re.search(r"calling SppGrasp[^\n]*\n[^\n]*SppGrasp parallel: 3 restarts", root):
+        raise AssertionError(f"parallel search did not run at the processed root:\n{root}")
 
 
 def full_air04(cbc):
@@ -169,6 +199,7 @@ def main():
         "--cbc", default=str(HERE.parent / "src" / "cbc")
     )
     parser.add_argument("--baseline", help="optional frozen legacy CBC binary")
+    parser.add_argument("--parallel", action="store_true", help="require and test a threaded CBC build")
     parser.add_argument(
         "--air04",
         action="store_true",
@@ -227,6 +258,9 @@ def main():
         if "SppGrasp stage 1 used" in unlimited or "initial effort pass used" in unlimited:
             raise AssertionError(f"{sequence} incorrectly split an unlimited run")
 
+    if args.parallel:
+        check_parallel(cbc)
+        print("  parallel root restarts honor the cap and retain the best result")
     print("SppGrasp staged-effort selftest: PASS")
     print("  staged mode calls the original and post-cuts hooks; legacy remains default-off")
     print("  an unbounded sppGraspWork setting falls back without splitting the run")

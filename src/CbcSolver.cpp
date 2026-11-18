@@ -11355,6 +11355,7 @@ void CbcSolver::babRunSppGraspOriginal()
   // 2: with artificial slacks
   sppGraspOriginal_ = applicability;
   CbcHeuristicSppGrasp heuristic(model_);
+  heuristic.setRootThreadLimit(parameters[CbcParam::SPPGRASPTHREADS]->intVal());
   heuristic.setMinimumNativeCoverage(minimumNativeCoverage);
   if (applicability == 2)
     heuristic.setArtificialSlacks(artificial);
@@ -11383,7 +11384,12 @@ void CbcSolver::babRunSppGraspOriginal()
   const int numberColumns = solver->getNumCols();
   std::vector< double > x(numberColumns, 0.0);
   double obj = model_.getCutoff();
-  const bool found = heuristic.solution(obj, &x[0], !parameters.noPrinting());
+  int availableThreads = 1;
+#ifdef CBC_THREAD
+  availableThreads = parameters[CbcParam::THREADS]->intVal() % 100;
+#endif
+  const bool found = heuristic.solution(obj, x.data(), !parameters.noPrinting(),
+    availableThreads);
   if (effortControlled && model_.messageHandler()->logLevel() > 0) {
     char line[192];
     if (stagedRequested) {

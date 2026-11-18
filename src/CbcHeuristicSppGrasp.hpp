@@ -510,6 +510,12 @@ public:
   virtual int solution(double &objectiveValue, double *newSolution) override;
   /// Standalone calls print a compact summary at log level 1.
   int solution(double &objectiveValue, double *newSolution, bool standalone);
+  /// Override the available thread count if the caller runs before model
+  /// thread setup, or pass 1 when called from a parallel heuristic batch.
+  int solution(double &objectiveValue, double *newSolution, bool standalone,
+    int availableThreads);
+  /// 0 uses all configured CBC threads; 1 keeps the original single search.
+  void setRootThreadLimit(int limit) { rootThreadLimit_ = limit; }
 
   /// True if the model's solver has the structure the heuristic needs
   static bool isApplicable(const OsiSolverInterface &solver, bool needSlacks,
@@ -565,6 +571,7 @@ protected:
   bool needSlacks_;
   double artificialFactor_;
   double minimumNativeCoverage_;
+  int rootThreadLimit_;
   std::string coverageTuningProfile_;
   std::string coverageTuningStage_;
   std::vector< std::pair< std::string, double > > coverageTuningValues_;

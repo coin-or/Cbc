@@ -1356,6 +1356,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   if (sppApplicable && !originalOnlySpp) {
     anyToDo = true;
     CbcHeuristicSppGrasp heuristicSpp(*model);
+    heuristicSpp.setRootThreadLimit(parameters[CbcParam::SPPGRASPTHREADS]->intVal());
     heuristicSpp.setMinimumNativeCoverage(minimumNativeCoverage);
     heuristicSpp.setMaxTime(parameters[CbcParam::SPPGRASPTIME]->dblVal());
     heuristicSpp.setMaxWork(1.0e6 * parameters[CbcParam::SPPGRASPWORK]->dblVal());

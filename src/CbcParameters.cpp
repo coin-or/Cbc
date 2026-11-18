@@ -697,6 +697,7 @@ void CbcParameters::addCbcParams()
   parameters_[CbcParam::SPPGRASPARTIFICIAL]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPNOIMPROVE]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPSTAGEFIRSTPERCENT]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPTHREADS]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPDESTROYROWS]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPSTALL]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPDESTROYGROW]->setTopic("Heuristics");
@@ -922,6 +923,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::SPPGRASPDESTROYROWS]->setDefault(5);
     parameters_[CbcParam::SPPGRASPSTALL]->setDefault(200);
     parameters_[CbcParam::SPPGRASPSTAGEFIRSTPERCENT]->setDefault(25);
+    parameters_[CbcParam::SPPGRASPTHREADS]->setDefault(1);
     parameters_[CbcParam::SPPGRASPDESTROYGROW]->setDefault(0.0);
     parameters_[CbcParam::SPPGRASPRELATEDROWS]->setDefault(0.0);
     parameters_[CbcParam::SPPGRASPREALSTALLWORK]->setDefault(0.0);
@@ -3687,6 +3689,16 @@ void CbcParameters::addCbcSolverIntParams()
     "Most root passes an idle cut generator is skipped for",
     1, COIN_INT_MAX,
     "See cutSkipInitialPeriod.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPTHREADS]->setup(
+    "sppGraspThreads", "Maximum concurrent SppGrasp restarts at root",
+    0, COIN_INT_MAX,
+    "1 (default) runs one search. 0 uses all configured CBC threads; "
+    "larger values cap the number of restarts by the CBC thread count. "
+    "This applies only at root, outside other parallel heuristic batches. "
+    "The best real-feasible result is returned. The regular work limit "
+    "applies to each restart; an explicit total-work budget is shared.",
     CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::SPPGRASPNOIMPROVE]->setup(

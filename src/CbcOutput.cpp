@@ -687,19 +687,16 @@ void CbcRootLpEventHandler::printFinalStatus(int numInts, int numFrac) const
   const char *baseStatus = "Unknown";
   int s = model_->status();
   int ss = model_->secondaryStatus();
+  // Clp's status codes: 0 optimal, 1 primal infeasible, 2 dual infeasible,
+  // 3 stopped (secondary status 9 if on time), 4 errors, 5 event handler.
   if (s == 0)
     baseStatus = "Optimal";
-  else if (s == 1) {
-    if (ss == 4)
-      baseStatus = "Iteration limit";
-    else if (ss == 9)
-      baseStatus = "Time limit";
-    else
-      baseStatus = "Stopped";
-  } else if (s == 2)
+  else if (s == 1)
     baseStatus = "Infeasible";
-  else if (s == 3)
+  else if (s == 2)
     baseStatus = "Unbounded";
+  else if (s == 3)
+    baseStatus = (ss == 9) ? "Time limit" : "Stopped";
   else if (s == 4)
     baseStatus = "Numerical difficulties";
   else if (s == 5)

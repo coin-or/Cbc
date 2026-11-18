@@ -2595,7 +2595,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       bestChoice = iBestGot;
     else
       bestChoice = iBestNot;
-    assert(bestChoice >= 0);
+    if (bestChoice < 0)
+      bestChoice = 0;
     // If we have hit max time don't do strong branching
     bool hitMaxTime = (model->getCurrentSeconds() > model->getDblParam(CbcModel::CbcMaximumSeconds));
     // also give up if we are looping round too much
@@ -3077,7 +3078,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         double predictedChange = 0.0;
         // may have become feasible
         if (!infeasibility) {
-          if (strongType != 2 || solver->getColLower()[iColumn] == solver->getColUpper()[iColumn])
+          if (strongType != 2 || iColumn >= numberColumns || solver->getColLower()[iColumn] == solver->getColUpper()[iColumn])
             continue;
         }
 #ifndef NDEBUG

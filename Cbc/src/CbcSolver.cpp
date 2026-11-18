@@ -3801,7 +3801,7 @@ int CbcMain1(int argc, const char *argv[],
                 si->setWarmStart(NULL);
                 int returnCode = 0;
                 if (callBack != NULL)
-                  callBack(&model_, 1);
+                  returnCode = callBack(&model_, 1);
                 if (returnCode) {
                   // exit if user wants
                   delete babModel_;
@@ -4514,9 +4514,28 @@ int CbcMain1(int argc, const char *argv[],
                   const int *originalColumns = process.originalColumns();
                   int numberColumns = solver2->getNumCols();
                   OsiSolverInterface *originalSolver = model.solver();
+                  int numberOriginalColumns = originalSolver->getNumCols();
+                  int oddColumn = 1;
                   for (int i = 0; i < numberColumns; i++) {
                     int iColumn = originalColumns[i];
-                    solver2->setColName(i, originalSolver->getColName(iColumn));
+                    if (iColumn < numberOriginalColumns) {
+                      std::string columnName = originalSolver->getColName(iColumn);
+                      // check if odd name
+                      if (columnName[0] == 'N') {
+                        const char *digits = columnName.c_str() + 1;
+                        char *end;
+                        long sequence = strtol(digits, &end, 10);
+                        if (end != digits && sequence >= 0 && sequence < COIN_INT_MAX)
+                          oddColumn = static_cast< int >(sequence) + 1;
+                      }
+                      solver2->setColName(i, columnName);
+                    } else {
+                      // column added by preprocessing - no original name
+                      char name[15];
+                      sprintf(name, "N%.7d", oddColumn);
+                      oddColumn++;
+                      solver2->setColName(i, name);
+                    }
                   }
                   OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
                   ClpSimplex *lpSolver = clpSolver2->getModelPtr();
@@ -8593,6 +8612,7 @@ int CbcMain1(int argc, const char *argv[],
                     assert(fp);
                     OsiClpSolverInterface solver(model2);
                     solver.writeLp(fp, 1.0e-12);
+                    fclose(fp);
                   }
                   if (deleteModel2)
                     delete model2;
@@ -9993,13 +10013,22 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   // Write solution header (suggested by Luigi Poderico)
                   // Refresh solver
                   lpSolver = clpSolver->getModelPtr();
-                  lpSolver->computeObjectiveValue(false);
-                  double objValue = lpSolver->getObjValue();
+                  ClpQuadraticObjective *quadObj = dynamic_cast< ClpQuadraticObjective * >(lpSolver->objectiveAsObject());
+                  double objValue;
+                  if (!quadObj) {
+                    lpSolver->computeObjectiveValue(false);
+                    objValue = lpSolver->getObjValue();
+                  } else {
+                    double *solution = lpSolver->primalColumnSolution();
+                    objValue = quadObj->objectiveValue(lpSolver, solution);
+                    // offset
+                    objValue -= lpSolver->objectiveOffset();
+                  }
                   int iStat = lpSolver->status();
                   int iStat2 = -1;
                   if (integerStatus >= 0) {
                     iStat = integerStatus;
-                    iStat2 = babModel_->secondaryStatus();
+                    iStat2 = babModel_ ? babModel_->secondaryStatus() : model_.secondaryStatus();
                   }
                   if (iStat == 0) {
                     fprintf(fp, "Optimal");

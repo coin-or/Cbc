@@ -4044,7 +4044,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       model->setSearchStrategy(2);
     }
   }
-  if (numberUnfinished * 10 < numberStrongDone && model->numberStrongIterations() * 20 < model->getIterationCount() && !auxiliaryInfo->solutionAddsCuts()) {
+  if (numberUnfinished * 10 < numberStrongDone && static_cast< double >(model->numberStrongIterations()) * 20 < model->getIterationCount() && !auxiliaryInfo->solutionAddsCuts()) {
     //printf("increasing trust\n");
     model->synchronizeNumberBeforeTrust(2);
   }
@@ -5236,8 +5236,13 @@ int CbcNode::analyze(CbcModel *model, double *results)
     groupCounts[j]++;
   }
   general[0] = '\0';
-  for (int i = 0; i < 11; i++)
-    sprintf(general + strlen(general), "%d <= %g ", groupCounts[i], groupValue[i]);
+  for (int i = 0; i < 11; i++) {
+    // 11 items can overflow general[200] - append only what fits
+    char item[40];
+    sprintf(item, "%d <= %g ", groupCounts[i], groupValue[i]);
+    if (strlen(general) + strlen(item) < sizeof(general))
+      strcat(general, item);
+  }
   model->messageHandler()->message((solveType & 32) == 0 ? CBC_FPUMP2 : CBC_FPUMP1,
     *model->messagesPointer())
     << general
@@ -5273,6 +5278,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     *model->messagesPointer())
     << general
     << CoinMessageEol;
+#if 0 // taken out as can easily overflow
   sprintf(general, "Breakdown ");
   for (i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];
@@ -5295,6 +5301,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     *model->messagesPointer())
     << general
     << CoinMessageEol;
+#endif
   delete[] objMovement;
   if ((solveType & 2) == 0) {
     // Delete the snapshot

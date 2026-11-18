@@ -407,7 +407,7 @@ void CbcModel::analyzeObjective()
     int numberInteger = 0;
     int numberIntegerObj = 0;
     int numberGeneralIntegerObj = 0;
-    int numberIntegerWeight = 0;
+    double numberIntegerWeight = 0.0;
     int numberContinuousObj = 0;
     double cost = COIN_DBL_MAX;
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -433,8 +433,8 @@ void CbcModel::analyzeObjective()
               cost = objValue;
             else if (cost != objValue)
               cost = -COIN_DBL_MAX;
-            int gap = static_cast< int >(upper[iColumn] - lower[iColumn]);
-            if (gap > 1) {
+            double gap = floor(upper[iColumn] - lower[iColumn]);
+            if (gap > 1.0) {
               numberGeneralIntegerObj++;
               numberIntegerWeight += gap;
             }

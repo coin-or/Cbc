@@ -186,6 +186,10 @@ CbcTreeLocal::CbcTreeLocal(CbcModel *model, const double *solution,
 }
 CbcTreeLocal::~CbcTreeLocal()
 {
+  // Free any nodes still in the tree (e.g. when B&B exits without cleanTree).
+  for (size_t i = 0; i < nodes_.size(); i++)
+    delete nodes_[i];
+  nodes_.clear();
   delete[] originalLower_;
   delete[] originalUpper_;
   delete[] bestSolution_;
@@ -580,7 +584,8 @@ bool CbcTreeLocal::empty()
       } else {
         searchType_ = 1;
         // delete last cut
-        deleteCut(cut_);
+        if (cut_.row().getNumElements())
+          deleteCut(cut_);
       }
     } else {
       searchType_ = 1;
@@ -601,7 +606,8 @@ bool CbcTreeLocal::empty()
         searchType_ = 0;
       } else {
         // delete last cut
-        deleteCut(cut_);
+        if (cut_.row().getNumElements())
+          deleteCut(cut_);
         searchType_ = 1;
       }
       nextStrong_ = true;
@@ -658,6 +664,10 @@ bool CbcTreeLocal::empty()
       localNode_ = localNode2;
       std::make_heap(nodes_.begin(), nodes_.end(), comparison_);
     }
+  } else {
+    // local search is finished; localNode_ will not be reused - free it now
+    delete localNode_;
+    localNode_ = NULL;
   }
   return finished;
 }
@@ -851,7 +861,8 @@ void CbcTreeLocal::deleteCut(OsiRowCut &cut)
       break;
     }
   }
-  assert(i < n);
+  if (i >= n)
+    return; // cut not in global cuts (e.g. cloned sub-model) - nothing to delete
   // delete last cut
   if (model_->messageHandler()->logLevel() > 1)
     printf("deleteCut - deleting cut %d out of %d, rhs %g %g\n",
@@ -1047,6 +1058,10 @@ CbcTreeVariable::CbcTreeVariable(CbcModel *model, const double *solution,
 }
 CbcTreeVariable::~CbcTreeVariable()
 {
+  // Free any nodes still in the tree (e.g. when B&B exits without cleanTree).
+  for (size_t i = 0; i < nodes_.size(); i++)
+    delete nodes_[i];
+  nodes_.clear();
   delete[] originalLower_;
   delete[] originalUpper_;
   delete[] bestSolution_;
@@ -1441,7 +1456,8 @@ bool CbcTreeVariable::empty()
       } else {
         searchType_ = 1;
         // delete last cut
-        deleteCut(cut_);
+        if (cut_.row().getNumElements())
+          deleteCut(cut_);
       }
     } else {
       searchType_ = 1;
@@ -1462,7 +1478,8 @@ bool CbcTreeVariable::empty()
         searchType_ = 0;
       } else {
         // delete last cut
-        deleteCut(cut_);
+        if (cut_.row().getNumElements())
+          deleteCut(cut_);
         searchType_ = 1;
       }
       nextStrong_ = true;
@@ -1519,6 +1536,10 @@ bool CbcTreeVariable::empty()
       localNode_ = localNode2;
       std::make_heap(nodes_.begin(), nodes_.end(), comparison_);
     }
+  } else {
+    // local search is finished; localNode_ will not be reused - free it now
+    delete localNode_;
+    localNode_ = NULL;
   }
   return finished;
 }
@@ -1703,7 +1724,8 @@ void CbcTreeVariable::deleteCut(OsiRowCut &cut)
       break;
     }
   }
-  assert(i < n);
+  if (i >= n)
+    return; // cut not in global cuts (e.g. cloned sub-model) - nothing to delete
   // delete last cut
   if (model_->messageHandler()->logLevel() > 1)
     printf("deleteCut - deleting cut %d out of %d, rhs %g %g\n",

@@ -351,7 +351,13 @@ int main(int argc, const char *argv[])
     setCbcOrClpPrinting(false);
 #endif
 
-    returnCode = CbcMain1(argc, argv, model, dummyCallBack, cbcData);
+    // Code for CoinError
+    try {
+      returnCode = CbcMain1(argc, argv, model, dummyCallBack, cbcData);
+    } catch (CoinError &e) {
+      e.print();
+      return 99;
+    }
   }
 
 #ifdef CLP_DEBUG_MALLOC

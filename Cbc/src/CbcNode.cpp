@@ -828,6 +828,12 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         bool roundAgain = false;
         // get basis
         CoinWarmStartBasis *ws = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
+        // a basis that does not cover all columns (e.g. the empty warm start
+        // of Bonmin's NLP interface) can't be adjusted - treat as no basis
+        if (ws && ws->getNumStructural() < numberColumns) {
+          delete ws;
+          ws = NULL;
+        }
         if (!ws)
           break;
         for (i = 0; i < numberColumns; i++) {
@@ -2346,7 +2352,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           break;
         }
         // Double check looks OK - just look at rows with all integers
-        if (model->allDynamic()) {
+        // (skipped if the solver has no matrix, e.g. Bonmin's NLP interface)
+        if (model->allDynamic() && solver->getMatrixByCol()) {
           double *solution = CoinCopyOfArray(saveSolution, numberColumns);
           for (int i = 0; i < numberColumns; i++) {
             if (model->isInteger(i))
@@ -2445,6 +2452,12 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         bool roundAgain = false;
         // get basis
         CoinWarmStartBasis *ws = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
+        // a basis that does not cover all columns (e.g. the empty warm start
+        // of Bonmin's NLP interface) can't be adjusted - treat as no basis
+        if (ws && ws->getNumStructural() < numberColumns) {
+          delete ws;
+          ws = NULL;
+        }
         if (!ws)
           break;
         double tolerance;
@@ -6106,21 +6119,16 @@ int CbcNode::chooseClpBranch(CbcModel *model,
     int saveLogLevel = simplex->logLevel();
     simplex->setLogLevel(0);
     simplex->dual();
-    simplex->setLogLevel(saveLogLevel);
-    double cutoff = model->getCutoff();
-    bool goodSolution = true;
     if (simplex->status()) {
-      //simplex->writeMps("bad7.mps",2);
-      if (nodeInfo) {
-        if (nodeInfo->objectiveValue() > cutoff - 1.0e-2)
-          goodSolution = false;
-        else
-          assert(!simplex->status());
-      } else {
-        // debug diving
-        assert(!simplex->status());
-      }
+#ifdef CBC_MORE_PRINTING
+      model->messageHandler()->message(CBC_FPUMP1, *model->messagesPointer())
+        << "fathomMany solution -trying again from allslack" << CoinMessageEol;
+#endif
+      simplex->allSlackBasis(true);
+      simplex->dual();
     }
+    simplex->setLogLevel(saveLogLevel);
+    bool goodSolution = !simplex->status();
     if (goodSolution) {
       double newObjectiveValue = solver->getObjSense() * solver->getObjValue();
       // See if integer solution

@@ -3322,6 +3322,9 @@ public:
   //---------------------------------------------------------------------------
 
 private:
+  bool stoppingCriterionReachedImpl(bool checkMemory) const;
+  bool checkMemoryLimit(int *checkInterval) const;
+
   ///@name Private member data
   //@{
 

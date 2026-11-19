@@ -5068,6 +5068,10 @@ void CbcModel::branchAndBound(int doStatistics)
 #define MAX_DEL_NODE 1
   CbcNode *delNode[MAX_DEL_NODE + 1];
   int nDeleteNode = 0;
+  bool stoppedOnMemory = false;
+  int memoryCheckInterval = 1;
+  int memoryCheckCountdown = 1;
+  cbc_node_count lastMemoryCheckNode = numberNodes_;
   // For Printing etc when parallel
   cbc_node_count lastEvery1000 = 0;
   cbc_node_count lastPrintEvery = 0;
@@ -5431,18 +5435,24 @@ void CbcModel::branchAndBound(int doStatistics)
         saveSolver = nullptr;
       }
     }
-    /*  Check for abort on limits: node count, solution count, time, integrality
-     * gap. */
+    /* Check for abort on limits. RSS sampling is more expensive than the
+       other checks, and node counts can stall or jump in parallel search. */
 #ifdef CBC_THREAD
-    if (master_) {
+    if (master_)
       lockThread();
-      bool stopping = stoppingCriterionReached();
-      unlockThread();
-      if (stopping)
-        break;
-    } else
 #endif
-      if (stoppingCriterionReached())
+    bool stopping = stoppingCriterionReachedImpl(false);
+    if (!stopping && (--memoryCheckCountdown == 0
+                       || numberNodes_ - lastMemoryCheckNode >= memoryCheckInterval)) {
+      stopping = stoppedOnMemory = checkMemoryLimit(&memoryCheckInterval);
+      memoryCheckCountdown = memoryCheckInterval;
+      lastMemoryCheckNode = numberNodes_;
+    }
+#ifdef CBC_THREAD
+    if (master_)
+      unlockThread();
+#endif
+    if (stopping)
       break;
 #ifdef BONMIN
     assert(!solverCharacteristics_->solutionAddsCuts() || solverCharacteristics_->mipFeasible());
@@ -5964,7 +5974,10 @@ void CbcModel::branchAndBound(int doStatistics)
      may have been pushed back onto the tree for further processing, in which
      case it'll be deleted in cleanTree. We need to check.
     */
-  if (stoppingCriterionReached()) {
+  // Keep the result of the check that stopped the loop: shutting down
+  // workers or cleaning the tree can bring RSS back below the limit.
+  stoppedOnMemory = stoppedOnMemory || isMemoryLimitReached();
+  if (stoppedOnMemory || stoppingCriterionReachedImpl(false)) {
     double finalBound = pendingThreadBound;
     if (tree_->size())
       finalBound = std::min(finalBound, tree_->getBestPossibleObjective());
@@ -5996,7 +6009,7 @@ void CbcModel::branchAndBound(int doStatistics)
       handler_->message(CBC_MAXTIME, messages_) << CoinMessageEol;
       secondaryStatus_ = 4;
       status_ = 1;
-    } else if (isMemoryLimitReached()) {
+    } else if (stoppedOnMemory) {
       handler_->message(CBC_MAXMEMORY, messages_) << CoinMessageEol;
       secondaryStatus_ = 9;
       status_ = 1;
@@ -8322,22 +8335,30 @@ bool CbcModel::isNodeLimitReached() const
 // Memory limit reached? (only meaningful during branch and bound)
 bool CbcModel::isMemoryLimitReached() const
 {
+  return checkMemoryLimit(nullptr);
+}
+
+bool CbcModel::checkMemoryLimit(int *checkInterval) const
+{
   double maxMemory = dblParam_[CbcMaxMemory];
+  // Avoid repeated OS queries with plenty of headroom, but check every
+  // search iteration near the limit regardless of model size.
+  if (checkInterval)
+    *checkInterval = 100;
   // Sentinel value (see cbcDefaultMaxMemoryBytes()) meaning "not checked".
   if (maxMemory > 0.99e100)
     return false;
+  if (parentModel_)
+    maxMemory = std::min(maxMemory, parentModel_->dblParam_[CbcMaxMemory]);
   size_t currentUsage = CoinGetCurrentMemUsage();
   // 0 means the current usage could not be determined on this platform;
   // in that case we can't meaningfully compare against the limit.
   if (currentUsage == 0)
     return false;
-  bool hitMaxMemory = (static_cast< double >(currentUsage) >= maxMemory);
-  if (parentModel_ && !hitMaxMemory) {
-    // In a sub tree
-    double parentMaxMemory = parentModel_->dblParam_[CbcMaxMemory];
-    if (parentMaxMemory <= 0.99e100)
-      hitMaxMemory = (static_cast< double >(currentUsage) >= parentMaxMemory);
-  }
+  const double usage = static_cast< double >(currentUsage);
+  if (checkInterval && (usage >= 0.9 * maxMemory || maxMemory - usage <= 16 * 1024 * 1024))
+    *checkInterval = 1;
+  bool hitMaxMemory = (usage >= maxMemory);
   if (hitMaxMemory) {
     // Set eventHappened_ so will by-pass as much stuff as possible
     eventHappened_ = true;
@@ -20984,7 +21005,17 @@ void CbcModel::setOptionalInteger(int index)
 
 bool CbcModel::stoppingCriterionReached() const
 {
-  return (isNodeLimitReached() || numberSolutions_ >= intParam_[CbcMaxNumSol] || stoppedOnGap_ || eventHappened_ || maximumSecondsReached() || isMemoryLimitReached() || (numberSolutions_ && (intParam_[CbcMaxNodesNotImproving] != COIN_INT_MAX && (numberNodes_ - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImproving]))) || (!(maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_)));
+  return stoppingCriterionReachedImpl(true);
+}
+
+bool CbcModel::stoppingCriterionReachedImpl(bool checkMemory) const
+{
+  return isNodeLimitReached() || numberSolutions_ >= intParam_[CbcMaxNumSol]
+    || stoppedOnGap_ || eventHappened_ || maximumSecondsReached()
+    || (checkMemory && isMemoryLimitReached())
+    || (numberSolutions_ && intParam_[CbcMaxNodesNotImproving] != COIN_INT_MAX
+      && numberNodes_ - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImproving])
+    || (maximumNumberIterations_ >= 0 && numberIterations_ >= maximumNumberIterations_);
 }
 
 // Return true if maximum time reached

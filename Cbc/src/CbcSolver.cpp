@@ -3801,7 +3801,7 @@ int CbcMain1(int argc, const char *argv[],
                 si->setWarmStart(NULL);
                 int returnCode = 0;
                 if (callBack != NULL)
-                  callBack(&model_, 1);
+                  returnCode = callBack(&model_, 1);
                 if (returnCode) {
                   // exit if user wants
                   delete babModel_;
@@ -4092,6 +4092,9 @@ int CbcMain1(int argc, const char *argv[],
                   preProcess = 0;
               }
               if (mipStartBefore.size()) {
+                // make sure model knows min/max
+                babModel_->setObjSense(babModel_->solver()->getObjSense());
+                model_.setObjSense(model_.solver()->getObjSense());
                 CbcModel tempModel = *babModel_;
                 assert(babModel_->getNumCols() == model_.getNumCols());
                 std::vector< std::string > colNames;
@@ -4102,12 +4105,23 @@ int CbcMain1(int argc, const char *argv[],
                 int status = computeCompleteSolution(&tempModel, colNames, mipStartBefore, &x[0], obj);
                 // set cutoff ( a trifle high)
                 if (!status) {
-                  double newCutoff = CoinMin(babModel_->getCutoff(), obj + 1.0e-4);
+                  double newCutoff = babModel_->getCutoff();
                   babModel_->setBestSolution(&x[0], static_cast< int >(x.size()), obj, false);
+                  // obj is in the user's sense - cutoff and best are minimization
+                  double obj2;
+                  if (babModel_->getObjSense() != -1.0) {
+                    newCutoff = CoinMin(newCutoff, obj + 1.0e-4);
+                    obj2 = obj;
+                  } else {
+                    obj2 = -obj;
+                    newCutoff = CoinMin(newCutoff, obj2 + 1.0e-4);
+                  }
                   babModel_->setCutoff(newCutoff);
+                  babModel_->setMinimizationObjValue(obj2);
                   babModel_->setSolutionCount(1);
                   model_.setBestSolution(&x[0], static_cast< int >(x.size()), obj, false);
                   model_.setCutoff(newCutoff);
+                  model_.setMinimizationObjValue(obj2);
                   model_.setSolutionCount(1);
                 }
               }
@@ -4514,9 +4528,28 @@ int CbcMain1(int argc, const char *argv[],
                   const int *originalColumns = process.originalColumns();
                   int numberColumns = solver2->getNumCols();
                   OsiSolverInterface *originalSolver = model.solver();
+                  int numberOriginalColumns = originalSolver->getNumCols();
+                  int oddColumn = 1;
                   for (int i = 0; i < numberColumns; i++) {
                     int iColumn = originalColumns[i];
-                    solver2->setColName(i, originalSolver->getColName(iColumn));
+                    if (iColumn < numberOriginalColumns) {
+                      std::string columnName = originalSolver->getColName(iColumn);
+                      // check if odd name
+                      if (columnName[0] == 'N') {
+                        const char *digits = columnName.c_str() + 1;
+                        char *end;
+                        long sequence = strtol(digits, &end, 10);
+                        if (end != digits && sequence >= 0 && sequence < COIN_INT_MAX)
+                          oddColumn = static_cast< int >(sequence) + 1;
+                      }
+                      solver2->setColName(i, columnName);
+                    } else {
+                      // column added by preprocessing - no original name
+                      char name[15];
+                      sprintf(name, "N%.7d", oddColumn);
+                      oddColumn++;
+                      solver2->setColName(i, name);
+                    }
                   }
                   OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
                   ClpSimplex *lpSolver = clpSolver2->getModelPtr();
@@ -4575,15 +4608,29 @@ int CbcMain1(int argc, const char *argv[],
                   if (numberLotSizing) {
                     CbcObject **objects = new CbcObject *[numberLotSizing];
                     double points[] = { 0.0, 0.0, 0.0, 0.0 };
+                    // lotsize[].column is in the original model - map to preprocessed
+                    int *back = new int[numberOriginalColumns];
+                    for (int i = 0; i < numberOriginalColumns; i++)
+                      back[i] = -1;
+                    for (int i = 0; i < numberColumns; i++) {
+                      int iColumn = originalColumns[i];
+                      if (iColumn < numberOriginalColumns)
+                        back[iColumn] = i;
+                    }
+                    int numberLotObjects = 0;
                     for (int i = 0; i < numberLotSizing; i++) {
                       int iColumn = lotsize[i].column;
-                      points[2] = lotsize[i].low;
-                      points[3] = lotsize[i].high;
-                      objects[i] = new CbcLotsize(babModel_, iColumn, 2,
-                        points, true);
+                      iColumn = back[iColumn];
+                      if (iColumn >= 0) {
+                        points[2] = lotsize[i].low;
+                        points[3] = lotsize[i].high;
+                        objects[numberLotObjects++] = new CbcLotsize(babModel_, iColumn, 2,
+                          points, true);
+                      }
                     }
-                    babModel_->addObjects(numberLotSizing, objects);
-                    for (int i = 0; i < numberLotSizing; i++)
+                    delete[] back;
+                    babModel_->addObjects(numberLotObjects, objects);
+                    for (int i = 0; i < numberLotObjects; i++)
                       delete objects[i];
                     delete[] objects;
                   }
@@ -5837,11 +5884,89 @@ int CbcMain1(int argc, const char *argv[],
                     OsiBabSolver dummy;
                     babModel_->passInSolverCharacteristics(&dummy);
                     babModel_->createContinuousSolver();
-                    babModel_->setBestSolution(CBC_ROUNDING,
-                      obj, &x[0], 1);
+                    /* This is a mess - mipStart does not really know about
+                       SOS. After preprocessing the SOS objects still refer
+                       to the original columns here (they are redone further
+                       down), so map them while the solution is checked. */
+                    int numberObjects = babModel_->numberObjects();
+                    OsiObject **oldObjects = babModel_->objects();
+                    int numberSOS = 0;
+                    bool badObjects = false;
+                    if (preProcess && redoSOS) {
+                      for (int iObj = 0; iObj < numberObjects; iObj++) {
+                        int iColumn = oldObjects[iObj]->columnNumber();
+                        if (iColumn < 0 || iColumn >= numberOriginalColumns) {
+                          CbcSOS *objSOS = dynamic_cast< CbcSOS * >(oldObjects[iObj]);
+                          if (objSOS)
+                            numberSOS++;
+                          else
+                            badObjects = true;
+                        }
+                      }
+                    }
+                    if (badObjects) {
+                      // can't check solution against these objects - skip
+                      generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                        << "Warning: mipstart not used - objects other than SOS after preprocessing"
+                        << CoinMessageEol;
+                    } else if (!numberSOS) {
+                      // normal
+                      babModel_->setBestSolution(CBC_ROUNDING,
+                        obj, &x[0], 1);
+                    } else {
+                      // save and restore!
+                      OsiObject **sosObjects = new OsiObject *[numberSOS];
+                      int *newColumn = new int[numberOriginalColumns];
+                      int i;
+                      for (i = 0; i < numberOriginalColumns; i++)
+                        newColumn[i] = -1;
+                      for (i = 0; i < babModel_->getNumCols(); i++) {
+                        if (originalColumns[i] < numberOriginalColumns)
+                          newColumn[originalColumns[i]] = i;
+                      }
+                      int nSOS = 0;
+                      for (int iObj = 0; iObj < numberObjects; iObj++) {
+                        int iColumn = oldObjects[iObj]->columnNumber();
+                        if (iColumn < 0 || iColumn >= numberOriginalColumns) {
+                          CbcSOS *objSOS = dynamic_cast< CbcSOS * >(oldObjects[iObj]);
+                          if (objSOS) {
+                            sosObjects[nSOS++] = objSOS->clone();
+                            int n = objSOS->numberMembers();
+                            int *which = objSOS->mutableMembers();
+                            double *weights = objSOS->mutableWeights();
+                            int nn = 0;
+                            for (i = 0; i < n; i++) {
+                              int iColumn = which[i];
+                              int jColumn = newColumn[iColumn];
+                              if (jColumn >= 0) {
+                                which[nn] = jColumn;
+                                weights[nn++] = weights[i];
+                              }
+                            }
+                            objSOS->setNumberMembers(nn);
+                          }
+                        }
+                      }
+                      delete[] newColumn;
+                      babModel_->setBestSolution(CBC_ROUNDING,
+                        obj, &x[0], 1);
+                      // restore!
+                      nSOS = 0;
+                      for (int iObj = 0; iObj < numberObjects; iObj++) {
+                        int iColumn = oldObjects[iObj]->columnNumber();
+                        if (iColumn < 0 || iColumn >= numberOriginalColumns) {
+                          CbcSOS *objSOS = dynamic_cast< CbcSOS * >(oldObjects[iObj]);
+                          if (objSOS) {
+                            delete oldObjects[iObj];
+                            oldObjects[iObj] = sosObjects[nSOS++];
+                          }
+                        }
+                      }
+                      delete[] sosObjects;
+                    }
 		    /* But this is outside branchAndBound so needs to know 
 		       about direction */
-		    if (babModel_->getObjSense()==-1.0) {
+		    if (!badObjects && babModel_->getObjSense()==-1.0) {
 		      babModel_->setCutoff(-obj);
 		      babModel_->setMinimizationObjValue(-obj);
 		      // and solver (solver will flip)
@@ -5849,7 +5974,7 @@ int CbcMain1(int argc, const char *argv[],
 		    }
                     babModel_->clearContinuousSolver();
                     babModel_->passInSolverCharacteristics(NULL);
-                    if (useSolution == 0)
+                    if (useSolution == 0 && !badObjects)
                       babModel_->setHotstartSolution(&x[0]);
                   }
                 }
@@ -8593,6 +8718,7 @@ int CbcMain1(int argc, const char *argv[],
                     assert(fp);
                     OsiClpSolverInterface solver(model2);
                     solver.writeLp(fp, 1.0e-12);
+                    fclose(fp);
                   }
                   if (deleteModel2)
                     delete model2;
@@ -9993,13 +10119,22 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   // Write solution header (suggested by Luigi Poderico)
                   // Refresh solver
                   lpSolver = clpSolver->getModelPtr();
-                  lpSolver->computeObjectiveValue(false);
-                  double objValue = lpSolver->getObjValue();
+                  ClpQuadraticObjective *quadObj = dynamic_cast< ClpQuadraticObjective * >(lpSolver->objectiveAsObject());
+                  double objValue;
+                  if (!quadObj) {
+                    lpSolver->computeObjectiveValue(false);
+                    objValue = lpSolver->getObjValue();
+                  } else {
+                    double *solution = lpSolver->primalColumnSolution();
+                    objValue = quadObj->objectiveValue(lpSolver, solution);
+                    // offset
+                    objValue -= lpSolver->objectiveOffset();
+                  }
                   int iStat = lpSolver->status();
                   int iStat2 = -1;
                   if (integerStatus >= 0) {
                     iStat = integerStatus;
-                    iStat2 = babModel_->secondaryStatus();
+                    iStat2 = babModel_ ? babModel_->secondaryStatus() : model_.secondaryStatus();
                   }
                   if (iStat == 0) {
                     fprintf(fp, "Optimal");

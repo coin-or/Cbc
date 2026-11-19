@@ -298,10 +298,20 @@ int computeCompleteSolution(CbcModel *model,
     sprintf(printLine, "MIPStart solution provided values for %d of %d integer variables, %d variables are still fractional.", fixed, lp->getNumIntegers(), static_cast< int >(lp->getFractionalIndices().size()));
     model->messageHandler()->message(CBC_GENERAL, model->messages())
       << printLine << CoinMessageEol;
+    // seem to be problems when maximizing
+    if (lp->getObjSense() < 0) {
+      model->messageHandler()->message(CBC_GENERAL, model->messages())
+        << "Warning: When maximizing and fractional - seem to be problems." << CoinMessageEol;
+      status = 1;
+      goto TERMINATE;
+    }
     double start = CoinCpuTime();
 #if 1
     CbcSerendipity heuristic(*model);
-    heuristic.setFractionSmall(2.0);
+    /* Anything in (1.0,1000000.0) is read by smallBranchAndBound() as a
+       packed "type.fraction" code - 2.0 would set the node limit to -1, so
+       the mini branch and bound would never branch. 1.0 means any size. */
+    heuristic.setFractionSmall(1.0);
     heuristic.setFeasibilityPumpOptions(1008013);
     int returnCode = heuristic.smallBranchAndBound(lp,
       1000, sol,
@@ -342,7 +352,9 @@ int computeCompleteSolution(CbcModel *model,
   } else {
     foundIntegerSol = true;
     
-    obj = 0.0;
+    // allow for objective offset
+    lp->getDblParam(OsiObjOffset, obj);
+    obj = -obj;
     for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
         obj += realObj[i]*lp->getColSolution()[i];
     compObj = obj;

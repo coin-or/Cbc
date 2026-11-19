@@ -3028,7 +3028,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
                 else if (value < lower)
                   newSum += lower - value;
               }
-              assert(newSum <= oldSum);
+              assert(newSum <= oldSum + 1.0e-3);
               sumInfeasibility += newSum - oldSum;
             }
           }

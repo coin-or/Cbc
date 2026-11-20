@@ -223,8 +223,9 @@ private:
   double timeFreq_;
 
   void printHeader() const;
-  void printRow(int iter, double obj, double primalInf, double dualInf,
-    double elapsed) const;
+  void printIterationRow(int iter, double elapsed) const;
+  void printRow(int iter, double obj, double primalInf, int numberPrimalInf,
+    double dualInf, int numberDualInf, double elapsed) const;
   static const char *algoName(int algo);
 };
 

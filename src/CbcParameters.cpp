@@ -1926,7 +1926,8 @@ void CbcParameters::addCbcSolverStrParams()
     "maxMem!ory", "Maximum amount of memory to use during branch and bound",
     "This limits the resident memory this process may use once branch and "
     "bound has started; the search is stopped (much like hitting the node "
-    "or time limit) if it is exceeded. It is not checked outside of branch "
+    "or time limit) if a periodic check finds it exceeded. Memory use can "
+    "exceed the limit between checks. It is not checked outside of branch "
     "and bound (e.g. during preprocessing or the initial LP solve). "
     "Accepts a plain number of bytes, or a number followed by a unit "
     "suffix: b (bytes, the default), k or kb (KiB), m or mb (MiB), g or "

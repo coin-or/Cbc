@@ -10,6 +10,7 @@
 #include "CglCutGenerator.hpp"
 #include "CglGomory.hpp"
 #include "CglKnapsackCover.hpp"
+#include "CoinMemUsage.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinPackedVector.hpp"
 #include "OsiClpSolverInterface.hpp"
@@ -89,6 +90,7 @@ int runRootCutPurge(const char *filename)
 
 struct Frontier {
   bool captured = false;
+  bool clearMemoryLimitOnCleanup = false;
   double bound = 0.0;
   double endBound = COIN_DBL_MAX;
   int endCalls = 0;
@@ -109,6 +111,9 @@ public:
     if (cutoff == -COIN_DBL_MAX && size()) {
       frontier_->captured = true;
       frontier_->bound = std::min(getBestPossibleObjective(), model->getMinimizationObjValue());
+      // Simulate the limit no longer being exceeded once cleanup starts.
+      if (frontier_->clearMemoryLimitOnCleanup)
+        model->setMaximumMemory(1.0e100);
     }
     CbcTree::cleanTree(model, cutoff, bound);
   }
@@ -216,6 +221,10 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
   model.setPrintFrequency(1);
   model.setSecsPrintFrequency(frequency);
   auto frontier = std::make_shared< Frontier >();
+  if (stopMode == 3) {
+    model.setMaximumMemory(1.0);
+    frontier->clearMemoryLimitOnCleanup = true;
+  }
   RecordingTree tree(frontier);
   model.passInTreeHandler(tree);
   StopHandler handler(frontier, stopMode);
@@ -229,12 +238,13 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
   const bool fresh = !frontier->captured
     || (threads ? bound <= frontier->bound + 1.0e-7 && bound > rootBound + 1.0e-7
                 : fabs(bound - frontier->bound) < 1.0e-7);
-  const bool stopped = stopMode == 1 ? model.secondaryStatus() == 5
-                                     : (stopMode == 2 ? model.isSecondsLimitReached()
-                                                      : (limit <= 30 ? model.isNodeLimitReached() : model.isProvenOptimal()));
+  const bool stopped = stopMode == 3 ? model.status() == 1 && model.secondaryStatus() == 9
+    : stopMode == 2 ? model.isSecondsLimitReached()
+    : stopMode == 1 ? model.secondaryStatus() == 5
+    : limit <= 30 ? model.isNodeLimitReached() : model.isProvenOptimal();
   const bool callback = limit == 10000 && !stopMode ? true : fabs(bound - frontier->endBound) < 1.0e-7;
   const bool finished = limit == 10000 && !stopMode ? fabs(bound - optimum) < 1.0e-7 : true;
-  const bool frontierPresent = limit == 30 ? frontier->captured : true;
+  const bool frontierPresent = (limit != 30 && stopMode != 3) || frontier->captured;
   const bool passed = valid && fresh && stopped && callback && finished && frontierPresent && frontier->endCalls == 1;
   printf("  %s: threads=%d threadMode=%d sense=%.0f limit=%d frequency=%.0f stopMode=%d nodes=%d bound=%.10g frontier=%.10g optimum=%.10g\n",
     passed ? "ok" : "FAIL", threads, threadMode, sense, limit, frequency, stopMode, model.getNodeCount(), bound, frontier->bound, optimum);
@@ -323,6 +333,8 @@ int main(int argc, char **argv)
       if (!threads) {
         failures += run(threads, sense, 10000, 1.0e9, 1);
         failures += run(threads, sense, 10000, 1.0e9, 2);
+        if (CoinGetCurrentMemUsage())
+          failures += run(threads, sense, 10000, 1.0e9, 3);
       }
     }
     if (CbcModel::haveMultiThreadSupport()) {

@@ -2634,7 +2634,7 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
 
   /* solution pool */
   for ( int i=0 ; i<numSols ; ++i ) {
-    (*(model->mipSavedSolutionObj))[i] = cbcModel.savedSolutionObjective(i);
+    (*(model->mipSavedSolutionObj))[i] = cbcModel.savedSolutionObjective(i) * cbcModel.solver()->getObjSense();
     const double *xi = cbcModel.savedSolution(i);
     double *xd = model->mipSavedSolution->operator[](i).data();
     memcpy(xd, xi, sizeof(double)*numCols );

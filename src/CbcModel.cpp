@@ -10449,6 +10449,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       }
       // solver_->setHintParam(OsiDoDualInResolve,false,OsiHintTry);
       {
+#ifdef CBC_TIMING_ROOT_RESOLVE
         // Timed for lastCutRoundResolveTime()/cbcFilterGeneratedCuts(): this
         // is the actual LP reoptimisation cost of the cuts just installed.
         // NOT used to steer any live decision (CPU timing measured
@@ -10459,15 +10460,18 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         // the cutFilter* gates. Never read back to change behaviour
         // within the same run.
         double resolveStart = CoinCpuTime();
+#endif
         feasible = (resolve(node ? node->nodeInfo() : nullptr, 2) != 0);
         if (feasible && solver_->isProvenOptimal())
           lastSolvedObjective = solver_->getObjValue() * direction;
+#ifdef CBC_TIMING_ROOT_RESOLVE
         lastCutRoundResolveTime_ = CoinCpuTime() - resolveStart;
         if (!node && getenv("CBC_LOG_ROOT_RESOLVE_TIME")) {
           fprintf(stderr, "CBC_ROOT_RESOLVE_TIME pass=%d rows=%d cols=%d resolveTime=%.6f\n",
             currentPassNumber_, solver_->getNumRows(), solver_->getNumCols(),
             lastCutRoundResolveTime_);
         }
+#endif
       }
       // solver_->setHintParam(OsiDoDualInResolve,true,OsiHintTry);
       if (maximumSecondsReached()) {

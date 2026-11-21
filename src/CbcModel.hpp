@@ -484,7 +484,8 @@ public:
       mid-solve is noisy and non-reproducible under system load, which
       would make cut selection (and therefore the whole search) depend on
       transient machine conditions rather than the problem itself.
-      Returns -1.0 if no such resolve has happened yet this solve.
+      Requires a build with CBC_TIMING_ROOT_RESOLVE defined. Returns -1.0
+      when instrumentation is disabled or no such resolve has happened yet.
     */
   inline double lastCutRoundResolveTime() const
   {

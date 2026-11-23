@@ -1595,6 +1595,8 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
         numberColumns * sizeof(double));
       numberSolutions_ = baseModel->numberSolutions_;
     }
+    incumbentCount_.store(baseModel->incumbentCount_.load(std::memory_order_relaxed),
+      std::memory_order_relaxed);
     stateOfSearch_ = baseModel->stateOfSearch_;
     numberNodes_ = baseModel->numberNodes_;
     numberIterations_ = baseModel->numberIterations_;
@@ -1798,6 +1800,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
       delete heuristic_[i];
       heuristic_[i] = baseModel->heuristic_[i]->clone();
       heuristic_[i]->setModelOnly(this);
+      heuristic_[i]->shareScheduleStateWith(*baseModel->heuristic_[i]);
     }
     for (i = 0; i < numberCutGenerators_; i++) {
       bool generatorTiming = baseModel->generator_[i]->timing();
@@ -1817,6 +1820,10 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
     bestObjective_ = baseModel->bestObjective_;
     //assert (!baseModel->globalCuts_.sizeRowCuts());
     numberSolutions_ = baseModel->numberSolutions_;
+    incumbentCount_.store(baseModel->incumbentCount_.load(std::memory_order_relaxed),
+      std::memory_order_relaxed);
+    for (int i = 0; i < numberHeuristics_; i++)
+      heuristic_[i]->shareScheduleStateWith(*baseModel->heuristic_[i]);
     assert(usedInSolution_);
     assert(baseModel->usedInSolution_);
     memcpy(usedInSolution_, baseModel->usedInSolution_, solver_->getNumCols() * sizeof(int));
@@ -1869,6 +1876,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
           baseModel->bestSolution_ = new double[numberColumns];
         CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
         baseModel->setCutoff(getCutoff());
+        baseModel->incumbentCount_++;
         // Report the real heuristic (if any) instead of a generic
         // "heuristic" label, mirroring the serial (non-threaded) reporting
         // in CbcModel::setBestSolution() -- see the analogous opportunistic-

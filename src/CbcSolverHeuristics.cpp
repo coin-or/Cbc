@@ -1220,8 +1220,7 @@ void applyHeuristicControl(CbcHeuristic &h, CbcParameters &parameters, const Heu
     h.setScheduleMode(modes[mode], c.everyK);
   }
   if (!parameters[id.every]->isAuto()) {
-    c.everyK = parameters[id.every]->intVal();
-    c.initialK = c.everyK;
+    c.setEveryK(parameters[id.every]->intVal());
   }
   if (!parameters[id.decay]->isAuto()) {
     h.setDecayFactor(parameters[id.decay]->dblVal());
@@ -1724,22 +1723,20 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     // costing ~25-30% less time. Was 50.
     int nodes[] = { -2, 200, 200, 200, 200, 1000, 10000 };
     heuristic6b.setNumberNodes(nodes[useVND]);
-    // See the matching RINS comment below -- same scheduling default
-    // (Legacy) and rationale apply to VND; `-vndSchedule noimprove` gives
-    // the every-K-nodes schedule.
-    heuristic6b.setScheduleMode(HeuristicScheduleMode::Legacy, 100);
+    // Share RINS's no-improvement-aware cadence: every 100 nodes and after
+    // each new incumbent. Shared schedule state prevents worker threads from
+    // redundantly running VND for the same trigger.
+    heuristic6b.setScheduleMode(HeuristicScheduleMode::EveryKNodesNoImprove, 100);
     // Class-specific `auto' (screening on the 0-1 benchmark, with the
     // noimprove schedule): on pure set covering VND rarely finds anything,
     // so call it every 500 nodes with no back-off decay and give up after 3
-    // failures on one incumbent. With the Legacy default only the failure
-    // limit applies; K=500 and the decay take effect with
-    // `-vndSchedule noimprove`. Anything the user set explicitly overrides
+    // failures on one incumbent. Anything the user set explicitly overrides
     // this in applyHeuristicControl().
     if (parameters[CbcParam::AUTOTUNECUTS]->modeVal() != 0) {
       CbcProblemClassifier::ClassificationResult cls = CbcProblemClassifier::classify(
         model->solver(), static_cast< CbcParameters::ProblemClassMode >(parameters[CbcParam::PROBLEMCLASS]->modeVal()));
       if (cls.problemClass == CbcProblemClassifier::PureSetCovering) {
-        heuristic6b.setScheduleMode(HeuristicScheduleMode::Legacy, 500);
+        heuristic6b.setScheduleMode(HeuristicScheduleMode::EveryKNodesNoImprove, 500);
         heuristic6b.setDecayFactor(0.0);
         heuristic6b.control().maxFailures = 3;
       }
@@ -1957,21 +1954,13 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       heuristic5.setDecayFactor(1.5);
     }
     heuristic5.setFixCloseMaxDist(parameters[CbcParam::RINSCLOSEMAXDIST]->dblVal());
-    // Default per-node scheduling: Legacy, the heuristic's own node-count
-    // gating. `-rinsSchedule noimprove` re-runs RINS whenever K=100+ nodes
-    // have elapsed since its last call, and immediately after each new
-    // incumbent. That schedule works around a bug in the base
-    // CbcHeuristic::shouldHeurRun() deep-tree gate, which otherwise stops
-    // RINS from firing again after the first few root-adjacent calls (see
-    // RINS-FIXTURES.md's "Per-node scheduling API" section; 500-instance
-    // mip-sanity-data run: 62 improvements vs. 16 regressions, +2 optimal).
-    // But on the MIPLIB 2017 benchmark (240 instances, one hour) it solves
-    // three more instances at one thread while being 13% slower on the
-    // rest, and with threads it runs RINS and VND at almost every node
-    // (coin-or/Cbc#854): 86 solved at 8 threads against 94-96 with Legacy.
-    // K stays at 100 so that `-rinsSchedule noimprove` gives that schedule
-    // back unchanged.
-    heuristic5.setScheduleMode(HeuristicScheduleMode::Legacy, 100);
+    // Default to the no-improvement-aware schedule: retry after 100 nodes or
+    // immediately after a new incumbent. The shared thread schedule gate
+    // avoids redundant worker runs, addressing the threaded behavior reported
+    // in coin-or/Cbc#854. The 403-instance MIPLIB comparison also showed lower
+    // PDI and more optimal solves than either upstream or patched Legacy.
+    // `-rinsSchedule legacy` remains available to restore the previous policy.
+    heuristic5.setScheduleMode(HeuristicScheduleMode::EveryKNodesNoImprove, 100);
     applyHeuristicControl(heuristic5, parameters, hcIdsRINS);
     model->addHeuristic(&heuristic5);
     anyToDo = true;

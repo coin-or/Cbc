@@ -408,10 +408,10 @@ bool CbcHeuristic::shouldRunBySchedule()
         control_.paused(solCount) ? "paused after repeated failures" : "time share used");
     return false;
   }
-  const bool run = control_.scheduled(nodeCount, model_->currentDepth(), solCount);
+  const bool run = control_.scheduled(nodeCount, model_->currentDepth(), model_->getIncumbentCount());
   if (cbcHeurTraceEnabled() && control_.mode != HeuristicScheduleMode::Legacy)
     fprintf(stderr, "[HEUR-TRACE] %s schedule=%s K=%d node=%d depth=%d -> %s\n",
-      heuristicName_.c_str(), CbcHeuristicControl::modeName(control_.mode), control_.everyK,
+      heuristicName_.c_str(), CbcHeuristicControl::modeName(control_.mode), control_.currentEveryK(),
       nodeCount, model_->currentDepth(), run ? "RUN" : "skip");
   return run;
 }
@@ -440,14 +440,15 @@ void CbcHeuristic::RunGuard::finish(bool success)
     return;
   finished_ = true;
   const double used = h_->model_->getCurrentSeconds() - start_;
-  const int before = h_->control_.everyK;
+  const int before = h_->control_.currentEveryK();
   h_->control_.finishRun(success, used, h_->model_->getNodeCount(), h_->model_->getSolutionCount());
-  if (h_->control_.everyK != before) {
+  const int after = h_->control_.currentEveryK();
+  if (after != before) {
     // keep the legacy interval of the heuristics that still use it in step
     h_->howOften_ = static_cast< int >(std::min(h_->howOften_ * (1.0 + h_->control_.decay), 1.0e6));
     if (cbcHeurTraceEnabled())
       fprintf(stderr, "[HEUR-TRACE] %s back-off: K %d -> %d after %d runs (%d successes)\n",
-        h_->heuristicName_.c_str(), before, h_->control_.everyK, h_->control_.runs, h_->control_.successes);
+        h_->heuristicName_.c_str(), before, after, h_->control_.runs, h_->control_.successes);
   }
 }
 

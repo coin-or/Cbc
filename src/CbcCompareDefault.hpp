@@ -96,6 +96,9 @@ public:
   }
   /// Start dive
   void startDive(CbcModel *model);
+  /// Update the legacy serial dive schedule and rebuild the heap on transitions.
+  void updateDive(CbcModel *model);
+  void resetDive();
   /// Clean up diving (i.e. switch off or prepare)
   void cleanDive();
 
@@ -120,6 +123,7 @@ protected:
   int afterNodeNumber_;
   /// Indicates doing setup for diving
   bool setupForDiving_;
+  int lastDiveCycle_ = -1;
 };
 
 #endif //CbcCompareDefault_H

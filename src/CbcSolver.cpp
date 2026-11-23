@@ -9855,8 +9855,8 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
       } else if (nodeStrategy == 0) {
         // hybrid was default i.e. mixture of low depth and
         // infeasibility
-      } else if (nodeStrategy == 1) {
-        // real fewest
+      } else if (nodeStrategy == 1 || nodeStrategy == 3 || nodeStrategy == 4) {
+        // Fewest infeasibilities, with or without a preferred child direction.
         CbcCompareDefault compare;
         compare.setWeight(-2.0);
         babModel_->setNodeComparison(compare);

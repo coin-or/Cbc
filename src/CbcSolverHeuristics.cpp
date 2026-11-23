@@ -1957,8 +1957,9 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     // Default to the no-improvement-aware schedule: retry after 100 nodes or
     // immediately after a new incumbent. The shared thread schedule gate
     // avoids redundant worker runs, addressing the threaded behavior reported
-    // in coin-or/Cbc#854. The 403-instance MIPLIB comparison also showed lower
-    // PDI and more optimal solves than either upstream or patched Legacy.
+    // in coin-or/Cbc#854. The 403-instance benchmark (MIPLIB 2017 plus
+    // additional instances) also showed lower PDI and more optimal solves
+    // than either upstream or patched Legacy.
     // `-rinsSchedule legacy` remains available to restore the previous policy.
     heuristic5.setScheduleMode(HeuristicScheduleMode::EveryKNodesNoImprove, 100);
     applyHeuristicControl(heuristic5, parameters, hcIdsRINS);

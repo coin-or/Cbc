@@ -407,7 +407,7 @@ void CbcModel::analyzeObjective()
     int numberInteger = 0;
     int numberIntegerObj = 0;
     int numberGeneralIntegerObj = 0;
-    int numberIntegerWeight = 0;
+    double numberIntegerWeight = 0.0;
     int numberContinuousObj = 0;
     double cost = COIN_DBL_MAX;
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -433,8 +433,8 @@ void CbcModel::analyzeObjective()
               cost = objValue;
             else if (cost != objValue)
               cost = -COIN_DBL_MAX;
-            int gap = static_cast< int >(upper[iColumn] - lower[iColumn]);
-            if (gap > 1) {
+            double gap = floor(upper[iColumn] - lower[iColumn]);
+            if (gap > 1.0) {
               numberGeneralIntegerObj++;
               numberIntegerWeight += gap;
             }
@@ -5091,8 +5091,14 @@ void CbcModel::branchAndBound(int doStatistics)
       node = tree_->bestNode(cutoff);
       // Possible one on tree worse than cutoff
       // Weird comparison function can leave ineligible nodes on tree
-      if (!node || node->objectiveValue() > cutoff)
+      if (!node || node->objectiveValue() > cutoff) {
+        // Node was already removed from tree by bestNode(); free it to avoid leak.
+        if (node) {
+          deleteNode(node);
+          node = NULL;
+        }
         continue;
+      }
       // Do main work of solving node here
       doOneNode(this, node, createdNode);
 #ifdef JJF_ZERO
@@ -5140,8 +5146,13 @@ void CbcModel::branchAndBound(int doStatistics)
       if ((tree_->size() < CoinMax(numberThreads_, 8) || hotstartSolution_) && !goneParallel) {
         node = tree_->bestNode(cutoff);
         // Possible one on tree worse than cutoff
-        if (!node || node->objectiveValue() > cutoff)
+        if (!node || node->objectiveValue() > cutoff) {
+          if (node) {
+            deleteNode(node);
+            node = NULL;
+          }
           continue;
+        }
         // Do main work of solving node here
         doOneNode(this, node, createdNode);
         assert(createdNode);
@@ -5638,7 +5649,7 @@ void CbcModel::branchAndBound(int doStatistics)
   }
 #endif
   if ((fastNodeDepth_ >= 1000000 || (moreSpecialOptions_ & 33554432) != 0)
-    && !parentModel_) {
+    && (specialOptions_ & 2048) == 0) {
     // delete object off end
     delete object_[numberObjects_];
     if ((moreSpecialOptions_ & 33554432) == 0)
@@ -6203,6 +6214,29 @@ static double *resizeDouble(double *array, int oldLength, int newLength)
   memset(newArray + oldLength, 0, (newLength - oldLength) * sizeof(double));
   return newArray;
 }
+static void deleteSavedSolutionsArray(double **&savedSolutions,
+  int maximumSavedSolutions)
+{
+  if (!savedSolutions)
+    return;
+  for (int i = 0; i < maximumSavedSolutions; i++)
+    delete[] savedSolutions[i];
+  delete[] savedSolutions;
+  savedSolutions = NULL;
+}
+static double **copySavedSolutionsArray(double *const *savedSolutions,
+  int numberSavedSolutions, int maximumSavedSolutions, int numberColumns)
+{
+  if (!maximumSavedSolutions || !savedSolutions)
+    return NULL;
+  double **newSavedSolutions = new double *[maximumSavedSolutions];
+  int i = 0;
+  for (; i < numberSavedSolutions; i++)
+    newSavedSolutions[i] = CoinCopyOfArray(savedSolutions[i], numberColumns + 2);
+  for (; i < maximumSavedSolutions; i++)
+    newSavedSolutions[i] = NULL;
+  return newSavedSolutions;
+}
 /*
   Assign a solver to the model (model assumes ownership)
 
@@ -6238,7 +6272,7 @@ void CbcModel::assignSolver(OsiSolverInterface *&solver, bool deleteSolver)
       currentSolution_ = resizeDouble(currentSolution_, nOld, nNew);
       if (savedSolutions_) {
         for (int i = 0; i < maximumSavedSolutions_; i++)
-          savedSolutions_[i] = resizeDouble(savedSolutions_[i], nOld, nNew);
+          savedSolutions_[i] = resizeDouble(savedSolutions_[i], nOld + 2, nNew + 2);
       }
     }
   }
@@ -6534,13 +6568,8 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
     bestSolution_ = NULL;
   }
   int numberColumns = solver_->getNumCols();
-  if (maximumSavedSolutions_ && rhs.savedSolutions_) {
-    savedSolutions_ = new double *[maximumSavedSolutions_];
-    for (int i = 0; i < maximumSavedSolutions_; i++)
-      savedSolutions_[i] = CoinCopyOfArray(rhs.savedSolutions_[i], numberColumns + 2);
-  } else {
-    savedSolutions_ = NULL;
-  }
+  savedSolutions_ = copySavedSolutionsArray(rhs.savedSolutions_,
+    rhs.numberSavedSolutions_, maximumSavedSolutions_, numberColumns);
   // Space for current solution
   if (numberColumns) {
     currentSolution_ = new double[numberColumns];
@@ -6667,10 +6696,9 @@ CbcModel::operator=(const CbcModel &rhs)
     } else {
       bestSolution_ = NULL;
     }
-    for (int i = 0; i < maximumSavedSolutions_; i++)
-      delete[] savedSolutions_[i];
-    delete[] savedSolutions_;
-    savedSolutions_ = NULL;
+    deleteSavedSolutionsArray(savedSolutions_, maximumSavedSolutions_);
+    numberSavedSolutions_ = rhs.numberSavedSolutions_;
+    maximumSavedSolutions_ = rhs.maximumSavedSolutions_;
     int numberColumns = rhs.getNumCols();
     if (numberColumns) {
       // Space for current solution
@@ -6683,18 +6711,11 @@ CbcModel::operator=(const CbcModel &rhs)
       continuousSolution_ = NULL;
       usedInSolution_ = NULL;
     }
-    if (maximumSavedSolutions_) {
-      savedSolutions_ = new double *[maximumSavedSolutions_];
-      for (int i = 0; i < maximumSavedSolutions_; i++)
-        savedSolutions_[i] = CoinCopyOfArray(rhs.savedSolutions_[i], numberColumns + 2);
-    } else {
-      savedSolutions_ = NULL;
-    }
+    savedSolutions_ = copySavedSolutionsArray(rhs.savedSolutions_,
+      rhs.numberSavedSolutions_, maximumSavedSolutions_, numberColumns);
     testSolution_ = currentSolution_;
     minimumDrop_ = rhs.minimumDrop_;
     numberSolutions_ = rhs.numberSolutions_;
-    numberSavedSolutions_ = rhs.numberSavedSolutions_;
-    maximumSavedSolutions_ = rhs.maximumSavedSolutions_;
     stateOfSearch_ = rhs.stateOfSearch_;
     whenCuts_ = rhs.whenCuts_;
     numberHeuristicSolutions_ = rhs.numberHeuristicSolutions_;
@@ -7054,12 +7075,7 @@ void CbcModel::resetModel()
   numberSavedSolutions_ = 0;
   delete[] bestSolution_;
   bestSolution_ = NULL;
-  if (savedSolutions_) {
-    for (int i = 0; i < maximumSavedSolutions_; i++)
-      delete[] savedSolutions_[i];
-    delete[] savedSolutions_;
-    savedSolutions_ = NULL;
-  }
+  deleteSavedSolutionsArray(savedSolutions_, maximumSavedSolutions_);
   delete[] currentSolution_;
   currentSolution_ = NULL;
   delete[] continuousSolution_;
@@ -7180,6 +7196,8 @@ void CbcModel::resetModel()
 */
 void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
 {
+  if (mode)
+    deleteSavedSolutionsArray(savedSolutions_, maximumSavedSolutions_);
   minimumDrop_ = rhs.minimumDrop_;
   specialOptions_ = rhs.specialOptions_;
   moreSpecialOptions_ = rhs.moreSpecialOptions_;
@@ -7199,12 +7217,8 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   maximumNumberIterations_ = rhs.maximumNumberIterations_;
   numberSavedSolutions_ = rhs.numberSavedSolutions_;
   maximumSavedSolutions_ = rhs.maximumSavedSolutions_;
-  if (maximumSavedSolutions_) {
-    int n = solver_->getNumCols();
-    savedSolutions_ = new double *[maximumSavedSolutions_];
-    for (int i = 0; i < maximumSavedSolutions_; i++)
-      savedSolutions_[i] = CoinCopyOfArray(rhs.savedSolutions_[i], n + 2);
-  }
+  savedSolutions_ = copySavedSolutionsArray(rhs.savedSolutions_,
+    rhs.numberSavedSolutions_, maximumSavedSolutions_, solver_->getNumCols());
   continuousPriority_ = rhs.continuousPriority_;
   numberThreads_ = rhs.numberThreads_;
   threadMode_ = rhs.threadMode_;
@@ -15481,6 +15495,10 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
         }
       }
 #endif
+      // double check testSolution_ is correct (especially for parallel)
+      memcpy(currentSolution_, solver_->getColSolution(),
+        solver_->getNumCols() * sizeof(double));
+      testSolution_ = currentSolution_;
       if (numberBeforeTrust_ == 0) {
         anyAction = newNode->chooseBranch(this, oldNode, numberPassesLeft);
       } else {
@@ -15683,7 +15701,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
           newNode2->createInfo(this, oldNode, lastws,
             lowerBefore, upperBefore,
             numberOldActiveCuts_, numberNewCuts_);
-          newNode2->nodeInfo()->setNumberBranchesLeft(1);
+          newNode2->nodeInfo()->initializeInfo(1);
           //newNode2->nodeInfo()->unsetParentBasedData();
           if (i < nProbMinus1) {
             //OsiBranchingObject * object = oldNode->modifiableBranchingObject();
@@ -17968,18 +17986,24 @@ int CbcModel::numberSavedSolutions() const
 void CbcModel::setMaximumSavedSolutions(int value)
 {
   if (value < maximumSavedSolutions_) {
-    for (int i = value; i < maximumSavedSolutions_; i++)
-      delete[] savedSolutions_[i];
+    if (savedSolutions_) {
+      for (int i = value; i < maximumSavedSolutions_; i++)
+        delete[] savedSolutions_[i];
+    }
     maximumSavedSolutions_ = value;
     numberSavedSolutions_ = CoinMin(numberSavedSolutions_,
       maximumSavedSolutions_);
-    if (!maximumSavedSolutions_)
+    if (!maximumSavedSolutions_) {
       delete[] savedSolutions_;
+      savedSolutions_ = NULL;
+    }
   } else if (value > maximumSavedSolutions_) {
     double **temp = new double *[value];
-    int i;
-    for (i = 0; i < maximumSavedSolutions_; i++)
-      temp[i] = savedSolutions_[i];
+    int i = 0;
+    if (savedSolutions_) {
+      for (; i < maximumSavedSolutions_; i++)
+        temp[i] = savedSolutions_[i];
+    }
     for (; i < value; i++)
       temp[i] = NULL;
     delete[] savedSolutions_;
@@ -18067,9 +18091,11 @@ void CbcModel::deleteSolutions()
 {
   delete[] bestSolution_;
   bestSolution_ = NULL;
-  for (int i = 0; i < maximumSavedSolutions_; i++) {
-    delete[] savedSolutions_[i];
-    savedSolutions_[i] = NULL;
+  if (savedSolutions_) {
+    for (int i = 0; i < maximumSavedSolutions_; i++) {
+      delete[] savedSolutions_[i];
+      savedSolutions_[i] = NULL;
+    }
   }
   numberSavedSolutions_ = 0;
 }

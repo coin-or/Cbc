@@ -52,14 +52,15 @@ CbcGeneralDepth::CbcGeneralDepth(CbcModel *model, int maximumDepth)
   , nodeInfo_(NULL)
 {
   assert(maximumDepth_ < 1000000);
+  if (maximumDepth_ == 0)
+    maximumDepth_ = 1;
   if (maximumDepth_ > 0)
     maximumNodes_ = (1 << maximumDepth_) + 1 + maximumDepth_;
-  else if (maximumDepth_ < 0)
-    maximumNodes_ = 1 + 1 - maximumDepth_;
   else
-    maximumNodes_ = 0;
+    maximumNodes_ = 1 + 1 - maximumDepth_;
 #define MAX_NODES 100
-  maximumNodes_ = CoinMin(maximumNodes_, 1 + maximumDepth_ + MAX_NODES);
+  maximumNodes_ = CoinMin(maximumNodes_, 1 + abs(maximumDepth_) + MAX_NODES);
+  maximumNodes_ = CoinMax(maximumNodes_, 4);
   if (maximumNodes_) {
     nodeInfo_ = new ClpNodeStuff();
     nodeInfo_->maximumNodes_ = maximumNodes_;
@@ -191,6 +192,7 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
         info->presolveType_ = 1;
         delete[] down;
         delete[] up;
+        delete[] priority;
         delete[] numberDown;
         delete[] numberUp;
         delete[] numberDownInfeasible;

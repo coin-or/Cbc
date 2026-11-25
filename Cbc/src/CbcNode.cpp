@@ -828,6 +828,12 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         bool roundAgain = false;
         // get basis
         CoinWarmStartBasis *ws = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
+        // a basis that does not cover all columns (e.g. the empty warm start
+        // of Bonmin's NLP interface) can't be adjusted - treat as no basis
+        if (ws && ws->getNumStructural() < numberColumns) {
+          delete ws;
+          ws = NULL;
+        }
         if (!ws)
           break;
         for (i = 0; i < numberColumns; i++) {
@@ -2346,7 +2352,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           break;
         }
         // Double check looks OK - just look at rows with all integers
-        if (model->allDynamic()) {
+        // (skipped if the solver has no matrix, e.g. Bonmin's NLP interface)
+        if (model->allDynamic() && solver->getMatrixByCol()) {
           double *solution = CoinCopyOfArray(saveSolution, numberColumns);
           for (int i = 0; i < numberColumns; i++) {
             if (model->isInteger(i))
@@ -2445,6 +2452,12 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         bool roundAgain = false;
         // get basis
         CoinWarmStartBasis *ws = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
+        // a basis that does not cover all columns (e.g. the empty warm start
+        // of Bonmin's NLP interface) can't be adjusted - treat as no basis
+        if (ws && ws->getNumStructural() < numberColumns) {
+          delete ws;
+          ws = NULL;
+        }
         if (!ws)
           break;
         double tolerance;
@@ -2595,7 +2608,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       bestChoice = iBestGot;
     else
       bestChoice = iBestNot;
-    assert(bestChoice >= 0);
+    if (bestChoice < 0)
+      bestChoice = 0;
     // If we have hit max time don't do strong branching
     bool hitMaxTime = (model->getCurrentSeconds() > model->getDblParam(CbcModel::CbcMaximumSeconds));
     // also give up if we are looping round too much
@@ -3077,7 +3091,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         double predictedChange = 0.0;
         // may have become feasible
         if (!infeasibility) {
-          if (strongType != 2 || solver->getColLower()[iColumn] == solver->getColUpper()[iColumn])
+          if (strongType != 2 || iColumn >= numberColumns || solver->getColLower()[iColumn] == solver->getColUpper()[iColumn])
             continue;
         }
 #ifndef NDEBUG
@@ -4043,7 +4057,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       model->setSearchStrategy(2);
     }
   }
-  if (numberUnfinished * 10 < numberStrongDone && model->numberStrongIterations() * 20 < model->getIterationCount() && !auxiliaryInfo->solutionAddsCuts()) {
+  if (numberUnfinished * 10 < numberStrongDone && static_cast< double >(model->numberStrongIterations()) * 20 < model->getIterationCount() && !auxiliaryInfo->solutionAddsCuts()) {
     //printf("increasing trust\n");
     model->synchronizeNumberBeforeTrust(2);
   }
@@ -5235,8 +5249,13 @@ int CbcNode::analyze(CbcModel *model, double *results)
     groupCounts[j]++;
   }
   general[0] = '\0';
-  for (int i = 0; i < 11; i++)
-    sprintf(general + strlen(general), "%d <= %g ", groupCounts[i], groupValue[i]);
+  for (int i = 0; i < 11; i++) {
+    // 11 items can overflow general[200] - append only what fits
+    char item[40];
+    sprintf(item, "%d <= %g ", groupCounts[i], groupValue[i]);
+    if (strlen(general) + strlen(item) < sizeof(general))
+      strcat(general, item);
+  }
   model->messageHandler()->message((solveType & 32) == 0 ? CBC_FPUMP2 : CBC_FPUMP1,
     *model->messagesPointer())
     << general
@@ -5272,6 +5291,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     *model->messagesPointer())
     << general
     << CoinMessageEol;
+#if 0 // taken out as can easily overflow
   sprintf(general, "Breakdown ");
   for (i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];
@@ -5294,6 +5314,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     *model->messagesPointer())
     << general
     << CoinMessageEol;
+#endif
   delete[] objMovement;
   if ((solveType & 2) == 0) {
     // Delete the snapshot
@@ -6098,21 +6119,16 @@ int CbcNode::chooseClpBranch(CbcModel *model,
     int saveLogLevel = simplex->logLevel();
     simplex->setLogLevel(0);
     simplex->dual();
-    simplex->setLogLevel(saveLogLevel);
-    double cutoff = model->getCutoff();
-    bool goodSolution = true;
     if (simplex->status()) {
-      //simplex->writeMps("bad7.mps",2);
-      if (nodeInfo) {
-        if (nodeInfo->objectiveValue() > cutoff - 1.0e-2)
-          goodSolution = false;
-        else
-          assert(!simplex->status());
-      } else {
-        // debug diving
-        assert(!simplex->status());
-      }
+#ifdef CBC_MORE_PRINTING
+      model->messageHandler()->message(CBC_FPUMP1, *model->messagesPointer())
+        << "fathomMany solution -trying again from allslack" << CoinMessageEol;
+#endif
+      simplex->allSlackBasis(true);
+      simplex->dual();
     }
+    simplex->setLogLevel(saveLogLevel);
+    bool goodSolution = !simplex->status();
     if (goodSolution) {
       double newObjectiveValue = solver->getObjSense() * solver->getObjValue();
       // See if integer solution

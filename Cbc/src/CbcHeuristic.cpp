@@ -1154,6 +1154,14 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             << CoinMessageEol;
           // going for full search and copy across more stuff
           model.gutsOfCopy(*model_, 2);
+          if (model.maximumSavedSolutions()) {
+            // Saved solutions from the parent live in the original model's column
+            // space. Drop the copied pool here so the reduced submodel can build
+            // its own pool instead of carrying stale allocations across restart B&B.
+            int maximumSavedSolutions = model.maximumSavedSolutions();
+            model.setMaximumSavedSolutions(0);
+            model.setMaximumSavedSolutions(maximumSavedSolutions);
+          }
 #ifdef CGL_DEBUG
           if ((model_->specialOptions() & 1) != 0) {
             const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger();
@@ -2667,7 +2675,9 @@ int CbcRounding::solution(double &solutionValue,
           move = -1.0;
         else if (cost < 0.0)
           move = 1.0;
-        while (move) {
+        int times = 20;
+        while (move && times) {
+          times--;
           bool good = true;
           double newValue = newSolution[iColumn] + move;
           if (newValue < lower[iColumn] - useTolerance || newValue > upper[iColumn] + useTolerance) {

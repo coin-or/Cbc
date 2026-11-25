@@ -534,6 +534,8 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
       int thisNumber = CoinMin(numInfUp, numInfDown);
       int bestNumber = CoinMin(bestNumberUp_, bestNumberDown_);
       double distance = cutoff - objectiveValue;
+      if (model->solver()->isIterationLimitReached())
+        distance = CoinMax(distance, 0.0); // if stopped on iterations
       assert(distance >= 0.0);
       if (useValue + 0.1 * distance > useBest && useValue * 1.1 > useBest && useBest + 0.1 * distance > useValue && useBest * 1.1 > useValue) {
 	// not much in it - look at unsatisfied

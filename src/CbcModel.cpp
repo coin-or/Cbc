@@ -2860,6 +2860,7 @@ void CbcModel::branchAndBound(int doStatistics)
   bestObjective_ = std::min(bestObjective_, 1.0e50);
   if (!bestSolution_) {
     numberSolutions_ = 0;
+    incumbentCount_ = 0;
     numberHeuristicSolutions_ = 0;
   }
   stateOfSearch_ = 0;
@@ -6747,6 +6748,7 @@ CbcModel::CbcModel()
   , minimumDrop_(1.0e-7)
   , rootCutDropPatience_(1)
   , numberSolutions_(0)
+  , incumbentCount_(0)
   , numberSavedSolutions_(0)
   , maximumSavedSolutions_(0)
   , stateOfSearch_(0)
@@ -7123,6 +7125,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , minimumDrop_(rhs.minimumDrop_)
   , rootCutDropPatience_(rhs.rootCutDropPatience_)
   , numberSolutions_(rhs.numberSolutions_)
+  , incumbentCount_(rhs.incumbentCount_.load(std::memory_order_relaxed))
   , numberSavedSolutions_(rhs.numberSavedSolutions_)
   , maximumSavedSolutions_(rhs.maximumSavedSolutions_)
   , stateOfSearch_(rhs.stateOfSearch_)
@@ -7549,6 +7552,8 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     minimumDrop_ = rhs.minimumDrop_;
     rootCutDropPatience_ = rhs.rootCutDropPatience_;
     numberSolutions_ = rhs.numberSolutions_;
+    incumbentCount_.store(rhs.incumbentCount_.load(std::memory_order_relaxed),
+      std::memory_order_relaxed);
     stateOfSearch_ = rhs.stateOfSearch_;
     whenCuts_ = rhs.whenCuts_;
     numberHeuristicSolutions_ = rhs.numberHeuristicSolutions_;
@@ -8019,6 +8024,7 @@ void CbcModel::resetModel()
   sumChangeObjective1_ = 0.0;
   sumChangeObjective2_ = 0.0;
   numberSolutions_ = 0;
+  incumbentCount_ = 0;
   stateOfSearch_ = 0;
   delete[] hotstartSolution_;
   hotstartSolution_ = nullptr;
@@ -8234,6 +8240,8 @@ void CbcModel::moveInfo(const CbcModel &rhs)
   bestObjective_ = rhs.bestObjective_;
   bestPossibleObjective_ = rhs.bestPossibleObjective_;
   numberSolutions_ = rhs.numberSolutions_;
+  incumbentCount_.store(rhs.incumbentCount_.load(std::memory_order_relaxed),
+    std::memory_order_relaxed);
   numberHeuristicSolutions_ = rhs.numberHeuristicSolutions_;
   numberNodes_ = rhs.numberNodes_;
   lastNodeImprovingFeasSol_ = rhs.lastNodeImprovingFeasSol_;
@@ -15604,6 +15612,8 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
       if (how == CBC_ROUNDING)
         numberHeuristicSolutions_++;
       numberSolutions_++;
+      if (!masterThread_)
+        incumbentCount_++;
       handler_->clearBuffer();
       // In multi-threaded search, tree_ may alias the shared base model's
       // tree (see CbcThread.cpp's "tree_ = baseModel->tree_"), which the
@@ -15722,6 +15732,8 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
       // CoinCopyN(candidate,numberColumns,bestSolution_);
 
       // don't update if from solveWithCuts
+      if (!masterThread_)
+        incumbentCount_++;
       if (how != CBC_SOLUTION2) {
         if (how == CBC_ROUNDING)
           numberHeuristicSolutions_++;
@@ -19989,6 +20001,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         baseModel->bestSolution_ = new double[numberColumns];
       CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
       baseModel->setCutoff(getCutoff());
+      baseModel->incumbentCount_++;
       // Report through baseModel's own handler (the one wired to the B&B
       // progress table via CbcOutputHandler/bnbOut_) rather than this
       // worker's handler, which is a CbcSilentHandler clone (see
@@ -20619,6 +20632,7 @@ bool CbcModel::integerPresolveThisModel(OsiSolverInterface *originalSolver,
 
   bestObjective_ = 1.0e50;
   numberSolutions_ = 0;
+  incumbentCount_ = 0;
   numberHeuristicSolutions_ = 0;
   double cutoff = getCutoff();
   double direction = solver_->getObjSenseInCbc();
@@ -20686,6 +20700,7 @@ bool CbcModel::integerPresolveThisModel(OsiSolverInterface *originalSolver,
 
     currentPassNumber_++;
     numberSolutions_ = 0;
+    incumbentCount_ = 0;
     // this will be set false to break out of loop with presolved problem
     bool doIntegerPresolve = (currentPassNumber_ != 20);
 
@@ -20991,6 +21006,8 @@ void CbcModel::originalModel(CbcModel *presolvedModel, bool weak)
     bestSolution_ = nullptr;
   }
   numberSolutions_ = presolvedModel->numberSolutions_;
+  incumbentCount_.store(presolvedModel->incumbentCount_.load(std::memory_order_relaxed),
+    std::memory_order_relaxed);
   numberHeuristicSolutions_ = presolvedModel->numberHeuristicSolutions_;
   numberNodes_ = presolvedModel->numberNodes_;
   numberIterations_ = presolvedModel->numberIterations_;
@@ -21398,6 +21415,7 @@ OsiSolverInterface *CbcModel::strengthenedModel()
     */
   bestObjective_ = std::min(bestObjective_, 1.0e50);
   numberSolutions_ = 0;
+  incumbentCount_ = 0;
   numberHeuristicSolutions_ = 0;
   // Everything is minimization
   double cutoff = getCutoff();

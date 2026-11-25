@@ -26,6 +26,7 @@
 // CGL_HAS_CLP_GOMORY
 // CLP_FACTORIZATION
 #endif
+#include <atomic>
 #include <string>
 #include <memory>
 #include <mutex>
@@ -1810,6 +1811,12 @@ public:
     return numberSolutions_;
   }
 
+  /// Get the number of accepted incumbent improvements in the current search.
+  inline int getIncumbentCount() const
+  {
+    return incumbentCount_.load(std::memory_order_relaxed);
+  }
+
   /// Set number of solutions (so heuristics will be different)
   inline void setSolutionCount(int value)
   {
@@ -3315,6 +3322,7 @@ public:
   void setMIPStart(int count, const char **colNames, const double colValues[]);
 
 
+
   const std::vector< std::pair< std::string, double > > &getMIPStart()
   {
     return this->mipStart_;
@@ -3431,6 +3439,8 @@ private:
   int rootCutDropPatience_;
   /// Number of solutions
   int numberSolutions_;
+  /// Number of accepted incumbent improvements (distinct from feasible solutions)
+  std::atomic< int > incumbentCount_;
   /// Number of saved solutions
   int numberSavedSolutions_;
   /// Maximum number of saved solutions

@@ -420,12 +420,11 @@ public:
   /** Select a HeuristicScheduleMode and its K parameter. Takes effect for
       heuristics that consult shouldRunBySchedule()/controlAllows() from
       their own gating logic (RINS, VND, DINS, FJ, the dives, combine,
-      crossover, proximity). Default is Legacy (no behaviour change). */
+      crossover, proximity). A newly constructed heuristic starts in Legacy
+      mode unless solver setup selects a different default. */
   inline void setScheduleMode(HeuristicScheduleMode mode, int k = 1)
   {
-    control_.mode = mode;
-    control_.everyK = k > 0 ? k : 1;
-    control_.initialK = control_.everyK;
+    control_.setScheduleMode(mode, k);
   }
   inline HeuristicScheduleMode scheduleMode() const
   {
@@ -433,11 +432,15 @@ public:
   }
   inline int scheduleK() const
   {
-    return control_.everyK;
+    return control_.currentEveryK();
   }
   /// The policy and statistics deciding when this heuristic runs
   inline CbcHeuristicControl &control() { return control_; }
   inline const CbcHeuristicControl &control() const { return control_; }
+  inline void shareScheduleStateWith(CbcHeuristic &other)
+  {
+    control_.shareScheduleStateWith(other.control_);
+  }
   /** Returns true if, per scheduleMode()/scheduleK(), this is a node at
       which the heuristic should attempt to run; also applies the
       maxFailures and timeShare limits of control(). Has side effects

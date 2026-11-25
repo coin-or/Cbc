@@ -377,8 +377,14 @@ int CbcRootHeuristicSchedule::runParallel(
     const int pumpPassesBefore = pumpTelemetry ? pumpTelemetry->numPumpPasses() : 0;
     double t0 = CoinGetTimeOfDay();
     results[idx].invoked = true;
-    results[idx].status = heuristics[idx]->solution(
-      results[idx].obj, results[idx].solution.data());
+    CbcHeuristicSppGrasp *spp =
+      dynamic_cast< CbcHeuristicSppGrasp * >(heuristics[idx]);
+    if (spp && !sequential && nThreads > 1 && nHeur > 1)
+      results[idx].status = spp->solution(results[idx].obj, results[idx].solution.data(),
+        false, 1);
+    else
+      results[idx].status = heuristics[idx]->solution(
+        results[idx].obj, results[idx].solution.data());
     results[idx].time = CoinGetTimeOfDay() - t0;
     if (sequential && pumpTelemetry
       && model_.messageHandler()->logLevel() > 1) {

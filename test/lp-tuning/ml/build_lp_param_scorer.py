@@ -3,9 +3,13 @@
 build_lp_param_scorer.py — Train the LP parameter recommendation model on all
 available instances and emit the C++ scorer source files.
 
+Historical RF experiment only: this does not generate the current four-rule
+production policy. Output is written to legacy-named files in this directory
+so rerunning this experiment cannot overwrite the production scorer.
+
 Outputs:
-  Cbc/src/CbcLpParamScorer.hpp  — public API header
-  Cbc/src/CbcLpParamScorer.cpp  — generated scorer implementation
+  CbcLpParamScorer.legacy.hpp  — historical model header, next to this script
+  CbcLpParamScorer.legacy.cpp  — historical model implementation
 
 The scorer is a Random Forest classifier trained on OsiFeatures (207 features)
 to predict the best LP parameter configuration per instance.  At inference time
@@ -71,8 +75,8 @@ EXP_DIR      = os.path.expanduser(
     "~/experiments/cbc/lp_relax_2026_05_15_noblas")
 FEATURES_CSV = "/home/haroldo/inst/miplib/2017+spp/features.csv"
 AVG_TIMES    = os.path.join(EXP_DIR, "lp_avg_times_full.csv")
-OUT_HPP      = os.path.join(REPO_DIR, "Cbc", "src", "CbcLpParamScorer.hpp")
-OUT_CPP      = os.path.join(REPO_DIR, "Cbc", "src", "CbcLpParamScorer.cpp")
+OUT_HPP      = os.path.join(SCRIPT_DIR, "CbcLpParamScorer.legacy.hpp")
+OUT_CPP      = os.path.join(SCRIPT_DIR, "CbcLpParamScorer.legacy.cpp")
 
 # ---------------------------------------------------------------------------
 # 12 cluster representatives (Jaccard win-profile, threshold=5%, k=12)

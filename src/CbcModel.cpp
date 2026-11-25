@@ -1988,6 +1988,16 @@ int *get_All_trueseq;
 // proven infeasibility, so callers don't misreport "infeasible" for what
 // was really just running out of time.
 static bool resolveHitTimeLimit(const OsiSolverInterface *solver);
+// True when the solver's objective value is not a bound because the time
+// limit stopped the LP before it was solved (timeUp is
+// maximumSecondsReached()). getObjValue() then belongs to whatever point the
+// LP had reached, often its starting point, and can lie above the optimum.
+static bool lpStoppedOnTimeLimit(const OsiSolverInterface *solver, bool timeUp)
+{
+  return !solver->isProvenOptimal() && !solver->isProvenPrimalInfeasible()
+    && !solver->isProvenDualInfeasible()
+    && (timeUp || resolveHitTimeLimit(solver));
+}
 void CbcModel::branchAndBound(int doStatistics)
 
 {
@@ -2823,6 +2833,8 @@ void CbcModel::branchAndBound(int doStatistics)
   // Save objective (just so user can access it)
   originalContinuousObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
   bestPossibleObjective_ = originalContinuousObjective_;
+  if (lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    bestPossibleObjective_ = -COIN_DBL_MAX; // no bound yet
   sumChangeObjective1_ = 0.0;
   sumChangeObjective2_ = 0.0;
   /*
@@ -2848,6 +2860,7 @@ void CbcModel::branchAndBound(int doStatistics)
   bestObjective_ = std::min(bestObjective_, 1.0e50);
   if (!bestSolution_) {
     numberSolutions_ = 0;
+    incumbentCount_ = 0;
     numberHeuristicSolutions_ = 0;
   }
   stateOfSearch_ = 0;
@@ -3413,7 +3426,8 @@ void CbcModel::branchAndBound(int doStatistics)
     eventHappened_ = true; // stop as fast as possible
   stoppedOnGap_ = false;
   // See if can stop on gap
-  bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
+  if (!lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
   if (canStopOnGap()) {
     if (bestPossibleObjective_ < getCutoff())
       stoppedOnGap_ = true;
@@ -4136,8 +4150,10 @@ void CbcModel::branchAndBound(int doStatistics)
       solver_->initialSolve();
     }
   }
-  // See if can stop on gap
-  bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
+  // See if can stop on gap. If the time limit cut the last root resolve
+  // short, keep the bound solveWithCuts recorded from the last LP it solved.
+  if (!lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
   if (canStopOnGap()) {
     if (bestPossibleObjective_ < getCutoff())
       stoppedOnGap_ = true;
@@ -4908,6 +4924,8 @@ void CbcModel::branchAndBound(int doStatistics)
       Continuous data to be used later
     */
   continuousObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
+  if (lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    continuousObjective_ = bestPossibleObjective_;
   continuousInfeasibilities_ = 0;
   if (newNode) {
     continuousObjective_ = newNode->objectiveValue();
@@ -5051,6 +5069,10 @@ void CbcModel::branchAndBound(int doStatistics)
 #define MAX_DEL_NODE 1
   CbcNode *delNode[MAX_DEL_NODE + 1];
   int nDeleteNode = 0;
+  bool stoppedOnMemory = false;
+  int memoryCheckInterval = 1;
+  int memoryCheckCountdown = 1;
+  cbc_node_count lastMemoryCheckNode = numberNodes_;
   // For Printing etc when parallel
   cbc_node_count lastEvery1000 = 0;
   cbc_node_count lastPrintEvery = 0;
@@ -5414,18 +5436,24 @@ void CbcModel::branchAndBound(int doStatistics)
         saveSolver = nullptr;
       }
     }
-    /*  Check for abort on limits: node count, solution count, time, integrality
-     * gap. */
+    /* Check for abort on limits. RSS sampling is more expensive than the
+       other checks, and node counts can stall or jump in parallel search. */
 #ifdef CBC_THREAD
-    if (master_) {
+    if (master_)
       lockThread();
-      bool stopping = stoppingCriterionReached();
-      unlockThread();
-      if (stopping)
-        break;
-    } else
 #endif
-      if (stoppingCriterionReached())
+    bool stopping = stoppingCriterionReachedImpl(false);
+    if (!stopping && (--memoryCheckCountdown == 0
+                       || numberNodes_ - lastMemoryCheckNode >= memoryCheckInterval)) {
+      stopping = stoppedOnMemory = checkMemoryLimit(&memoryCheckInterval);
+      memoryCheckCountdown = memoryCheckInterval;
+      lastMemoryCheckNode = numberNodes_;
+    }
+#ifdef CBC_THREAD
+    if (master_)
+      unlockThread();
+#endif
+    if (stopping)
       break;
 #ifdef BONMIN
     assert(!solverCharacteristics_->solutionAddsCuts() || solverCharacteristics_->mipFeasible());
@@ -5947,7 +5975,10 @@ void CbcModel::branchAndBound(int doStatistics)
      may have been pushed back onto the tree for further processing, in which
      case it'll be deleted in cleanTree. We need to check.
     */
-  if (stoppingCriterionReached()) {
+  // Keep the result of the check that stopped the loop: shutting down
+  // workers or cleaning the tree can bring RSS back below the limit.
+  stoppedOnMemory = stoppedOnMemory || isMemoryLimitReached();
+  if (stoppedOnMemory || stoppingCriterionReachedImpl(false)) {
     double finalBound = pendingThreadBound;
     if (tree_->size())
       finalBound = std::min(finalBound, tree_->getBestPossibleObjective());
@@ -5979,7 +6010,7 @@ void CbcModel::branchAndBound(int doStatistics)
       handler_->message(CBC_MAXTIME, messages_) << CoinMessageEol;
       secondaryStatus_ = 4;
       status_ = 1;
-    } else if (isMemoryLimitReached()) {
+    } else if (stoppedOnMemory) {
       handler_->message(CBC_MAXMEMORY, messages_) << CoinMessageEol;
       secondaryStatus_ = 9;
       status_ = 1;
@@ -6625,6 +6656,8 @@ void CbcModel::initialSolve()
   secondaryStatus_ = -1;
   originalContinuousObjective_ = solver_->getObjValue() * solver_->getObjSense();
   bestPossibleObjective_ = originalContinuousObjective_;
+  if (lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    bestPossibleObjective_ = -COIN_DBL_MAX; // the LP wasn't solved: no bound
   if (solver_->isProvenDualInfeasible())
     originalContinuousObjective_ = -COIN_DBL_MAX;
   delete[] continuousSolution_;
@@ -6715,6 +6748,7 @@ CbcModel::CbcModel()
   , minimumDrop_(1.0e-7)
   , rootCutDropPatience_(1)
   , numberSolutions_(0)
+  , incumbentCount_(0)
   , numberSavedSolutions_(0)
   , maximumSavedSolutions_(0)
   , stateOfSearch_(0)
@@ -6810,6 +6844,7 @@ CbcModel::CbcModel()
   , continuousInfeasibilities_(COIN_INT_MAX)
   , maximumCutPassesAtRoot_(20)
   , maximumCutPasses_(10)
+  , stopCutsDepth_(0)
   , preferredWay_(0)
   , currentPassNumber_(0)
   , maximumWhich_(INITIAL_MAXIMUM_WHICH)
@@ -7090,6 +7125,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , minimumDrop_(rhs.minimumDrop_)
   , rootCutDropPatience_(rhs.rootCutDropPatience_)
   , numberSolutions_(rhs.numberSolutions_)
+  , incumbentCount_(rhs.incumbentCount_.load(std::memory_order_relaxed))
   , numberSavedSolutions_(rhs.numberSavedSolutions_)
   , maximumSavedSolutions_(rhs.maximumSavedSolutions_)
   , stateOfSearch_(rhs.stateOfSearch_)
@@ -7146,6 +7182,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , continuousInfeasibilities_(rhs.continuousInfeasibilities_)
   , maximumCutPassesAtRoot_(rhs.maximumCutPassesAtRoot_)
   , maximumCutPasses_(rhs.maximumCutPasses_)
+  , stopCutsDepth_(rhs.stopCutsDepth_)
   , preferredWay_(rhs.preferredWay_)
   , currentPassNumber_(rhs.currentPassNumber_)
   , maximumWhich_(rhs.maximumWhich_)
@@ -7515,6 +7552,8 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     minimumDrop_ = rhs.minimumDrop_;
     rootCutDropPatience_ = rhs.rootCutDropPatience_;
     numberSolutions_ = rhs.numberSolutions_;
+    incumbentCount_.store(rhs.incumbentCount_.load(std::memory_order_relaxed),
+      std::memory_order_relaxed);
     stateOfSearch_ = rhs.stateOfSearch_;
     whenCuts_ = rhs.whenCuts_;
     numberHeuristicSolutions_ = rhs.numberHeuristicSolutions_;
@@ -7556,6 +7595,7 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     continuousInfeasibilities_ = rhs.continuousInfeasibilities_;
     maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
     maximumCutPasses_ = rhs.maximumCutPasses_;
+    stopCutsDepth_ = rhs.stopCutsDepth_;
     randomSeed_ = rhs.randomSeed_;
     solverRandomSeed_ = rhs.solverRandomSeed_;
     multipleRootTries_ = rhs.multipleRootTries_;
@@ -7984,6 +8024,7 @@ void CbcModel::resetModel()
   sumChangeObjective1_ = 0.0;
   sumChangeObjective2_ = 0.0;
   numberSolutions_ = 0;
+  incumbentCount_ = 0;
   stateOfSearch_ = 0;
   delete[] hotstartSolution_;
   hotstartSolution_ = nullptr;
@@ -8074,6 +8115,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
   maximumCutPasses_ = rhs.maximumCutPasses_;
+  stopCutsDepth_ = rhs.stopCutsDepth_;
   randomSeed_ = rhs.randomSeed_;
   solverRandomSeed_ = rhs.solverRandomSeed_;
   multipleRootTries_ = rhs.multipleRootTries_;
@@ -8198,6 +8240,8 @@ void CbcModel::moveInfo(const CbcModel &rhs)
   bestObjective_ = rhs.bestObjective_;
   bestPossibleObjective_ = rhs.bestPossibleObjective_;
   numberSolutions_ = rhs.numberSolutions_;
+  incumbentCount_.store(rhs.incumbentCount_.load(std::memory_order_relaxed),
+    std::memory_order_relaxed);
   numberHeuristicSolutions_ = rhs.numberHeuristicSolutions_;
   numberNodes_ = rhs.numberNodes_;
   lastNodeImprovingFeasSol_ = rhs.lastNodeImprovingFeasSol_;
@@ -8299,22 +8343,30 @@ bool CbcModel::isNodeLimitReached() const
 // Memory limit reached? (only meaningful during branch and bound)
 bool CbcModel::isMemoryLimitReached() const
 {
+  return checkMemoryLimit(nullptr);
+}
+
+bool CbcModel::checkMemoryLimit(int *checkInterval) const
+{
   double maxMemory = dblParam_[CbcMaxMemory];
+  // Avoid repeated OS queries with plenty of headroom, but check every
+  // search iteration near the limit regardless of model size.
+  if (checkInterval)
+    *checkInterval = 100;
   // Sentinel value (see cbcDefaultMaxMemoryBytes()) meaning "not checked".
   if (maxMemory > 0.99e100)
     return false;
+  if (parentModel_)
+    maxMemory = std::min(maxMemory, parentModel_->dblParam_[CbcMaxMemory]);
   size_t currentUsage = CoinGetCurrentMemUsage();
   // 0 means the current usage could not be determined on this platform;
   // in that case we can't meaningfully compare against the limit.
   if (currentUsage == 0)
     return false;
-  bool hitMaxMemory = (static_cast< double >(currentUsage) >= maxMemory);
-  if (parentModel_ && !hitMaxMemory) {
-    // In a sub tree
-    double parentMaxMemory = parentModel_->dblParam_[CbcMaxMemory];
-    if (parentMaxMemory <= 0.99e100)
-      hitMaxMemory = (static_cast< double >(currentUsage) >= parentMaxMemory);
-  }
+  const double usage = static_cast< double >(currentUsage);
+  if (checkInterval && (usage >= 0.9 * maxMemory || maxMemory - usage <= 16 * 1024 * 1024))
+    *checkInterval = 1;
+  bool hitMaxMemory = (usage >= maxMemory);
   if (hitMaxMemory) {
     // Set eventHappened_ so will by-pass as much stuff as possible
     eventHappened_ = true;
@@ -9077,15 +9129,15 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 */
 
 {
-#define STOP_CUTS_NOW 6
 #define START_FATHOM 6
+  // Limit cut passes in the tree by depth (stopCutsDepth_, default 0: no limit).
   // Not if some branching objects come from another solver (e.g.,
   // Couenne's spatial branching): it relies on cuts deep in the tree.
-  if ((specialOptions_ & 2048) == 0 && STOP_CUTS_NOW > 0 && !hasNonCbcObjects_) {
+  if ((specialOptions_ & 2048) == 0 && stopCutsDepth_ > 0 && !hasNonCbcObjects_) {
     if (node && numberTries > 1) {
       // in main model
       if (currentDepth_ == 0) {
-      } else if (currentDepth_ < STOP_CUTS_NOW) {
+      } else if (currentDepth_ < stopCutsDepth_) {
         numberTries = 1; // std::min(numberTries,4);
         //} else if ((currentDepth_%2)==0) {
         // numberTries = 1;
@@ -9658,6 +9710,9 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 
   double direction = solver_->getObjSenseInCbc();
   double startObjective = solver_->getObjValue() * direction;
+  // At the root, the objective of the last LP solved to optimality: a valid
+  // bound if the time limit stops a later resolve.
+  double lastSolvedObjective = solver_->isProvenOptimal() ? startObjective : -COIN_DBL_MAX;
 
   currentPassNumber_ = 0;
   // Really primalIntegerTolerance; relates to an illposed problem with various
@@ -10402,6 +10457,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       }
       // solver_->setHintParam(OsiDoDualInResolve,false,OsiHintTry);
       {
+#ifdef CBC_TIMING_ROOT_RESOLVE
         // Timed for lastCutRoundResolveTime()/cbcFilterGeneratedCuts(): this
         // is the actual LP reoptimisation cost of the cuts just installed.
         // NOT used to steer any live decision (CPU timing measured
@@ -10412,13 +10468,18 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         // the cutFilter* gates. Never read back to change behaviour
         // within the same run.
         double resolveStart = CoinCpuTime();
+#endif
         feasible = (resolve(node ? node->nodeInfo() : nullptr, 2) != 0);
+        if (feasible && solver_->isProvenOptimal())
+          lastSolvedObjective = solver_->getObjValue() * direction;
+#ifdef CBC_TIMING_ROOT_RESOLVE
         lastCutRoundResolveTime_ = CoinCpuTime() - resolveStart;
         if (!node && getenv("CBC_LOG_ROOT_RESOLVE_TIME")) {
           fprintf(stderr, "CBC_ROOT_RESOLVE_TIME pass=%d rows=%d cols=%d resolveTime=%.6f\n",
             currentPassNumber_, solver_->getNumRows(), solver_->getNumCols(),
             lastCutRoundResolveTime_);
         }
+#endif
       }
       // solver_->setHintParam(OsiDoDualInResolve,true,OsiHintTry);
       if (maximumSecondsReached()) {
@@ -10809,6 +10870,9 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
             << ", sol value : " << solver_->getObjValue() << std::endl;
 #endif
   // End of cut generation loop.
+  if (!node && lastSolvedObjective > -COIN_DBL_MAX
+    && lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+    bestPossibleObjective_ = std::max(bestPossibleObjective_, lastSolvedObjective);
   tuneCutGeneratorFrequency(cuts, fullScan, direction, startObjective,
     numberRowsAtStart, numberColumns, numberElementsAtStart, feasible,
     onOptimalPath);
@@ -11001,6 +11065,10 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
            update matrix and leave all in */
     int willBeCutsInTree = 0;
     double thisObjective = solver_->getObjValue() * direction;
+    // A resolve cut short by the time limit has no meaningful objective; report
+    // the bound solveWithCuts kept from the last LP it solved.
+    if (!numberNodes_ && lpStoppedOnTimeLimit(solver_, maximumSecondsReached()))
+      thisObjective = bestPossibleObjective_;
     // get sizes
     int numberRowsAdded = solver_->getNumRows() - numberRowsAtStart;
     CoinBigIndex numberElementsAdded = solver_->getNumElements() - numberElementsAtStart;
@@ -11244,7 +11312,14 @@ void CbcModel::tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
           // If large number of probing - can be biased
           smallProblem = (0.2 * (totalCuts - generator_[i]->numberCutsInTotal())) / static_cast< double >(numberActiveGenerators - 1 + 1.0e-100);
         }
-        if (probing->rowCuts() == -3) {
+        // In 2.10, -3 marked only the forceOnBut modes. Since 7254cd18 the
+        // setup code uses -3 for every mode, so that probing makes only
+        // column cuts in the tree, and this test caught every mode. Leave
+        // out the two whose meaning it overrode: root only (-99), which this
+        // turned into -98 (keep going in the tree while the objective
+        // improves), and on (-1). The default ifmove (-98) and the force
+        // modes (1) go on as before.
+        if (probing->rowCuts() == -3 && howOften != -99 && howOften != -1) {
           probingWasOnBut = true;
           howOften = -98;
           probing->setRowCuts(3);
@@ -15537,6 +15612,8 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
       if (how == CBC_ROUNDING)
         numberHeuristicSolutions_++;
       numberSolutions_++;
+      if (!masterThread_)
+        incumbentCount_++;
       handler_->clearBuffer();
       // In multi-threaded search, tree_ may alias the shared base model's
       // tree (see CbcThread.cpp's "tree_ = baseModel->tree_"), which the
@@ -15655,6 +15732,8 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
       // CoinCopyN(candidate,numberColumns,bestSolution_);
 
       // don't update if from solveWithCuts
+      if (!masterThread_)
+        incumbentCount_++;
       if (how != CBC_SOLUTION2) {
         if (how == CBC_ROUNDING)
           numberHeuristicSolutions_++;
@@ -19922,6 +20001,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         baseModel->bestSolution_ = new double[numberColumns];
       CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
       baseModel->setCutoff(getCutoff());
+      baseModel->incumbentCount_++;
       // Report through baseModel's own handler (the one wired to the B&B
       // progress table via CbcOutputHandler/bnbOut_) rather than this
       // worker's handler, which is a CbcSilentHandler clone (see
@@ -20552,6 +20632,7 @@ bool CbcModel::integerPresolveThisModel(OsiSolverInterface *originalSolver,
 
   bestObjective_ = 1.0e50;
   numberSolutions_ = 0;
+  incumbentCount_ = 0;
   numberHeuristicSolutions_ = 0;
   double cutoff = getCutoff();
   double direction = solver_->getObjSenseInCbc();
@@ -20619,6 +20700,7 @@ bool CbcModel::integerPresolveThisModel(OsiSolverInterface *originalSolver,
 
     currentPassNumber_++;
     numberSolutions_ = 0;
+    incumbentCount_ = 0;
     // this will be set false to break out of loop with presolved problem
     bool doIntegerPresolve = (currentPassNumber_ != 20);
 
@@ -20924,6 +21006,8 @@ void CbcModel::originalModel(CbcModel *presolvedModel, bool weak)
     bestSolution_ = nullptr;
   }
   numberSolutions_ = presolvedModel->numberSolutions_;
+  incumbentCount_.store(presolvedModel->incumbentCount_.load(std::memory_order_relaxed),
+    std::memory_order_relaxed);
   numberHeuristicSolutions_ = presolvedModel->numberHeuristicSolutions_;
   numberNodes_ = presolvedModel->numberNodes_;
   numberIterations_ = presolvedModel->numberIterations_;
@@ -20942,7 +21026,17 @@ void CbcModel::setOptionalInteger(int index)
 
 bool CbcModel::stoppingCriterionReached() const
 {
-  return (isNodeLimitReached() || numberSolutions_ >= intParam_[CbcMaxNumSol] || stoppedOnGap_ || eventHappened_ || maximumSecondsReached() || isMemoryLimitReached() || (numberSolutions_ && (intParam_[CbcMaxNodesNotImproving] != COIN_INT_MAX && (numberNodes_ - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImproving]))) || (!(maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_)));
+  return stoppingCriterionReachedImpl(true);
+}
+
+bool CbcModel::stoppingCriterionReachedImpl(bool checkMemory) const
+{
+  return isNodeLimitReached() || numberSolutions_ >= intParam_[CbcMaxNumSol]
+    || stoppedOnGap_ || eventHappened_ || maximumSecondsReached()
+    || (checkMemory && isMemoryLimitReached())
+    || (numberSolutions_ && intParam_[CbcMaxNodesNotImproving] != COIN_INT_MAX
+      && numberNodes_ - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImproving])
+    || (maximumNumberIterations_ >= 0 && numberIterations_ >= maximumNumberIterations_);
 }
 
 // Return true if maximum time reached
@@ -20956,20 +21050,24 @@ bool CbcModel::maximumSecondsReached() const
   if (numberSolutions_ && (!hitMaxTime)) {
     hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= dblParam_[CbcMaxSecondsNotImproving];
   }
-  if (parentModel_ && !hitMaxTime) {
+  // In a sub tree, the parent's limits apply too. Only those are passed on
+  // to the parent: this model's own limit can be one that should stop this
+  // model alone, such as the -COIN_DBL_MAX that resolve() sets after an
+  // abandoned LP.
+  bool parentHit = false;
+  if (parentModel_) {
     // In a sub tree
-    assert(parentModel_);
-    maxSeconds = parentModel_->getMaximumSeconds();
-    hitMaxTime = (totalTime >= maxSeconds);
-    if (numberSolutions_ && (!hitMaxTime)) {
+    parentHit = (totalTime >= parentModel_->getMaximumSeconds());
+    if (numberSolutions_ && (!parentHit)) {
       double maxSecondsNotImprFS = parentModel_->getDblParam(CbcMaxSecondsNotImproving);
-      hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= maxSecondsNotImprFS;
+      parentHit = totalTime - lastTimeImprovingFeasSol_ >= maxSecondsNotImprFS;
     }
   }
+  hitMaxTime = hitMaxTime || parentHit;
   if (hitMaxTime) {
     // Set eventHappened_ so will by-pass as much stuff as possible
     eventHappened_ = true;
-    if (parentModel_) {
+    if (parentHit) {
       // need to set stuff
       // Multiple worker threads of this (possibly multi-threaded) model can
       // reach here concurrently and all try to propagate the same event to
@@ -21317,6 +21415,7 @@ OsiSolverInterface *CbcModel::strengthenedModel()
     */
   bestObjective_ = std::min(bestObjective_, 1.0e50);
   numberSolutions_ = 0;
+  incumbentCount_ = 0;
   numberHeuristicSolutions_ = 0;
   // Everything is minimization
   double cutoff = getCutoff();

@@ -5,6 +5,9 @@
 #define CbcHeuristicControl_H
 
 #include "CbcConfig.h"
+#include <atomic>
+#include <memory>
+#include <mutex>
 #include <string>
 
 /** Node-count/depth-based scheduling policy for periodic re-invocation of a
@@ -44,7 +47,9 @@ enum class HeuristicScheduleMode {
     CbcHeuristic). */
 class CBCLIB_EXPORT CbcHeuristicControl {
 public:
-  CbcHeuristicControl() = default;
+  CbcHeuristicControl();
+  CbcHeuristicControl(const CbcHeuristicControl &rhs);
+  CbcHeuristicControl &operator=(const CbcHeuristicControl &rhs);
 
   /// \name Policy
   //@{
@@ -71,14 +76,27 @@ public:
   int initialK = 1; ///< everyK before any back-off
   //@}
 
+  /// Configure the schedule and reset its shared scheduling state.
+  void setScheduleMode(HeuristicScheduleMode newMode, int k);
+
+  /// Set the configured interval and its current shared value.
+  void setEveryK(int k);
+
+  /// Current interval after any back-off.
+  int currentEveryK() const;
+
+  /// Share only the scheduling gate with a threaded copy of this control.
+  void shareScheduleStateWith(CbcHeuristicControl &other);
+
   /** Cheap checks independent of the schedule: pause after repeated failures
       and time share. `minGapNodes` > 0 additionally requires that many nodes
       since the last run. Counts the reason it said no. */
   bool allows(int nodeCount, double elapsed, int solutionCount, bool useGap);
 
-  /** The schedule decision for `mode` at this node. Has side effects (window
+  /** The schedule decision for `mode` at this node. `incumbentCount` advances
+      only when the global incumbent improves. Has side effects (window
       bookkeeping): call at most once per candidate invocation. */
-  bool scheduled(int nodeCount, int depth, int solutionCount);
+  bool scheduled(int nodeCount, int depth, int incumbentCount);
 
   /// Account for a finished real run (time, outcome, back-off).
   void finishRun(bool success, double runSeconds, int nodeCount, int solutionCount);
@@ -97,8 +115,23 @@ public:
   static const char *modeName(HeuristicScheduleMode m);
 
 private:
-  int lastRunNode = -1000000;
-  int lastSolutionCount = 0;
+  struct ScheduleState {
+    std::atomic< int > lastRunNode;
+    std::atomic< int > lastIncumbentCount;
+    std::atomic< int > currentEveryK;
+    std::mutex backoffMutex;
+    int runs = 0;
+    int successes = 0;
+
+    ScheduleState()
+      : lastRunNode(-1000000)
+      , lastIncumbentCount(0)
+      , currentEveryK(0)
+    {
+    }
+  };
+
+  std::shared_ptr< ScheduleState > scheduleState_;
   int failuresAt = -1;
 };
 

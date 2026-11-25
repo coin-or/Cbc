@@ -334,13 +334,14 @@ public:
     - LPAuto:      picks between LPRacing and LPRecommend depending on the
                    number of threads available: LPRacing when running in
                    parallel (threads >= 2), LPRecommend when running
-                   sequentially (threads == 1). (default)
+                   sequentially (fewer than two threads). (default)
     - LPRacing:    opportunistic parallel LP racing (dual simplex, primal
                    with Idiot crash, primal with Sprint race each other;
                    the first to finish wins). Requires threads >= 2.
-    - LPRecommend: ML-based per-instance recommendation of a single LP
-                   method/configuration (see CbcLpParamScorer). Runs
-                   sequentially.
+    - LPRecommend: four ordered feature-based primal/Idiot exceptions to
+                   dual simplex with perturbation 72 (see CbcLpParamScorer).
+                   Runs sequentially; later resolves use the independent
+                   reoptimization settings.
   */
   enum LPMethod {
     LPDual = 0,
@@ -350,6 +351,18 @@ public:
     LPRacing,
     LPRecommend,
     LPEndMarker
+  };
+
+  /*! Algorithm for ordinary warm-start resolve() calls, not the initial LP
+      or specialized strong-branching hot starts. Auto preserves existing hints.
+      Barrier includes crossover; racing compares warm dual and primal simplex.
+  */
+  enum ReoptMethod {
+    ReoptAuto = 0,
+    ReoptDual,
+    ReoptPrimal,
+    ReoptBarrier,
+    ReoptRacing
   };
 
   /*! \brief Problem class mode for auto-tuning */
@@ -1832,6 +1845,31 @@ public:
 
   /*! \brief Set LP method for initial solve */
   inline void setLpMethod(CbcParameters::LPMethod method) { lpMethod_ = method;
+  }
+
+  inline ReoptMethod getReoptMethod() const
+  {
+    return static_cast< ReoptMethod >(parameters_[CbcParam::REOPTMETHOD]->modeVal());
+  }
+  inline void setReoptMethod(ReoptMethod method)
+  {
+    parameters_[CbcParam::REOPTMETHOD]->setVal(static_cast< int >(method));
+  }
+  inline int getReoptPresolve() const
+  {
+    return parameters_[CbcParam::REOPTPRESOLVE]->modeVal() - 1;
+  }
+  inline void setReoptPresolve(int mode)
+  {
+    parameters_[CbcParam::REOPTPRESOLVE]->setVal(mode + 1);
+  }
+  inline int getReoptPertValue() const
+  {
+    return parameters_[CbcParam::REOPTPERTVALUE]->intVal();
+  }
+  inline void setReoptPertValue(int value)
+  {
+    parameters_[CbcParam::REOPTPERTVALUE]->setVal(value);
   }
 
   /*! \brief Get threshold for artificial costs */

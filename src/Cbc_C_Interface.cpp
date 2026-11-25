@@ -7,6 +7,7 @@
 #include <cfloat>
 #include <climits>
 #include <cctype>
+#include <cerrno>
 #include <map>
 #include <unordered_map>
 #include <string>
@@ -282,6 +283,9 @@ struct Cbc_Model {
 
   // parameters
   enum LPMethod lp_method;
+  enum ReoptMethod reopt_method;
+  int reopt_pert_value;
+  int reopt_presolve;
   enum DualPivot dualp;
   enum LPReductions red_type = LPR_Default;
 
@@ -1580,27 +1584,73 @@ Cbc_getIntParam(Cbc_Model *model, enum IntParam which) {
   return model->int_param[which];
 }
 
+static int Cbc_storeParameter(Cbc_Model *model, const char *name, const char *value)
+{
+  if (!name || !name[0]) {
+    fprintf(stderr, "Cbc_setParam: parameter name must not be empty\n");
+    return 1;
+  }
+  std::string key(name);
+  std::string val(value ? value : "");
+  // Validate these at setting time: LP resolves do not run the command parser.
+  // Copies of the shared definitions preserve CLI matching and range checks
+  // without constructing a CbcSolver on every warm-start solve.
+  static CbcParameters definitions;
+  for (int code : { CbcParam::REOPTMETHOD, CbcParam::REOPTPRESOLVE,
+         CbcParam::REOPTPERTVALUE }) {
+    if (definitions[code]->matches(key) != 1)
+      continue;
+    CbcParam parameter(*definitions[code]);
+    std::string message;
+    int error = 0;
+    if (code == CbcParam::REOPTPERTVALUE) {
+      char *end = nullptr;
+      errno = 0;
+      long number = strtol(val.c_str(), &end, 10);
+      if (errno || end == val.c_str() || *end || number < -5000 || number > 102) {
+        message = "expected an integer from -5000 to 102 (-1 means inherit)";
+        error = 1;
+      } else {
+        error = parameter.setVal(static_cast< int >(number), &message, CoinParam::pushOff);
+      }
+    } else {
+      error = parameter.setVal(val, &message, CoinParam::pushOff);
+    }
+    if (error) {
+      fprintf(stderr, "Cbc_setParam: invalid %s value '%s': %s\n",
+        name, val.c_str(), message.c_str());
+      return 1;
+    }
+    key = parameter.name();
+    if (code == CbcParam::REOPTMETHOD)
+      model->reopt_method = static_cast< ReoptMethod >(parameter.modeVal());
+    else if (code == CbcParam::REOPTPRESOLVE)
+      model->reopt_presolve = parameter.modeVal() - 1;
+    else
+      model->reopt_pert_value = parameter.intVal();
+    break;
+  }
+  if (model->cbcOptions.find(key) == model->cbcOptions.end())
+    model->vcbcOptions.push_back(key);
+  model->cbcOptions[key] = val;
+  return 0;
+}
+
 void CBC_LINKAGE
 Cbc_setParameter(Cbc_Model *model, const char *name, const char *value)
 {
-  if (model->cbcOptions.find(std::string(name))==model->cbcOptions.end())
-    model->vcbcOptions.push_back(std::string(name));
-  model->cbcOptions[name] = std::string(value);
+  if (Cbc_storeParameter(model, name, value))
+    abort();
 }
 
 int CBC_LINKAGE
 Cbc_setParam(Cbc_Model *model, const char *name, const char *value)
 {
-  // Store the parameter. Validation happens at solve time when the
+  // Store the parameter. Except for reoptimization options, validation happens at solve time when the
   // command queue is processed by CbcMain1/run(). Invalid parameters
   // will produce "Unrecognized parameter" messages during solve.
   // This avoids static initialization issues with CbcParameters.
-  if (!name || !name[0])
-    return 1;
-  if (model->cbcOptions.find(std::string(name)) == model->cbcOptions.end())
-    model->vcbcOptions.push_back(std::string(name));
-  model->cbcOptions[name] = std::string(value ? value : "");
-  return 0;
+  return Cbc_storeParameter(model, name, value);
 }
 
 int CBC_LINKAGE
@@ -2390,10 +2440,19 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   Cbc_applyDualPivot(model, clps);
 
   if (priorSolveExists || solver->basisIsAvailable()) {
-    // Warm-start reoptimization -- the configured LP method has no effect
-    // here: Clp just continues from the existing basis. Still uses the
-    // modern tabular progress output (same as the cold paths) when the
-    // configured log level allows it.
+    int threads = 0;
+#ifdef CBC_THREAD
+    threads = model->int_param[INT_PARAM_THREADS];
+#endif
+    try {
+      CbcSolver::configureReoptimization(solver,
+        static_cast< CbcParameters::ReoptMethod >(model->reopt_method),
+        model->reopt_pert_value, model->reopt_presolve, threads);
+    } catch (CoinError &e) {
+      fprintf(stderr, "Cbc_resolve ERROR: %s\n", e.message().c_str());
+      fflush(stderr);
+      return -1;
+    }
     Cbc_withRootLpProgress(model, solver, clps, [&]() { solver->resolve(); });
     return Cbc_mapLpResult(model, solver, clps);
   }
@@ -3919,6 +3978,9 @@ Cbc_clone(Cbc_Model *model)
 
   // copying parameters
   result->lp_method = model->lp_method;
+  result->reopt_method = model->reopt_method;
+  result->reopt_pert_value = model->reopt_pert_value;
+  result->reopt_presolve = model->reopt_presolve;
   result->dualp = model->dualp;
 
   memcpy(result->int_param, model->int_param, sizeof(result->int_param));
@@ -5421,6 +5483,17 @@ Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm ) {
   model->lp_method = lpm;
 }
 
+void CBC_LINKAGE
+Cbc_setReoptMethod(Cbc_Model *model, enum ReoptMethod method)
+{
+  static const char *const keywords[] = { "auto", "dual", "primal", "barrier", "racing" };
+  if (method < REOPT_Auto || method > REOPT_Racing) {
+    fprintf(stderr, "Cbc_setReoptMethod: invalid method %d\n", static_cast< int >(method));
+    abort();
+  }
+  Cbc_setParameter(model, "reoptMethod", keywords[method]);
+}
+
 /** gets the dual reductions to be used when solving the LP
  */
 double CBC_LINKAGE
@@ -5578,6 +5651,9 @@ static void Cbc_addMS( Cbc_Model *model, CbcModel &cbcModel  ) {
 
 void Cbc_iniParams( Cbc_Model *model ) {
   model->lp_method = LPM_Auto;
+  model->reopt_method = REOPT_Auto;
+  model->reopt_pert_value = -1;
+  model->reopt_presolve = -1;
   model->dualp = DP_Auto;
   model->cg_space = 0;
   model->cg_iv = NULL;

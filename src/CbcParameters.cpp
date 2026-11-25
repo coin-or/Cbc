@@ -141,7 +141,7 @@ void CbcParameters::init(int strategy)
   strategyMode_ = CbcParameters::StrategyDefault; // "default"
   clockType_ = CbcParameters::ClockElapsed; // "elapsed"
   cgraphMode_ = CbcParameters::CGraphOn; // "on"
-  lpMethod_ = CbcParameters::LPAuto; // "auto"
+  lpMethod_ = CbcParameters::LPDual; // "dual"
 
   preProcess_ = CbcParameters::IPPSOS;
   cutDepth_ = -1;
@@ -158,7 +158,7 @@ void CbcParameters::init(int strategy)
   probing_.maxElements_ = 200;
   probing_.rowCuts_ = 3;
 
-  clique_.mode_ = CbcParameters::CGIfMove;
+  clique_.mode_ = CbcParameters::CGRoot;
   clique_.proto_ = 0;
   clique_.starCliqueReport_ = false;
   clique_.rowCliqueReport_ = false;
@@ -676,6 +676,9 @@ void CbcParameters::addCbcParams()
   parameters_[CbcParam::TIMEMODE]->setTopic("Output");
   parameters_[CbcParam::CHECKTIMEFREQ]->setTopic("Output");
   parameters_[CbcParam::LPMETHOD]->setTopic("Solving");
+  parameters_[CbcParam::REOPTMETHOD]->setTopic("LP Reoptimization");
+  parameters_[CbcParam::REOPTPRESOLVE]->setTopic("LP Reoptimization");
+  parameters_[CbcParam::REOPTPERTVALUE]->setTopic("LP Reoptimization");
 
   // Double params
   parameters_[CbcParam::ARTIFICIALCOST]->setTopic("Heuristics");
@@ -694,6 +697,7 @@ void CbcParameters::addCbcParams()
   parameters_[CbcParam::SPPGRASPARTIFICIAL]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPNOIMPROVE]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPSTAGEFIRSTPERCENT]->setTopic("Heuristics");
+  parameters_[CbcParam::SPPGRASPTHREADS]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPDESTROYROWS]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPSTALL]->setTopic("Heuristics");
   parameters_[CbcParam::SPPGRASPDESTROYGROW]->setTopic("Heuristics");
@@ -708,7 +712,7 @@ void CbcParameters::addCbcParams()
 
   // Integer params — Cuts
   for (int code : { CbcParam::CUTDEPTH, CbcParam::CUTLENGTH,
-         CbcParam::CUTPASSINTREE, CbcParam::MAXSLOWCUTS,
+         CbcParam::CUTPASSINTREE, CbcParam::STOPCUTSDEPTH, CbcParam::MAXSLOWCUTS,
          CbcParam::AGGREGATEMIXED })
     parameters_[code]->setTopic("Cuts");
 
@@ -893,7 +897,10 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::TIMEMODE]->setDefault("elapsed");
     parameters_[CbcParam::USECGRAPH]->setDefault("on");
     parameters_[CbcParam::BOUNDPROPLEVEL]->setDefault("milpbt");
-    parameters_[CbcParam::LPMETHOD]->setDefault("auto");
+    parameters_[CbcParam::LPMETHOD]->setDefault("dual");
+    parameters_[CbcParam::REOPTMETHOD]->setDefault("auto");
+    parameters_[CbcParam::REOPTPRESOLVE]->setDefault("auto");
+    parameters_[CbcParam::REOPTPERTVALUE]->setDefault(-1);
     parameters_[CbcParam::MIPSTARTFIX]->setDefault("integerZero");
     parameters_[CbcParam::NODEBOUNDPROP]->setDefault("on");
     parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setDefault(100);
@@ -916,6 +923,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::SPPGRASPDESTROYROWS]->setDefault(5);
     parameters_[CbcParam::SPPGRASPSTALL]->setDefault(200);
     parameters_[CbcParam::SPPGRASPSTAGEFIRSTPERCENT]->setDefault(25);
+    parameters_[CbcParam::SPPGRASPTHREADS]->setDefault(1);
     parameters_[CbcParam::SPPGRASPDESTROYGROW]->setDefault(0.0);
     parameters_[CbcParam::SPPGRASPRELATEDROWS]->setDefault(0.0);
     parameters_[CbcParam::SPPGRASPREALSTALLWORK]->setDefault(0.0);
@@ -933,6 +941,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::CUTDEPTH]->setDefault(getCutDepth());
     parameters_[CbcParam::CUTLENGTH]->setDefault(-1);
     parameters_[CbcParam::CUTPASSINTREE]->setDefault(4);
+    parameters_[CbcParam::STOPCUTSDEPTH]->setDefault(0);
     parameters_[CbcParam::CUTPASSSMALL]->setDefault(-100);
     parameters_[CbcParam::CUTPASSMEDIUM]->setDefault(100);
     parameters_[CbcParam::CUTPASSLARGE]->setDefault(50);
@@ -1059,7 +1068,7 @@ void CbcParameters::setDefaults(int strategy)
     parameters_[CbcParam::SPPGRASPROOTKEEPORIGINAL]->setDefault("off");
     parameters_[CbcParam::SPPGRASPNATIVEPRELP]->setDefault("auto");
     parameters_[CbcParam::CUTSTRATEGY]->setDefault("off");
-    parameters_[CbcParam::CLIQUECUTS]->setDefault("ifmove");
+    parameters_[CbcParam::CLIQUECUTS]->setDefault("root");
     parameters_[CbcParam::FLOWCUTS]->setDefault("ifmove");
     parameters_[CbcParam::GMICUTS]->setDefault("root");
     parameters_[CbcParam::GOMORYCUTS]->setDefault("ifmove");
@@ -1234,6 +1243,7 @@ void CbcParameters::synchronizeModel()
       { CbcParam::NUMBERBEFORE, &CbcModel::setNumberBeforeTrust, &CbcModel::numberBeforeTrust },
       { CbcParam::NUMBERANALYZE, &CbcModel::setNumberAnalyzeIterations, &CbcModel::numberAnalyzeIterations },
       { CbcParam::CUTPASSINTREE, &CbcModel::setMaximumCutPasses, &CbcModel::getMaximumCutPasses },
+      { CbcParam::STOPCUTSDEPTH, &CbcModel::setStopCutsDepth, &CbcModel::getStopCutsDepth },
       { CbcParam::CUTPASS, &CbcModel::setMaximumCutPassesAtRoot, &CbcModel::getMaximumCutPassesAtRoot },
 #ifdef CBC_THREAD
       { CbcParam::THREADS, &CbcModel::setNumberThreads, &CbcModel::getNumberThreads },
@@ -1537,6 +1547,16 @@ void CbcParameters::addCbcSolverActionParams()
     "stdin", "Switch to interactive command line mode", "",
     CoinParam::displayPriorityNone);
 
+  parameters_[CbcParam::UNITTEST]->setup(
+    "unitTest", "Do unit test",
+    "With -dirMiplib, solves the MIPLIB 3 problems in that directory, one "
+    "after another, with the options given on the command line, and "
+    "prints a summary of results and times. With -dirSample instead, solves "
+    "p0033 and p0201 from the COIN-OR sample problems. Put the directory and "
+    "any options before -unitTest, for example: cbc -dirMiplib "
+    "../Data/miplib3 -aggregate 5 -unitTest",
+    CoinParam::displayPriorityHigh);
+
   parameters_[CbcParam::WRITEGMPLSOL]->setup(
     "writeGSolu!tion", "Puts glpk solution to file",
     "Will write a glpk solution file to the given file name.  It will use "
@@ -1724,6 +1744,24 @@ void CbcParameters::addCbcSolverDirParams()
     "the remaining work budget available to one post-cuts SppGrasp pass.",
     CoinParam::displayPriorityLow);
   parameters_[CbcParam::DIRNETLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DIRSAMPLE]->setup(
+    "dirSample", "Set directory where the COIN-OR sample problems are.",
+    "This sets the directory where the COIN-OR sample problems reside. It is "
+    "used only when -unitTest is passed to cbc without -dirMiplib. cbc will "
+    "pick up the test problems from this directory.",
+    CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIRSAMPLE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DIRMIPLIB]->setup(
+    "dirMiplib", "Set directory where the MIPLIB 3 problems are.",
+    "This sets the directory where the MIPLIB 3 problems reside (for "
+    "example, the Data/miplib3 project from COIN-OR). It is used only when "
+    "-unitTest is passed to cbc. cbc will pick up the problems from this "
+    "directory. If cbc is built without zlib support then the problems must "
+    "be uncompressed.",
+    CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIRMIPLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 }
 
 // ###########################################################################
@@ -1888,7 +1926,8 @@ void CbcParameters::addCbcSolverStrParams()
     "maxMem!ory", "Maximum amount of memory to use during branch and bound",
     "This limits the resident memory this process may use once branch and "
     "bound has started; the search is stopped (much like hitting the node "
-    "or time limit) if it is exceeded. It is not checked outside of branch "
+    "or time limit) if a periodic check finds it exceeded. Memory use can "
+    "exceed the limit between checks. It is not checked outside of branch "
     "and bound (e.g. during preprocessing or the initial LP solve). "
     "Accepts a plain number of bytes, or a number followed by a unit "
     "suffix: b (bytes, the default), k or kb (KiB), m or mb (MiB), g or "
@@ -2247,7 +2286,7 @@ void CbcParameters::addCbcSolverKwdParams()
     "Which LP algorithm to use for the initial LP relaxation solve",
     "Controls which LP algorithm is used when -solve or -initialSolve "
     "triggers the root LP relaxation.\n"
-    "  dual:      dual simplex.\n"
+    "  dual:      dual simplex. (default)\n"
     "  primal:    primal simplex.\n"
     "  barrier:   interior-point (barrier) method.\n"
     "  racing:    opportunistic parallel LP racing -- multiple LP method "
@@ -2256,12 +2295,12 @@ void CbcParameters::addCbcSolverKwdParams()
     "against primal with 50 Idiot crash passes (perturbation 50). Three "
     "or more threads add barrier with native Cholesky and crossover; at "
     "most three LP workers run. Requires at least 2 threads (-threads).\n"
-    "  recommend: ML-based per-instance recommendation of a single LP "
-    "method/configuration, using a classifier trained on instance features "
-    "(see CbcLpParamScorer) to pick the settings expected to solve fastest. "
-    "Runs sequentially.\n"
+    "  recommend: sequential feature-based selection using four ordered "
+    "primal/Idiot exceptions and dual simplex with perturbation 72 otherwise "
+    "(see CbcLpParamScorer). These settings apply only to the initial LP; "
+    "reoptMethod/reoptPertValue/reoptPresolve control later resolves.\n"
     "  auto:      picks racing when running in parallel (threads >= 2) or "
-    "recommend when running sequentially (threads == 1). (default)");
+    "recommend when fewer than two threads are available.");
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "dual", CbcParameters::LPDual);
   parameters_[CbcParam::LPMETHOD]->appendKwd(
@@ -2274,6 +2313,36 @@ void CbcParameters::addCbcSolverKwdParams()
     "racing", CbcParameters::LPRacing);
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "recommend", CbcParameters::LPRecommend);
+
+  parameters_[CbcParam::REOPTMETHOD]->setup(
+    "reoptM!ethod", "LP algorithm for reoptimization after the initial LP",
+    "Independent of lpMethod. Applies to ordinary resolve() calls, including "
+    "cut-loop and node LPs and Cbc_resolve(), but not specialized strong-branching "
+    "hot starts or fast fathoming.\n"
+    "  auto: preserves existing algorithm hints and optimized simplex paths "
+    "(normally dual, with primal used by some heuristics). This is the default.\n"
+    "  dual/primal: starts from the current basis using the selected simplex "
+    "algorithm, overriding algorithm hints. Numerical recovery may switch algorithms.\n"
+    "  barrier: interior point with crossover to a new basis; does not warm-start "
+    "the interior-point iteration from the simplex basis.\n"
+    "  racing: races warm dual and primal simplex on basis-preserving clones. "
+    "Requires at least 2 threads. No Idiot crash, Sprint or root-LP recommendation.\n"
+    "Existing dualPivot, primalPivot, scaling, psi and tolerances still apply. "
+    "Use reoptPertValue and reoptPresolve for phase-specific overrides.");
+  parameters_[CbcParam::REOPTMETHOD]->appendKwd("auto", CbcParameters::ReoptAuto);
+  parameters_[CbcParam::REOPTMETHOD]->appendKwd("dual", CbcParameters::ReoptDual);
+  parameters_[CbcParam::REOPTMETHOD]->appendKwd("primal", CbcParameters::ReoptPrimal);
+  parameters_[CbcParam::REOPTMETHOD]->appendKwd("barrier", CbcParameters::ReoptBarrier);
+  parameters_[CbcParam::REOPTMETHOD]->appendKwd("racing", CbcParameters::ReoptRacing);
+  parameters_[CbcParam::REOPTPRESOLVE]->setup(
+    "reoptP!resolve", "Presolve for reoptimization",
+    "auto: retain the existing resolve presolve hint (normally off). "
+    "off: reuse the current model and basis without presolve. "
+    "on: presolve each reoptimization and postsolve back to the original rows "
+    "and columns; this adds overhead and can lose warm-start benefits.");
+  parameters_[CbcParam::REOPTPRESOLVE]->appendKwd("auto", 0);
+  parameters_[CbcParam::REOPTPRESOLVE]->appendKwd("off", 1);
+  parameters_[CbcParam::REOPTPRESOLVE]->appendKwd("on", 2);
 
   parameters_[CbcParam::RANKCONFLICTTYPE]->setup(
     "rankConflictType",
@@ -2699,6 +2768,14 @@ void CbcParameters::addCbcSolverIntParams()
     getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverIntParam);
   }
 
+  parameters_[CbcParam::REOPTPERTVALUE]->setup(
+    "reoptPertV!alue", "Perturbation value for reoptimization only",
+    -5000, 102,
+    "-1 (default): inherit the persistent pertValue setting, normally 50. "
+    "Other values override perturbation on each ordinary resolve() without "
+    "changing the initial LP settings. 100 disables perturbation. "
+    "This override takes precedence over temporary resolve perturbation options.");
+
 #define CBC_HC_INT_SETUP(ID, N)                                                                                                     \
   parameters_[CbcParam::HC_##ID##_EVERY]->setup(N "Every",                                                                          \
     "Interval (nodes or depth) between " N " attempts", 1, COIN_INT_MAX,                                                            \
@@ -2778,12 +2855,22 @@ void CbcParameters::addCbcSolverIntParams()
                                  "A negative value -n means that n passes are also applied if "
                                  "the objective does not drop.");
 
+  parameters_[CbcParam::STOPCUTSDEPTH]->setup(
+    "stopC!utsDepth",
+    "Depth in the tree at which nodes stop getting cut passes",
+    0, COIN_INT_MAX,
+    "0, the default, sets no limit: tree nodes get the passes that "
+    "passTreeCuts allows at every depth, as in Cbc 2.10. A value n > 0 "
+    "limits nodes that would get more than one pass: those at depths 1 "
+    "to n-1 get one pass and those at depth n or more get none. The root "
+    "is not affected. Earlier versions of master had n = 6 compiled in.");
+
   parameters_[CbcParam::ROOTCUTFILTERSCOPE]->setup(
     "rootCutFilterSc!ope", "Root selection: 0 local, 1 global, 2 both",
     0, 2,
     "Combined-round selection using rootCutFilterScore (default 1: global). "
-    "Score must be nonzero for global selection; 0 restores the per-generator "
-    "filters only. Mode 1 bypasses the generic "
+    "Global selection needs a nonzero score: with rootCutFilterScore 0, scope 0 "
+    "is used. 0 restores the per-generator filters only. Mode 1 bypasses the generic "
     "per-generator filter at root; mode 2 retains it. Generator-internal "
     "filters remain active. Mandatory/branch cuts are protected. Existing "
     "cutFilter eligibility and parallelism settings apply. Tree and "
@@ -2825,7 +2912,9 @@ void CbcParameters::addCbcSolverIntParams()
   parameters_[CbcParam::ROOTCUTFILTERSCORE]->setup(
     "rootCutFilterS!core", "Root cut score: legacy, efficacy or sparse efficacy",
     0, 4,
-    "Root-only selection score (default 1). 0 preserves legacy fitness; "
+    "Root-only selection score (default 1). 0 preserves legacy fitness, "
+    "which only the per-generator filters use, so it also sets "
+    "rootCutFilterScope to 0; "
     "1 uses violation divided by the coefficient Euclidean norm; 2 also "
     "divides by total cut nonzeros. Modes 3 and 4 use the scores of 1 and 2 "
     "respectively but omit the best-per-column contest. All apply "
@@ -3603,6 +3692,16 @@ void CbcParameters::addCbcSolverIntParams()
     "Most root passes an idle cut generator is skipped for",
     1, COIN_INT_MAX,
     "See cutSkipInitialPeriod.",
+    CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::SPPGRASPTHREADS]->setup(
+    "sppGraspThreads", "Maximum concurrent SppGrasp restarts at root",
+    0, COIN_INT_MAX,
+    "1 (default) runs one search. 0 uses all configured CBC threads; "
+    "larger values cap the number of restarts by the CBC thread count. "
+    "This applies only at root, outside other parallel heuristic batches. "
+    "The best real-feasible result is returned. The regular work limit "
+    "applies to each restart; an explicit total-work budget is shared.",
     CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::SPPGRASPNOIMPROVE]->setup(

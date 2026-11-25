@@ -40,6 +40,11 @@
  */
 
 #include "Cbc_C_Interface.h"
+#include "CbcLpParamScorer.hpp"
+#include "OsiFeatures.hpp"
+#include "CbcSolver.hpp"
+#include "ClpOutput.hpp"
+#include "CoinPackedMatrix.hpp"
 #include "ClpSimplex.hpp"
 #include "ClpPEDualRowDantzig.hpp"
 #include "ClpPEDualRowSteepest.hpp"
@@ -48,6 +53,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <typeinfo>
 #include <vector>
@@ -67,6 +73,76 @@ void check(bool cond, const std::string &msg)
     ++g_failures;
     printf("  FAIL: %s\n", msg.c_str());
   }
+}
+
+void testLpAutoRules()
+{
+  printf("\n=== Sequential root LP: ordered exception boundaries ===\n");
+  struct Condition {
+    OsiFeature feature;
+    double threshold;
+    bool greater;
+  };
+  const std::vector< std::vector< Condition > > rules = {
+    { { OFnzPercRowsCovering, 50.7092105993763, true },
+      { OFcolsLeast4Nz, 1056.5, true },
+      { OFpercRowsLeast4096Nz, 0.0445202274795385, false } },
+    { { OFnzPercRowsHubImplication, 55.30788084035105, true },
+      { OFpercBin, 99.04976740485506, true },
+      { OFcols, 810.0, true } },
+    { { OFnzpercRowsPartPacking, 99.82268606961816, true },
+      { OFrowsLeast8Nz, 1135.5, true } },
+    { { OFobjStdDev, 0.001552965637549735, false },
+      { OFnzrowsPartPacking, 2026.0, true } }
+  };
+  const char *tags[] = { "primal_idiot60", "primal_idiot50",
+    "primal_idiot60", "primal_idiot50_pertv50" };
+  std::vector< double > none(OFCount, 0.0);
+  check(!strcmp(cbcRecommendLpParam(none.data()), "dual_pertv72"),
+    "unmatched features use the best single setting");
+  std::vector< double > overlap = none;
+  for (size_t r = 0; r < rules.size(); ++r) {
+    std::vector< double > matching = none;
+    for (const Condition &c : rules[r])
+      matching[c.feature] = c.greater
+        ? std::nextafter(c.threshold, std::numeric_limits< double >::infinity())
+        : c.threshold;
+    check(!strcmp(cbcRecommendLpParam(matching.data()), tags[r]),
+      "matching rule " + std::to_string(r + 1));
+    for (const Condition &c : rules[r]) {
+      std::vector< double > boundary = matching;
+      boundary[c.feature] = c.greater ? c.threshold
+        : std::nextafter(c.threshold, std::numeric_limits< double >::infinity());
+      check(!strcmp(cbcRecommendLpParam(boundary.data()), "dual_pertv72"),
+        "reject outside boundary of rule " + std::to_string(r + 1));
+      overlap[c.feature] = matching[c.feature];
+    }
+  }
+  check(!strcmp(cbcRecommendLpParam(overlap.data()), tags[0]),
+    "overlapping rules keep the first action");
+  overlap[OFnzPercRowsCovering] = 0.0;
+  check(!strcmp(cbcRecommendLpParam(overlap.data()), tags[1]),
+    "second rule precedes the third and fourth");
+  const double nan = std::numeric_limits< double >::quiet_NaN();
+  std::vector< double > missing(OFCount, nan);
+  check(!strcmp(cbcRecommendLpParam(missing.data()), "dual_pertv72"),
+    "all missing features use discovery imputations and fall back");
+  missing = none;
+  missing[OFnzPercRowsCovering] = 60.0;
+  missing[OFcolsLeast4Nz] = nan;
+  missing[OFpercRowsLeast4096Nz] = nan;
+  check(!strcmp(cbcRecommendLpParam(missing.data()), tags[0]),
+    "first rule keeps its original missing-value imputations");
+  missing = none;
+  missing[OFnzPercRowsHubImplication] = 60.0;
+  missing[OFpercBin] = nan;
+  missing[OFcols] = nan;
+  check(!strcmp(cbcRecommendLpParam(missing.data()), tags[1]),
+    "second rule keeps its original missing-value imputations");
+  missing = none;
+  missing[OFnzrowsPartPacking] = nan;
+  check(!strcmp(cbcRecommendLpParam(missing.data()), tags[3]),
+    "fourth rule keeps its original missing-value imputation");
 }
 
 void checkClose(double actual, double expected, double tol, const std::string &msg)
@@ -91,6 +167,50 @@ void checkEqInt(int actual, int expected, const std::string &msg)
     printf("  ok:   %s (=%d)\n", msg.c_str(), actual);
   }
 }
+
+class ReoptProbe : public ClpLpEventHandler {
+public:
+  ReoptProbe()
+    : ClpLpEventHandler(std::make_shared< ClpLpPhaseState >())
+    , dualIterations(std::make_shared< int >(0))
+    , primalIterations(std::make_shared< int >(0))
+    , barrierIterations(std::make_shared< int >(0))
+  {
+    sharedState()->logLevel = 0;
+  }
+  ClpEventHandler *clone() const override { return new ReoptProbe(*this); }
+  int event(Event which) override
+  {
+    if (which == endOfIteration && model_) {
+      if (model_->algorithm() < 0)
+        ++*dualIterations;
+      else
+        ++*primalIterations;
+    }
+    return -1;
+  }
+  int eventWithInfo(Event which, void *) override
+  {
+    if (which == endOfBarrierIteration)
+      ++*barrierIterations;
+    return -1;
+  }
+  void checkMethod(ReoptMethod method, const std::string &label)
+  {
+    if (method == REOPT_Dual)
+      check(*dualIterations > 0, label + ": dual actually iterated");
+    else if (method == REOPT_Primal)
+      check(*primalIterations > 0, label + ": primal actually iterated");
+    else if (method == REOPT_Barrier)
+      check(*barrierIterations > 0, label + ": barrier actually iterated");
+    else if (method == REOPT_Racing)
+      check(sharedState()->racingWinner == "dual" || sharedState()->racingWinner == "primal",
+        label + ": warm-start racing produced a simplex winner");
+  }
+  std::shared_ptr< int > dualIterations;
+  std::shared_ptr< int > primalIterations;
+  std::shared_ptr< int > barrierIterations;
+};
 
 /* Perturbation actually installed on the ClpSimplex behind the C model --
  * i.e. what the next simplex call will really use, as opposed to what was
@@ -351,7 +471,8 @@ void testResolveAfterFixing(const std::string &dataDir, const std::string &inst,
 /* ── Test 2b: reoptimization via removing/re-adding a binding constraint ── */
 
 void testResolveAfterConstraintChange(const std::string &dataDir, const std::string &inst,
-  double expectedLpObj, const std::string &rowName, double expectedLpObjWithoutRow)
+  double expectedLpObj, const std::string &rowName, double expectedLpObjWithoutRow,
+  ReoptMethod method = REOPT_Auto, const char *presolve = "auto")
 {
   printf("\n=== Test 2b: reoptimization after removing/re-adding a binding row — %s (row %s) ===\n",
     inst.c_str(), rowName.c_str());
@@ -391,6 +512,15 @@ void testResolveAfterConstraintChange(const std::string &dataDir, const std::str
   char rowNameBuf[512];
   Cbc_getRowName(m, rowIdx, rowNameBuf, sizeof(rowNameBuf));
 
+  ReoptProbe probe;
+  if (method != REOPT_Auto) {
+    Cbc_setReoptMethod(m, method);
+    Cbc_setIntParam(m, INT_PARAM_THREADS, 2);
+    Cbc_setParameter(m, "reoptPresolve", presolve);
+    Cbc_setParameter(m, "reoptPertValue", "100");
+    static_cast< OsiClpSolverInterface * >(Cbc_getSolverPtr(m))->getModelPtr()->passInEventHandler(&probe);
+  }
+
   /* Remove the row and reoptimize (warm start): the bound must relax to
    * (weaken to) the independently-computed value for "row removed". */
   int rowsToDelete[1] = { rowIdx };
@@ -413,8 +543,185 @@ void testResolveAfterConstraintChange(const std::string &dataDir, const std::str
       "LP objective after re-adding the row returns to the original reference");
     validateLpSolution(m, "after re-adding row");
   }
+  if (method != REOPT_Auto) {
+    probe.checkMethod(method, "row changes " + inst);
+    checkEqInt(clpPerturbation(m), 100, "reoptPertValue persists through row changes");
+  }
 
   Cbc_deleteModel(m);
+}
+
+void testReoptimizationColumns()
+{
+  printf("\n=== Reoptimization policy: column generation, overrides and cloning ===\n");
+  const ReoptMethod methods[] = { REOPT_Auto, REOPT_Dual, REOPT_Primal,
+    REOPT_Barrier, REOPT_Racing };
+  const char *const names[] = { "auto", "dual", "primal", "barrier", "racing" };
+  for (ReoptMethod method : methods) {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_setLogLevel(m, 0);
+    Cbc_setIntParam(m, INT_PARAM_THREADS, 2);
+    Cbc_setLPmethod(m, LPM_Dual);
+    Cbc_setReoptMethod(m, method);
+    Cbc_setParameter(m, "reoptPertValue", "100");
+    Cbc_addCol(m, "x", 0.0, COIN_DBL_MAX, 2.0, 0, 0, nullptr, nullptr);
+    int col = 0;
+    double coefficient = 1.0;
+    Cbc_addRow(m, "demand", 1, &col, &coefficient, 'G', 10.0);
+    checkEqInt(Cbc_solveLinearProgram(m), 0, "column-generation initial LP");
+    checkClose(Cbc_getObjValue(m), 20.0, 1e-7, "initial LP objective");
+    checkEqInt(clpPerturbation(m), 50, "reoptPertValue does not alter the initial LP");
+
+    ReoptProbe probe;
+    OsiClpSolverInterface *si = static_cast< OsiClpSolverInterface * >(Cbc_getSolverPtr(m));
+    si->getModelPtr()->passInEventHandler(&probe);
+    // An opposite internal hint must not undo an explicit user method.
+    si->setHintParam(OsiDoDualInResolve, method == REOPT_Primal, OsiHintDo);
+    int row = 0;
+    Cbc_addCol(m, "priced", 0.0, COIN_DBL_MAX, 0.5, 0, 1, &row, &coefficient);
+    checkEqInt(Cbc_resolve(m), 0, "resolve after adding a cheaper column");
+    checkClose(Cbc_getObjValue(m), 5.0, 1e-7, "priced-column objective");
+    validateLpSolution(m, names[method]);
+    probe.checkMethod(method, "column generation");
+    checkEqInt(clpPerturbation(m), 100, "phase-specific perturbation applied");
+
+    OsiClpSolverInterface copied(*si);
+    OsiClpSolverInterface assigned;
+    assigned = *si;
+    for (OsiClpSolverInterface *clone : { &copied, &assigned }) {
+      ReoptProbe copyProbe;
+      clone->getModelPtr()->passInEventHandler(&copyProbe);
+      clone->setColUpper(1, 5.0);
+      clone->setHintParam(OsiDoDualInResolve, method == REOPT_Primal, OsiHintDo);
+      clone->resolve();
+      check(clone->isProvenOptimal(), "copied solver reoptimizes");
+      checkClose(clone->getObjValue(), 12.5, 1e-7, "copied solver bound change");
+      copyProbe.checkMethod(method, "solver copy/assignment");
+    }
+    Cbc_Model *clone = Cbc_clone(m);
+    Cbc_setColUpper(clone, 1, 5.0);
+    checkEqInt(Cbc_resolve(clone), 0, "C API clone reoptimizes");
+    checkClose(Cbc_getObjValue(clone), 12.5, 1e-7, "C API clone objective");
+    Cbc_deleteModel(clone);
+
+    checkEqInt(Cbc_setParam(m, "reoptMethod", "primal"), 0,
+      "Python-MIP string setter accepts reoptMethod");
+    Cbc_setColUpper(m, 1, 5.0);
+    checkEqInt(Cbc_resolve(m), 0, "string method change between resolves");
+    checkClose(Cbc_getObjValue(m), 12.5, 1e-7, "string method override objective");
+    checkEqInt(si->lastAlgorithm(), 1, "string override used primal");
+    Cbc_setParameter(m, "reoptPertValue", "-1");
+    Cbc_setIntParam(m, INT_PARAM_PERT_VALUE, 72);
+    Cbc_setReoptMethod(m, REOPT_Auto);
+    si->setHintParam(OsiDoDualInResolve, true, OsiHintDo);
+    Cbc_setColUpper(m, 1, 4.0);
+    checkEqInt(Cbc_resolve(m), 0, "returning to inherited defaults");
+    checkEqInt(si->lastAlgorithm(), 2, "auto restores internal dual hint");
+    checkEqInt(clpPerturbation(m), 72, "inherit tracks the current global perturbation");
+    Cbc_setReoptMethod(m, REOPT_Racing);
+    Cbc_setIntParam(m, INT_PARAM_THREADS, 1);
+    checkEqInt(Cbc_resolve(m), -1, "invalid racing/thread combination does not abort the C caller");
+    Cbc_deleteModel(m);
+  }
+  Cbc_Model *m = Cbc_newModel();
+  check(Cbc_setParam(m, "reoptMethod", "recommend") != 0,
+    "cold-start recommendation rejected as a reoptimization method");
+  check(Cbc_setParam(m, "reoptPresolve", "perhaps") != 0, "invalid presolve rejected");
+  check(Cbc_setParam(m, "reoptPertValue", "103") != 0, "perturbation range enforced");
+  check(Cbc_setParam(m, "reoptPertValue", "50junk") != 0, "malformed perturbation rejected");
+  Cbc_deleteModel(m);
+}
+
+void testSolverReoptimizationOptions()
+{
+  printf("\n=== CbcSolver programmatic reoptimization options ===\n");
+  OsiClpSolverInterface input;
+  double lower = 0.0, upper = COIN_DBL_MAX, cost = 2.0;
+  double rowLower = 10.0, rowUpper = COIN_DBL_MAX;
+  CoinPackedMatrix matrix(false, 0, 0);
+  matrix.setDimensions(0, 1);
+  int column = 0;
+  double element = 1.0;
+  matrix.appendRow(1, &column, &element);
+  input.loadProblem(matrix, &lower, &upper, &cost, &rowLower, &rowUpper);
+  CbcSolver solver(input);
+  solver.initialize();
+  OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(solver.model()->solver());
+  check(si != nullptr, "CbcSolver uses OsiClp");
+  if (!si)
+    return;
+  solver.parameters().setParamVal(CbcParam::LPMETHOD, std::string("dual"));
+  solver.parameters().setReoptMethod(CbcParameters::ReoptPrimal);
+  solver.parameters().setReoptPresolve(0);
+  solver.parameters().setReoptPertValue(100);
+  solver.applyLpMethod();
+  si->setHintParam(OsiDoDualInResolve, true, OsiHintDo);
+  si->addCol(1, &column, &element, lower, upper, 0.5);
+  si->resolve();
+  check(si->isProvenOptimal(), "CbcSolver-configured resolve is optimal");
+  checkClose(si->getObjValue(), 5.0, 1e-7, "CbcSolver-configured priced column");
+  checkEqInt(si->lastAlgorithm(), 1, "programmatic method overrides internal hints");
+  checkEqInt(si->getModelPtr()->perturbation(), 100, "programmatic reoptimization perturbation");
+  bool rejected = false;
+  try {
+    CbcSolver::configureReoptimization(si, CbcParameters::ReoptRacing, -1, -1, 1);
+  } catch (const CoinError &) {
+    rejected = true;
+  }
+  check(rejected, "racing with one thread is an explicit error");
+}
+
+void testReoptimizationMip(const std::string &dataDir)
+{
+  printf("\n=== C interface MIP solve with reoptimization overrides (lseu) ===\n");
+  for (ReoptMethod method : { REOPT_Auto, REOPT_Dual, REOPT_Primal, REOPT_Barrier, REOPT_Racing }) {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_setLogLevel(m, 0);
+    checkEqInt(Cbc_readMps(m, (dataDir + "/mips/lseu.mps.gz").c_str()), 0, "reading lseu");
+    Cbc_setLPmethod(m, LPM_Dual);
+    Cbc_setReoptMethod(m, method);
+    Cbc_setParameter(m, "reoptPresolve", "off");
+    Cbc_setParameter(m, "reoptPertValue", "100");
+    Cbc_setIntParam(m, INT_PARAM_THREADS, method == REOPT_Racing ? 2 : 0);
+    Cbc_setMaximumSeconds(m, 30.0);
+    Cbc_solve(m);
+    check(Cbc_isProvenOptimal(m), "MIP with reoptimization override is proven optimal");
+    checkClose(Cbc_getObjValue(m), 1120.0, 1e-6, "MIP optimum matches certified BKS");
+    const double *x = Cbc_bestSolution(m);
+    check(x != nullptr, "MIP publishes an integer solution");
+    if (x) {
+      for (int j = 0; j < Cbc_getNumCols(m); ++j)
+        check(std::fabs(x[j] - std::round(x[j])) <= 1e-5, "published lseu variable is integral");
+    }
+    Cbc_deleteModel(m);
+  }
+}
+
+void testReoptimizationLimits(const std::string &dataDir)
+{
+  printf("\n=== Reoptimization iteration limits and recovery (p0033) ===\n");
+  for (ReoptMethod method : { REOPT_Dual, REOPT_Primal, REOPT_Barrier, REOPT_Racing }) {
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_setLogLevel(m, 0);
+    Cbc_storeNameIndexes(m, 1);
+    checkEqInt(Cbc_readMps(m, (dataDir + "/mips/p0033.mps.gz").c_str()), 0, "reading p0033");
+    Cbc_setLPmethod(m, LPM_Dual);
+    checkEqInt(Cbc_solveLinearProgram(m), 0, "initial solve before iteration limit");
+    Cbc_setReoptMethod(m, method);
+    Cbc_setIntParam(m, INT_PARAM_THREADS, 2);
+    Cbc_setIntParam(m, INT_PARAM_MAX_ITER, 0);
+    int row = Cbc_getRowNameIndex(m, "R127");
+    check(row >= 0, "binding row found before limited resolve");
+    if (row >= 0) {
+      Cbc_deleteRows(m, 1, &row);
+      checkEqInt(Cbc_resolve(m), 1, "limited reoptimization reports truncation");
+      Cbc_setIntParam(m, INT_PARAM_MAX_ITER, INT_MAX);
+      checkEqInt(Cbc_resolve(m), 0, "reoptimization resumes after clearing the limit");
+      checkClose(Cbc_getObjValue(m), 2035.9932608695651, 1e-6,
+        "resumed reoptimization reaches the reference objective");
+    }
+    Cbc_deleteModel(m);
+  }
 }
 
 /* ── Test 3: LP racing and its thread precondition ─────────────────────── */
@@ -884,14 +1191,81 @@ void testLpTimeLimitClock(const std::string &dataDir, const std::string &inst)
 
 } // namespace
 
+void testAutoCampaignInstances(const std::string &directory)
+{
+  printf("\n=== Sequential auto: measured examples of all four exceptions ===\n");
+  for (const char *name : { "scpk1_core", "qap10", "neos-3226448-wkra", "neos-807456" }) {
+    const std::string filename = directory + "/" + name + ".mps.gz";
+    Cbc_Model *baseline = Cbc_newModel();
+    const int readStatus = Cbc_readMps(baseline, filename.c_str());
+    checkEqInt(readStatus, 0, "read " + filename);
+    if (readStatus != 0) {
+      Cbc_deleteModel(baseline);
+      continue;
+    }
+    Cbc_setLogLevel(baseline, 0);
+    Cbc_setMaximumSeconds(baseline, 120.0);
+    Cbc_setLPmethod(baseline, LPM_Dual);
+    Cbc_setIntParam(baseline, INT_PARAM_PERT_VALUE, 72);
+    Cbc_setParameter(baseline, "rowReductions", "force");
+    const int baselineStatus = Cbc_solveLinearProgram(baseline);
+    checkEqInt(baselineStatus, 0, std::string(name) + ": reference dual LP");
+    const double objective = Cbc_getObjValue(baseline);
+    Cbc_deleteModel(baseline);
+    if (baselineStatus != 0)
+      continue;
+    for (bool overrideReopt : { false, true }) {
+      Cbc_Model *m = Cbc_newModel();
+      const int statusRead = Cbc_readMps(m, filename.c_str());
+      checkEqInt(statusRead, 0, "read " + filename);
+      if (statusRead != 0) {
+        Cbc_deleteModel(m);
+        continue;
+      }
+      Cbc_setLogLevel(m, 1);
+      Cbc_setMaximumSeconds(m, 120.0);
+      Cbc_setLPmethod(m, overrideReopt ? LPM_Recommend : LPM_Auto);
+      Cbc_setIntParam(m, INT_PARAM_THREADS, overrideReopt ? 2 : 0);
+      Cbc_setParameter(m, "rowReductions", "force");
+      if (overrideReopt) {
+        Cbc_setReoptMethod(m, REOPT_Primal);
+        Cbc_setParameter(m, "reoptPertValue", "61");
+        Cbc_setParameter(m, "reoptPresolve", "off");
+      }
+      const int status = Cbc_solveLinearProgram(m);
+      checkEqInt(status, 0, std::string(name) + ": sequential auto/recommend root");
+      if (status == 0) {
+        const double tolerance = 1e-6 * (1.0 + std::fabs(objective));
+        checkClose(Cbc_getObjValue(m), objective, tolerance,
+          std::string(name) + ": auto root agrees with dual");
+        checkEqInt(clpPerturbation(m), 50, "root restores the default perturbation");
+        const double value = Cbc_getColSolution(m)[0];
+        Cbc_setColLower(m, 0, value);
+        Cbc_setColUpper(m, 0, value);
+        checkEqInt(Cbc_resolve(m), 0, std::string(name) + ": warm resolve");
+        checkClose(Cbc_getObjValue(m), objective, tolerance,
+          std::string(name) + ": warm resolve retains the optimum");
+        checkEqInt(clpPerturbation(m), overrideReopt ? 61 : 50,
+          "resolve uses independent perturbation, not root settings");
+        if (overrideReopt) {
+          OsiClpSolverInterface *si = static_cast< OsiClpSolverInterface * >(Cbc_getSolverPtr(m));
+          checkEqInt(si->lastAlgorithm(), 1, "resolve honors explicit primal method");
+        }
+      }
+      Cbc_deleteModel(m);
+    }
+  }
+}
+
 int main(int argc, char *argv[])
 {
   std::string dataDir;
+  std::string autoInstanceDir;
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     if (arg == "--help" || arg == "-h") {
       printf(
-        "Usage: lp-relaxation-test [--data-dir=PATH]\n"
+        "Usage: lp-relaxation-test [--data-dir=PATH] [--auto-instance-dir=PATH]\n"
         "\n"
         "Targeted tests for the C interface's LP-relaxation-only entry points,\n"
         "Cbc_solveLinearProgram() and Cbc_resolve(). Covers:\n"
@@ -909,9 +1283,13 @@ int main(int argc, char *argv[])
         "  7. the LP time limit being armed on the clock INT_PARAM_ELAPSED_TIME\n"
         "     selects (and only that one), \"no limit\" really disarming it, and\n"
         "     INT_PARAM_MAX_ITER reporting truncation rather than optimality.\n"
+        "  8. reoptimization method/presolve/perturbation overrides, column and\n"
+        "     row changes, clones, C/C++ setters, MIP solves and limit recovery.\n"
         "\n"
         "  --data-dir=PATH  mip-sanity-data checkout to read instances from\n"
         "                   (default: <dir of this executable>/mip-sanity-data)\n"
+        "  --auto-instance-dir=PATH  Also test four real auto-rule examples from\n"
+        "                   the MIPLIB 2017 + additional-instances campaign\n"
         "\n"
         "Exit code: 0 = all checks passed, 1 = one or more checks failed.\n");
       return 0;
@@ -920,12 +1298,20 @@ int main(int argc, char *argv[])
       dataDir = arg.substr(strlen("--data-dir="));
       continue;
     }
+    if (arg.rfind("--auto-instance-dir=", 0) == 0) {
+      autoInstanceDir = arg.substr(strlen("--auto-instance-dir="));
+      continue;
+    }
     fprintf(stderr, "lp-relaxation-test: unrecognized argument '%s' "
       "(try --help)\n", arg.c_str());
     return 1;
   }
   if (dataDir.empty())
     dataDir = exeDir() + "/mip-sanity-data";
+
+  testLpAutoRules();
+  if (!autoInstanceDir.empty())
+    testAutoCampaignInstances(autoInstanceDir);
 
   /* Reference LP relaxation objectives below were computed independently
    * (two different external LP/MIP solvers agreed exactly) and cross-checked
@@ -957,6 +1343,17 @@ int main(int argc, char *argv[])
 
   testLpTimeLimitClock(dataDir, "p0033");
   testLpTimeLimitClock(dataDir, "lseu");
+
+  testReoptimizationColumns();
+  testSolverReoptimizationOptions();
+  testReoptimizationMip(dataDir);
+  testReoptimizationLimits(dataDir);
+  for (ReoptMethod method : { REOPT_Dual, REOPT_Primal, REOPT_Barrier, REOPT_Racing }) {
+    testResolveAfterConstraintChange(dataDir, "p0033", 2520.5717391304347,
+      "R127", 2035.9932608695651, method, "off");
+    testResolveAfterConstraintChange(dataDir, "p0033", 2520.5717391304347,
+      "R127", 2035.9932608695651, method, "on");
+  }
 
   printf("\n=== Summary ===\n");
   if (g_failures == 0) {

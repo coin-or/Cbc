@@ -4,11 +4,13 @@
 
 #include "CbcOutput.hpp"
 #include "CbcModel.hpp"
+#include "CbcCutGenerator.hpp"
 #include "OsiSolverInterface.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CbcConfig.h"
 #include "ClpSimplex.hpp"
+#include "ClpNonLinearCost.hpp"
 #include "CoinTable.hpp"
 #include "CoinTime.hpp"
 #include "CglPreProcess.hpp"
@@ -492,18 +494,41 @@ bool CbcOutput::useUtf8()
 // CbcRootLpEventHandler — tabular LP progress for the root node
 // ---------------------------------------------------------------------------
 
-// Column widths for the progress table:
+// The progress table, the same as Clp's (ClpOutput.cpp):
 //
-//   Phase   │     Iter │       Objective │   Primal inf │    Dual inf │    Time
-//   ─────────┬──────────┬─────────────────┬──────────────┬─────────────┬─────────
-//   Dual     │     3123 │     3.709408e+01 │  1.7376e+02  │  2.8598e+14 │    5.0s
+//   ──────── ──────── ─────────────── ──────────────────── ──────────────────── ────────
+//   Phase        Iter       Objective  Primal inf    (num)    Dual inf    (num)  Time(s)
+//   ──────── ──────── ─────────────── ──────────────────── ──────────────────── ────────
+//   Dual            0    1.267985e+03  1.7403e+04    (239)  1.0932e+03     (53)    0.020
+//
+// Primal inf and Dual inf are the sums of the infeasibilities, each followed
+// by their number in parentheses, as in Clp's classic status line. The
+// number is left out when the sum is zero.
 //
 static const int LP_W_PHASE = 8;
 static const int LP_W_ITER = 8;
 static const int LP_W_OBJ = 15;
-static const int LP_W_PINF = 12;
-static const int LP_W_DINF = 12;
+static const int LP_W_SUM = 11; // sum of infeasibilities
+static const int LP_W_NUM = 8; // "(n)", the number of infeasibilities
+static const int LP_W_PINF = LP_W_SUM + 1 + LP_W_NUM;
+static const int LP_W_DINF = LP_W_SUM + 1 + LP_W_NUM;
 static const int LP_W_TIME = 8;
+
+// A heading over the sum, and "(num)" over the number, in one column
+static std::string infHeading(const char *name)
+{
+  return std::string(name) + std::string(LP_W_NUM + 1 - 5, ' ') + "(num)";
+}
+
+// The number of infeasibilities as "(n)", or empty if it isn't shown
+static std::string infNumber(double sum, int number)
+{
+  if (!(sum > 0.0) || number <= 0)
+    return std::string();
+  char buf[32];
+  std::snprintf(buf, sizeof(buf), "(%d)", number);
+  return buf;
+}
 
 static CoinTable makeLpTable(bool utf8, bool compact)
 {
@@ -511,8 +536,8 @@ static CoinTable makeLpTable(bool utf8, bool compact)
                      { "Phase", LP_W_PHASE, /*leftAlign=*/true },
                      { "Iter", LP_W_ITER },
                      { "Objective", LP_W_OBJ },
-                     { "Primal inf", LP_W_PINF },
-                     { "Dual inf", LP_W_DINF },
+                     { infHeading("Primal inf"), LP_W_PINF },
+                     { infHeading("Dual inf"), LP_W_DINF },
                      { "Time(s)", LP_W_TIME },
                    },
     utf8, /*indent=*/2, compact);
@@ -570,8 +595,30 @@ void CbcRootLpEventHandler::printHeader() const
   printTableOpen(fp, tbl);
 }
 
+// A row for the model in the middle of a solve, with the same values as
+// Clp's classic status line: during the primal, the objective and the
+// primal infeasibilities come from the nonlinear cost, because the model's
+// objective includes the penalty on the relaxed bounds and its sum of
+// primal infeasibilities is zero.
+void CbcRootLpEventHandler::printIterationRow(int iter, double elapsed) const
+{
+  const ClpNonLinearCost *nonLinearCost = model_->nonLinearCost();
+  if (model_->algorithm() > 0 && nonLinearCost)
+    printRow(iter, nonLinearCost->feasibleReportCost(),
+      nonLinearCost->sumInfeasibilities(),
+      nonLinearCost->numberInfeasibilities(),
+      model_->sumDualInfeasibilities(), model_->numberDualInfeasibilities(),
+      elapsed);
+  else
+    printRow(iter, model_->objectiveValue(),
+      model_->sumPrimalInfeasibilities(), model_->numberPrimalInfeasibilities(),
+      model_->sumDualInfeasibilities(), model_->numberDualInfeasibilities(),
+      elapsed);
+}
+
 void CbcRootLpEventHandler::printRow(int iter, double obj, double primalInf,
-  double dualInf, double elapsed) const
+  int numberPrimalInf, double dualInf, int numberDualInf,
+  double elapsed) const
 {
   if (!msgHandler_)
     return;
@@ -597,12 +644,14 @@ void CbcRootLpEventHandler::printRow(int iter, double obj, double primalInf,
     break;
   }
   const std::string tbuf = fmtTime(elapsed);
-  fprintf(fp, "  %-*s%s%*d%s%*.6e%s%*.4e%s%*.4e%s%*s\n",
+  fprintf(fp, "  %-*s%s%*d%s%*.6e%s%*.4e %*s%s%*.4e %*s%s%*s\n",
     LP_W_PHASE, phase, bar,
     LP_W_ITER, iter, bar,
     LP_W_OBJ, obj, bar,
-    LP_W_PINF, (primalInf > 0.0 ? primalInf : 0.0), bar,
-    LP_W_DINF, (dualInf > 0.0 ? dualInf : 0.0), bar,
+    LP_W_SUM, (primalInf > 0.0 ? primalInf : 0.0),
+    LP_W_NUM, infNumber(primalInf, numberPrimalInf).c_str(), bar,
+    LP_W_SUM, (dualInf > 0.0 ? dualInf : 0.0),
+    LP_W_NUM, infNumber(dualInf, numberDualInf).c_str(), bar,
     LP_W_TIME, tbuf.c_str());
   fflush(fp);
 }
@@ -628,8 +677,9 @@ void CbcRootLpEventHandler::printFinalStatus(int numInts, int numFrac) const
   // Always show the last iteration if frequency limiting skipped it.
   if (shared_->lastPrintIter < iters) {
     printRow(iters, model_->objectiveValue(),
-      model_->sumPrimalInfeasibilities(),
-      model_->sumDualInfeasibilities(), elapsed);
+      model_->sumPrimalInfeasibilities(), model_->numberPrimalInfeasibilities(),
+      model_->sumDualInfeasibilities(), model_->numberDualInfeasibilities(),
+      elapsed);
   }
 
   printTableClose(fp, tbl);
@@ -638,19 +688,16 @@ void CbcRootLpEventHandler::printFinalStatus(int numInts, int numFrac) const
   const char *baseStatus = "Unknown";
   int s = model_->status();
   int ss = model_->secondaryStatus();
+  // Clp's status codes: 0 optimal, 1 primal infeasible, 2 dual infeasible,
+  // 3 stopped (secondary status 9 if on time), 4 errors, 5 event handler.
   if (s == 0)
     baseStatus = "Optimal";
-  else if (s == 1) {
-    if (ss == 4)
-      baseStatus = "Iteration limit";
-    else if (ss == 9)
-      baseStatus = "Time limit";
-    else
-      baseStatus = "Stopped";
-  } else if (s == 2)
+  else if (s == 1)
     baseStatus = "Infeasible";
-  else if (s == 3)
+  else if (s == 2)
     baseStatus = "Unbounded";
+  else if (s == 3)
+    baseStatus = (ss == 9) ? "Time limit" : "Stopped";
   else if (s == 4)
     baseStatus = "Numerical difficulties";
   else if (s == 5)
@@ -695,9 +742,7 @@ int CbcRootLpEventHandler::event(Event whichEvent)
     // printed "Time(s)" column must be elapsed time since this root LP
     // relaxation started (shared_->startTime), not a raw wall-clock reading.
     double now = CoinWallclockTime();
-    printRow(0, model_->objectiveValue(),
-      model_->sumPrimalInfeasibilities(),
-      model_->sumDualInfeasibilities(), now - shared_->startTime);
+    printIterationRow(0, now - shared_->startTime);
     shared_->lastPrintTime = now;
     shared_->lastPrintIter = 0;
     return -1;
@@ -733,9 +778,7 @@ int CbcRootLpEventHandler::event(Event whichEvent)
   const bool doForce = (shared_->lastPrintIter < 0);
 
   if (doIter || doTime || doForce) {
-    printRow(iter, model_->objectiveValue(),
-      model_->sumPrimalInfeasibilities(),
-      model_->sumDualInfeasibilities(), now - shared_->startTime);
+    printIterationRow(iter, now - shared_->startTime);
     shared_->lastPrintTime = now;
     shared_->lastPrintIter = iter;
   }
@@ -1196,6 +1239,49 @@ void CbcOutput::printPreprocessTimes(FILE *fp, bool utf8,
   fflush(fp);
 }
 
+void CbcOutput::printCutGeneratorTotals(FILE *fp, bool utf8, CbcModel &model)
+{
+  if (!fp)
+    return;
+  const int numberGenerators = model.numberCutGenerators();
+  bool any = false;
+  for (int i = 0; i < numberGenerators; i++) {
+    if (model.cutGenerator(i)->numberTimesEntered())
+      any = true;
+  }
+  if (!any)
+    return;
+  const bool compact = useCompact();
+  const char *bar = tableBar(utf8, compact);
+  // the root generator table's name and time widths (defined further down)
+  const int nameWidth = 22;
+  const int timeWidth = 9;
+  CoinTable totals({ { "Generator", nameWidth, true }, { "Calls", 9 },
+                     { "Row cuts", 9 }, { "Col cuts", 9 },
+                     { "Time(s)", timeWidth } },
+    utf8, /*indent=*/2, compact);
+  fprintf(fp, "\n  Cut generators, whole search (root and tree):\n");
+  printTableOpen(fp, totals);
+  for (int i = 0; i < numberGenerators; i++) {
+    CbcCutGenerator *generator = model.cutGenerator(i);
+    if (!generator->numberTimesEntered())
+      continue;
+    char nameBuf[23];
+    std::snprintf(nameBuf, sizeof(nameBuf), "%-*s", nameWidth,
+      generator->cutGeneratorName());
+    const std::string timeBuf = generator->timing()
+      ? fmtTime(generator->timeInCutGenerator())
+      : std::string();
+    fprintf(fp, "  %s%s%*d%s%*d%s%*d%s%*s\n", nameBuf, bar,
+      9, generator->numberTimesEntered(), bar,
+      9, generator->numberCutsInTotal(), bar,
+      9, generator->numberColumnCuts(), bar,
+      timeWidth, timeBuf.c_str());
+  }
+  printTableClose(fp, totals);
+  fflush(fp);
+}
+
 void CbcOutput::printImportErrors(FILE *fp, const CbcImportHandler &ih)
 {
   if (ih.totalErrors() == 0)
@@ -1327,6 +1413,22 @@ int CbcOutputHandler::print()
       if (fp) {
         fprintf(fp, "\n  ✘ LP relaxation infeasible or too expensive\n\n");
         fflush(fp);
+      }
+      return 0;
+    }
+
+    // CBC_INTEGERINCREMENT (ext=9): "Objective coefficients multiple of %g".
+    // The objective can then only take values on that grid, so the cutoff
+    // increment is raised to just under it; worth knowing when reading a run
+    // (2.10 printed "Cutoff increment increased from ..." here).
+    if (ext == 9) {
+      FILE *fp = filePointer();
+      if (fp) {
+        const char *p = std::strstr(buf, "Objective coefficients multiple of ");
+        if (p) {
+          fprintf(fp, "  %s (cutoff increment raised to match)\n", p);
+          fflush(fp);
+        }
       }
       return 0;
     }
@@ -2504,7 +2606,7 @@ static CoinTable makeBnBTable(bool utf8, bool compact)
 // Keep fractional objectives visible without overflowing the table columns.
 static std::string bnbFmtObj(double v, bool utf8)
 {
-  if (v >= 1e49)
+  if (std::fabs(v) >= 1e49) // no solution, or no bound
     return utf8 ? "\xe2\x80\x94" : "-";
   char buf[32];
   const double a = std::fabs(v);
@@ -2766,7 +2868,18 @@ void CbcBnBOutput::onComplete(bool optimal, double bestSol, double bestBound,
   const char *dash = CoinTable::dashSep(utf8_);
   const std::string nowStr = fmtTime(now);
   char detail[512];
-  if (optimal) {
+  // No solution is reported as +1e50, or -1e50 when maximizing (the value is
+  // printed with its true sign).
+  const bool noSolution = std::fabs(bestSol) >= 1e49;
+  if (optimal && noSolution) {
+    // The search finished without an integer solution: the problem is infeasible.
+    std::snprintf(detail, sizeof(detail),
+      "Infeasible%s%sNo integer solution   Nodes: %s   Iters: %s   Time: %ss",
+      reasonPart.c_str(), dash,
+      bnbFmtCount(nodes).c_str(),
+      bnbFmtCount(iters).c_str(),
+      nowStr.c_str());
+  } else if (optimal) {
     std::snprintf(detail, sizeof(detail),
       "Optimal%s%sObj: %s   Bound: %s   Gap: %s   Nodes: %s   Iters: %s   Time: %ss",
       reasonPart.c_str(), dash,
@@ -2776,7 +2889,7 @@ void CbcBnBOutput::onComplete(bool optimal, double bestSol, double bestBound,
       bnbFmtCount(nodes).c_str(),
       bnbFmtCount(iters).c_str(),
       nowStr.c_str());
-  } else if (bestSol >= 1e49) {
+  } else if (noSolution) {
     std::snprintf(detail, sizeof(detail),
       "Stopped%s%sNo integer solution   Bound: %s   Nodes: %s   Iters: %s   Time: %ss",
       reasonPart.c_str(), dash,

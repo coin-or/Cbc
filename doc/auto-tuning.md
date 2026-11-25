@@ -89,14 +89,22 @@ there are eight parameters, `<h>` being `rins`, `vnd`, `dins`, `combine`,
 | `<h>TimeShare` | do not start a run while the heuristic has used more than this fraction of the elapsed time (0 = no limit) |
 | `<h>Nodes` | node limit of the sub-MIP |
 
-All accept `auto`, which keeps the built-in value (RINS/VND: `noimprove`,
+All accept `auto`, which keeps the built-in value (RINS/VND: `legacy`,
 K=100, window 10, min success 1/3, decay 5 for RINS/DINS with `on` and 1.5
 otherwise, none for VND). For the heuristics triggered by a new incumbent
 (combine, combine2, proximity) a non-legacy schedule means "at least K nodes
 since the last run".
 
+RINS and VND used `noimprove` by default until it was found to run them at
+almost every node with threads (coin-or/Cbc#854). On the MIPLIB 2017
+benchmark, `legacy` solves 94-96 instances at 8 threads against 86, and at
+one thread three fewer but 13% faster on the rest.
+`-rinsSchedule noimprove -vndSchedule noimprove` gives the previous default
+back.
+
 Class-specific `auto` (with `-autoTuneCuts on`): on a `PureSetCovering`
-problem VND's `auto` is `noimprove`, K=500, decay 0, max failures 3. Screening
+problem VND's `auto` has K=500, decay 0, max failures 3; with the `legacy`
+default only the failure limit applies. Screening, with `noimprove`,
 on 102 0-1 instances showed VND rarely pays there, and this gave PDI
 -0.0088 on that class and kept the optimal count (48). The same setting on
 all classes lost `e201600` (a MostlySPP instance that needs frequent VND), so

@@ -569,8 +569,8 @@ static void usage(const char *prog)
     "                       config to average out branching tie-break noise\n"
     "                       (single-threaded B&B is otherwise deterministic).\n"
     "  --rins-schedule=legacy|depth|nodes|nodes-no-improve\n"
-    "                       override RINS's re-invocation policy (default: legacy,\n"
-    "                       the existing howOften_/decayFactor_ node-count math).\n"
+    "                       override RINS's re-invocation policy (default: no-improve,\n"
+    "                       every 100 nodes and after each new incumbent).\n"
     "                       See HeuristicScheduleMode in CbcHeuristic.hpp.\n"
     "  --rins-schedule-k=N  the K parameter for --rins-schedule (default 1)\n"
     "  --vnd-schedule=legacy|depth|nodes|nodes-no-improve   same, for VND\n"
@@ -663,9 +663,9 @@ int main(int argc, char **argv)
   // and isDefault() reflects whether the user explicitly passed a flag.
   std::string gmiMode, landpMode, redsplit2Mode;
   unsigned int randomSeed = 1; // matches CbcModel's own default
-  std::string rinsScheduleMode, vndScheduleMode; // empty = legacy (no change)
+  std::string rinsScheduleMode, vndScheduleMode; // empty = keep each heuristic's default
   int rinsScheduleK = 1, vndScheduleK = 1;
-  std::string diveScheduleMode; // empty = legacy (no change)
+  std::string diveScheduleMode; // empty = keep each dive heuristic's default
   int diveScheduleK = 1, diveOnlyNoSol = -1; // -1 = unset (leave each dive's own default)
   std::string divingC, divingF, divingG, divingL, divingP, divingV; // empty = leave CbcParameters default
   int diveOpt = -1, diveOptSolves = -1; // -1 = unset

@@ -26,6 +26,7 @@
 // CGL_HAS_CLP_GOMORY
 // CLP_FACTORIZATION
 #endif
+#include <atomic>
 #include <string>
 #include <memory>
 #include <mutex>
@@ -484,7 +485,8 @@ public:
       mid-solve is noisy and non-reproducible under system load, which
       would make cut selection (and therefore the whole search) depend on
       transient machine conditions rather than the problem itself.
-      Returns -1.0 if no such resolve has happened yet this solve.
+      Requires a build with CBC_TIMING_ROOT_RESOLVE defined. Returns -1.0
+      when instrumentation is disabled or no such resolve has happened yet.
     */
   inline double lastCutRoundResolveTime() const
   {
@@ -1092,6 +1094,22 @@ public:
   inline int getMaximumCutPasses() const
   {
     return maximumCutPasses_;
+  }
+  /** Set the depth at which tree nodes stop getting cut passes (default 0: no limit).
+
+      With n > 0, when a tree node would get more than one cut pass,
+      nodes at depths 1 to n-1 get one pass and nodes at depth n or more
+      get none. The root is not affected. Master used n = 6 as a compiled-in
+      define (STOP_CUTS_NOW) before this was a parameter; 2.10 had no limit.
+  */
+  inline void setStopCutsDepth(int value)
+  {
+    stopCutsDepth_ = value;
+  }
+  /** Get the depth at which tree nodes stop getting cut passes (0: no limit) */
+  inline int getStopCutsDepth() const
+  {
+    return stopCutsDepth_;
   }
   /** Get current cut pass number in this round of cuts.
         (1 is first pass) */
@@ -1791,6 +1809,12 @@ public:
   inline int getSolutionCount() const
   {
     return numberSolutions_;
+  }
+
+  /// Get the number of accepted incumbent improvements in the current search.
+  inline int getIncumbentCount() const
+  {
+    return incumbentCount_.load(std::memory_order_relaxed);
   }
 
   /// Set number of solutions (so heuristics will be different)
@@ -3298,6 +3322,7 @@ public:
   void setMIPStart(int count, const char **colNames, const double colValues[]);
 
 
+
   const std::vector< std::pair< std::string, double > > &getMIPStart()
   {
     return this->mipStart_;
@@ -3306,6 +3331,9 @@ public:
   //---------------------------------------------------------------------------
 
 private:
+  bool stoppingCriterionReachedImpl(bool checkMemory) const;
+  bool checkMemoryLimit(int *checkInterval) const;
+
   ///@name Private member data
   //@{
 
@@ -3411,6 +3439,8 @@ private:
   int rootCutDropPatience_;
   /// Number of solutions
   int numberSolutions_;
+  /// Number of accepted incumbent improvements (distinct from feasible solutions)
+  std::atomic< int > incumbentCount_;
   /// Number of saved solutions
   int numberSavedSolutions_;
   /// Maximum number of saved solutions
@@ -3828,6 +3858,8 @@ private:
   int maximumCutPassesAtRoot_;
   /// Maximum number of cut passes
   int maximumCutPasses_;
+  /// Depth at which tree nodes stop getting cut passes (0: no limit)
+  int stopCutsDepth_;
   /// Preferred way of branching
   int preferredWay_;
   /// Current cut pass number

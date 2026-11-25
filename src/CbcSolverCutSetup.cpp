@@ -41,7 +41,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <sstream>
-#include <stdexcept>
 
 CbcRootCutSettings resolveRootCutSettings(
   const CbcModel &model, CbcParameters &parameters)
@@ -316,8 +315,13 @@ void installCutGenerators(
     filter.rootScope = parameters[CbcParam::ROOTCUTFILTERSCOPE]->intVal();
     filter.rootReusePeriod = parameters[CbcParam::ROOTCUTREUSEPERIOD]->intVal();
     filter.rootReuseMaxCuts = parameters[CbcParam::ROOTCUTREUSEMAXCUTS]->intVal();
+    // Global root selection (scope 1 or 2) ranks a whole round's cuts by score,
+    // and the legacy fitness (score 0) is only available in the per-generator
+    // filters. So score 0 means scope 0: that is what -rootCutFilterScore 0 is
+    // documented to do ("preserves legacy fitness"). CbcSolver warns when the
+    // scope was set to 2 explicitly, since the two options then disagree.
     if (filter.rootScope && !filter.scoreMode)
-      throw std::invalid_argument("rootCutFilterScope requires a nonzero rootCutFilterScore");
+      filter.rootScope = 0;
     babModel.setCutPoolFilterSettings(filter);
   }
   // The clique/odd-wheel/implied-clique generators filter in their own

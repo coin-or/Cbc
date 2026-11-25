@@ -7,6 +7,10 @@
 #include "CbcEventHandler.hpp"
 #include "CbcTree.hpp"
 #include "Cbc_C_Interface.h"
+#include "CglCutGenerator.hpp"
+#include "CglGomory.hpp"
+#include "CglKnapsackCover.hpp"
+#include "CoinMemUsage.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinPackedVector.hpp"
 #include "OsiClpSolverInterface.hpp"
@@ -86,6 +90,7 @@ int runRootCutPurge(const char *filename)
 
 struct Frontier {
   bool captured = false;
+  bool clearMemoryLimitOnCleanup = false;
   double bound = 0.0;
   double endBound = COIN_DBL_MAX;
   int endCalls = 0;
@@ -106,6 +111,9 @@ public:
     if (cutoff == -COIN_DBL_MAX && size()) {
       frontier_->captured = true;
       frontier_->bound = std::min(getBestPossibleObjective(), model->getMinimizationObjValue());
+      // Simulate the limit no longer being exceeded once cleanup starts.
+      if (frontier_->clearMemoryLimitOnCleanup)
+        model->setMaximumMemory(1.0e100);
     }
     CbcTree::cleanTree(model, cutoff, bound);
   }
@@ -145,7 +153,9 @@ private:
   int stopMode_;
 };
 
-int run(int threads, double sense, int limit, double frequency, int stopMode = 0, int threadMode = 0)
+// An 18-binary multidimensional knapsack, with its optimum (in minimization
+// sense) found by enumeration.
+void makeKnapsack(double sense, OsiClpSolverInterface &solver, double &optimum)
 {
   const int columns = 18, rows = 6;
   CoinPackedMatrix matrix(false, 0, 0);
@@ -165,7 +175,7 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
     matrix.appendRow(row);
     rowUpper[i] = std::floor(total * 0.43);
   }
-  double optimum = 0.0;
+  optimum = 0.0;
   for (unsigned int mask = 0; mask < (1U << columns); ++mask) {
     double cost = 0.0;
     bool feasible = true;
@@ -185,12 +195,18 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
       optimum = std::min(optimum, cost);
     }
   }
-  OsiClpSolverInterface solver;
   solver.loadProblem(matrix, lower.data(), upper.data(), objective.data(), rowLower.data(), rowUpper.data());
   solver.setObjSense(sense);
   for (int j = 0; j < columns; ++j)
     solver.setInteger(j);
   solver.messageHandler()->setLogLevel(0);
+}
+
+int run(int threads, double sense, int limit, double frequency, int stopMode = 0, int threadMode = 0)
+{
+  OsiClpSolverInterface solver;
+  double optimum;
+  makeKnapsack(sense, solver, optimum);
   solver.initialSolve();
   const double rootBound = sense * solver.getObjValue();
   CbcModel model(solver);
@@ -205,6 +221,10 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
   model.setPrintFrequency(1);
   model.setSecsPrintFrequency(frequency);
   auto frontier = std::make_shared< Frontier >();
+  if (stopMode == 3) {
+    model.setMaximumMemory(1.0);
+    frontier->clearMemoryLimitOnCleanup = true;
+  }
   RecordingTree tree(frontier);
   model.passInTreeHandler(tree);
   StopHandler handler(frontier, stopMode);
@@ -218,17 +238,71 @@ int run(int threads, double sense, int limit, double frequency, int stopMode = 0
   const bool fresh = !frontier->captured
     || (threads ? bound <= frontier->bound + 1.0e-7 && bound > rootBound + 1.0e-7
                 : fabs(bound - frontier->bound) < 1.0e-7);
-  const bool stopped = stopMode == 1 ? model.secondaryStatus() == 5
-                                     : (stopMode == 2 ? model.isSecondsLimitReached()
-                                                      : (limit <= 30 ? model.isNodeLimitReached() : model.isProvenOptimal()));
+  const bool stopped = stopMode == 3 ? model.status() == 1 && model.secondaryStatus() == 9
+    : stopMode == 2 ? model.isSecondsLimitReached()
+    : stopMode == 1 ? model.secondaryStatus() == 5
+    : limit <= 30 ? model.isNodeLimitReached() : model.isProvenOptimal();
   const bool callback = limit == 10000 && !stopMode ? true : fabs(bound - frontier->endBound) < 1.0e-7;
   const bool finished = limit == 10000 && !stopMode ? fabs(bound - optimum) < 1.0e-7 : true;
-  const bool frontierPresent = limit == 30 ? frontier->captured : true;
+  const bool frontierPresent = (limit != 30 && stopMode != 3) || frontier->captured;
   const bool passed = valid && fresh && stopped && callback && finished && frontierPresent && frontier->endCalls == 1;
   printf("  %s: threads=%d threadMode=%d sense=%.0f limit=%d frequency=%.0f stopMode=%d nodes=%d bound=%.10g frontier=%.10g optimum=%.10g\n",
     passed ? "ok" : "FAIL", threads, threadMode, sense, limit, frequency, stopMode, model.getNodeCount(), bound, frontier->bound, optimum);
   return !passed;
 }
+}
+
+// Sets the model's time limit to zero when called in root cut pass `pass_`
+// (0-based), so that the resolve after that pass's cuts is cut short.
+class TimeLimitAtRootPass : public CglCutGenerator {
+public:
+  TimeLimitAtRootPass(CbcModel *model, int pass)
+    : model_(model)
+    , pass_(pass)
+  {
+  }
+  CglCutGenerator *clone() const override
+  {
+    return new TimeLimitAtRootPass(*this);
+  }
+  void generateCuts(const OsiSolverInterface &, OsiCuts &,
+    const CglTreeInfo info = CglTreeInfo()) override
+  {
+    if (!info.inTree && info.pass == pass_)
+      model_->setMaximumSeconds(0.0);
+  }
+
+private:
+  CbcModel *model_;
+  int pass_;
+};
+
+// When the time limit stops a resolve in the root cut loop, the reported bound
+// must come from the last LP that was solved, not from the unfinished one.
+int runRootTimeLimit(double sense, int pass)
+{
+  OsiClpSolverInterface solver;
+  double optimum;
+  makeKnapsack(sense, solver, optimum);
+  solver.initialSolve();
+  const double rootBound = sense * solver.getObjValue();
+  CbcModel model(solver);
+  model.setLogLevel(0);
+  CglGomory gomory;
+  CglKnapsackCover knapsack;
+  model.addCutGenerator(&gomory, -99, "Gomory");
+  model.addCutGenerator(&knapsack, -99, "KnapsackCover");
+  TimeLimitAtRootPass limit(&model, pass);
+  model.addCutGenerator(&limit, -99, "TimeLimitAtRootPass");
+  model.branchAndBound();
+  const double bound = sense * model.getBestPossibleObjValue();
+  // rootObjectiveAfterCuts() is in minimization sense already.
+  const double afterCuts = model.rootObjectiveAfterCuts();
+  const bool passed = model.isSecondsLimitReached() && bound <= optimum + 1.0e-7
+    && bound >= rootBound - 1.0e-7 && afterCuts <= optimum + 1.0e-7;
+  printf("  %s: root time limit sense=%.0f pass=%d nodes=%d bound=%.10g afterCuts=%.10g root=%.10g optimum=%.10g\n",
+    passed ? "ok" : "FAIL", sense, pass, model.getNodeCount(), bound, afterCuts, rootBound, optimum);
+  return !passed;
 }
 
 int main(int argc, char **argv)
@@ -247,6 +321,8 @@ int main(int argc, char **argv)
       ++failures;
   }
   for (double sense : { 1.0, -1.0 }) {
+    for (int pass : { 0, 1 })
+      failures += runRootTimeLimit(sense, pass);
     for (int threads : { 0, 2 }) {
       if (threads && !CbcModel::haveMultiThreadSupport())
         continue;
@@ -257,6 +333,8 @@ int main(int argc, char **argv)
       if (!threads) {
         failures += run(threads, sense, 10000, 1.0e9, 1);
         failures += run(threads, sense, 10000, 1.0e9, 2);
+        if (CoinGetCurrentMemUsage())
+          failures += run(threads, sense, 10000, 1.0e9, 3);
       }
     }
     if (CbcModel::haveMultiThreadSupport()) {

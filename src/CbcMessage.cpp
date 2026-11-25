@@ -31,7 +31,7 @@ static Cbc_message us_english[] = {
   { CBC_INFEAS, 6, 1, "The LP relaxation is infeasible or too expensive" },
   { CBC_STRONG, 7, 4, "Strong branching on %d (%d), down %g (%d) up %g (%d) value %g" },
   { CBC_SOLINDIVIDUAL, 8, 2, "%d has value %g" },
-  { CBC_INTEGERINCREMENT, 9, 3, "Objective coefficients multiple of %g" },
+  { CBC_INTEGERINCREMENT, 9, 1, "Objective coefficients multiple of %g" },
 #ifndef CBC_MANY_NODE_COUNTS
   { CBC_STATUS, 10, 1, "After %d nodes, %d on tree, %g best solution, best possible %g (%.2f seconds)" },
 #else

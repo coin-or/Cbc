@@ -1804,6 +1804,56 @@ bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn,
   return true;
 }
 
+void CbcSolver::configureReoptimization(OsiClpSolverInterface *solver,
+  CbcParameters::ReoptMethod method, int perturbation,
+  int presolve, int threads, int barrierOptions)
+{
+  if (!solver)
+    throw CoinError("Reoptimization options require OsiClp",
+      "configureReoptimization", "CbcSolver");
+  if (method == CbcParameters::ReoptRacing && threads % 100 < 2)
+    throw CoinError("reoptMethod=racing requires at least 2 threads",
+      "configureReoptimization", "CbcSolver");
+  ClpSolve options;
+  options.setSpecialOption(4, barrierOptions);
+  solver->setResolveOptions(
+    static_cast< OsiClpSolverInterface::ResolveMethod >(method), options,
+    std::min(2, threads % 100), perturbation, presolve);
+}
+
+void CbcSolver::applyReoptimizationOptions(OsiClpSolverInterface *targetSolver)
+{
+#ifndef CBC_OTHER_SOLVER
+  OsiClpSolverInterface *si = targetSolver ? targetSolver : getClpSolver(model_.solver());
+  if (!si) {
+    if (parameters_.getReoptMethod() != CbcParameters::ReoptAuto
+      || parameters_.getReoptPertValue() != -1 || parameters_.getReoptPresolve() != -1)
+      throw CoinError("Reoptimization options require OsiClp",
+        "applyReoptimizationOptions", "CbcSolver");
+    return;
+  }
+  int threads = 0;
+#ifdef CBC_THREAD
+  threads = parameters_[CbcParam::THREADS]->intVal();
+#endif
+  int barrierOptions = choleskyType_;
+  if (scaleBarrier_)
+    barrierOptions |= 8;
+  if (doKKT_)
+    barrierOptions |= 16;
+  if (gamma_)
+    barrierOptions |= 32 * gamma_;
+  configureReoptimization(si, parameters_.getReoptMethod(),
+    parameters_.getReoptPertValue(), parameters_.getReoptPresolve(),
+    threads, barrierOptions);
+#else
+  if (parameters_.getReoptMethod() != CbcParameters::ReoptAuto
+    || parameters_.getReoptPertValue() != -1 || parameters_.getReoptPresolve() != -1)
+    throw CoinError("Reoptimization options require OsiClp",
+      "applyReoptimizationOptions", "CbcSolver");
+#endif
+}
+
 // Unified LP-solve entry point: model-level LP settings → racing → full
 // ClpSolve with all user options. (Bound propagation and clique merging
 // "before" used to be steps 1-2 here; they are now the standalone
@@ -1816,6 +1866,7 @@ bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn,
 //
 // The caller is responsible for setting up any LP-progress message handler
 // on the ClpSimplex model before calling this function.
+// Reoptimization settings are installed after the initial LP has finished.
 int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMethod)
 {
   OsiSolverInterface *solver = targetSolver ? static_cast< OsiSolverInterface * >(targetSolver) : model_.solver();
@@ -1989,6 +2040,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
       // no separate message needed here (a standalone print here used to
       // interleave with, and visually break, that table).
       basisHasValues_ = 1;
+      applyReoptimizationOptions(si);
       return 0;
     }
     // All racers failed — fall through to the standard single-threaded solve.
@@ -2007,6 +2059,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
       method != CbcParameters::LPPrimal, OsiHintDo);
     solver->initialSolve();
     basisHasValues_ = 1;
+    applyReoptimizationOptions();
     return 0;
   }
 
@@ -2255,6 +2308,7 @@ int CbcSolver::applyLpMethod(OsiClpSolverInterface *targetSolver, int forcedMeth
   basisHasValues_ = 1;
 #endif
 
+  applyReoptimizationOptions(targetSolver);
   return 0;
 }
 
@@ -2342,10 +2396,14 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   bool lpScMsgOldDefault = false;
   CoinMessageHandler *lpScSavedMsg = nullptr;
   ClpLpEventHandler *lpScProg = nullptr;
+  CoinMessages::Language lpScSavedLanguage = CoinMessages::us_en;
   if (lpSolver && !parameters_.noPrinting()) {
     lpScSavedMsg = lpSolver->pushMessageHandler(&lpScMsgH, lpScMsgOldDefault);
     lpSolver->passInEventHandler(&lpScEvtH);
     lpScProg = dynamic_cast< ClpLpEventHandler * >(lpSolver->eventHandler());
+    // The progress table is Clp's tabular output style
+    lpScSavedLanguage = lpSolver->messagesPointer()->language();
+    lpSolver->newLanguage(CoinMessages::en_tabular);
   }
 #endif
 #endif
@@ -2354,8 +2412,10 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
 #ifndef CBC_OTHER_SOLVER
   if (lpScProg)
     lpScProg->printFinalStatus();
-  if (lpSolver && lpScSavedMsg)
+  if (lpSolver && lpScSavedMsg) {
     lpSolver->popMessageHandler(lpScSavedMsg, lpScMsgOldDefault);
+    lpSolver->newLanguage(lpScSavedLanguage);
+  }
   if (lpSolver) {
     ClpEventHandler defEvt;
     lpSolver->passInEventHandler(&defEvt);
@@ -3408,7 +3468,7 @@ void CbcSolver::initialize()
 #ifdef CBC_THREAD
   parameters_[CbcParam::THREADS]->setVal(0);
 #endif
-  parameters_[CbcParam::CLIQUECUTS]->setVal("ifmove");
+  parameters_[CbcParam::CLIQUECUTS]->setVal("root");
   parameters_[CbcParam::ODDWHEELCUTS]->setVal("ifmove");
   parameters_[CbcParam::IMPLIEDCLIQUECUTS]->setVal("ifmove");
   parameters_[CbcParam::CLQSTRENGTHENING]->setVal("both");
@@ -4555,12 +4615,12 @@ int CbcSolver::preprocess(
     double newCutoff = model_.getCutoff();
     babModel_->setBestSolution(bestSolution, numberColumns, 1.0e10, false);
     double obj2;
-    if (babModel_->getObjSense()!=-1.0) {
-      newCutoff = std::min(newCutoff, obj+1.0e-4);
+    if (babModel_->getObjSense() != -1.0) {
+      newCutoff = std::min(newCutoff, obj + 1.0e-4);
       obj2 = obj;
     } else {
       obj2 = -obj;
-      newCutoff = std::min(newCutoff, obj2+1.0e-4);
+      newCutoff = std::min(newCutoff, obj2 + 1.0e-4);
     }
     babModel_->setCutoff(newCutoff);
     babModel_->setMinimizationObjValue(obj2);
@@ -5732,8 +5792,12 @@ int CbcSolver::postprocess(
     delete saveSolver_;
     saveSolver_ = nullptr;
     delete[] bestSolution;
+    // Status 5 (the search was stopped by an event, a ctrl-c among them) is
+    // set together with secondary status 5, "user event" below, so it needs
+    // the same prefix as status 1; "User ctrl-c" ran into it ("User
+    // ctrl-cuser event").
     std::string statusName[] = {
-      "", "Stopped on ", "Run abandoned", "", "", "User ctrl-c"
+      "", "Stopped on ", "Run abandoned", "", "", "Stopped on "
     };
     std::string minor[] = {
       "Optimal solution found",
@@ -5784,9 +5848,15 @@ int CbcSolver::postprocess(
     if (iStat2 >= 2 && iStat2 <= 6) {
       bool minimizing = babModel_->solver()->getObjSense() > 0.0;
       std::string tmp = minimizing ? "Lower" : "Upper";
-      buffer << tmp << " bound:                    "
-             << babModel_->getBestPossibleObjValue() << std::endl;
-      if (babModel_->bestSolution()) {
+      const double bound = babModel_->getBestPossibleObjValue();
+      // No bound is known when the time limit stopped the first LP.
+      const bool haveBound = fabs(bound) < 1.0e50;
+      buffer << tmp << " bound:                    ";
+      if (haveBound)
+        buffer << bound << std::endl;
+      else
+        buffer << (minimizing ? "-inf" : "inf") << std::endl;
+      if (babModel_->bestSolution() && haveBound) {
         buffer << "Gap:                            "
                << (babModel_->getObjValue() - babModel_->getBestPossibleObjValue()) / fabs(babModel_->getBestPossibleObjValue()) << std::endl;
       }
@@ -6047,6 +6117,7 @@ int CbcSolver::solveInitialLp(
   ClpLpMsgHandler *lpMsgHandler = nullptr;
   bool lpMsgOldDefault = false;
   bool lpSavedOsiDefault = true;
+  CoinMessages::Language lpSavedLanguage = CoinMessages::us_en;
   if (cbcLogLevel >= 1 && logLevel >= 1 && si && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
     ClpSimplex *clpModel = si->getModelPtr();
     // Do NOT setLogLevel(0) — Idiot checks model log level before
@@ -6083,6 +6154,9 @@ int CbcSolver::solveInitialLp(
     si->setDefaultHandler(true);
     clpModel->passInEventHandler(&tmpEvt);
     lpProgressHandler = dynamic_cast< ClpLpEventHandler * >(clpModel->eventHandler());
+    // The progress table is Clp's tabular output style
+    lpSavedLanguage = clpModel->messagesPointer()->language();
+    clpModel->newLanguage(CoinMessages::en_tabular);
   }
 #endif
   // Capture integer variable info before solve (solver may relax types internally)
@@ -6132,8 +6206,9 @@ int CbcSolver::solveInitialLp(
     }
 #endif
 #ifndef CLP_OLD_STYLE
-    // Restore message handler and remove LP event handler
+    // Restore message handler and language, and remove LP event handler
     clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
+    clpModel->newLanguage(lpSavedLanguage);
     si->setDefaultHandler(lpSavedOsiDefault);
     delete lpMsgHandler;
     lpMsgHandler = nullptr;
@@ -7343,7 +7418,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters)
   parameters[CbcParam::THREADS]->setVal(0);
 #endif
   // Set up likely cut generators and defaults
-  parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
+  parameters[CbcParam::CLIQUECUTS]->setVal("root");
   parameters[CbcParam::ODDWHEELCUTS]->setVal("ifmove");
   parameters[CbcParam::IMPLIEDCLIQUECUTS]->setVal("ifmove");
   parameters[CbcParam::CLQSTRENGTHENING]->setVal("both");
@@ -8587,6 +8662,14 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
   int bothFlags = std::max(std::min(experimentFlag, 1), strategyFlag);
   // add cut generators if wanted
+  // installCutGenerators() uses rootCutFilterScope 0 whenever rootCutFilterScore
+  // is 0 (the legacy fitness exists only in the per-generator filters). Say so
+  // if the scope was set explicitly, since the two options then disagree.
+  if (!parameters[CbcParam::ROOTCUTFILTERSCORE]->intVal()
+    && parameters[CbcParam::ROOTCUTFILTERSCOPE]->intVal()
+    && !parameters[CbcParam::ROOTCUTFILTERSCOPE]->isDefault())
+    printGeneralWarning(model_, "rootCutFilterScore 0 (legacy fitness) needs the "
+                                "per-generator filters; using rootCutFilterScope 0");
   std::string switchOffChoice;
   configureCutGenerators(*babModel_, bkPivotingStrategy, &switchOffChoice);
   if (model_.messageHandler()->logLevel() >= 2)
@@ -8688,6 +8771,7 @@ void CbcSolver::babConfigureSearchModel(int cbcParamCode,
   babModel_->setMinimumDrop(minimumDrop);
   babModel_->setRootCutDropPatience(rootCuts.dropPatience);
   babModel_->setMaximumCutPasses(parameters[CbcParam::CUTPASSINTREE]->intVal());
+  babModel_->setStopCutsDepth(parameters[CbcParam::STOPCUTSDEPTH]->intVal());
   // Do more strong branching if small
   // if (babModel_->getNumCols()<5000)
   // babModel_->setNumberStrong(20);
@@ -10237,7 +10321,7 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
       if (size < iSize) {
         babModel_->setFastNodeDepth(iDepth);
       } else {
-        if (iDepth == -12 || size > 2*iSize)
+        if (iDepth == -12 || size > 2 * iSize)
           babModel_->setFastNodeDepth(-1);
         else
           babModel_->setFastNodeDepth(8);
@@ -11002,6 +11086,14 @@ int CbcSolver::babExecuteSearchAndPostprocess(int cbcParamCode,
     if (!suppressCutStats)
       printGeneralMessage(model_, buffer.str());
   }
+  // The formatted root section shows the root only. When there was a tree,
+  // show what each generator did over the whole search (the old "was tried"
+  // lines above, which that section replaces, did).
+  if (suppressCutStats && babModel_->getNodeCount() > 0) {
+    FILE *fp = babModel_->messageHandler()->filePointer();
+    CbcOutput::printCutGeneratorTotals(fp ? fp : stdout, CbcOutput::useUtf8(),
+      *babModel_);
+  }
   // Capture cgraph stats if built lazily by cut generators
   // (only if not already captured from explicit buildConflictGraph calls)
   if (statistics.cgraph_time == 0.0 && statistics.cgraph_density == 0.0) {
@@ -11274,6 +11366,7 @@ void CbcSolver::babRunSppGraspOriginal()
   // 2: with artificial slacks
   sppGraspOriginal_ = applicability;
   CbcHeuristicSppGrasp heuristic(model_);
+  heuristic.setRootThreadLimit(parameters[CbcParam::SPPGRASPTHREADS]->intVal());
   heuristic.setMinimumNativeCoverage(minimumNativeCoverage);
   if (applicability == 2)
     heuristic.setArtificialSlacks(artificial);
@@ -11302,7 +11395,12 @@ void CbcSolver::babRunSppGraspOriginal()
   const int numberColumns = solver->getNumCols();
   std::vector< double > x(numberColumns, 0.0);
   double obj = model_.getCutoff();
-  const bool found = heuristic.solution(obj, &x[0], !parameters.noPrinting());
+  int availableThreads = 1;
+#ifdef CBC_THREAD
+  availableThreads = parameters[CbcParam::THREADS]->intVal() % 100;
+#endif
+  const bool found = heuristic.solution(obj, x.data(), !parameters.noPrinting(),
+    availableThreads);
   if (effortControlled && model_.messageHandler()->logLevel() > 0) {
     char line[192];
     if (stagedRequested) {
@@ -11348,6 +11446,12 @@ void CbcSolver::configureCutGenerators(CbcModel &babModel,
 //    5 after postprocessing
 //    6 after a user called heuristic phase
 // ###########################################################################
+
+// The MIPLIB 3 / sample-problem test behind -unitTest (unitTestClp.cpp)
+int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
+  int testSwitch, const double *stuff, std::deque< std::string > inputQueue,
+  int callBack(CbcModel *currentSolver, int whereFrom),
+  CbcParameters &parameters);
 
 int CbcSolver::run(std::deque< std::string > inputQueue,
   int callBack(CbcModel *currentSolver, int whereFrom),
@@ -12687,6 +12791,20 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           parameters[CbcParam::ZEROHALFCUTS]->setVal(mode);
           parameters[CbcParam::ODDWHEELCUTS]->setVal(mode);
           if (!mode) {
+            // "off" means all cuts, as in 2.10: also the generators that
+            // default to the root (GMI, reduce-and-split 2, lift-and-project)
+            // and those the list above leaves out
+            redsplitMode = mode;
+            redsplit2Mode = mode;
+            GMIMode = mode;
+            landpMode = mode;
+            residualCapacityMode = mode;
+            parameters[CbcParam::REDSPLITCUTS]->setVal(mode);
+            parameters[CbcParam::REDSPLIT2CUTS]->setVal(mode);
+            parameters[CbcParam::GMICUTS]->setVal(mode);
+            parameters[CbcParam::LANDPCUTS]->setVal(mode);
+            parameters[CbcParam::RESIDCAPCUTS]->setVal(mode);
+            parameters[CbcParam::IMPLIEDCLIQUECUTS]->setVal(mode);
             // switch off clique strengthening
             clqstrMode = "off";
             cgraphMode = "off";
@@ -13044,23 +13162,22 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             continue;
           }
           clpParam->readValue(inputQueue, fileName, &message);
+          // An output file: don't ask whether it can be read (it usually
+          // doesn't exist yet), as the other write commands don't.
           CoinParamUtils::processFile(fileName,
-            parameters[CbcParam::DIRECTORY]->dirName(),
-            &canOpen);
-          if (!canOpen) {
-            buffer.str("");
-            buffer << "Unable to open file " << fileName.c_str();
-            printGeneralMessage(model_, buffer.str());
-            continue;
-          }
+            parameters[CbcParam::DIRECTORY]->dirName());
           if (fileName == "") {
             fileName = clpParameters[ClpParam::BASISFILE]->fileName();
           } else {
             clpParameters[ClpParam::BASISFILE]->setFileName(fileName);
           }
           ClpSimplex *model2 = lpSolver;
-          model2->writeBasis(fileName.c_str(), outputFormat > 1,
-            outputFormat - 2);
+          if (model2->writeBasis(fileName.c_str(), outputFormat > 1,
+                outputFormat - 2)) {
+            buffer.str("");
+            buffer << "Unable to write basis file " << fileName.c_str();
+            printGeneralMessage(model_, buffer.str());
+          }
           time2 = CoinCpuTime();
           totalTime += time2 - time1;
           time1 = time2;
@@ -14507,6 +14624,31 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           while (!inputQueue.empty())
             inputQueue.pop_front();
           break;
+        case CbcParam::UNITTEST: {
+          int returnCode = -1;
+          std::string dirMiplib = parameters[CbcParam::DIRMIPLIB]->dirName();
+          std::string dirSample = parameters[CbcParam::DIRSAMPLE]->dirName();
+          if (dirMiplib != "") {
+	    /* If inputQueue not empty - 
+	       modify queue so can carry on after unittest */
+	    if (!inputQueue.empty()) {
+	      for (int i=0;i<inputQueue.size();i++)
+ 		saveInputQueue.pop_back();
+	    }
+            returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL,
+              saveInputQueue, callBack, parameters);
+	    if (!inputQueue.empty())
+	      break; // to carry on
+          } else if (dirSample != "") {
+            returnCode = CbcClpUnitTest(model_, dirSample, -2, NULL,
+              saveInputQueue, callBack, parameters);
+          } else {
+            printGeneralMessage(model_,
+              "No directory for -unitTest: set one with -dirMiplib or -dirSample");
+          }
+          babModel_ = NULL;
+          return returnCode;
+        }
         case CbcParam::USERCBC: {
 #ifdef USER_HAS_FAKE_CBC
           // Replace the sample code by whatever you want

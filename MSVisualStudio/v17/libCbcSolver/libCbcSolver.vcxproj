@@ -213,6 +213,7 @@
     <ClCompile Include="..\..\..\src\CbcSolverExpandKnapsack.cpp" />
     <ClCompile Include="..\..\..\src\CbcSolverHeuristics.cpp" />
     <ClCompile Include="..\..\..\src\Cbc_C_Interface.cpp" />
+    <ClCompile Include="..\..\..\src\unitTestClp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Cgl\MSVisualStudio\v17\libCgl\libCgl.vcxproj">

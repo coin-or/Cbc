@@ -223,8 +223,9 @@ private:
   double timeFreq_;
 
   void printHeader() const;
-  void printRow(int iter, double obj, double primalInf, double dualInf,
-    double elapsed) const;
+  void printIterationRow(int iter, double elapsed) const;
+  void printRow(int iter, double obj, double primalInf, int numberPrimalInf,
+    double dualInf, int numberDualInf, double elapsed) const;
   static const char *algoName(int algo);
 };
 
@@ -481,6 +482,15 @@ public:
   static void printPreprocessTimes(FILE *fp, bool utf8,
     const CglPreProcessStats &stats, bool postprocessing,
     double wallSeconds = -1.0);
+
+  /** Print each cut generator's totals over the whole search (root and
+   *  tree): calls, row cuts, column cuts and time, the
+   *  numbers 2.10 printed as "<generator> was tried N times and created M
+   *  cuts". The root's own table shows only the root, so without this the
+   *  log says nothing about what the generators did in the tree.
+   *  Generators never called are left out. No-op if none was called.
+   */
+  static void printCutGeneratorTotals(FILE *fp, bool utf8, CbcModel &model);
 
 #ifdef CBC_HAS_NAUTY
   /** Print a clean symmetry-detection (nauty) section.

@@ -10,6 +10,7 @@ set -u
 CBC=${CBC:-cbc}
 INST=$HOME/inst/miplib/2017+spp/e40400.mps.gz
 NODES=3000
+SCRIPT_DIR=$(cd -- "$(dirname -- "$0")" && pwd)
 for a in "$@"; do
   case $a in
   --cbc=*) CBC=${a#*=} ;;
@@ -20,6 +21,14 @@ for a in "$@"; do
 done
 
 fail=0
+TEST_TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TEST_TMPDIR"' EXIT
+"${CXX:-c++}" -std=c++11 -I"$SCRIPT_DIR/../src" \
+  "$SCRIPT_DIR/test-heuristic-control-scheduling.cpp" \
+  "$SCRIPT_DIR/../src/CbcHeuristicControl.cpp" -pthread \
+  -o "$TEST_TMPDIR/test-heuristic-control-scheduling"
+"$TEST_TMPDIR/test-heuristic-control-scheduling"
+
 # prints "<runs> <backoffs> <paused> <timeshare-skips> <finalK>" of heuristic $1
 stat() {
   local h=$1
@@ -39,26 +48,42 @@ read -r r0 b0 p0 t0 k0 <<<"$(stat RINS)"
 read -r r1 b1 p1 t1 k1 <<<"$(stat RINS -rinsSchedule auto -rinsEvery auto -rinsDecay auto -rinsMaxFail auto)"
 echo "default: runs=$r0 backoffs=$b0 K=$k0"
 check "auto parameters equal the defaults" $([ "$r0 $b0 $k0" = "$r1 $b1 $k1" ] && echo 0 || echo 1)
+read -r r1 b1 p1 t1 k1 <<<"$(stat RINS -rinsSchedule noimprove)"
+check "the default RINS schedule is noimprove (runs=$r1)" $([ "$r0 $b0 $k0" = "$r1 $b1 $k1" ] && echo 0 || echo 1)
+read -r r1 b1 p1 t1 k1 <<<"$(stat RINS -rinsSchedule legacy)"
+check "the legacy RINS schedule remains selectable (runs=$r1)" $([ "$r1" -gt 0 ] && echo 0 || echo 1)
 
-read -r r b p t k <<<"$(stat RINS -rinsDecay 0)"
-check "rinsDecay 0 switches the back-off off (K stays 100, runs=$r >= default $r0)" $([ "$b" -eq 0 ] && [ "$k" -eq 100 ] && [ "$r" -ge "$r0" ] && echo 0 || echo 1)
+# Keep the schedule under test explicit so these checks remain stable if the
+# default changes.
+NI="-rinsSchedule noimprove"
+read -r r0 b0 p0 t0 k0 <<<"$(stat RINS $NI)"
+echo "noimprove: runs=$r0 backoffs=$b0 K=$k0"
 
-read -r r b p t k <<<"$(stat RINS -rinsDecay 2)"
+read -r r b p t k <<<"$(stat RINS $NI -rinsDecay 0)"
+check "rinsDecay 0 switches the back-off off (K stays 100, runs=$r >= noimprove default $r0)" $([ "$b" -eq 0 ] && [ "$k" -eq 100 ] && [ "$r" -ge "$r0" ] && echo 0 || echo 1)
+
+read -r r b p t k <<<"$(stat RINS $NI -rinsDecay 2)"
 check "rinsDecay 2 triples K per back-off (backoffs=$b K=$k)" $([ "$b" -ge 1 ] && [ "$k" -eq $((100 * 3 ** b)) ] && echo 0 || echo 1)
 
-read -r r b p t k <<<"$(stat RINS -rinsDecay 0 -rinsEvery 20)"
+read -r r b p t k <<<"$(stat RINS $NI -rinsDecay 0 -rinsEvery 20)"
 check "rinsEvery 20 runs more often than 100 (runs=$r)" $([ "$r" -gt 0 ] && [ "$k" -eq 20 ] && echo 0 || echo 1)
-read -r rr b p t k <<<"$(stat RINS -rinsDecay 0 -rinsEvery 1000)"
+read -r rr b p t k <<<"$(stat RINS $NI -rinsDecay 0 -rinsEvery 1000)"
 check "rinsEvery 1000 runs less often than 20 (runs=$rr < $r)" $([ "$rr" -lt "$r" ] && echo 0 || echo 1)
 
-read -r r b p t k <<<"$(stat RINS -rinsDecay 0 -rinsMaxFail 1)"
+read -r r b p t k <<<"$(stat RINS $NI -rinsDecay 0 -rinsMaxFail 1)"
 check "rinsMaxFail 1 pauses RINS (paused skips=$p)" $([ "$p" -gt 0 ] && echo 0 || echo 1)
 
-read -r r b p t k <<<"$(stat RINS -rinsTimeShare 0.00001)"
+read -r r b p t k <<<"$(stat RINS $NI -rinsTimeShare 0.00001)"
 check "tiny rinsTimeShare stops RINS (runs=$r time-share skips=$t)" $([ "$t" -gt 0 ] && [ "$r" -le 3 ] && echo 0 || echo 1)
 
-read -r r b p t k <<<"$(stat VND -vndEvery 10 -vndDecay 0)"
-read -r rv b p t k <<<"$(stat VND -vndEvery 1000 -vndDecay 0)"
+read -r rv0 b0 p0 t0 k0 <<<"$(stat VND)"
+read -r rv1 b1 p1 t1 k1 <<<"$(stat VND -vndSchedule noimprove)"
+check "the default VND schedule is noimprove" $([ "$rv0 $k0" = "$rv1 $k1" ] && echo 0 || echo 1)
+read -r rv1 b1 p1 t1 k1 <<<"$(stat VND -vndSchedule legacy)"
+check "the legacy VND schedule remains selectable (runs=$rv1)" $([ "$rv1" -gt 0 ] && echo 0 || echo 1)
+
+read -r r b p t k <<<"$(stat VND -vndSchedule noimprove -vndEvery 10 -vndDecay 0)"
+read -r rv b p t k <<<"$(stat VND -vndSchedule noimprove -vndEvery 1000 -vndDecay 0)"
 check "vndEvery controls VND (runs $r vs $rv)" $([ "$r" -gt "$rv" ] && echo 0 || echo 1)
 
 read -r r b p t k <<<"$(stat RINS -rinsSchedule nodes -rinsEvery 50 -rinsDecay 0)"

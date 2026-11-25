@@ -3021,6 +3021,7 @@ void CbcModel::branchAndBound(int doStatistics)
     */
   CbcCompareDefault *compareActual = dynamic_cast< CbcCompareDefault * >(nodeCompare_);
   if (compareActual) {
+    compareActual->resetDive();
     compareActual->setBestPossible(direction * solver_->getObjValue());
     compareActual->setCutoff(getCutoff());
   }
@@ -5076,7 +5077,6 @@ void CbcModel::branchAndBound(int doStatistics)
   // For Printing etc when parallel
   cbc_node_count lastEvery1000 = 0;
   cbc_node_count lastPrintEvery = 0;
-  int numberConsecutiveInfeasible = 0;
 #define PERTURB_IN_FATHOM
 #ifdef PERTURB_IN_FATHOM
   // allow in fathom
@@ -5458,24 +5458,10 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef BONMIN
     assert(!solverCharacteristics_->solutionAddsCuts() || solverCharacteristics_->mipFeasible());
 #endif
-// Sets percentage of time when we try diving. Diving requires a bit of heap
-// reorganisation, because we need to replace the comparison function to dive,
-// and that requires reordering to retain the heap property.
-#define DIVE_WHEN 1000
-#define DIVE_STOP 2000
-    int kNode = numberNodes_ % 4000;
-    if (numberNodes_ < 100000 && kNode > DIVE_WHEN && kNode <= DIVE_STOP) {
-      if (!parallelMode()) {
-        if (kNode == DIVE_WHEN + 1 || numberConsecutiveInfeasible > 1) {
-          CbcCompareDefault *compare = dynamic_cast< CbcCompareDefault * >(nodeCompare_);
-          // Don't interfere if user has replaced the compare function.
-          if (compare) {
-            // printf("Redoing tree\n");
-            compare->startDive(this);
-            numberConsecutiveInfeasible = 0;
-          }
-        }
-      }
+    if (!parallelMode()) {
+      CbcCompareDefault *compare = dynamic_cast< CbcCompareDefault * >(nodeCompare_);
+      if (compare)
+        compare->updateDive(this);
     }
     // replace current cutoff?
     // In parallel mode read getCutoff() under the masterMutex to avoid racing
@@ -5783,10 +5769,6 @@ void CbcModel::branchAndBound(int doStatistics)
       }
       // Do main work of solving node here
       doOneNode(this, node, createdNode);
-      // if (createdNode)
-      // numberConsecutiveInfeasible=0;
-      // else
-      // numberConsecutiveInfeasible++;
 #ifdef CBC_THREAD
     } else if (parallelMode() > 0) {
       // lockThread();

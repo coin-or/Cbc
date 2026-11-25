@@ -22,6 +22,9 @@
  * Exit code: 0 = all checks passed, 1 = one or more checks failed.
  */
 
+#include "CbcCompareDefault.hpp"
+#include "CbcEventHandler.hpp"
+#include "CbcFullNodeInfo.hpp"
 #include "CbcModel.hpp"
 #include "CbcSolver.hpp"
 #include "CoinPackedMatrix.hpp"
@@ -174,6 +177,103 @@ void testOptimal()
     "getBestPossibleObjValue() equals the optimal objective");
 }
 
+void testLegacyNodeOrdering()
+{
+  CbcCompareDefault depth(-3.0);
+  depth.sayThreaded();
+  CbcNode nodes[3];
+  for (int i = 0; i < 3; ++i) {
+    nodes[i].setNodeNumber(i);
+    nodes[i].setDepth(i + 1);
+    nodes[i].setNumberUnsatisfied(6000 * i);
+  }
+  check(depth.test(&nodes[0], &nodes[1]) && depth.test(&nodes[1], &nodes[2])
+      && depth.test(&nodes[0], &nodes[2]) && !depth.test(&nodes[2], &nodes[0]),
+    "depth-first order is transitive across large infeasibility differences");
+
+  OsiClpSolverInterface solver;
+  loadKnapsack(solver);
+  CbcModel model(solver);
+  CbcCompareDefault fewest(-2.0);
+  check(fewest.every1000Nodes(&model, 1002) && fewest.getWeight() == -1.0,
+    "fewest-first transitions even if the node count skips 1000");
+}
+
+void testLegacyDiveSchedule()
+{
+  class DiveProbe : public CbcCompareDefault {
+  public:
+    bool diving() const { return startNodeNumber_ >= 0; }
+  } compare;
+  OsiClpSolverInterface solver;
+  loadKnapsack(solver);
+  CbcModel model(solver);
+  model.tree()->setComparison(compare);
+  CbcNode nodes[2];
+  for (int i = 0; i < 2; ++i) {
+    CbcFullNodeInfo *info = new CbcFullNodeInfo();
+    info->setNumberBranchesLeft(1);
+    info->setNumberPointingToThis(1);
+    info->setNodeNumber(i);
+    nodes[i].setNodeInfo(info);
+    nodes[i].setObjectiveValue(i);
+    model.tree()->push(&nodes[i]);
+  }
+  model.setNodeCount(1002);
+  compare.updateDive(&model);
+  check(compare.diving() && !compare.test(model.tree()->top(), model.tree()->top()),
+    "skipped entry starts a dive without violating self-comparison");
+  model.setNodeCount(2001);
+  compare.updateDive(&model);
+  check(!compare.diving(), "leaving the window ends the dive");
+  model.setNodeCount(5002);
+  compare.updateDive(&model);
+  check(compare.diving(), "a subsequent window starts another dive");
+  model.tree()->setComparison(compare);
+  model.setNodeCount(5003);
+  compare.updateDive(&model);
+  check(!compare.diving(), "an early heap rebuild does not restart the same dive");
+  while (!model.tree()->empty())
+    model.tree()->pop();
+}
+
+void testDirectionalFewest()
+{
+  class StrategyProbe : public CbcEventHandler {
+  public:
+    StrategyProbe(int way, bool &observed)
+      : way_(way)
+      , observed_(observed)
+    {
+    }
+    CbcEventHandler *clone() const { return new StrategyProbe(*this); }
+    CbcAction event(CbcEvent event)
+    {
+      if (event == startUp && !model_->parentModel()) {
+        const CbcCompareDefault *compare = dynamic_cast< const CbcCompareDefault * >(model_->nodeComparison());
+        observed_ = compare && compare->getWeight() == -2.0 && model_->getPreferredWay() == way_;
+      }
+      return noAction;
+    }
+
+  private:
+    int way_;
+    bool &observed_;
+  };
+  for (int way : { 1, -1 }) {
+    OsiClpSolverInterface solver;
+    loadKnapsack(solver);
+    CbcModel model(solver);
+    bool observed = false;
+    StrategyProbe probe(way, observed);
+    model.passInEventHandler(&probe);
+    auto options = optionsWith(way > 0 ? "-nodeStrategy=upfewest" : "-nodeStrategy=downfewest");
+    options.push_back("-maxNodes=1");
+    solve(model, options);
+    check(observed, way > 0 ? "upfewest sets both traversal and up direction" : "downfewest sets both traversal and down direction");
+  }
+}
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -187,6 +287,9 @@ int main(int argc, char **argv)
   testSolutionLimit();
   testParameters();
   testOptimal();
+  testLegacyNodeOrdering();
+  testLegacyDiveSchedule();
+  testDirectionalFewest();
   if (g_failures) {
     printf("%d check(s) failed\n", g_failures);
     return 1;

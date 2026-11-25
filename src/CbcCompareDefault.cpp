@@ -71,6 +71,7 @@ CbcCompareDefault::CbcCompareDefault(const CbcCompareDefault &rhs)
   startNodeNumber_ = rhs.startNodeNumber_;
   afterNodeNumber_ = rhs.afterNodeNumber_;
   setupForDiving_ = rhs.setupForDiving_;
+  lastDiveCycle_ = rhs.lastDiveCycle_;
 }
 
 // Clone
@@ -96,6 +97,7 @@ CbcCompareDefault::operator=(const CbcCompareDefault &rhs)
     startNodeNumber_ = rhs.startNodeNumber_;
     afterNodeNumber_ = rhs.afterNodeNumber_;
     setupForDiving_ = rhs.setupForDiving_;
+    lastDiveCycle_ = rhs.lastDiveCycle_;
   }
   return *this;
 }
@@ -108,6 +110,8 @@ CbcCompareDefault::~CbcCompareDefault()
 // Returns true if y better than x
 bool CbcCompareDefault::test(CbcNode *x, CbcNode *y)
 {
+  if (x == y)
+    return false;
   if (startNodeNumber_ >= 0) {
     // Diving
     int nX = x->nodeNumber();
@@ -143,16 +147,21 @@ bool CbcCompareDefault::test(CbcNode *x, CbcNode *y)
     else
       return equalityTest(x, y); // so ties will be broken in consistent manner
   }
-  //weight_=0.0;
-  if ((weight_ == -1.0 && (y->depth() > breadthDepth_ && x->depth() > breadthDepth_)) || weight_ == -3.0 || weight_ == -2.0) {
-    int adjust = (weight_ == -3.0) ? 10000 : 0;
+  if (weight_ == -3.0) {
+    if (x->depth() != y->depth())
+      return x->depth() < y->depth();
+    if (x->numberUnsatisfied() != y->numberUnsatisfied())
+      return x->numberUnsatisfied() > y->numberUnsatisfied();
+    return equalityTest(x, y);
+  }
+  if ((weight_ == -1.0 && (y->depth() > breadthDepth_ && x->depth() > breadthDepth_)) || weight_ == -2.0) {
     // before solution
     /*printf("x %d %d %g, y %d %d %g\n",
            x->numberUnsatisfied(),x->depth(),x->objectiveValue(),
            y->numberUnsatisfied(),y->depth(),y->objectiveValue()); */
-    if (x->numberUnsatisfied() > y->numberUnsatisfied() + adjust) {
+    if (x->numberUnsatisfied() > y->numberUnsatisfied()) {
       return true;
-    } else if (x->numberUnsatisfied() < y->numberUnsatisfied() - adjust) {
+    } else if (x->numberUnsatisfied() < y->numberUnsatisfied()) {
       return false;
     } else {
       int depthX = x->depth();
@@ -254,8 +263,8 @@ bool CbcCompareDefault::every1000Nodes(CbcModel *model, int numberNodes)
     // but try a bit of other stuff
     if ((numberNodes1000 % 4) == 1)
       weight_ = saveWeight_;
-  } else if (numberNodes == 1000 && weight_ == -2.0) {
-    weight_ = -1.0; // Go to depth first
+  } else if (numberNodes >= 1000 && weight_ == -2.0) {
+    weight_ = -1.0; // Switch to the hybrid policy.
   }
   // get size of tree
   treeSize_ = model->tree()->size();
@@ -277,9 +286,31 @@ bool CbcCompareDefault::every1000Nodes(CbcModel *model, int numberNodes)
   //return numberNodes==11000; // resort if first time
   return (weight_ != saveWeight);
 }
+void CbcCompareDefault::resetDive()
+{
+  cleanDive();
+  lastDiveCycle_ = -1;
+}
+
+void CbcCompareDefault::updateDive(CbcModel *model)
+{
+  const cbc_node_count nodes = model->getNodeCount();
+  const int offset = nodes % 4000;
+  const bool inWindow = nodes < 100000 && offset > 1000 && offset <= 2000;
+  const int cycle = inWindow ? nodes / 4000 : -1;
+  if (startNodeNumber_ >= 0 && (!inWindow || cycle != lastDiveCycle_))
+    model->tree()->setComparison(*this);
+  if (inWindow && cycle != lastDiveCycle_ && !model->tree()->empty()) {
+    lastDiveCycle_ = cycle;
+    startDive(model);
+  }
+}
+
 // Start dive
 void CbcCompareDefault::startDive(CbcModel *model)
 {
+  if (model->tree()->empty())
+    return;
   // Get best - using ? criterion
   double saveWeight = weight_;
   weight_ = 0.5 * saveWeight_; //0.0;

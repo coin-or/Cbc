@@ -3,7 +3,7 @@
 closes the gap.
 
 Sub-commands
-  run      run cbc on instances, one log per instance (parallel)
+  run      run cbc on instances with GNU parallel, one log per instance
   analyze  parse logs -> <dir>/pdi.tsv (one row per instance)
   compare  rank N>=2 experiment directories on the PDI metrics
   plot     mean gap-vs-time curves of experiments (needs matplotlib)
@@ -23,7 +23,9 @@ Metric (all minimisation internally; max problems are negated)
   PDI the tool reports, when a best-known objective (bks.tsv) is available,
   the primal integral and dual integral against it (each in [0,1] with 1 =
   no incumbent / no bound), and t_first, t_gap10 and t_gap1 (time to first
-  incumbent, to 10% and to 1% gap).
+  incumbent, to 10% and to 1% gap). `compare` also reports solve-time SGM
+  with a 1-second shift; proven solves use time to proof and unresolved
+  instances count at the common horizon T.
 
 Parsed log events (Cbc "next" console format; exact times, 6 significant
 digits): root LP objective, cut-pass objectives, every starred incumbent
@@ -47,13 +49,13 @@ Examples
   cbc_pdi.py plot --out gap.png base=/tmp/base new=/tmp/new
 """
 import argparse
-import concurrent.futures as cf
 import csv
 import fnmatch
 import json
 import math
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -439,36 +441,66 @@ def find_instances(inst_dir, patterns):
 
 
 def cmd_run(a):
-    bks, limits = load_meta(a.data_dir)
     inst_dir = a.inst_dir or os.path.join(a.data_dir, "mips")
     names = find_instances(inst_dir, a.patterns)
     os.makedirs(a.out, exist_ok=True)
-    extra = a.args.split() if a.args else []
-
-    def one(name):
-        sec = a.sec or float(limits.get(name, {}).get("time_limit_sec") or 120)
-        log = os.path.join(a.out, name + ".log")
-        cmd = [a.cbc, os.path.join(inst_dir, name + ".mps.gz"), "-threads", str(a.threads),
-               "-sec", str(sec),
-               "-progressCsv", os.path.join(a.out, name + ".progress.csv")] + ([] if a.nodes is None else ["-maxNodes", str(a.nodes)]) + extra + ["-solve"]
-        with open(log, "w") as f:
-            f.write("# cmd: %s\n# limit: %g\n" % (" ".join(cmd), sec))
-            f.flush()
-            try:
-                subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, timeout=sec * 1.5 + 30)
-            except subprocess.TimeoutExpired:
-                f.write("\n# HARD KILL\n")
-        return name
-
-    with cf.ThreadPoolExecutor(a.jobs) as ex:
-        for i, n in enumerate(ex.map(one, names), 1):
-            print("[%d/%d] %s" % (i, len(names), n), file=sys.stderr)
+    if not names:
+        sys.exit("no matching *.mps.gz instances in %s" % inst_dir)
+    parallel = shutil.which("parallel")
+    if not parallel:
+        sys.exit("GNU parallel is required to dispatch independent Cbc runs")
+    config_path = os.path.join(a.out, "parallel-config.json")
+    config = dict(data_dir=a.data_dir, inst_dir=inst_dir, out=a.out,
+                  cbc=a.cbc, sec=a.sec, nodes=a.nodes, threads=a.threads,
+                  args=a.args or "")
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
+    command = [parallel, "--jobs", str(a.jobs), "--joblog",
+               os.path.join(a.out, "parallel.joblog"),
+               sys.executable, os.path.abspath(__file__), "_run-one",
+               config_path, "{}",
+               ":::"] + names
+    print("dispatching %d instances with GNU parallel (%d jobs)" % (len(names), a.jobs),
+          file=sys.stderr)
+    result = subprocess.run(command)
+    if result.returncode:
+        sys.exit("GNU parallel reported failed Cbc jobs; inspect parallel.log and instance logs")
     print("logs in", a.out)
+
+
+def cmd_run_one(a):
+    with open(a.config) as f:
+        config = json.load(f)
+    _, limits = load_meta(config["data_dir"])
+    name = a.instance
+    sec = config["sec"] or float(limits.get(name, {}).get("time_limit_sec") or 120)
+    log = os.path.join(config["out"], name + ".log")
+    command = [config["cbc"], os.path.join(config["inst_dir"], name + ".mps.gz"),
+               "-threads", str(config["threads"]), "-sec", str(sec),
+               "-progressCsv", os.path.join(config["out"], name + ".progress.csv")]
+    if config["nodes"] is not None:
+        command.extend(["-maxNodes", str(config["nodes"])])
+    command.extend(config["args"].split())
+    command.append("-solve")
+    with open(log, "w") as f:
+        f.write("# cmd: %s\n# limit: %g\n" % (" ".join(command), sec))
+        f.flush()
+        try:
+            result = subprocess.run(command, stdout=f, stderr=subprocess.STDOUT,
+                                    timeout=sec * 1.5 + 30)
+        except subprocess.TimeoutExpired:
+            f.write("\n# HARD KILL\n")
+            print("timed out: %s" % name, flush=True)
+            return
+        f.write("\n# exit_code: %d\n" % result.returncode)
+    if result.returncode:
+        raise SystemExit(result.returncode)
+    print("completed: %s" % name, flush=True)
 
 
 # ---------------------------------------------------------------- analyze
 
-COLS = ["instance", "status", "events", "T", "pdi", "primal_int", "dual_int", "t_first", "t_gap10",
+COLS = ["instance", "status", "events", "T", "solve_s", "pdi", "primal_int", "dual_int", "t_first", "t_gap10",
         "t_gap1", "final_gap", "primal", "dual", "bks"]
 
 
@@ -546,7 +578,10 @@ def analyze_dir(d, a):
         sg = -1.0 if maximize else 1.0
         row = dict(instance=name, status=tr.status,
                    events=ev.get("event_source", "unknown"),
-                   T=T, bks="" if ref is None else ref, **m)
+                   T=T, solve_s=(min(tr.end_time, T)
+                     if tr.status in ("optimal", "infeasible")
+                     and tr.end_time is not None and tr.end_time >= 0.0 else T),
+                   bks="" if ref is None else ref, **m)
         row["primal"] = "" if m["primal"] is None else sg * m["primal"]
         row["dual"] = "" if m["dual"] is None else sg * m["dual"]
         rows.append(row)
@@ -575,8 +610,10 @@ def cmd_analyze(a):
         if not n:
             print(d, ": no logs")
             continue
-        print("%s: %d instances, mean PDI %.4f, no-solution %d, optimal %d -> %s" % (
-            d, n, sum(r["pdi"] for r in rows) / n, sum(1 for r in rows if r["primal"] == ""),
+        solve_s = shifted_geometric_mean(r["solve_s"] for r in rows)
+        print("%s: %d instances, mean PDI %.4f, solve SGM %.2fs, no-solution %d, optimal %d -> %s" % (
+            d, n, sum(r["pdi"] for r in rows) / n, solve_s,
+            sum(1 for r in rows if r["primal"] == ""),
             sum(1 for r in rows if r["status"] == "optimal"), out))
 
 
@@ -595,6 +632,13 @@ def fnum(s):
         return float(s)
     except (TypeError, ValueError):
         return None
+
+
+def shifted_geometric_mean(values, shift=1.0):
+    values = [max(0.0, float(value)) for value in values]
+    if not values:
+        return None
+    return math.exp(sum(math.log(value + shift) for value in values) / len(values)) - shift
 
 
 def parse_exps(items):
@@ -622,8 +666,9 @@ def cmd_compare(a):
         print("WARNING: %d instances have different time horizons T across experiments (e.g. %s); "
               "PDI is only comparable on one horizon: re-run 'analyze --sec <T>' on every directory.\n"
               % (len(mism), mism[0]), file=sys.stderr)
-    hdr = "%-14s %8s %8s %8s %8s %8s %8s %8s %6s" % (
-        "experiment", "PDI", "primInt", "dualInt", "t_first", "t_gap1", "finalGap", "noSol", "opt")
+    hdr = "%-14s %8s %8s %8s %8s %8s %8s %8s %8s %6s" % (
+        "experiment", "PDI", "SGM_s", "primInt", "dualInt", "t_first", "t_gap1",
+        "finalGap", "noSol", "opt")
     print(hdr)
     print("-" * len(hdr))
     stats = {}
@@ -631,17 +676,23 @@ def cmd_compare(a):
         def mean(col):
             v = [fnum(r[i][col]) for i in common if fnum(r[i][col]) is not None]
             return sum(v) / len(v) if v else float("nan")
-        # shifted geometric mean of t_first (shift 1s); unsolved-to-incumbent -> T
+        # A missing event counts as the instance horizon.
         tf = [fnum(r[i]["t_first"]) if fnum(r[i]["t_first"]) is not None else fnum(r[i]["T"]) for i in common]
         tg = [fnum(r[i]["t_gap1"]) if fnum(r[i]["t_gap1"]) is not None else fnum(r[i]["T"]) for i in common]
-        sgm = lambda xs: math.exp(sum(math.log(x + 1) for x in xs) / len(xs)) - 1
+        solve_times = [
+            fnum(r[i].get("solve_s")) if fnum(r[i].get("solve_s")) is not None
+            else fnum(r[i]["T"])
+            for i in common
+        ]
         nosol = sum(1 for i in common if r[i]["primal"] == "")
         opt = sum(1 for i in common if r[i]["status"] == "optimal")
         stats[n] = mean("pdi")
-        print("%-14s %8.4f %8.4f %8.4f %8.2f %8.2f %8.4f %8d %6d" % (
-            n, mean("pdi"), mean("primal_int"), mean("dual_int"), sgm(tf), sgm(tg),
+        print("%-14s %8.4f %8.2f %8.4f %8.4f %8.2f %8.2f %8.4f %8d %6d" % (
+            n, mean("pdi"), shifted_geometric_mean(solve_times), mean("primal_int"),
+            mean("dual_int"), shifted_geometric_mean(tf), shifted_geometric_mean(tg),
             mean("final_gap"), nosol, opt))
-    print("\n(t_first / t_gap1: shifted geometric mean, shift 1s; a missing event counts as T)")
+    print("\nSGM_s: shift 1s; proven solves use time to proof, unresolved instances count at T.")
+    print("(t_first / t_gap1: shifted geometric mean, shift 1s; a missing event counts as T)")
     rank = sorted(stats, key=stats.get)
     print("Ranking by PDI (lower is better): " + " < ".join("%s (%.4f)" % (n, stats[n]) for n in rank))
 
@@ -832,6 +883,11 @@ def main():
     r.add_argument("--inst-dir", help="directory of <name>.mps.gz (default: <data-dir>/mips)")
     r.add_argument("patterns", nargs="*", help="instance name globs")
     r.set_defaults(fn=cmd_run)
+
+    w = sub.add_parser("_run-one", help=argparse.SUPPRESS)
+    w.add_argument("config")
+    w.add_argument("instance")
+    w.set_defaults(fn=cmd_run_one)
 
     z = sub.add_parser("analyze", help="logs -> pdi.tsv")
     z.add_argument("dirs", nargs="+")

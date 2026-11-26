@@ -8085,7 +8085,10 @@ int CbcMain1(int argc, const char *argv[],
 #endif
                 delete saveSolver;
                 delete[] bestSolution;
-                std::string statusName[] = { "", "Stopped on ", "Run abandoned", "", "", "User ctrl-c" };
+                // Status 5 (ctrl-c) comes with secondary status 5, "user
+                // ctrl-c" below, so it takes status 1's prefix; "User ctrl-c"
+                // ran into it ("User ctrl-cuser ctrl-c")
+                std::string statusName[] = { "", "Stopped on ", "Run abandoned", "", "", "Stopped on " };
                 std::string minor[] = { "Optimal solution found", "Linear relaxation infeasible", "Optimal solution found (within gap tolerance)", "node limit", "time limit", "user ctrl-c", "solution limit", "Linear relaxation unbounded", "Problem proven infeasible" };
                 int iStat = babModel_->status();
                 int iStat2 = babModel_->secondaryStatus();

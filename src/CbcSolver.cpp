@@ -1732,8 +1732,8 @@ bool CbcSolver::reduceRows(OsiSolverInterface *solverIn)
 // (including plain LP-only actions such as SOLVECONTINUOUS/-dualSimplex/
 // -primalSimplex/-barrier); it is now a standalone action, run once ahead of
 // applyLpMethod() by the caller -- the BAB pipeline's babPreRootLPStrenghtening()
-// (gated by -preRootLPStrenghtening) and runSolveContinuous() (unconditionally,
-// to preserve the previous combined behavior for the CLI LP-only commands).
+// (gated by -preRootLPStrenghtening) and runSolveContinuous() only when
+// -rowReductions force explicitly requests the strengthened root LP.
 //
 // Deliberately does NOT resolve/re-solve the LP: clique merging always runs
 // in "before" mode here (no resolve) -- the actual LP optimization is left
@@ -1792,10 +1792,9 @@ bool CbcSolver::preRootLPStrenghtening(OsiSolverInterface *solverIn,
   // Gated on allowRowRemoval because this step *deletes* rows, and a deleted
   // row has no dual value -- there is no postsolve at this point in the
   // pipeline to recover one. Cbc reports no duals for a MIP, so the BAB
-  // pipeline passes true; the LP-only commands (-solveContinuous,
-  // -dualSimplex, -primalSimplex, -barrier) do report duals and keep the
-  // default false. The default is the safe value on purpose: forgetting to
-  // pass the flag loses a reduction, never a dual value.
+  // pipeline passes true. LP-only commands skip this phase unless
+  // -rowReductions force explicitly requests the strengthened root LP;
+  // that opt-in also passes true and does not preserve original-row duals.
   if (allowRowRemoval) {
     if (!reduceRows(solver))
       return false;
@@ -2332,24 +2331,15 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
   parameters_.synchronizeModel();
 #endif
 
-  // Bound propagation + clique merging "before": previously the first two
-  // steps of applyLpMethod(), run unconditionally on every call including
-  // this one; now the standalone preRootLPStrenghtening() action, called
-  // explicitly here to preserve the historical combined behavior of the
-  // SOLVECONTINUOUS/-dualSimplex/-primalSimplex/-barrier CLI commands.
-  // Unlike the BAB pipeline's babPreRootLPStrenghtening(), this is not
-  // gated by -preRootLPStrenghtening -- these are LP-only actions, so the
-  // phase always runs for them, same as before this refactor.
-  //
-  // allowRowRemoval is left at its default false: these commands report dual
-  // values, and the row-removal step has no postsolve to recover a dual for a
-  // row it deleted.
-  //
-  // -rowReductions force opts in to row removal here as well, so these
-  // commands solve exactly the LP the branch-and-bound root would.
+  // LP-only commands need duals for the original LP. CBC's MIP strengthening
+  // changes bounds and rows without a dual postsolve, so skip it by default
+  // and leave LP presolve/postsolve to Clp. Keep -rowReductions force as the
+  // explicit benchmark opt-in to the strengthened branch-and-bound root LP;
+  // duals from that mode are for the modified model, as documented.
   const bool forceRowRemoval = parameters_[CbcParam::ROWREDUCTIONS]->modeVal()
     == CbcParameters::ROWREDUCTIONS_FORCE;
-  if (!preRootLPStrenghtening(model_.solver(), forceRowRemoval)) {
+  if (forceRowRemoval
+    && !preRootLPStrenghtening(model_.solver(), true)) {
     // Infeasibility proved by bound propagation — mark model.
     model_.setProblemStatus(0);
     model_.setSecondaryStatus(1);
@@ -13314,10 +13304,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         switch (cbcParamCode) {
         case CbcParam::SOLVECONTINUOUS: {
           // Solve the LP relaxation via runSolveContinuous()/applyLpMethod(),
-          // which handles bound propagation, clique merging "before",
-          // model-level LP settings, LP racing, and the full configured
-          // ClpSolve solve — all using the same member-variable state as
-          // the -solve (BAB) path.
+          // which applies model-level LP settings, LP racing, and the full
+          // configured ClpSolve solve using the same state as -solve (BAB).
+          // CBC MIP strengthening is skipped unless -rowReductions force
+          // explicitly requests the modified root LP.
           if (!goodModel) {
             printGeneralWarning(model_, "** Current model not valid\n");
             continue;

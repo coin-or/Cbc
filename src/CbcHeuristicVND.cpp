@@ -189,15 +189,29 @@ int CbcHeuristicVND::solution(double &solutionValue,
     }
   }
   int numberNodes = model_->getNodeCount();
-  if (howOften_ == 100) {
-    if (numberNodes < lastNode_ + 12)
-      return 0;
-    // Do at 50 and 100
-    if ((numberNodes > 40 && numberNodes <= 50) || (numberNodes > 90 && numberNodes < 100))
-      numberNodes = howOften_;
+  const bool passOK = (model_->getCurrentPassNumber() <= 1 || model_->getCurrentPassNumber() == 999999);
+  bool runNow;
+  if (scheduleMode() != HeuristicScheduleMode::Legacy) {
+    // See CbcHeuristic::shouldRunBySchedule() / setScheduleMode() --
+    // replaces the magic-number node-count math below with an explicit,
+    // named policy. Must still call shouldRunBySchedule() exactly once
+    // per candidate invocation to keep its internal bookkeeping correct,
+    // even when passOK is false.
+    runNow = shouldRunBySchedule() && passOK;
+  } else {
+    if (howOften_ == 100) {
+      if (numberNodes < lastNode_ + 12)
+        return 0;
+      // Do at 50 and 100
+      if ((numberNodes > 40 && numberNodes <= 50) || (numberNodes > 90 && numberNodes < 100))
+        numberNodes = howOften_;
+    }
+    runNow = (numberNodes % howOften_) == 0 && passOK && shouldRunBySchedule();
   }
-  if ((numberNodes % howOften_) == 0 && (model_->getCurrentPassNumber() <= 1 || model_->getCurrentPassNumber() == 999999)) {
+  if (runNow) {
     lastNode_ = model_->getNodeCount();
+    RunGuard runGuard(this);
+    const int successesBefore = numberSuccesses_;
     OsiSolverInterface *solver = model_->solver();
 
     int numberIntegers = model_->numberIntegers();
@@ -281,8 +295,7 @@ int CbcHeuristicVND::solution(double &solutionValue,
         //printf("\n");
       }
       numberTries_++;
-      if ((numberTries_ % 10) == 0 && numberSuccesses_ * 3 < numberTries_)
-        howOften_ += static_cast< int >(howOften_ * decayFactor_);
+      runGuard.finish(numberSuccesses_ > successesBefore);
     }
 
     delete newSolver;

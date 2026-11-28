@@ -163,7 +163,7 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
     OsiClpSolverInterface *clp = getClpSolver(newSolver);
-    if (CBC_SKIP_CLP_TEST||clp) {
+    if (clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())
@@ -368,6 +368,20 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
   comments in solutionFix and in CbcHeuristic::smallBranchAndBound.
   */
 int CbcHeuristicLocal::solution(double &solutionValue,
+  double *betterSolution)
+{
+  // only a new incumbent triggers a run, so only then can control veto one
+  if (numberSolutions_ != model_->getSolutionCount() && !controlAllows())
+    return 0;
+  const int runsBefore = numRuns_;
+  RunGuard runGuard(this);
+  const int returnCode = solutionImpl(solutionValue, betterSolution);
+  if (numRuns_ > runsBefore)
+    runGuard.finish(returnCode == 1);
+  return returnCode;
+}
+
+int CbcHeuristicLocal::solutionImpl(double &solutionValue,
   double *betterSolution)
 {
   /*
@@ -584,7 +598,7 @@ int CbcHeuristicLocal::solution(double &solutionValue,
     int *integerVariable = CoinCopyOfArray(model_->integerVariable(), numberIntegers);
     OsiClpSolverInterface *clpSolver
       = getClpSolver(model_->solver());
-    if (CBC_SKIP_CLP_TEST||clpSolver) {
+    if (clpSolver) {
       // take out some integers
       int nn = numberIntegers;
       numberIntegers = 0;
@@ -1105,6 +1119,20 @@ void CbcHeuristicProximity::resetModel(CbcModel * /*model*/)
 int CbcHeuristicProximity::solution(double &solutionValue,
   double *betterSolution)
 {
+  // only a new incumbent triggers a run, so only then can control veto one
+  if (numberSolutions_ != model_->getSolutionCount() && !controlAllows())
+    return 0;
+  const int runsBefore = numRuns_;
+  RunGuard runGuard(this);
+  const int returnCode = solutionImpl(solutionValue, betterSolution);
+  if (numRuns_ > runsBefore)
+    runGuard.finish(returnCode == 1);
+  return returnCode;
+}
+
+int CbcHeuristicProximity::solutionImpl(double &solutionValue,
+  double *betterSolution)
+{
   if (feasibilityPumpOptions_ == -3 && numCouldRun_ == 0 && !feasibilityPump_) {
     // clone feasibility pump
     for (int i = 0; i < model_->numberHeuristics(); i++) {
@@ -1140,7 +1168,7 @@ int CbcHeuristicProximity::solution(double &solutionValue,
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
     OsiClpSolverInterface *clp = getClpSolver(newSolver);
-    if (CBC_SKIP_CLP_TEST||clp) {
+    if (clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())
@@ -1397,7 +1425,7 @@ int CbcHeuristicNaive::solution(double &solutionValue,
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
     OsiClpSolverInterface *clp = getClpSolver(newSolver);
-    if (CBC_SKIP_CLP_TEST||clp) {
+    if (clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())
@@ -1659,6 +1687,20 @@ void CbcHeuristicCrossover::resetModel(CbcModel *model)
 int CbcHeuristicCrossover::solution(double &solutionValue,
   double *betterSolution)
 {
+  // only a new incumbent triggers a run, so only then can control veto one
+  if (numberSolutions_ != model_->getSolutionCount() && !controlAllows())
+    return 0;
+  const int runsBefore = numRuns_;
+  RunGuard runGuard(this);
+  const int returnCode = solutionImpl(solutionValue, betterSolution);
+  if (numRuns_ > runsBefore)
+    runGuard.finish(returnCode == 1);
+  return returnCode;
+}
+
+int CbcHeuristicCrossover::solutionImpl(double &solutionValue,
+  double *betterSolution)
+{
   if (when_ == 0)
     return 0;
   bool useBest = (numberSolutions_ != model_->getSolutionCount());
@@ -1683,7 +1725,7 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
     OsiClpSolverInterface *clp = getClpSolver(solver);
-    if (CBC_SKIP_CLP_TEST||clp) {
+    if (clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())

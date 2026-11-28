@@ -1,0 +1,347 @@
+// Final interrupted-search bounds must reflect live nodes before cleanup,
+// independently of the timed progress cadence. The binary optimum is enumerated.
+// This file is licensed under the Eclipse Public License (EPL).
+
+#include "CbcModel.hpp"
+#include "CbcCompareObjective.hpp"
+#include "CbcEventHandler.hpp"
+#include "CbcTree.hpp"
+#include "Cbc_C_Interface.h"
+#include "CglCutGenerator.hpp"
+#include "CglGomory.hpp"
+#include "CglKnapsackCover.hpp"
+#include "CoinMemUsage.hpp"
+#include "CoinPackedMatrix.hpp"
+#include "CoinPackedVector.hpp"
+#include "OsiClpSolverInterface.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace {
+int checkIncumbentOutput()
+{
+  FILE *stream = tmpfile();
+  if (!stream) {
+    perror("tmpfile");
+    return 1;
+  }
+  bool duplicateReopened = false;
+  {
+    CbcBnBOutput output(stream, false, 1);
+    output.onHeurIncumbent(134640.0565, "test", 0, 0, 0, 0.1);
+    output.onBnBIncumbent(134639.7725, 1, 0, 0, 0.2);
+    output.onHeurIncumbent(100000000.0565, "test", 0, 0, 2, 0.3);
+    output.onRestartNote(10, 10);
+    output.onBnBIncumbent(100000000.0565, 2, 0, 0, 0.4);
+    fflush(stream);
+    const long beforeImprovement = ftell(stream);
+    rewind(stream);
+    std::string first;
+    for (int c; (c = fgetc(stream)) != EOF;)
+      first += static_cast< char >(c);
+    duplicateReopened = first.find("continued") != std::string::npos;
+    fseek(stream, beforeImprovement, SEEK_SET);
+    output.onBnBIncumbent(100000000.0065, 3, 0, 0, 0.5);
+    output.onComplete(false, 100000000.0065, 0.0, 0, 3, 0.6);
+    output.onBnBIncumbent(100000000.0065, 0, 0, 0, 0.1);
+  }
+  rewind(stream);
+  std::string text;
+  for (int c; (c = fgetc(stream)) != EOF;)
+    text += static_cast< char >(c);
+  fclose(stream);
+  int incumbents = 0;
+  for (size_t pos = 0; (pos = text.find(" *", pos)) != std::string::npos; pos += 2)
+    ++incumbents;
+  const bool passed = !duplicateReopened && incumbents == 5
+    && text.find("134640.0565") != std::string::npos
+    && text.find("134639.7725") != std::string::npos
+    && text.find("100000000.0565") != std::string::npos
+    && text.find("100000000.0065") != std::string::npos;
+  if (!passed)
+    fprintf(stderr, "FAIL: incumbent precision, duplicate suppression or solve reuse\n%s", text.c_str());
+  return !passed;
+}
+
+int runRootCutPurge(const char *filename)
+{
+  Cbc_Model *model = Cbc_newModel();
+  Cbc_setLogLevel(model, 0);
+  if (Cbc_readMps(model, filename)) {
+    fprintf(stderr, "FAIL: could not load root cut-purge fixture %s\n", filename);
+    Cbc_deleteModel(model);
+    return 1;
+  }
+  Cbc_setMaximumSeconds(model, 18000.0);
+  Cbc_setParameter(model, "threads", "1");
+  Cbc_solve(model);
+  const bool passed = Cbc_isProvenOptimal(model) && !Cbc_isSecondsLimitReached(model)
+    && fabs(Cbc_getObjValue(model) + 160.0) < 1.0e-7;
+  printf("  %s: decomp2 root cut purge status=%d secondary=%d obj=%.10g\n",
+    passed ? "ok" : "FAIL", Cbc_status(model), Cbc_secondaryStatus(model), Cbc_getObjValue(model));
+  Cbc_deleteModel(model);
+  return !passed;
+}
+
+struct Frontier {
+  bool captured = false;
+  bool clearMemoryLimitOnCleanup = false;
+  double bound = 0.0;
+  double endBound = COIN_DBL_MAX;
+  int endCalls = 0;
+};
+
+class RecordingTree : public CbcTree {
+public:
+  explicit RecordingTree(const std::shared_ptr< Frontier > &frontier)
+    : frontier_(frontier)
+  {
+  }
+  CbcTree *clone() const override
+  {
+    return new RecordingTree(*this);
+  }
+  void cleanTree(CbcModel *model, double cutoff, double &bound) override
+  {
+    if (cutoff == -COIN_DBL_MAX && size()) {
+      frontier_->captured = true;
+      frontier_->bound = std::min(getBestPossibleObjective(), model->getMinimizationObjValue());
+      // Simulate the limit no longer being exceeded once cleanup starts.
+      if (frontier_->clearMemoryLimitOnCleanup)
+        model->setMaximumMemory(1.0e100);
+    }
+    CbcTree::cleanTree(model, cutoff, bound);
+  }
+
+private:
+  std::shared_ptr< Frontier > frontier_;
+};
+
+class StopHandler : public CbcEventHandler {
+public:
+  StopHandler(const std::shared_ptr< Frontier > &frontier, int stopMode)
+    : frontier_(frontier)
+    , stopMode_(stopMode)
+  {
+  }
+  CbcEventHandler *clone() const override
+  {
+    return new StopHandler(*this);
+  }
+  CbcAction event(CbcEvent which) override
+  {
+    if (which == endSearch) {
+      ++frontier_->endCalls;
+      frontier_->endBound = model_->getBestPossibleObjValue() * model_->solver()->getObjSense();
+    }
+    if (which == node && model_->getNodeCount() >= 12) {
+      if (stopMode_ == 1)
+        return stop;
+      if (stopMode_ == 2)
+        model_->setMaximumSeconds(0.0);
+    }
+    return noAction;
+  }
+
+private:
+  std::shared_ptr< Frontier > frontier_;
+  int stopMode_;
+};
+
+// An 18-binary multidimensional knapsack, with its optimum (in minimization
+// sense) found by enumeration.
+void makeKnapsack(double sense, OsiClpSolverInterface &solver, double &optimum)
+{
+  const int columns = 18, rows = 6;
+  CoinPackedMatrix matrix(false, 0, 0);
+  matrix.setDimensions(0, columns);
+  std::vector< double > lower(columns, 0.0), upper(columns, 1.0);
+  std::vector< double > objective(columns), rowLower(rows, -COIN_DBL_MAX), rowUpper(rows);
+  for (int j = 0; j < columns; ++j)
+    objective[j] = -sense * (13 + (j * 17 + j * j * 3) % 71);
+  for (int i = 0; i < rows; ++i) {
+    CoinPackedVector row;
+    double total = 0.0;
+    for (int j = 0; j < columns; ++j) {
+      double value = 1 + (i * 19 + j * 23 + i * j * 7 + j * j) % 53;
+      row.insert(j, value);
+      total += value;
+    }
+    matrix.appendRow(row);
+    rowUpper[i] = std::floor(total * 0.43);
+  }
+  optimum = 0.0;
+  for (unsigned int mask = 0; mask < (1U << columns); ++mask) {
+    double cost = 0.0;
+    bool feasible = true;
+    for (int i = 0; i < rows && feasible; ++i) {
+      double activity = 0.0;
+      for (int j = 0; j < columns; ++j) {
+        if (mask & (1U << j))
+          activity += 1 + (i * 19 + j * 23 + i * j * 7 + j * j) % 53;
+      }
+      feasible = activity <= rowUpper[i];
+    }
+    if (feasible) {
+      for (int j = 0; j < columns; ++j) {
+        if (mask & (1U << j))
+          cost += sense * objective[j];
+      }
+      optimum = std::min(optimum, cost);
+    }
+  }
+  solver.loadProblem(matrix, lower.data(), upper.data(), objective.data(), rowLower.data(), rowUpper.data());
+  solver.setObjSense(sense);
+  for (int j = 0; j < columns; ++j)
+    solver.setInteger(j);
+  solver.messageHandler()->setLogLevel(0);
+}
+
+int run(int threads, double sense, int limit, double frequency, int stopMode = 0, int threadMode = 0)
+{
+  OsiClpSolverInterface solver;
+  double optimum;
+  makeKnapsack(sense, solver, optimum);
+  solver.initialSolve();
+  const double rootBound = sense * solver.getObjValue();
+  CbcModel model(solver);
+  model.setLogLevel(0);
+  model.setNumberThreads(threads);
+  model.setThreadMode(threadMode);
+  model.setNumberStrong(0);
+  model.setNumberBeforeTrust(0);
+  CbcCompareObjective comparison;
+  model.setNodeComparison(comparison);
+  model.setMaximumNodes(limit);
+  model.setPrintFrequency(1);
+  model.setSecsPrintFrequency(frequency);
+  auto frontier = std::make_shared< Frontier >();
+  if (stopMode == 3) {
+    model.setMaximumMemory(1.0);
+    frontier->clearMemoryLimitOnCleanup = true;
+  }
+  RecordingTree tree(frontier);
+  model.passInTreeHandler(tree);
+  StopHandler handler(frontier, stopMode);
+  CbcBnBOutput output(stdout, false, 0);
+  if (frequency == 0.0)
+    handler.setOutputHandler(&output);
+  model.passInEventHandler(&handler);
+  model.branchAndBound();
+  const double bound = sense * model.getBestPossibleObjValue();
+  const bool valid = bound <= optimum + 1.0e-7;
+  const bool fresh = !frontier->captured
+    || (threads ? bound <= frontier->bound + 1.0e-7 && bound > rootBound + 1.0e-7
+                : fabs(bound - frontier->bound) < 1.0e-7);
+  const bool stopped = stopMode == 3 ? model.status() == 1 && model.secondaryStatus() == 9
+    : stopMode == 2 ? model.isSecondsLimitReached()
+    : stopMode == 1 ? model.secondaryStatus() == 5
+    : limit <= 30 ? model.isNodeLimitReached() : model.isProvenOptimal();
+  const bool callback = limit == 10000 && !stopMode ? true : fabs(bound - frontier->endBound) < 1.0e-7;
+  const bool finished = limit == 10000 && !stopMode ? fabs(bound - optimum) < 1.0e-7 : true;
+  const bool frontierPresent = (limit != 30 && stopMode != 3) || frontier->captured;
+  const bool passed = valid && fresh && stopped && callback && finished && frontierPresent && frontier->endCalls == 1;
+  printf("  %s: threads=%d threadMode=%d sense=%.0f limit=%d frequency=%.0f stopMode=%d nodes=%d bound=%.10g frontier=%.10g optimum=%.10g\n",
+    passed ? "ok" : "FAIL", threads, threadMode, sense, limit, frequency, stopMode, model.getNodeCount(), bound, frontier->bound, optimum);
+  return !passed;
+}
+}
+
+// Sets the model's time limit to zero when called in root cut pass `pass_`
+// (0-based), so that the resolve after that pass's cuts is cut short.
+class TimeLimitAtRootPass : public CglCutGenerator {
+public:
+  TimeLimitAtRootPass(CbcModel *model, int pass)
+    : model_(model)
+    , pass_(pass)
+  {
+  }
+  CglCutGenerator *clone() const override
+  {
+    return new TimeLimitAtRootPass(*this);
+  }
+  void generateCuts(const OsiSolverInterface &, OsiCuts &,
+    const CglTreeInfo info = CglTreeInfo()) override
+  {
+    if (!info.inTree && info.pass == pass_)
+      model_->setMaximumSeconds(0.0);
+  }
+
+private:
+  CbcModel *model_;
+  int pass_;
+};
+
+// When the time limit stops a resolve in the root cut loop, the reported bound
+// must come from the last LP that was solved, not from the unfinished one.
+int runRootTimeLimit(double sense, int pass)
+{
+  OsiClpSolverInterface solver;
+  double optimum;
+  makeKnapsack(sense, solver, optimum);
+  solver.initialSolve();
+  const double rootBound = sense * solver.getObjValue();
+  CbcModel model(solver);
+  model.setLogLevel(0);
+  CglGomory gomory;
+  CglKnapsackCover knapsack;
+  model.addCutGenerator(&gomory, -99, "Gomory");
+  model.addCutGenerator(&knapsack, -99, "KnapsackCover");
+  TimeLimitAtRootPass limit(&model, pass);
+  model.addCutGenerator(&limit, -99, "TimeLimitAtRootPass");
+  model.branchAndBound();
+  const double bound = sense * model.getBestPossibleObjValue();
+  // rootObjectiveAfterCuts() is in minimization sense already.
+  const double afterCuts = model.rootObjectiveAfterCuts();
+  const bool passed = model.isSecondsLimitReached() && bound <= optimum + 1.0e-7
+    && bound >= rootBound - 1.0e-7 && afterCuts <= optimum + 1.0e-7;
+  printf("  %s: root time limit sense=%.0f pass=%d nodes=%d bound=%.10g afterCuts=%.10g root=%.10g optimum=%.10g\n",
+    passed ? "ok" : "FAIL", sense, pass, model.getNodeCount(), bound, afterCuts, rootBound, optimum);
+  return !passed;
+}
+
+int main(int argc, char **argv)
+{
+  if (argc > 2) {
+    fprintf(stderr, "Usage: %s [decomp2.mps.gz]\n", argv[0]);
+    return 1;
+  }
+  int failures = checkIncumbentOutput();
+  if (argc == 2)
+    failures += runRootCutPurge(argv[1]);
+  {
+    OsiClpSolverInterface solver;
+    CbcModel model(solver);
+    if (model.dealWithEventHandler(CbcEventHandler::endSearch, 0.0, NULL) != CbcEventHandler::noAction)
+      ++failures;
+  }
+  for (double sense : { 1.0, -1.0 }) {
+    for (int pass : { 0, 1 })
+      failures += runRootTimeLimit(sense, pass);
+    for (int threads : { 0, 2 }) {
+      if (threads && !CbcModel::haveMultiThreadSupport())
+        continue;
+      failures += run(threads, sense, 30, 1.0e9);
+      failures += run(threads, sense, 30, 0.0);
+      failures += run(threads, sense, 0, 1.0e9);
+      failures += run(threads, sense, 10000, 1.0e9);
+      if (!threads) {
+        failures += run(threads, sense, 10000, 1.0e9, 1);
+        failures += run(threads, sense, 10000, 1.0e9, 2);
+        if (CoinGetCurrentMemUsage())
+          failures += run(threads, sense, 10000, 1.0e9, 3);
+      }
+    }
+    if (CbcModel::haveMultiThreadSupport()) {
+      failures += run(1, sense, 30, 1.0e9);
+      failures += run(4, sense, 30, 1.0e9);
+      failures += run(2, sense, 30, 1.0e9, 0, 1);
+    }
+  }
+  return failures ? 1 : 0;
+}

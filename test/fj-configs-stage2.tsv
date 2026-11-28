@@ -1,0 +1,23 @@
+# Stage 2: tune FJ effort budget (--fj-effort-mult, NNZ multiplier) and
+# max solutions per call (--fj-max-sol) on top of the stage-1 winner
+# (--fj=on --fj-after-fpump=1). Grid: 5 effort levels x 3 max-sol levels.
+# effort-mult default is 1024, max-sol default is 1 (that combo already has
+# stage-1 numbers as "fj_root_afterfpump" -- rerun here too for a clean
+# same-run comparison baseline).
+#
+# Naming: fj_em<effortMult>_ms<maxSol>
+fj_em256_ms1	--fj=on --fj-after-fpump=1 --fj-effort-mult=256 --fj-max-sol=1
+fj_em256_ms2	--fj=on --fj-after-fpump=1 --fj-effort-mult=256 --fj-max-sol=2
+fj_em256_ms4	--fj=on --fj-after-fpump=1 --fj-effort-mult=256 --fj-max-sol=4
+fj_em512_ms1	--fj=on --fj-after-fpump=1 --fj-effort-mult=512 --fj-max-sol=1
+fj_em512_ms2	--fj=on --fj-after-fpump=1 --fj-effort-mult=512 --fj-max-sol=2
+fj_em512_ms4	--fj=on --fj-after-fpump=1 --fj-effort-mult=512 --fj-max-sol=4
+fj_em1024_ms1	--fj=on --fj-after-fpump=1 --fj-effort-mult=1024 --fj-max-sol=1
+fj_em1024_ms2	--fj=on --fj-after-fpump=1 --fj-effort-mult=1024 --fj-max-sol=2
+fj_em1024_ms4	--fj=on --fj-after-fpump=1 --fj-effort-mult=1024 --fj-max-sol=4
+fj_em2048_ms1	--fj=on --fj-after-fpump=1 --fj-effort-mult=2048 --fj-max-sol=1
+fj_em2048_ms2	--fj=on --fj-after-fpump=1 --fj-effort-mult=2048 --fj-max-sol=2
+fj_em2048_ms4	--fj=on --fj-after-fpump=1 --fj-effort-mult=2048 --fj-max-sol=4
+fj_em4096_ms1	--fj=on --fj-after-fpump=1 --fj-effort-mult=4096 --fj-max-sol=1
+fj_em4096_ms2	--fj=on --fj-after-fpump=1 --fj-effort-mult=4096 --fj-max-sol=2
+fj_em4096_ms4	--fj=on --fj-after-fpump=1 --fj-effort-mult=4096 --fj-max-sol=4

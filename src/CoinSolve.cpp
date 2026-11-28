@@ -16,6 +16,7 @@
 #include <iostream>
 
 #include "CoinPragma.hpp"
+#include "CoinError.hpp"
 #include "CoinModel.hpp"
 #include "CbcModel.hpp"
 #include "CbcSolver.hpp"
@@ -171,6 +172,7 @@ inline void set_openblas_threads(int n)
 } // namespace
 #elif defined(CLP_USE_OPENBLAS)
 extern "C" void openblas_set_num_threads(int num_threads);
+inline void set_openblas_threads(int n) { openblas_set_num_threads(n); }
 #endif
 
 //#############################################################################
@@ -206,6 +208,9 @@ double cbc_dbl_debug[MAX_DBL_DEBUG]={0.0};
 int main(int argc, const char *argv[])
 {
   int returnCode = 0;
+  // With MSVC, make a crash or failed assertion end the program instead of
+  // opening a dialog that waits for a click (and hangs scripts and CI).
+  WindowsErrorPopupBlocker();
 #ifdef CLP_DEBUG_MALLOC
   clp_memory(0);
 #endif

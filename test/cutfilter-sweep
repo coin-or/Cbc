@@ -1,0 +1,266 @@
+#!/usr/bin/env bash
+# cutfilter-sweep — run the real cbc CLI (full preprocessing + root LP solve
+# + cut generation + first N nodes) across mip-sanity-data, once per named
+# configuration in a configs.tsv (see cutfilter-configs.tsv), to benchmark
+# the generalized CoinCutPool-based cut-pool filtering applied to
+# Gomory/MixedIntegerRounding2/Twomir/Probing cuts (CbcFilterGeneratedCuts()
+# / cutFilter* parameters -- see CbcCutPoolFilter.cpp and its call
+# site in CbcCutGenerator::generateCuts()).
+#
+# Forked from cutskip-sweep (same rationale: mip-root-replay's
+# CbcStrategyDefault-based cut-generator setup doesn't reliably reproduce
+# CbcSolver.cpp's real CLI cut-generator wiring, so a fixture-replay sweep
+# risks silently measuring a different code path than the real `cbc`
+# command line exercises). Paying full preprocessing/root-LP cost per
+# (config, instance) pair is the price of a faithful measurement here;
+# this is what the -sec budget and --jobs parallelism are for.
+#
+# Usage:
+#   ./cutfilter-sweep [--configs=cutfilter-configs.tsv] [--sec=180] [--jobs=N]
+#                      [--repeats=N] [--out=DIR] [--instances=FILE]
+#                      [--data-dir=PATH] [--fixture-dir=PATH] [--bks=PATH]
+#
+# --repeats=N (default 1) runs each config N times, once per -randomSeed in
+# 1..N, and averages nodes/obj/bound/elapsed per instance across the
+# repeats before comparing against "today" -- use this to separate a real
+# config-driven effect from noise caused by B&B branching tie-break
+# sensitivity to minor cut-content differences (bbTime/bound can differ
+# run-to-run even for a fixed config once cuts change the tie-break
+# landscape, since CBC's B&B is otherwise deterministic single-threaded).
+#
+# configs.tsv format: one config per line, tab-separated
+#   <name>\t<comma-separated overrides, or - for none>
+# Each override token is either KEY=VAL (exported as an env var) or
+# CLI:<arg> (appended as an extra cbc command-line argument).
+#
+# One of the configs MUST be named "today" -- the baseline every other
+# config is compared against (current shipped defaults, i.e. the filter
+# active only via CglBKClique's own clique-cut path -- the new
+# Gomory/MIR2/Twomir/Probing filtering is off by default pending this
+# sweep's outcome). Every other config is run through
+# compare-cutskip-bench.py against "today" and the results are appended
+# to <out>/summary.log (and printed to stdout).
+#
+# Output layout under --out (default: sanity-results/cutfilter-sweep):
+#   <name>.tsv        one row per instance: instance, nodes, obj, bound, elapsed
+#   summary.log       compare-cutskip-bench.py output for every config vs "today"
+#
+# Safe to run under nohup/disown -- always launch this way in case the
+# session is interrupted, e.g.:
+#   nohup ./cutfilter-sweep --sec=180 --jobs=64 > /tmp/cutfilter-sweep.log 2>&1 &
+#   disown
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+CBC_BIN="$SCRIPT_DIR/../src/cbc"
+DATA_DIR="$SCRIPT_DIR/mip-sanity-data"
+FIXTURE_DIR="${CBC_ROOT_FIXTURE_DIR:-$HOME/instances/mip-sanity-data/rootFixtures}"
+
+# Worker mode: re-invoked once per (config, instance) pair by GNU parallel.
+# Checked before normal option parsing since the positional args here
+# (instance name, env-var spec) would otherwise be rejected as unknown
+# options. GNU parallel dispatches through /bin/sh, which does not see
+# exported bash functions, hence re-invoking this same script rather than
+# exporting one (same fix as gen-root-fixtures/fj-tune-sweep.sh).
+if [[ "${1:-}" == --worker=* ]]; then
+  inst="${1#--worker=}"
+  envspec="$2" # comma-separated list of KEY=VAL (export) or CLI:<arg>
+               # (extra cbc command-line argument) tokens, or "-" for none
+  sec="$3"
+  data_dir="$4"
+  seed="${5:-1}" # -randomSeed value; varying this across repeats gives
+                 # independent B&B-path realizations to average over,
+                 # separating real config-driven effects from branching
+                 # tie-break sensitivity noise (see --repeats below).
+  # The cut-pool thresholds are parameters (CLI:-cutFilterMinCols=...,
+  # CLI:-cliqueFilterMinCols=... etc.); no env var is read by the code.
+  EXTRA_ARGS=()
+  if [[ "$envspec" != "-" ]]; then
+    IFS=',' read -r -a kvs <<< "$envspec"
+    for kv in "${kvs[@]}"; do
+      if [[ "$kv" == CLI:* ]]; then
+        EXTRA_ARGS+=("${kv#CLI:}")
+      else
+        export "${kv?}"
+      fi
+    done
+  fi
+  mps="$data_dir/mips/$inst.mps.gz"
+  if [[ ! -f "$mps" ]]; then
+    printf '%s\tERROR\tno-mps\n' "$inst"
+    exit 0
+  fi
+  t0=$(date +%s.%N)
+  out="$(timeout -k 5 "$((sec + 15))s" "$CBC_BIN" "$mps" -threads 1 -maxNodes 16 -randomSeed "$seed" "${EXTRA_ARGS[@]}" -sec "$sec" -solve 2>&1)"
+  rc=$?
+  t1=$(date +%s.%N)
+  elapsed=$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.4f", b-a}')
+  result_line="$(grep '^Result - ' <<<"$out" | tail -1)"
+  obj="$(grep '^Objective value:' <<<"$out" | tail -1 | awk '{print $NF}')"
+  bound="$(grep '^Lower bound:' <<<"$out" | tail -1 | awk '{print $NF}')"
+  nodes="$(grep '^Enumerated nodes:' <<<"$out" | tail -1 | awk '{print $NF}')"
+  if [[ $rc -ne 0 || -z "$result_line" ]]; then
+    printf '%s\tERROR\trc=%s\n' "$inst" "$rc"
+    exit 0
+  fi
+  # If optimal/feasible-with-no-gap, cbc doesn't print "Lower bound:" --
+  # the objective itself is also the proven bound in that case.
+  [[ -z "$bound" ]] && bound="$obj"
+  [[ -z "$obj" ]] && obj="none"
+  [[ -z "$nodes" ]] && nodes="0"
+  printf '%s\t%s\t%s\t%s\t%s\n' "$inst" "$nodes" "$obj" "$bound" "$elapsed"
+  exit 0
+fi
+
+CONFIGS="$SCRIPT_DIR/cutfilter-configs.tsv"
+OUT_DIR="$SCRIPT_DIR/sanity-results/cutfilter-sweep"
+INSTANCES_FILE=""
+JOBS="$(nproc)"
+SEC=180
+REPEATS=1
+FIXTURE_DIR_ARG="$FIXTURE_DIR"
+BKS_ARG=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --configs=*) CONFIGS="${arg#*=}" ;;
+    --out=*) OUT_DIR="${arg#*=}" ;;
+    --instances=*) INSTANCES_FILE="${arg#*=}" ;;
+    --jobs=*) JOBS="${arg#*=}" ;;
+    --sec=*) SEC="${arg#*=}" ;;
+    --repeats=*) REPEATS="${arg#*=}" ;;
+    --data-dir=*) DATA_DIR="${arg#*=}" ;;
+    --fixture-dir=*) FIXTURE_DIR_ARG="${arg#*=}" ;;
+    --bks=*) BKS_ARG="${arg#*=}" ;;
+    -h|--help)
+      sed -n '2,/^set -uo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+if [[ ! -x "$CBC_BIN" ]]; then
+  echo "ERROR: cbc binary not found/executable at $CBC_BIN (build it first)" >&2
+  exit 2
+fi
+if [[ ! -f "$CONFIGS" ]]; then
+  echo "ERROR: configs file not found: $CONFIGS" >&2
+  exit 2
+fi
+
+mkdir -p "$OUT_DIR"
+
+if [[ -n "$INSTANCES_FILE" ]]; then
+  mapfile -t INSTANCES < "$INSTANCES_FILE"
+elif [[ -d "$FIXTURE_DIR_ARG" ]]; then
+  # Prefer the fixture-dir instance list (same universe used by the FJ
+  # sweep and the earlier bench-adaptive-cutskip-cli runs) so results stay
+  # comparable across sweeps; falls back to every instance with an .mps.gz
+  # if no fixtures are present.
+  mapfile -t INSTANCES < <(ls "$FIXTURE_DIR_ARG"/*.root.meta 2>/dev/null | sed 's#.*/##; s/\.root\.meta$//' | sort)
+fi
+if [[ "${#INSTANCES[@]}" -eq 0 ]]; then
+  mapfile -t INSTANCES < <(ls "$DATA_DIR"/mips/*.mps.gz 2>/dev/null | sed 's#.*/##; s/\.mps\.gz$//' | sort)
+fi
+echo "${#INSTANCES[@]} instances, jobs=$JOBS sec=$SEC out=$OUT_DIR configs=$CONFIGS" >&2
+
+# Parse configs.tsv into parallel arrays (name, envspec), skipping blanks/comments.
+NAMES=()
+ENVSPECS=()
+while IFS=$'\t' read -r name envspec; do
+  [[ -z "$name" || "$name" == \#* ]] && continue
+  NAMES+=("$name")
+  ENVSPECS+=("$envspec")
+done < "$CONFIGS"
+
+if [[ ! " ${NAMES[*]} " == *" today "* ]]; then
+  echo "ERROR: configs file must contain a config named 'today' (the baseline)" >&2
+  exit 2
+fi
+
+for i in "${!NAMES[@]}"; do
+  name="${NAMES[$i]}"
+  envspec="${ENVSPECS[$i]}"
+  echo "=== running config: $name ($envspec), $REPEATS repeat(s) ===" >&2
+  REPEAT_FILES=()
+  for ((r = 1; r <= REPEATS; r++)); do
+    rep_file="$OUT_DIR/$name.seed$r.tsv"
+    printf 'instance\tnodes\tobj\tbound\telapsed\n' > "$rep_file.tmp"
+    printf '%s\n' "${INSTANCES[@]}" | \
+      parallel --will-cite -j "$JOBS" --line-buffer \
+        "$SCRIPT_DIR/$(basename "$0")" --worker={} "$envspec" "$SEC" "$DATA_DIR" "$r" \
+        >> "$rep_file.tmp"
+    mv "$rep_file.tmp" "$rep_file"
+    REPEAT_FILES+=("$rep_file")
+    n_err=$(grep -c 'ERROR' "$rep_file" || true)
+    echo "  repeat seed=$r done: $(( $(wc -l < "$rep_file") - 1 )) rows, $n_err errors" >&2
+  done
+  if [[ "$REPEATS" -eq 1 ]]; then
+    cp "${REPEAT_FILES[0]}" "$OUT_DIR/$name.tsv"
+  else
+    # Average nodes/obj/bound/elapsed per instance across repeats
+    # (per-instance mean over the seeds where that instance didn't
+    # error; an instance erroring in every repeat stays ERROR).
+    python3 - "$OUT_DIR/$name.tsv" "${REPEAT_FILES[@]}" <<'PYEOF'
+import csv, sys, statistics
+out_path = sys.argv[1]
+rep_paths = sys.argv[2:]
+per_inst = {}
+order = []
+for path in rep_paths:
+    with open(path) as f:
+        reader = csv.reader(f, delimiter="\t")
+        next(reader, None)
+        for row in reader:
+            if len(row) < 2:
+                continue
+            inst = row[0]
+            if inst not in per_inst:
+                per_inst[inst] = []
+                order.append(inst)
+            per_inst[inst].append(row)
+with open(out_path, "w") as f:
+    f.write("instance\tnodes\tobj\tbound\telapsed\n")
+    for inst in order:
+        rows = per_inst[inst]
+        ok_rows = [r for r in rows if len(r) >= 5 and r[1] != "ERROR"]
+        if not ok_rows:
+            f.write(f"{inst}\tERROR\tall-repeats-failed\n")
+            continue
+
+        def favg(vals):
+            fv = [float(v) for v in vals if v not in ("none", "")]
+            return statistics.mean(fv) if fv else None
+        nodes = favg([r[1] for r in ok_rows])
+        obj = favg([r[2] for r in ok_rows])
+        bound = favg([r[3] for r in ok_rows])
+        elapsed = favg([r[4] for r in ok_rows])
+        f.write(f"{inst}\t{nodes if nodes is not None else 0:.2f}\t"
+                f"{obj if obj is not None else 'none'}\t"
+                f"{bound if bound is not None else 'none'}\t"
+                f"{elapsed:.4f}\n")
+PYEOF
+  fi
+  n_err=$(grep -c 'ERROR' "$OUT_DIR/$name.tsv" || true)
+  echo "config $name done (averaged over $REPEATS repeat(s)): $(( $(wc -l < "$OUT_DIR/$name.tsv") - 1 )) rows, $n_err errors" >&2
+done
+
+echo "=== summary (each config vs. today) ===" | tee "$OUT_DIR/summary.log" >&2
+for i in "${!NAMES[@]}"; do
+  name="${NAMES[$i]}"
+  [[ "$name" == "today" ]] && continue
+  {
+    echo
+    echo "--- today vs. $name ---"
+    compare_args=(
+      "$OUT_DIR/today.tsv" "$OUT_DIR/$name.tsv"
+      --label-base=today --label-other="$name"
+      --fixture-dir="$FIXTURE_DIR_ARG"
+    )
+    [[ -n "$BKS_ARG" ]] && compare_args+=(--bks="$BKS_ARG")
+    python3 "$SCRIPT_DIR/compare-cutskip-bench.py" "${compare_args[@]}"
+  } | tee -a "$OUT_DIR/summary.log" >&2
+done
+
+echo "Done. Per-config TSVs and summary.log in $OUT_DIR" >&2

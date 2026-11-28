@@ -10,6 +10,7 @@
 #include "CbcConfig.h"
 
 #include <cassert>
+#include <cstdio>
 #include <cstdlib>
 #include <cmath>
 #include <cfloat>
@@ -101,6 +102,10 @@ CbcHeuristic::CbcHeuristic()
   , feasibilityPumpOptions_(-1)
   , fractionSmall_(1.0)
   , heuristicName_("Unknown")
+  , order_(0)
+  , minSolutionsToStart_(-1)
+  , maxSolutionsToStart_(-1)
+  , rootHooks_("LcC")
   , howOften_(1)
   , decayFactor_(0.0)
   , switches_(0)
@@ -129,6 +134,10 @@ CbcHeuristic::CbcHeuristic(CbcModel &model)
   , feasibilityPumpOptions_(-1)
   , fractionSmall_(1.0)
   , heuristicName_("Unknown")
+  , order_(0)
+  , minSolutionsToStart_(-1)
+  , maxSolutionsToStart_(-1)
+  , rootHooks_("LcC")
   , howOften_(1)
   , decayFactor_(0.0)
   , switches_(0)
@@ -157,6 +166,10 @@ void CbcHeuristic::gutsOfCopy(const CbcHeuristic &rhs)
   fractionSmall_ = rhs.fractionSmall_;
   randomNumberGenerator_ = rhs.randomNumberGenerator_;
   heuristicName_ = rhs.heuristicName_;
+  order_ = rhs.order_;
+  minSolutionsToStart_ = rhs.minSolutionsToStart_;
+  maxSolutionsToStart_ = rhs.maxSolutionsToStart_;
+  rootHooks_ = rhs.rootHooks_;
   howOften_ = rhs.howOften_;
   decayFactor_ = rhs.decayFactor_;
   switches_ = rhs.switches_;
@@ -169,6 +182,9 @@ void CbcHeuristic::gutsOfCopy(const CbcHeuristic &rhs)
   numRuns_ = rhs.numRuns_;
   numCouldRun_ = rhs.numCouldRun_;
   minDistanceToRun_ = rhs.minDistanceToRun_;
+  control_ = rhs.control_;
+  maxInvocations_ = rhs.maxInvocations_;
+  invocationsMade_ = rhs.invocationsMade_;
   runNodes_ = rhs.runNodes_;
   numberSolutionsFound_ = rhs.numberSolutionsFound_;
   numberNodesDone_ = rhs.numberNodesDone_;
@@ -265,6 +281,16 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
   whereFrom &= 7;
   if ((whereFrom_ & (1 << whereFrom)) == 0)
     return false;
+  if (control_.mode != HeuristicScheduleMode::Legacy) {
+    // Generic schedule-based gating (see the declaration's doc comment):
+    // skip the legacy shallowDepth_/howOftenShallow_/minDistanceToRun_
+    // per-node throttling below entirely. Only the hot-start/no-rows
+    // guard still applies; the periodic decision itself is left to
+    // shouldRunBySchedule(), called from the heuristic's own solution().
+    if (!model_ || model_->hotstartSolution() || !model_->getNumRows())
+      return false;
+    return true;
+  }
     // No longer used for original purpose - so use for ever run at all JJF
 #ifndef JJF_REDUCE_HEURISTICS
   // Don't run if hot start or no rows!
@@ -354,6 +380,82 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
   ++numRuns_;
   return true;
 #endif
+}
+
+// TEMPORARY orchestration-verification trace, opt-in via CBC_HEUR_TRACE=1.
+// Not meant to be a permanent feature; remove (or promote to a real
+// CbcMessage) once the depth/schedule gating experiments it was added for
+// are done. See shouldRunBySchedule() and
+// CbcHeuristicFeasibilityJump::solution().
+static bool cbcHeurTraceEnabled()
+{
+  static const bool enabled = [] {
+    const char *env = std::getenv("CBC_HEUR_TRACE");
+    return env && env[0] && env[0] != '0';
+  }();
+  return enabled;
+}
+
+bool CbcHeuristic::shouldRunBySchedule()
+{
+  if (!model_)
+    return true;
+  const int nodeCount = model_->getNodeCount();
+  const int solCount = model_->getSolutionCount();
+  if (!control_.allows(nodeCount, model_->getCurrentSeconds(), solCount, false)) {
+    if (cbcHeurTraceEnabled())
+      fprintf(stderr, "[HEUR-TRACE] %s node=%d -> skip (%s)\n", heuristicName_.c_str(), nodeCount,
+        control_.paused(solCount) ? "paused after repeated failures" : "time share used");
+    return false;
+  }
+  const bool run = control_.scheduled(nodeCount, model_->currentDepth(), model_->getIncumbentCount());
+  if (cbcHeurTraceEnabled() && control_.mode != HeuristicScheduleMode::Legacy)
+    fprintf(stderr, "[HEUR-TRACE] %s schedule=%s K=%d node=%d depth=%d -> %s\n",
+      heuristicName_.c_str(), CbcHeuristicControl::modeName(control_.mode), control_.currentEveryK(),
+      nodeCount, model_->currentDepth(), run ? "RUN" : "skip");
+  return run;
+}
+
+bool CbcHeuristic::controlAllows()
+{
+  if (!model_)
+    return true;
+  const int solCount = model_->getSolutionCount();
+  const bool ok = control_.allows(model_->getNodeCount(), model_->getCurrentSeconds(), solCount, true);
+  if (!ok && cbcHeurTraceEnabled())
+    fprintf(stderr, "[HEUR-TRACE] %s node=%d -> skip (control)\n", heuristicName_.c_str(), model_->getNodeCount());
+  return ok;
+}
+
+CbcHeuristic::RunGuard::RunGuard(CbcHeuristic *heuristic)
+  : h_(heuristic)
+  , start_(heuristic->model_ ? heuristic->model_->getCurrentSeconds() : 0.0)
+  , finished_(false)
+{
+}
+
+void CbcHeuristic::RunGuard::finish(bool success)
+{
+  if (finished_ || !h_->model_)
+    return;
+  finished_ = true;
+  const double used = h_->model_->getCurrentSeconds() - start_;
+  const int before = h_->control_.currentEveryK();
+  h_->control_.finishRun(success, used, h_->model_->getNodeCount(), h_->model_->getSolutionCount());
+  const int after = h_->control_.currentEveryK();
+  if (after != before) {
+    // keep the legacy interval of the heuristics that still use it in step
+    h_->howOften_ = static_cast< int >(std::min(h_->howOften_ * (1.0 + h_->control_.decay), 1.0e6));
+    if (cbcHeurTraceEnabled())
+      fprintf(stderr, "[HEUR-TRACE] %s back-off: K %d -> %d after %d runs (%d successes)\n",
+        h_->heuristicName_.c_str(), before, after, h_->control_.runs, h_->control_.successes);
+  }
+}
+
+CbcHeuristic::RunGuard::~RunGuard()
+{
+  if (!finished_ && h_->model_)
+    h_->control_.addSeconds(h_->model_->getCurrentSeconds() - start_);
 }
 
 bool CbcHeuristic::shouldHeurRun_randomChoice()
@@ -690,8 +792,10 @@ static double sizeRatio(int numberRowsNow, int numberColumnsNow,
 // Do mini branch and bound (return 1 if solution)
 int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNodes,
   double *newSolution, double &newSolutionValue,
-  double cutoff, std::string name) const
+  double cutoff, std::string name, double *bestPossibleObjective) const
 {
+  if (bestPossibleObjective)
+    *bestPossibleObjective = -COIN_DBL_MAX;
   CbcEventHandler *eventHandler = model_->getEventHandler();
   // Save max nodes
   int saveMaxNodes = model_->getMaximumNodes();
@@ -759,7 +863,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     }
   }
   OsiClpSolverInterface *clpSolver = getClpSolver(solver);
-  if ((CBC_SKIP_CLP_TEST||clpSolver) && (clpSolver->specialOptions() & 65536) == 0) {
+  if (clpSolver && (clpSolver->specialOptions() & 65536) == 0) {
     // go faster stripes
     if (clpSolver->getNumRows() < 300 && clpSolver->getNumCols() < 500) {
       clpSolver->setupForRepeatedUse(2, 0);
@@ -791,11 +895,19 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   model_->setSpecialOptions(saveModelOptions | 2048);
   // Bound propagation: singleton tightening + knapsack bound propagation.
   // Runs before the LP solve — purely combinatorial, no basis needed.
+  // Use remaining time (not total limit) so BP cannot outlast the global budget.
   {
     CbcBoundPropagation bp;
     const bool useElapsed = model_->useElapsedTime();
     const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
-    const double timeLimit = model_->getMaximumSeconds();
+    const double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
+    if (remaining <= 0.0) {
+      model_->setSpecialOptions(saveModelOptions);
+      // Restore max nodes
+      model_->setMaximumNodes(saveMaxNodes);
+      return 0; // time already exhausted
+    }
+    const double timeLimit = remaining;
 #ifdef RINS_CLOSE_DEBUG
     int nFixedPreBP = 0;
     {
@@ -962,7 +1074,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   // Propagate remaining CBC time to LP solver for the preprocessing solve.
   if (model_->getMaximumSeconds() < 1.0e10) {
     OsiClpSolverInterface *clpSolverPre = getClpSolver(solver);
-    if (CBC_SKIP_CLP_TEST||clpSolverPre) {
+    if (clpSolverPre) {
       double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
       if (model_->useElapsedTime())
         clpSolverPre->getModelPtr()->setMaximumWallSeconds(remaining);
@@ -1025,7 +1137,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     }
 #endif
     OsiClpSolverInterface *clpSolver = getClpSolver(solver);
-    if (CBC_SKIP_CLP_TEST||clpSolver) {
+    if (clpSolver) {
       clpSolver->getModelPtr()->cleanSolver();
       clpSolver->getModelPtr()->setWhatsChanged(0);
     }
@@ -1181,7 +1293,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         // Propagate remaining CBC time to the post-presolve LP re-solve.
         if (model_->getMaximumSeconds() < 1.0e10) {
           OsiClpSolverInterface *clpSolver2TL = getClpSolver(solver2);
-          if (CBC_SKIP_CLP_TEST||clpSolver2TL) {
+          if (clpSolver2TL) {
             double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
             if (model_->useElapsedTime())
               clpSolver2TL->getModelPtr()->setMaximumWallSeconds(remaining);
@@ -1195,10 +1307,12 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         model.setDblParam(CbcModel::CbcStartSeconds, startTime);
         // move seed across
         model.randomNumberGenerator()->setSeed(model_->randomNumberGenerator()->getSeed());
+        // the sub-model reuses our cut generators, so filter their cuts alike
+        model.setCutPoolFilterSettings(model_->cutPoolFilterSettings());
         // redo SOS
         OsiClpSolverInterface *clpSolver
           = getClpSolver(model.solver());
-        if ((CBC_SKIP_CLP_TEST||clpSolver) && clpSolver->numberSOS()) {
+        if (clpSolver && clpSolver->numberSOS()) {
           int numberColumns = clpSolver->getNumCols();
           const int *originalColumns = process.originalColumns();
           CoinSet *setInfo = const_cast< CoinSet * >(clpSolver->setInfo());
@@ -1267,6 +1381,16 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           // Propagate parent's time limit to sub-MIP (start time is shared).
           if (model_->getMaximumSeconds() < 1.0e8)
             model.setMaximumSeconds(model_->getMaximumSeconds());
+          // Propagate parent's node-level bound propagation settings: the
+          // sub-MIP's CbcModel is built from scratch (plain constructor
+          // defaults, i.e. off) and does not otherwise inherit them, so
+          // RINS/local-search/DINS/etc. sub-solves would silently run
+          // without in-tree bound propagation even when it's enabled (and
+          // tuned) on the parent model.
+          model.setNodeBoundProp(model_->nodeBoundProp());
+          model.setNodeBoundPropMaxDepth(model_->nodeBoundPropMaxDepth());
+          model.setNodeBoundPropMinDepth(model_->nodeBoundPropMinDepth());
+          model.setNodeBoundPropDepthInterval(model_->nodeBoundPropDepthInterval());
           model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
           if ((saveModelOptions & 2048) == 0)
             model.setMoreSpecialOptions(model_->moreSpecialOptions());
@@ -1657,6 +1781,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 #endif
           model.setPreProcess(&process);
           model.branchAndBound();
+          if (bestPossibleObjective)
+            *bestPossibleObjective = model.getBestPossibleObjValue() * model.solver()->getObjSense();
           model_->setHeuristicModel(NULL);
           model_->setSpecialOptions(saveOptions);
 #ifdef ALWAYS_DUAL
@@ -1670,8 +1796,15 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             100 * (numberNodes + 10));
 #endif
           if (numberNodes < 0) {
+            // model_'s iteration/node counters can be concurrently updated by
+            // a worker thread (under lockThread()) inside doOneNode(), so
+            // update them here under the same lock to avoid a data race
+            // (this heuristic runs on the main thread while other threads
+            // may still be active in a multi-threaded branchAndBound()).
+            model_->lockThread();
             model_->incrementIterationCount(model.getIterationCount());
             model_->incrementNodeCount(model.getNodeCount());
+            model_->unlockThread();
             // update best solution (in case ctrl-c)
             // !!! not a good idea - think a bit harder
             //model_->setMinimizationObjValue(model.getMinimizationObjValue());
@@ -1712,7 +1845,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             returnCode = 3;
             // post process
           OsiClpSolverInterface *clpSolver = getClpSolver(model.solver());
-          if (CBC_SKIP_CLP_TEST||clpSolver) {
+          if (clpSolver) {
             ClpSimplex *lpSolver = clpSolver->getModelPtr();
             lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
           }

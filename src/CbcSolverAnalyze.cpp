@@ -70,11 +70,11 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
   memset(changeRhs, 0, numberRows * sizeof(double));
   memset(ignore, 0, numberRows);
   numberChanged = 0;
-  //int numberInteger = 0;
-  //for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-  //  if (upper[iColumn] > lower[iColumn] + 1.0e-8 && solver->isInteger(iColumn))
-  //    numberInteger++;
-  //}
+  // int numberInteger = 0;
+  // for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+  //   if (upper[iColumn] > lower[iColumn] + 1.0e-8 && solver->isInteger(iColumn))
+  //     numberInteger++;
+  // }
   bool finished = false;
   while (!finished) {
     int saveNumberChanged = numberChanged;
@@ -271,16 +271,16 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
   delete[] which;
   delete[] changeRhs;
   delete[] ignore;
-  //if (numberInteger&&!noPrinting_)
-  //printf("%d integer variables",numberInteger);
+  // if (numberInteger&&!noPrinting_)
+  // printf("%d integer variables",numberInteger);
   if (changeInt) {
-    //if (!noPrinting_) {
-    //if (numberChanged)
-    //  printf(" and %d variables made integer\n",numberChanged);
-    //else
-    //  printf("\n");
-    //}
-    //increment=0.0;
+    // if (!noPrinting_) {
+    // if (numberChanged)
+    //   printf(" and %d variables made integer\n",numberChanged);
+    // else
+    //   printf("\n");
+    // }
+    // increment=0.0;
     if (!numberChanged) {
       delete[] changed;
       delete solver;
@@ -294,13 +294,13 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
       return changed;
     }
   } else {
-    //if (!noPrinting_) {
-    //if (numberChanged)
-    //  printf(" and %d variables could be made integer\n",numberChanged);
-    //else
-    //  printf("\n");
-    //}
-    // just get increment
+    // if (!noPrinting_) {
+    // if (numberChanged)
+    //   printf(" and %d variables could be made integer\n",numberChanged);
+    // else
+    //   printf("\n");
+    // }
+    //  just get increment
     int logLevel = generalMessageHandler->logLevel();
     CbcModel model(*solver);
     if (!model.defaultHandler())
@@ -313,12 +313,12 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
     if (increment2 > increment && increment2 > 0.0) {
       if (!noPrinting_) {
         sprintf(generalPrint, "Cutoff increment increased from %g to %g", increment, increment2);
-	bool usePrefix = generalMessageHandler->prefix();
-	generalMessageHandler->setPrefix(true);
+        bool usePrefix = generalMessageHandler->prefix();
+        generalMessageHandler->setPrefix(true);
         generalMessageHandler->message(CBC_GENERAL, model.messages())
           << generalPrint
           << CoinMessageEol;
-	generalMessageHandler->setPrefix(usePrefix);
+        generalMessageHandler->setPrefix(usePrefix);
       }
       increment = increment2;
     }
@@ -329,4 +329,3 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
   }
 }
 #endif // ifndef CBC_OTHER_SOLVER
-

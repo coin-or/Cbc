@@ -31,7 +31,7 @@ static Cbc_message us_english[] = {
   { CBC_INFEAS, 6, 1, "The LP relaxation is infeasible or too expensive" },
   { CBC_STRONG, 7, 4, "Strong branching on %d (%d), down %g (%d) up %g (%d) value %g" },
   { CBC_SOLINDIVIDUAL, 8, 2, "%d has value %g" },
-  { CBC_INTEGERINCREMENT, 9, 3, "Objective coefficients multiple of %g" },
+  { CBC_INTEGERINCREMENT, 9, 1, "Objective coefficients multiple of %g" },
 #ifndef CBC_MANY_NODE_COUNTS
   { CBC_STATUS, 10, 1, "After %d nodes, %d on tree, %g best solution, best possible %g (%.2f seconds)" },
 #else
@@ -85,9 +85,9 @@ static Cbc_message us_english[] = {
   { CBC_OTHER_STATS, 35, 1, "Maximum depth %d, %g variables fixed on reduced cost" },
   { CBC_HEURISTICS_OFF, 36, 1, "Heuristics switched off as %d branching objects are of wrong type" },
 #ifndef CBC_MANY_NODE_COUNTS
-  { CBC_STATUS2, 37, 1, "%d nodes, %d on tree, best %g - possible %g depth %d unsat %d value %g its %d (%.2f seconds)" },
+  { CBC_STATUS2, 37, 1, "%d nodes, %d on tree, best %.10g - possible %.10g depth %d unsat %d value %g its %d (%.2f seconds)" },
 #else
-  { CBC_STATUS2, 37, 1, "%ld nodes, %d on tree, best %g - possible %g depth %d unsat %d value %g its %ld (%.2f seconds)" },
+  { CBC_STATUS2, 37, 1, "%ld nodes, %d on tree, best %.10g - possible %.10g depth %d unsat %d value %g its %ld (%.2f seconds)" },
 #endif
   { CBC_FPUMP1, 38, 1, "%s" },
   { CBC_FPUMP2, 39, 2, "%s" },
@@ -115,6 +115,7 @@ static Cbc_message us_english[] = {
   { CBC_FATHOM_CHANGE, 49, 1, "Complete fathoming at depth >= %d" },
 #endif
   { CBC_MAXITERS, 50, 1, "Exiting on maximum number of iterations" },
+  { CBC_MAXMEMORY, 52, 1, "Exiting on maximum memory usage" },
   { CBC_NOINT, 3007, 1, "No integer variables" },
   { CBC_WARNING_STRONG, 3008, 1, "Strong branching is fixing too many variables, too expensively!" },
   { CBC_GENERAL_WARNING, 3009, 1, "%s" },

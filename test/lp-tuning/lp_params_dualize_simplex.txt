@@ -1,0 +1,5 @@
+# Dualize screening for the best simplex configs. Baselines are the
+# *_scdefault rows of lp_params_scaling.txt (same binary/limits/seed).
+dual_pertv72_dz|-psi 0 -pertValue 72 -idiot 0 -sprint 0 -lpMethod dual -dualize 1
+dual_pesteep_pertv58_dz|-dualPivot automatic -psi 0 -pertValue 58 -idiot 0 -sprint 0 -lpMethod dual -dualize 1
+primal_idiot50_dz|-psi 0 -pertValue 100 -idiot 50 -sprint 0 -lpMethod primal -dualize 1

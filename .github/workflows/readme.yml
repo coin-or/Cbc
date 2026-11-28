@@ -1,0 +1,29 @@
+---
+# Regenerates README.md with .coin-or/generate_readme when it or
+# .coin-or/config.yml changes, and checks that pull requests changing
+# README.md don't edit it directly. The weekly run (which runs on master only)
+# regenerates the README of master and the latest stable branch, to pick up
+# changes of coinbrew's scripts/generate_readme. See
+# https://github.com/coin-or/coinbrew/blob/master/.github/workflows/generate-readme.yml
+name: README
+on:
+  push:
+    branches:
+      - 'master'
+      - 'stable/*'
+    paths:
+      - '.coin-or/config.yml'
+      - '.coin-or/generate_readme'
+  pull_request:
+    paths:
+      - 'README.md'
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  readme:
+    uses: coin-or/coinbrew/.github/workflows/generate-readme.yml@master

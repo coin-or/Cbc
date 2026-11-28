@@ -369,5 +369,27 @@ CBC_GIT_HASH=`cd $srcdir && (git describe --always --dirty 2>/dev/null || echo "
 AC_MSG_RESULT([$CBC_GIT_HASH])
 AC_DEFINE_UNQUOTED([CBC_GIT_HASH], ["$CBC_GIT_HASH"], [Git hash at configure time])
 
+# Derive CBC_VERSION from the closest reachable "vX.Y[.Z]" git tag, when one
+# is available (e.g. "v2.930", or "v2.930-3-gabcdef-dirty" for commits ahead
+# of / a dirty tree on top of the tag). This lets `next`-branch development
+# builds report a meaningful, automatically-updated version instead of the
+# static "devel" placeholder from AC_INIT, without requiring a regen of
+# configure/autoheader for every release tag. Builds from a source tree
+# without a .git directory (e.g. a release tarball), or without any "vX.Y"
+# tag reachable from HEAD, silently keep the AC_INIT/AC_COIN_PROJECTVERSION
+# "devel" value already defined for CBC_VERSION above.
+AC_MSG_CHECKING([git tag version])
+CBC_GIT_TAG_VERSION=`cd $srcdir && (git describe --tags --match 'v[[0-9]]*' --always --dirty 2>/dev/null || echo "")`
+case "$CBC_GIT_TAG_VERSION" in
+  v[[0-9]]*)
+    CBC_VERSION=`echo "$CBC_GIT_TAG_VERSION" | sed 's/^v//'`
+    AC_DEFINE_UNQUOTED([CBC_VERSION], ["$CBC_VERSION"], [Version number of project])
+    AC_MSG_RESULT([$CBC_VERSION])
+    ;;
+  *)
+    AC_MSG_RESULT([none found, keeping "devel"])
+    ;;
+esac
+
 # Finally, we let configure write all the output...
 AC_COIN_FINALIZE

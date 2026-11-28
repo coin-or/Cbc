@@ -58,6 +58,9 @@ public:
     double *newSolution,
     const int *keep);
 
+  // See CbcHeuristicRINS.hpp -- shouldHeurRun()'s non-Legacy fast path now
+  // lives in the base class, no override needed.
+
   /// Sets how often to do it
   inline void setHowOften(int value)
   {

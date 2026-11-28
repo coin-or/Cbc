@@ -1,0 +1,423 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{array}
+
+\definecolor{bestcell}{rgb}{0.85,1.0,0.85}
+\definecolor{badcell}{rgb}{1.0,0.88,0.85}
+\definecolor{tlcell}{rgb}{0.95,0.95,0.95}
+\definecolor{headercolor}{rgb}{0.22,0.39,0.60}
+
+\newcommand{\best}[1]{\cellcolor{bestcell}\textbf{#1}}
+\newcommand{\bad}[1]{\cellcolor{badcell}{#1}}
+
+\title{\textbf{Evaluation of LP Relaxation Solver Strategies in CBC}\\
+       \large Analysis of \texttt{guess()} Parameter Configurations}
+\author{CBC Development}
+\date{March 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Overview}
+
+The CBC solver's \texttt{-guess} option (implemented in
+\texttt{ClpSimplexOther::guess()}) selects one of four LP relaxation
+configurations based on instance characteristics (integrality of variables and
+statistics of objective coefficients). The goal of this experiment is to evaluate
+each configuration individually on a representative benchmark set in order to:
+\begin{itemize}
+  \item identify correctness problems (wrong objective, primal infeasibilities);
+  \item identify reliability problems (time-limit kills, no solution produced);
+  \item determine which configurations have a genuine performance advantage over
+        the others, and whether any can be removed from the selection pool.
+\end{itemize}
+
+All runs used the ASan+debug build (\texttt{-O1 -g -fsanitize=address}) installed at
+\texttt{\textasciitilde/prog/cbc-dbg/bin/cbc}, to additionally detect memory errors
+and assertion failures.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Experimental Setup}
+
+\subsection{Benchmark Set}
+The benchmark consists of \textbf{1\,317 MIP instances} from the
+\texttt{\textasciitilde/inst/super/} collection. Reference LP relaxation
+objectives were obtained from Gurobi
+(\texttt{lp\_relaxation\_results\_gurobi.tsv}).
+
+\subsection{Solver Configurations}
+The four configurations correspond exactly to the branches inside
+\texttt{guess()} and are selected by two binary conditions: whether all
+variables with $\ell < u$ are integer (\texttt{allInt}), and whether the median
+or average absolute objective coefficient exceeds a threshold.
+
+\begin{table}[h]
+\centering
+\caption{The four LP solver configurations tested.}
+\begin{tabular}{llp{7.5cm}}
+\toprule
+\textbf{Name} & \textbf{Condition} & \textbf{CBC options} \\
+\midrule
+\texttt{idiot30} & \texttt{allInt}, avg $\le 0.0086$ &
+  \texttt{-idiot 30 -pertvalue -1483 -primals} \\
+\texttt{idiot60} & \texttt{allInt}, avg $> 0.0086$ &
+  \texttt{-idiot 60 -primals} \\
+\texttt{dualpesteep} & \texttt{!allInt}, median $\le 0.75$ &
+  \texttt{-dualpivot pesteep -psi 1.0 -pertv 52 -duals} \\
+\texttt{idiot80} & \texttt{!allInt}, median $> 0.75$ &
+  \texttt{-idiot 80 -primals} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Protocol}
+Every instance was solved by \emph{all four} configurations independently (i.e.,
+ignoring the actual \texttt{guess()} decision), to enable direct head-to-head
+comparison. Per-instance time limits were taken from
+\texttt{suggested\_lp\_time\_limits.tsv} (formula:
+$\min(7200,\max(2t_{\text{ref}},\, t_{\text{ref}}+1800))$ where $t_{\text{ref}}$
+is the \texttt{initialSolve} time on the same instance). Jobs were run in
+parallel with 120 cores using GNU parallel. Total jobs: $1317 \times 4 = 5268$.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Correctness and Reliability}
+
+\subsection{Memory Safety}
+\textbf{Zero ASan errors} were detected across all 5\,268 runs. No assertion
+failures were observed either. All four configurations are memory-safe on this
+benchmark set.
+
+\subsection{Per-Method Problem Summary}
+
+Table~\ref{tab:problems} summarises correctness and reliability issues per method.
+A ``problem'' is any of: killed by the time limit (no solution), objective not
+parseable (\texttt{NA}), or objective value differing from the Gurobi reference
+by more than a relative tolerance of $10^{-6}$.
+
+\begin{table}[h]
+\centering
+\caption{Correctness and reliability per configuration (out of 1\,317 instances).}
+\label{tab:problems}
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Method} & \textbf{Solved} & \textbf{Killed/NA} & \textbf{False} &
+\textbf{Total problems} & \textbf{Problem rate} \\
+\midrule
+\texttt{idiot30}     & 1276 & 40 & 1 & 41 & 3.1\% \\
+\texttt{idiot60}     & 1284 & 32 & 1 & 33 & 2.5\% \\
+\texttt{idiot80}     & 1283 & 33 & 1 & 34 & 2.6\% \\
+\texttt{dualpesteep} & \best{1285} & \best{30} & \bad{2} & \best{32} & \best{2.4\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent \textbf{Key observations:}
+\begin{itemize}
+  \item \texttt{idiot30} has the highest problem rate, driven by the most time-limit
+        kills (40). The idiot algorithm with only 30 iterations is the least reliable
+        on harder instances.
+  \item \texttt{dualpesteep} has the fewest kills (30) but the most false objective
+        matches (2), indicating an accuracy issue in specific cases (see
+        Section~\ref{sec:false}).
+  \item \texttt{idiot60} and \texttt{idiot80} are nearly identical in reliability.
+\end{itemize}
+
+\subsection{False Objective Matches}
+\label{sec:false}
+
+Five runs produced an objective value that does not match the Gurobi reference.
+All involve instances where CBC reports \texttt{Unscaled problem has primal
+infeasibilities} after declaring optimality, indicating a post-solve scaling
+issue that corrupts the reported objective.
+
+\begin{table}[h]
+\centering
+\caption{False objective matches (reference value from Gurobi).}
+\begin{tabular}{llrrl}
+\toprule
+\textbf{Instance} & \textbf{Method} & \textbf{CBC obj} & \textbf{Gurobi ref} & \textbf{Log message} \\
+\midrule
+\texttt{gsvm2rl5}         & \texttt{dualpesteep} & 0.19932 & 0.20000 & primal infeasibilities \\
+\texttt{irish-electricity}& \texttt{dualpesteep} & 2\,454\,717 & 2\,546\,255 & primal infeas.\ + barrier\\
+\texttt{irish-electricity}& \texttt{idiot30}     & 2\,454\,743 & 2\,546\,255 & primal infeas.\ + barrier\\
+\texttt{irish-electricity}& \texttt{idiot60}     & 2\,454\,759 & 2\,546\,255 & primal infeas.\ + barrier\\
+\texttt{irish-electricity}& \texttt{idiot80}     & 2\,454\,709 & 2\,546\,255 & primal infeas.\ + barrier\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The \texttt{irish-electricity} instance fails on \emph{all four} methods,
+suggesting a problem-specific pathology (the instance triggers the barrier solver
+internally, which then fails to converge to a primal-feasible point). The
+\texttt{gsvm2rl5} failure is specific to \texttt{dualpesteep} only.
+
+\subsection{Instances with No Solution (NA / Killed)}
+Of the 58 instances that produced at least one NA or kill across any method:
+\begin{itemize}
+  \item \textbf{9 instances} timed out on all four methods — these are genuinely
+        hard LP relaxations within the per-instance time budget.
+  \item \textbf{49 instances} failed on only some methods, indicating
+        method-specific difficulty. \texttt{idiot30} is disproportionately
+        represented in the method-specific failures.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Performance Analysis}
+
+\subsection{Summary Statistics}
+
+Table~\ref{tab:timing} reports timing statistics over the 1\,257 instances where
+all four methods solved correctly within the time limit.
+
+\begin{table}[h]
+\centering
+\caption{Timing statistics on 1\,257 commonly solved instances (seconds).}
+\label{tab:timing}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Method} & \textbf{Median} & \textbf{Mean} & \textbf{Geom.\ mean} & \textbf{Max} \\
+\midrule
+\texttt{idiot30}     & 6.70 & 219.7 & 7.27 & 8238.6 \\
+\texttt{idiot60}     & 7.56 & 190.2 & 7.41 & 8915.9 \\
+\texttt{idiot80}     & 8.33 & 177.6 & 7.91 & 7226.4 \\
+\texttt{dualpesteep} & \best{2.99} & \bad{287.7} & \best{5.07} & \bad{8747.6} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent \texttt{dualpesteep} has the lowest median and geometric mean times,
+but the highest arithmetic mean — a consequence of catastrophic slowdowns on a
+subset of instances (see Section~\ref{sec:extreme}).
+
+\subsection{Fastest-Method Count and Rank Distribution}
+
+\begin{table}[h]
+\centering
+\caption{How often each method ranks 1st (fastest) and last (slowest) across
+1\,257 commonly solved instances.}
+\label{tab:ranks}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Method} & \textbf{Rank 1 (fastest)} & \textbf{Rank 2} & \textbf{Rank 3} & \textbf{Rank 4 (slowest)} \\
+\midrule
+\texttt{idiot30}     & 156 (12.4\%) & 537 & 294 & 263 \\
+\texttt{idiot60}     & 176 (14.0\%) & 360 & 490 & 225 \\
+\texttt{idiot80}     & 152 (12.1\%) & 249 & 384 & \bad{466 (37.1\%)} \\
+\texttt{dualpesteep} & \best{770 (61.3\%)} & 102 & 80  & 300 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\texttt{dualpesteep} is the fastest method on 61\% of instances. \texttt{idiot80}
+is the slowest most often (37\% of instances), making it the weakest of the four
+configurations.
+
+\subsection{Performance Profile}
+
+Table~\ref{tab:profile} shows the fraction of instances each method solves within
+a factor $\tau$ of the best (fastest) method on that instance — the standard
+performance profile metric~\cite{dolan2002}.
+
+\begin{table}[h]
+\centering
+\caption{Performance profile: fraction of instances within $\tau \times$ best time.}
+\label{tab:profile}
+\begin{tabular}{lrrrrrrr}
+\toprule
+\textbf{Method} & $\tau{=}1.0$ & $\tau{=}1.25$ & $\tau{=}1.5$ & $\tau{=}2$ & $\tau{=}3$ & $\tau{=}5$ & $\tau{=}10$ \\
+\midrule
+\texttt{idiot30}     & 0.126 & 0.301 & 0.446 & 0.607 & 0.741 & 0.839 & 0.924 \\
+\texttt{idiot60}     & 0.140 & 0.350 & 0.474 & 0.611 & 0.738 & 0.847 & 0.918 \\
+\texttt{idiot80}     & 0.122 & 0.305 & 0.434 & 0.580 & 0.712 & 0.826 & 0.913 \\
+\texttt{dualpesteep} & \best{0.615} & \best{0.713} & \best{0.758} & \best{0.796} & \best{0.850} & \best{0.908} & \best{0.960} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\texttt{dualpesteep} dominates the performance profile at every threshold.
+At $\tau=1$ it is within the best time on 61.5\% of instances (i.e.\ it \emph{is}
+the best method). At $\tau=10$ it is still within $10\times$ best on 96\% of
+instances, versus 91--92\% for the idiot variants.
+
+\subsection{Geometric Mean Ratio vs Virtual Best}
+
+A complementary measure is the geometric mean of the ratio $t_{\text{method}} /
+t_{\text{best}}$ over all instances:
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+\textbf{Method} & \textbf{Geom.\ mean ratio} \\
+\midrule
+\texttt{idiot30}     & 2.176 \\
+\texttt{idiot60}     & 2.142 \\
+\texttt{idiot80}     & 2.304 \\
+\texttt{dualpesteep} & \best{1.466} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent On average, \texttt{dualpesteep} is $1.47\times$ the best method, while
+the idiot variants are $2.1$--$2.3\times$ the best.
+
+\subsection{Pairwise Comparison}
+
+Table~\ref{tab:pairwise} reports pairwise median runtime ratios. A ratio $< 1$
+means the row method is faster than the column method on the median instance.
+
+\begin{table}[h]
+\centering
+\caption{Pairwise median runtime ratio (row / column). Values $<1$ indicate
+the row method is faster.}
+\label{tab:pairwise}
+\begin{tabular}{lcccc}
+\toprule
+ & \texttt{idiot30} & \texttt{idiot60} & \texttt{idiot80} & \texttt{dualpesteep} \\
+\midrule
+\texttt{idiot30}     & --- & 0.944 & 0.898 & 2.244 \\
+\texttt{idiot60}     & 1.059 & --- & 0.929 & 2.393 \\
+\texttt{idiot80}     & 1.114 & 1.076 & --- & 2.627 \\
+\texttt{dualpesteep} & \best{0.446} & \best{0.418} & \best{0.381} & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent Among the idiot methods, \texttt{idiot30} is fastest overall (median
+ratio $< 1$ vs both idiot60 and idiot80). The differences between the three idiot
+variants are modest (5--11\% on the median), while \texttt{dualpesteep} is
+roughly $2.2$--$2.6\times$ faster than any idiot variant on the median instance.
+
+\subsection{Significant Wins (Method-Specific Advantage)}
+
+A method has a ``significant win'' on an instance if it is the fastest and more
+than $2\times$ faster than the next best method. This identifies instances where a
+particular method provides a qualitative advantage.
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+\textbf{Method} & \textbf{Significant wins ($>2\times$ faster)} \\
+\midrule
+\texttt{idiot30}     & 10 \\
+\texttt{idiot60}     & 0 \\
+\texttt{idiot80}     & 0 \\
+\texttt{dualpesteep} & \best{365} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{itemize}
+  \item \texttt{dualpesteep} dominates: 365 instances with $>2\times$ advantage,
+        including extreme cases up to $54\times$ faster (Table~\ref{tab:extreme}).
+  \item \texttt{idiot30} has 10 specific wins, concentrated on bin-packing and
+        set-covering type instances (e.g.\ \texttt{bppc6-02}, \texttt{bppc6-06},
+        \texttt{cl\_06\_020\_*}).
+  \item \textbf{\texttt{idiot60} and \texttt{idiot80} have zero significant wins.}
+        Neither method is ever more than $2\times$ faster than all alternatives on
+        any instance. This strongly suggests that at least one (and possibly both)
+        of these configurations could be removed from the \texttt{guess()} selection
+        pool without measurable loss.
+\end{itemize}
+
+\subsection{Extreme Cases}
+\label{sec:extreme}
+
+Table~\ref{tab:extreme} shows the five instances where \texttt{dualpesteep} is
+most advantageous and most disadvantageous relative to the best idiot method.
+
+\begin{table}[h]
+\centering
+\caption{Extreme performance cases for \texttt{dualpesteep}.}
+\label{tab:extreme}
+\begin{tabular}{llrrl}
+\toprule
+\textbf{Instance} & \textbf{Type} & \textbf{dualpesteep} & \textbf{Best idiot} & \textbf{Ratio} \\
+\midrule
+\texttt{neos-5129192-manaia} & win & 17.2s & 920.8s & $53.6\times$ faster \\
+\texttt{neos-3755335-nizao}  & win &  4.0s & 134.4s & $33.5\times$ faster \\
+\texttt{pb-fit2d}            & win & 28.6s & 921.6s & $32.2\times$ faster \\
+\texttt{A-2}                 & win &  0.7s &  21.9s & $30.0\times$ faster \\
+\texttt{neos-957270}         & win &  0.8s &  23.7s & $28.6\times$ faster \\
+\midrule
+\texttt{j12016\_10}          & loss & 6196.4s &  79.4s & $78.0\times$ slower \\
+\texttt{supportcase42}       & loss & 7270.5s &  93.8s & $77.5\times$ slower \\
+\texttt{scpm1}               & loss & 6791.4s & 191.2s & $35.5\times$ slower \\
+\texttt{neos-933966}         & loss &  326.8s &   9.7s & $33.7\times$ slower \\
+\texttt{neos-935769}         & loss &  173.0s &   5.5s & $31.6\times$ slower \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The catastrophic losses of \texttt{dualpesteep} suggest that the \texttt{guess()}
+branching condition (based on \texttt{allInt} and coefficient statistics) sometimes
+selects this configuration for instances where it performs extremely poorly.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusions and Recommendations}
+
+\subsection{Memory Safety}
+All four configurations are memory-safe: \textbf{0 ASan errors, 0 assertion
+failures} across 5\,268 runs.
+
+\subsection{Correctness}
+\begin{itemize}
+  \item \texttt{irish-electricity} fails on all four methods due to an internal
+        barrier solver convergence issue — this is an instance-level pathology,
+        not configuration-specific.
+  \item \texttt{gsvm2rl5} fails on \texttt{dualpesteep} only (\texttt{Unscaled
+        problem has primal infeasibilities}). The other three methods solve it
+        correctly. This is a mild correctness concern for the dual pesteep path.
+\end{itemize}
+
+\subsection{Reliability}
+\texttt{dualpesteep} has the fewest kills (30 vs.\ 32--40 for idiot methods) and
+the lowest overall problem rate (2.4\%). \texttt{idiot30} is the least reliable.
+
+\subsection{Performance}
+\begin{itemize}
+  \item \texttt{dualpesteep} is by far the strongest method: fastest on 61\% of
+        instances, geometric mean ratio $1.47\times$ best vs.\ $2.1$--$2.3\times$
+        for idiot methods, and 365 significant wins ($>2\times$ advantage).
+  \item Among idiot methods, \texttt{idiot30} is the best overall (lowest
+        geometric mean, highest rank-1 count among the three), with 10 specific
+        wins on set-covering/bin-packing instances.
+  \item \textbf{\texttt{idiot60} and \texttt{idiot80} have no significant wins
+        and are nearly indistinguishable from each other.} Removing one or both
+        from the \texttt{guess()} portfolio would not sacrifice measurable
+        performance on any instance class tested.
+\end{itemize}
+
+\subsection{Recommended Action}
+\begin{enumerate}
+  \item Investigate the \texttt{gsvm2rl5} / \texttt{dualpesteep} infeasibility
+        issue — it may be a scaling or perturbation artefact specific to the
+        pesteep pivot rule.
+  \item Consider replacing \texttt{idiot60}/\texttt{idiot80} in \texttt{guess()}
+        with \texttt{idiot30}, retaining only two configurations
+        (\texttt{idiot30} + \texttt{dualpesteep}) differentiated by the
+        \texttt{allInt} flag.
+  \item The 9 instances that time out on all four methods may benefit from a
+        fallback to the standard dual simplex (\texttt{initialSolve}).
+\end{enumerate}
+
+\begin{thebibliography}{9}
+\bibitem{dolan2002}
+  E.\ D.\ Dolan and J.\ J.\ Mor\'e,
+  \textit{Benchmarking optimization software with performance profiles},
+  Mathematical Programming, 91(2):201--213, 2002.
+\end{thebibliography}
+
+\end{document}

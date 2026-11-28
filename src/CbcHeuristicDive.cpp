@@ -369,7 +369,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   OsiSolverInterface *solver = cloneBut(6); // was model_->solver()->clone();
   OsiClpSolverInterface *clpSolver
     = getClpSolver(solver);
-  if (CBC_SKIP_CLP_TEST||clpSolver) {
+  if (clpSolver) {
     ClpSimplex *clpSimplex = clpSolver->getModelPtr();
 #ifndef CLP_OLD_STYLE
     // Attach abort handler for parallel cancellation
@@ -1490,6 +1490,16 @@ int CbcHeuristicDive::solution(double &solutionValue,
     return 0;
   ++numCouldRun_;
 
+  // Generic depth-periodic / no-incumbent-only scheduling (see
+  // CbcHeuristic::setScheduleMode()/enableTreeCalls() and
+  // CbcHeuristicFeasibilityJump for the same mechanism applied to another
+  // constructive heuristic). No-op (always true) unless explicitly opted
+  // into via setScheduleMode(EveryKDepth, K) + enableTreeCalls().
+  if (!shouldRunBySchedule())
+    return 0;
+  if (!solutionCountAllowsStart(model_->getSolutionCount()))
+    return 0;
+
   // test if the heuristic can run
   if (!canHeuristicRun())
     return 0;
@@ -1801,7 +1811,7 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
   OsiClpSolverInterface *clpSolver
     = getClpSolver(solver);
   ClpSimplex *clpSimplex = NULL;
-  if (CBC_SKIP_CLP_TEST||clpSolver)
+  if (clpSolver)
     clpSimplex = clpSolver->getModelPtr();
   for (int i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];

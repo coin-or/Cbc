@@ -276,6 +276,47 @@ void testMipMinimalSolutionPool()
   Cbc_deleteModel(model);
 }
 
+/* Keep the former CInterfaceTest infeasible-model regression in the quick
+ * suite, and exercise both the LP dispatch and a genuine integer solve. */
+void testBestSolutionFeasibility()
+{
+  printf("\n-- best solution feasibility --\n");
+  for (int integer = 0; integer <= 1; ++integer) {
+    for (int feasible = 0; feasible <= 1; ++feasible) {
+      Cbc_Model *model = Cbc_newModel();
+      Cbc_addCol(model, "x", 0.0, 1.0, 1.0, integer, 0, NULL, NULL);
+      int index = 0;
+      double coefficient = 1.0;
+      Cbc_addRow(model, "lower", 1, &index, &coefficient, 'G', feasible ? 1.0 : 2.0);
+      Cbc_setLogLevel(model, 0);
+      Cbc_solve(model);
+      const char *kind = integer ? "binary" : "continuous";
+      const double *solution = Cbc_bestSolution(model);
+      if (feasible) {
+        check(Cbc_isProvenOptimal(model) != 0, std::string(kind) + ": feasible model is optimal");
+        check(solution != NULL, std::string(kind) + ": feasible model has a best solution");
+        if (solution)
+          checkClose(solution[0], 1.0, 1e-6, std::string(kind) + ": best solution value");
+      } else {
+        check(Cbc_isProvenInfeasible(model) != 0, std::string(kind) + ": model is infeasible");
+        check(solution == NULL, std::string(kind) + ": infeasible model has no best solution");
+      }
+      Cbc_deleteModel(model);
+    }
+  }
+
+  Cbc_Model *model = Cbc_newModel();
+  Cbc_addCol(model, "x", 0.0, 1.0, 1.0, 1, 0, NULL, NULL);
+  int index = 0;
+  double coefficient = 1.0;
+  Cbc_addRow(model, "upper", 1, &index, &coefficient, 'L', -10.0);
+  Cbc_setLogLevel(model, 0);
+  Cbc_solve(model);
+  check(Cbc_isProvenInfeasible(model) != 0, "original infeasible binary model is infeasible");
+  check(Cbc_bestSolution(model) == NULL, "original infeasible binary model has no best solution");
+  Cbc_deleteModel(model);
+}
+
 } // end anonymous namespace
 
 int main(int argc, char **argv)
@@ -295,6 +336,7 @@ int main(int argc, char **argv)
 
   printf("=== row-activity-test: Cbc_getRowActivity()/Cbc_getRowSlack() after Cbc_solve() ===\n");
 
+  testBestSolutionFeasibility();
   testLinearProgram();
   testMip();
   testMipMinimalSolutionPool();

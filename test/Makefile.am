@@ -20,7 +20,8 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 # available, a solve of p0033 with the cbc executable.
 
 QUICK_TESTS = lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
-	coefstr-test$(EXEEXT) row-activity-test$(EXEEXT) cbcmain1-test$(EXEEXT)
+	coefstr-test$(EXEEXT) row-activity-test$(EXEEXT) cbcmain1-test$(EXEEXT) \
+	setparam-override-test$(EXEEXT)
 
 test: $(QUICK_TESTS)
 	@for t in $(QUICK_TESTS); do \
@@ -70,7 +71,7 @@ sanity-test: cbc_validate_sol$(EXEEXT)
 
 noinst_PROGRAMS = cbc_validate_sol mip-c-solve mip-debug-cuts lp-relaxation-test \
 	lazy-constraint-test mipstart-test coefstr-test rowred-test row-activity-test final-bound-test progress-callback-test \
-	cbcmain1-test \
+	cbcmain1-test setparam-override-test \
 	bkclique-bench clqext-bench zerohalf-bench probing-bench gomory-bench \
 	lagomory-bench landp-bench \
 	twomir-bench mir2-bench impclique-explore impclique-bench impclique-vs-clique-bench \
@@ -87,6 +88,12 @@ mip_c_solve_LDADD = ../src/libCbc.la
 final_bound_test_SOURCES = final-bound-test.cpp
 
 final_bound_test_LDADD = ../src/libCbc.la
+
+# setparam-override-test: parameters set by name with Cbc_setParam() must
+# override the typed C interface defaults that Cbc_solve() also queues.
+setparam_override_test_SOURCES = setparam-override-test.cpp
+
+setparam_override_test_LDADD = ../src/libCbc.la
 
 progress_callback_test_SOURCES = progress-callback-test.cpp
 

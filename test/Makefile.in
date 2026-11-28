@@ -102,6 +102,7 @@ noinst_PROGRAMS = cbc_validate_sol$(EXEEXT) mip-c-solve$(EXEEXT) \
 	coefstr-test$(EXEEXT) rowred-test$(EXEEXT) \
 	row-activity-test$(EXEEXT) final-bound-test$(EXEEXT) \
 	progress-callback-test$(EXEEXT) cbcmain1-test$(EXEEXT) \
+	setparam-override-test$(EXEEXT) \
 	bkclique-bench$(EXEEXT) clqext-bench$(EXEEXT) \
 	zerohalf-bench$(EXEEXT) probing-bench$(EXEEXT) \
 	gomory-bench$(EXEEXT) lagomory-bench$(EXEEXT) \
@@ -208,6 +209,9 @@ row_activity_test_DEPENDENCIES = ../src/libCbc.la
 am_rowred_test_OBJECTS = rowred-test.$(OBJEXT)
 rowred_test_OBJECTS = $(am_rowred_test_OBJECTS)
 rowred_test_DEPENDENCIES = ../src/libCbc.la
+am_setparam_override_test_OBJECTS = setparam-override-test.$(OBJEXT)
+setparam_override_test_OBJECTS = $(am_setparam_override_test_OBJECTS)
+setparam_override_test_DEPENDENCIES = ../src/libCbc.la
 am_spp_grasp_bench_OBJECTS = spp-grasp-bench.$(OBJEXT)
 spp_grasp_bench_OBJECTS = $(am_spp_grasp_bench_OBJECTS)
 spp_grasp_bench_DEPENDENCIES = ../src/libCbc.la
@@ -248,7 +252,9 @@ am__depfiles_remade = ./$(DEPDIR)/bkclique-bench.Po \
 	./$(DEPDIR)/oddwheel-bench.Po ./$(DEPDIR)/probing-bench.Po \
 	./$(DEPDIR)/progress-callback-test.Po \
 	./$(DEPDIR)/rins-bench.Po ./$(DEPDIR)/row-activity-test.Po \
-	./$(DEPDIR)/rowred-test.Po ./$(DEPDIR)/spp-grasp-bench.Po \
+	./$(DEPDIR)/rowred-test.Po \
+	./$(DEPDIR)/setparam-override-test.Po \
+	./$(DEPDIR)/spp-grasp-bench.Po \
 	./$(DEPDIR)/twomir-bench.Po ./$(DEPDIR)/zerohalf-bench.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -282,6 +288,7 @@ SOURCES = $(bkclique_bench_SOURCES) $(cbc_validate_sol_SOURCES) \
 	$(oddwheel_bench_SOURCES) $(probing_bench_SOURCES) \
 	$(progress_callback_test_SOURCES) $(rins_bench_SOURCES) \
 	$(row_activity_test_SOURCES) $(rowred_test_SOURCES) \
+	$(setparam_override_test_SOURCES) \
 	$(spp_grasp_bench_SOURCES) $(twomir_bench_SOURCES) \
 	$(zerohalf_bench_SOURCES)
 am__can_run_installinfo = \
@@ -485,7 +492,8 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 # (also run by run-mip-sanity-tests, see below) and, if the Sample data is
 # available, a solve of p0033 with the cbc executable.
 QUICK_TESTS = lazy-constraint-test$(EXEEXT) mipstart-test$(EXEEXT) \
-	coefstr-test$(EXEEXT) row-activity-test$(EXEEXT) cbcmain1-test$(EXEEXT)
+	coefstr-test$(EXEEXT) row-activity-test$(EXEEXT) cbcmain1-test$(EXEEXT) \
+	setparam-override-test$(EXEEXT)
 
 cbc_validate_sol_SOURCES = cbc_validate_sol.cpp
 cbc_validate_sol_LDADD = ../src/libCbc.la
@@ -493,6 +501,11 @@ mip_c_solve_SOURCES = mip-c-solve.cpp
 mip_c_solve_LDADD = ../src/libCbc.la
 final_bound_test_SOURCES = final-bound-test.cpp
 final_bound_test_LDADD = ../src/libCbc.la
+
+# setparam-override-test: parameters set by name with Cbc_setParam() must
+# override the typed C interface defaults that Cbc_solve() also queues.
+setparam_override_test_SOURCES = setparam-override-test.cpp
+setparam_override_test_LDADD = ../src/libCbc.la
 progress_callback_test_SOURCES = progress-callback-test.cpp
 progress_callback_test_LDADD = ../src/libCbc.la
 
@@ -1482,6 +1495,10 @@ rowred-test$(EXEEXT): $(rowred_test_OBJECTS) $(rowred_test_DEPENDENCIES) $(EXTRA
 	@rm -f rowred-test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(rowred_test_OBJECTS) $(rowred_test_LDADD) $(LIBS)
 
+setparam-override-test$(EXEEXT): $(setparam_override_test_OBJECTS) $(setparam_override_test_DEPENDENCIES) $(EXTRA_setparam_override_test_DEPENDENCIES) 
+	@rm -f setparam-override-test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(setparam_override_test_OBJECTS) $(setparam_override_test_LDADD) $(LIBS)
+
 spp-grasp-bench$(EXEEXT): $(spp_grasp_bench_OBJECTS) $(spp_grasp_bench_DEPENDENCIES) $(EXTRA_spp_grasp_bench_DEPENDENCIES) 
 	@rm -f spp-grasp-bench$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(spp_grasp_bench_OBJECTS) $(spp_grasp_bench_LDADD) $(LIBS)
@@ -1526,6 +1543,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rins-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/row-activity-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rowred-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setparam-override-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spp-grasp-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/twomir-bench.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zerohalf-bench.Po@am__quote@ # am--include-marker
@@ -1683,6 +1701,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/rins-bench.Po
 	-rm -f ./$(DEPDIR)/row-activity-test.Po
 	-rm -f ./$(DEPDIR)/rowred-test.Po
+	-rm -f ./$(DEPDIR)/setparam-override-test.Po
 	-rm -f ./$(DEPDIR)/spp-grasp-bench.Po
 	-rm -f ./$(DEPDIR)/twomir-bench.Po
 	-rm -f ./$(DEPDIR)/zerohalf-bench.Po
@@ -1757,6 +1776,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/rins-bench.Po
 	-rm -f ./$(DEPDIR)/row-activity-test.Po
 	-rm -f ./$(DEPDIR)/rowred-test.Po
+	-rm -f ./$(DEPDIR)/setparam-override-test.Po
 	-rm -f ./$(DEPDIR)/spp-grasp-bench.Po
 	-rm -f ./$(DEPDIR)/twomir-bench.Po
 	-rm -f ./$(DEPDIR)/zerohalf-bench.Po

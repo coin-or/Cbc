@@ -2944,16 +2944,19 @@ if (fp) {
 
     // Translate typed C interface parameters to command-queue strings.
     // This replaces the manual cbcModel.setXxx() + parameters.setParamVal() boilerplate.
+    // They go in front of the queue so that parameters set by name and
+    // COIN_CBC_OPTIONS override them.
     {
+      std::deque< std::string > typedQueue;
       auto addParam = [&](const char *n, double v) {
         char buf[64]; snprintf(buf, sizeof(buf), "%g", v);
         std::string s = std::string("-") + n + "=" + buf;
-        inputQueue.push_back(s);
+        typedQueue.push_back(s);
       };
       auto addParamI = [&](const char *n, int v) {
         char buf[32]; snprintf(buf, sizeof(buf), "%d", v);
         std::string s = std::string("-") + n + "=" + buf;
-        inputQueue.push_back(s);
+        typedQueue.push_back(s);
       };
 
       if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX)
@@ -2991,8 +2994,9 @@ if (fp) {
         int m = model->int_param[INT_PARAM_MIPSTART_FIX];
         if (m < 0 || m > 2)
           m = 0;
-        inputQueue.push_back(std::string("-mipStartFix=") + mipStartFixKwd[m]);
+        typedQueue.push_back(std::string("-mipStartFix=") + mipStartFixKwd[m]);
       }
+      inputQueue.insert(inputQueue.begin(), typedQueue.begin(), typedQueue.end());
     }
 
     // LP progress was already printed by Cbc_solveLinearProgram(); suppress it

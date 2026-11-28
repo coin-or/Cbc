@@ -21,8 +21,10 @@ class CoinMessageHandler;
  *     the constraint forces a unique value. Very fast: O(rows + cols).
  *
  *  2. **CoinBoundPropagation** — knapsack-based bound propagation over all
- *     ≤-type binary rows. Can cascade: after each round, newly fixed variables
- *     tighten other rows, enabling further fixings.
+ *     ≤-type binary rows, plus feasibility-based bound tightening (FBBT) for
+ *     continuous and general-integer variables (activity-based interval
+ *     arithmetic). Can cascade: after each round, newly fixed/tightened
+ *     variables tighten other rows, enabling further fixings.
  *
  * ### Usage
  * \code
@@ -47,7 +49,20 @@ public:
    *  - Singletons: singleton rows only.
    *  - MILPbt:   singletons then up to maxRounds of CoinBoundPropagation.
    *  - Fixpoint:  singletons then CoinBoundPropagation until fixpoint
-   *               (ignores maxRounds).
+   *               (ignores maxRounds). Rows encoding difference constraints
+   *               (x_j - x_i >= c, as in job-shop disjunctive/precedence
+   *               constraints) can make FBBT relaxation behave exactly like
+   *               Bellman-Ford shortest-path relaxation on a graph with a
+   *               positive-weight cycle: some bound keeps improving forever
+   *               without ever reaching a two-sided (LB > UB) contradiction,
+   *               since the opposite bound legitimately stays infinite. This
+   *               is a genuine infeasibility certificate, not slow
+   *               convergence, so a divergence detector tracks the total
+   *               per-round tightening magnitude and — if it hasn't decayed
+   *               by at least half after a full window of nCols rounds with
+   *               no fixings — declares InfeasibleDetected instead of
+   *               looping indefinitely. See the implementation in run() for
+   *               details (roundDeltaHistory / divergenceWindow).
    */
   enum Level {
     Off = 0,
@@ -66,6 +81,10 @@ public:
   };
 
   CbcBoundPropagation();
+
+  /// Disable FBBT for non-binary variables (binary knapsack only).
+  /// Must be called before run(). Default: enabled.
+  void setNonBinaryFBBT(bool enable) { nonBinaryFBBT_ = enable; }
 
   /*! \brief Run bound propagation.
    *
@@ -105,6 +124,12 @@ public:
   /// Total fixings from all phases.
   int nFixed() const { return nSingletonFixed_ + nBoundPropFixed_; }
 
+  /// Total tightenings (singleton-tightened that were not fully fixed).
+  int nTightened() const { return nSingletonTightened_; }
+
+  /// Number of variables with at least one bound tightened by FBBT phase.
+  int nFBBTTightened() const { return nFBBTTightened_; }
+
   /// Number of CoinBoundPropagation rounds executed.
   int nRoundsRun() const { return nRoundsRun_; }
 
@@ -124,11 +149,13 @@ private:
   int nSingletonTightened_;
   int nSingletonFixed_;
   int nBoundPropFixed_;
+  int nFBBTTightened_;
   int nRoundsRun_;
   StopReason stopReason_;
   double timeUsed_;
   int infeasibleRow_;
   int infeasibleCol_;
+  bool nonBinaryFBBT_; ///< Whether to run FBBT for non-binary variables
 };
 
 #endif // CbcBoundPropagation_hpp

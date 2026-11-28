@@ -111,7 +111,14 @@ public:
     /*! Setting up handler. */
     startUp,
     /*! Just before starting branching i.e. after root cuts. */
-    afterRootCuts
+    afterRootCuts,
+    /*! Search progress. Fired, always on the base model's handler and never
+        concurrently, when the incumbent improves, when the global dual bound
+        improves significantly (see -progressMinChange), and as a heartbeat
+        (source "tick") when neither has happened for about a second. It is
+        informational: the action returned is ignored. Read the snapshot with
+        model->progressInfo(). */
+    progress
   };
 
   /*! \brief Action codes returned by the event handler.
@@ -223,7 +230,7 @@ public:
     (*eaMap_)[event] = action;
   }
   
-  /*! \brief Set bnb output handler */
+  /*! \brief Set optional bnb output handler (NULL disables output statistics). */
 
   inline void setOutputHandler(CbcBnBOutput * outputHandler)
   {

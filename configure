@@ -23784,6 +23784,33 @@ printf "%s\n" "$CBC_GIT_HASH" >&6; }
 printf "%s\n" "#define CBC_GIT_HASH \"$CBC_GIT_HASH\"" >>confdefs.h
 
 
+# Derive CBC_VERSION from the closest reachable "vX.Y[.Z]" git tag, when one
+# is available (e.g. "v2.930", or "v2.930-3-gabcdef-dirty" for commits ahead
+# of / a dirty tree on top of the tag). This lets `next`-branch development
+# builds report a meaningful, automatically-updated version instead of the
+# static "devel" placeholder from AC_INIT, without requiring a regen of
+# configure/autoheader for every release tag. Builds from a source tree
+# without a .git directory (e.g. a release tarball), or without any "vX.Y"
+# tag reachable from HEAD, silently keep the AC_INIT/AC_COIN_PROJECTVERSION
+# "devel" value already defined for CBC_VERSION above.
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking git tag version" >&5
+printf %s "checking git tag version... " >&6; }
+CBC_GIT_TAG_VERSION=`cd $srcdir && (git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo "")`
+case "$CBC_GIT_TAG_VERSION" in
+  v[0-9]*)
+    CBC_VERSION=`echo "$CBC_GIT_TAG_VERSION" | sed 's/^v//'`
+
+printf "%s\n" "#define CBC_VERSION \"$CBC_VERSION\"" >>confdefs.h
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CBC_VERSION" >&5
+printf "%s\n" "$CBC_VERSION" >&6; }
+    ;;
+  *)
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: none found, keeping \"devel\"" >&5
+printf "%s\n" "none found, keeping \"devel\"" >&6; }
+    ;;
+esac
+
 # Finally, we let configure write all the output...
 
   cat >confcache <<\_ACEOF

@@ -26,7 +26,11 @@
 // CGL_HAS_CLP_GOMORY
 // CLP_FACTORIZATION
 #endif
+#include <atomic>
 #include <string>
+#include <memory>
+#include <mutex>
+#include <cstdio>
 #include <vector>
 #include "CbcConfig.h"
 #include "CoinMessageHandler.hpp"
@@ -39,6 +43,7 @@
 #include "CbcMessage.hpp"
 #include "CbcOutput.hpp"
 #include "CbcEventHandler.hpp"
+#include "CbcCutPoolFilter.hpp"
 #include "ClpDualRowPivot.hpp"
 #ifndef CBC_OTHER_SOLVER
 #include "OsiClpSolverInterface.hpp"
@@ -67,6 +72,7 @@ class CglPreProcess;
 class OsiClpSolverInterface;
 class ClpNodeStuff;
 class CbcRootHeurOutput;
+class CbcRootHeuristicSchedule;
 
 // #define CBC_CHECK_BASIS 1
 
@@ -123,6 +129,41 @@ class CbcRootHeurOutput;
   See CbcCountRowCut for details of the bookkeeping associated with cut
   management.
 */
+
+/** Thresholds of the adaptive root cut-generator skip (see
+    CbcModel::setCutGeneratorAdaptiveSkip()). */
+struct CbcCutAdaptiveSkipSettings {
+  /// A generator is only put on backoff after this many root tries
+  int minTries;
+  /// ... and this many consecutive tries without a cut
+  int missThreshold;
+  /// First backoff, in passes; each further miss doubles it
+  int initialPeriod;
+  /// Longest backoff, in passes
+  int maxPeriod;
+  /// Models with fewer columns are never throttled
+  int minCols;
+  CbcCutAdaptiveSkipSettings()
+    : minTries(3)
+    , missThreshold(3)
+    , initialPeriod(5)
+    , maxPeriod(20)
+    , minCols(500)
+  {
+  }
+};
+
+/// Snapshot of the search progress, in the problem's own objective sense
+struct CbcProgressInfo {
+  double seconds = 0.0;
+  double primal = 1.0e50; ///< best incumbent (1e50 if none)
+  double dual = -1.0e50; ///< best proven dual bound (-1e50 if none)
+  int nodes = 0;
+  /// Why the event was sent
+  enum Kind { incumbent = 0, bound = 1, tick = 2, final = 3 } kind = tick;
+  /// "rootLP", "cutpass", "bound", "node", "final", a heuristic name, "tick" (heartbeat)...
+  const char *source = "";
+};
 
 class CBCLIB_EXPORT CbcModel {
 
@@ -223,6 +264,15 @@ public:
     /** \brief Maximum time without improving the best solution found, checked only if a
      * feasible solution is already available */
     CbcMaxSecondsNotImproving,
+    /** \brief Maximum amount of memory (resident set size), in bytes, this
+     *  process may use before terminating the search during branch and
+     *  bound. Only checked during branch and bound (not, e.g., during
+     *  preprocessing). A double is used since byte counts routinely exceed
+     *  INT_MAX; it can exactly represent integers up to 2^53, far more than
+     *  enough for any realistic memory size. Defaults to the total physical
+     *  memory installed on the machine, if it can be determined -- i.e.
+     *  "all the memory" -- otherwise defaults to "not checked". */
+    CbcMaxMemory,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastDblParam
   };
@@ -275,6 +325,34 @@ private:
         -1 - infeasible
     */
   int parallelCuts(CbcBaseModel *master, OsiCuts &cuts, CbcNode *node, OsiCuts &slackCuts, int lastNumberCuts);
+  /** Adjust the calling frequency of the cut generators after a round of cut
+        generation, and decide whether cuts will be generated in the tree.
+
+        Called from solveWithCuts when a full scan was requested. The scalars are
+        the values solveWithCuts captured before its cut loop ran; \p cuts may be
+        emptied here if the cuts are judged not cost-effective.
+    */
+  void tuneCutGeneratorFrequency(OsiCuts &cuts, int fullScan,
+    double direction, double startObjective, int numberRowsAtStart,
+    int numberColumns, CoinBigIndex numberElementsAtStart, bool feasible,
+    bool onOptimalPath);
+  /** Run the root-node heuristics after a round of cut generation.
+
+        Called from solveWithCuts; returns immediately unless we are still at the
+        root node and within the time limit. Slack cuts are removed first, then
+        either the parallel root schedule or the sequential heuristic_[] loop
+        runs, depending on useRootHeuristicSchedule_.
+    */
+  void doRootHeuristicsAfterCuts(bool feasible, CbcNode *node,
+    int numberColumns);
+  /** Add the conflict cuts found by the diving heuristics to the LP.
+
+        Called from both doRootHeuristicsAfterCuts and doHeuristicsAtRoot. Does
+        nothing if the schedule found no conflict cuts or auto-add is off. When
+        more cuts were found than conflictMaxCuts(), keeps only the most violated
+        per nonzero at the current LP solution.
+    */
+  void addDiveConflictCuts(const CbcRootHeuristicSchedule &schedule);
   /** Input one node output N nodes to put on tree and optional solution update
         This should be able to operate in parallel so is given a solver and is const(ish)
         However we will need to keep an array of solver_ and bases and more
@@ -392,6 +470,28 @@ public:
     double *saveSolution = NULL,
     double *saveLower = NULL,
     double *saveUpper = NULL);
+  /** \brief CPU time (seconds) of the most recent "reoptimise after cuts"
+      resolve() (whereFrom==2) inside solveWithCuts()'s cut-generation
+      round loop.
+
+      Measures exactly the LP reoptimisation cost that cut-pool filtering
+      (CbcCutPoolFilter.cpp) is meant to control. This is a *diagnostic*
+      accessor for offline research only (e.g. via
+      CBC_LOG_ROOT_RESOLVE_TIME, which logs one line per root cut round)
+      -- correlate it against static/pre-computable instance features
+      (rows, cols, nz, density, ...) across many instances to derive a
+      fixed, deterministic gate offline. It must never be read back
+      *within* the same solve to steer behaviour: CPU timing measured
+      mid-solve is noisy and non-reproducible under system load, which
+      would make cut selection (and therefore the whole search) depend on
+      transient machine conditions rather than the problem itself.
+      Requires a build with CBC_TIMING_ROOT_RESOLVE defined. Returns -1.0
+      when instrumentation is disabled or no such resolve has happened yet.
+    */
+  inline double lastCutRoundResolveTime() const
+  {
+    return lastCutRoundResolveTime_;
+  }
   /// Make given rows (L or G) into global cuts and remove from lp
   void makeGlobalCuts(int numberRows, const int *which);
   /// Make given cut into a global cut
@@ -497,6 +597,13 @@ public:
       Save copy of the model.
     */
   void saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForRestart, bool *feasible);
+  /**
+      After a restart (a small branch and bound on the problem with the
+      variables fixed by reduced cost) that ended the search: take over its
+      bound, and if it finished (not stopped on a limit) with that bound below
+      the cutoff, record that it stopped on the gap tolerance.
+    */
+  void useRestartBound(double restartBestPossible, bool restartFinished);
   /**
       Flip direction of optimization on all models
     */
@@ -747,6 +854,63 @@ public:
   }
   /// Current time since start of branchAndbound
   double getCurrentSeconds() const;
+  /// Start the progress-event clock independently of the B&B time-limit clock.
+  void startProgressClock();
+  /// Elapsed time since startProgressClock(), or getCurrentSeconds() if unset.
+  double getProgressElapsedSeconds() const;
+  /** Queue a validated incumbent accepted before branchAndBound for the
+      progress CSV. This does not fire CbcEventHandler callbacks. */
+  void recordPreSearchIncumbent(double objective, const char *source);
+  /// Open a CSV recording time,primal,dual,source,nodes at each incumbent and bound update ("" closes it)
+  void setProgressCsv(const std::string &fileName, double minRelChange = 1.0e-4, double heartbeatSeconds = 1.0);
+  /** Report an improved incumbent (called by whichever thread found it, also
+      thread clones). Writes a CSV row and fires CbcEventHandler::progress. */
+  void writeProgressCsv(const char *source);
+  /// Finish a CSV on a pre-search/early-return path without dispatching callbacks.
+  /// Does nothing if a final event already exists.
+  void finishPreSearchProgress();
+  /** Report a (minimisation-sign) valid dual bound. A significant improvement
+      (see minRelChange) is recorded and fires CbcEventHandler::progress; with
+      no such event for progressHeartbeat_ seconds a "tick" event is fired. */
+  void reportDualBound(double minObjValue, const char *source);
+  /// Latest snapshot delivered with CbcEventHandler::progress
+  const CbcProgressInfo &progressInfo() const
+  {
+    return progressOwner_ ? progressOwner_->progressInfo_ : progressInfo_;
+  }
+  /** Throttled report of the best bound over the open nodes (call once per node). */
+  void sampleTreeDualBound();
+  /// Master-thread sampling of the dual bound when worker threads run the tree
+  void sampleParallelDualBound();
+  /// Share the progress CSV with a thread clone
+  void shareProgressCsv(CbcModel &owner);
+private:
+  void publishProgress(const char *source, CbcProgressInfo::Kind kind, bool writeRow,
+    bool notifyHandler = true);
+public:
+
+  /** Set the
+        \link CbcModel::CbcMaxMemory maximum amount of memory \endlink
+        (resident set size, in bytes) this process may use before the
+        search is terminated during branch and bound. Accepts any
+        non-negative value; use a very large value (or leave at the
+        default) to effectively disable the check.
+    */
+  inline bool setMaximumMemory(double value)
+  {
+    return setDblParam(CbcMaxMemory, value);
+  }
+  /** Get the
+        \link CbcModel::CbcMaxMemory maximum amount of memory \endlink
+        (resident set size, in bytes) this process may use before the
+        search is terminated during branch and bound.
+    */
+  inline double getMaximumMemory() const
+  {
+    return getDblParam(CbcMaxMemory);
+  }
+  /// Return true if the memory limit has been reached during branch and bound
+  bool isMemoryLimitReached() const;
 
   /// Return true if maximum time reached
   bool maximumSecondsReached() const;
@@ -898,6 +1062,16 @@ public:
     return minimumDrop_;
   }
 
+  /// Consecutive below-minimum-drop rounds allowed at the root (default 1).
+  inline void setRootCutDropPatience(int value)
+  {
+    rootCutDropPatience_ = value;
+  }
+  inline int getRootCutDropPatience() const
+  {
+    return rootCutDropPatience_;
+  }
+
   /** Set the maximum number of cut passes at root node (default 20)
         Minimum drop can also be used for fine tuning */
   inline void setMaximumCutPassesAtRoot(int value)
@@ -920,6 +1094,22 @@ public:
   inline int getMaximumCutPasses() const
   {
     return maximumCutPasses_;
+  }
+  /** Set the depth at which tree nodes stop getting cut passes (default 0: no limit).
+
+      With n > 0, when a tree node would get more than one cut pass,
+      nodes at depths 1 to n-1 get one pass and nodes at depth n or more
+      get none. The root is not affected. Master used n = 6 as a compiled-in
+      define (STOP_CUTS_NOW) before this was a parameter; 2.10 had no limit.
+  */
+  inline void setStopCutsDepth(int value)
+  {
+    stopCutsDepth_ = value;
+  }
+  /** Get the depth at which tree nodes stop getting cut passes (0: no limit) */
+  inline int getStopCutsDepth() const
+  {
+    return stopCutsDepth_;
   }
   /** Get current cut pass number in this round of cuts.
         (1 is first pass) */
@@ -1176,6 +1366,7 @@ public:
         6 stopped on solutions
         7 linear relaxation unbounded
         8 stopped on iteration limit
+        9 stopped on memory limit
     */
   inline int secondaryStatus() const
   {
@@ -1620,6 +1811,12 @@ public:
     return numberSolutions_;
   }
 
+  /// Get the number of accepted incumbent improvements in the current search.
+  inline int getIncumbentCount() const
+  {
+    return incumbentCount_.load(std::memory_order_relaxed);
+  }
+
   /// Set number of solutions (so heuristics will be different)
   inline void setSolutionCount(int value)
   {
@@ -2022,6 +2219,56 @@ public:
   /// Enable/disable two-phase parallel root heuristic schedule
   inline void setUseRootHeuristicSchedule(bool v) { useRootHeuristicSchedule_ = v; }
   inline bool useRootHeuristicSchedule() const { return useRootHeuristicSchedule_; }
+  /// Enable ordered, incumbent-visible root calls for experimental SppGrasp sequences.
+  inline void setSppGraspRootSequence(bool v) { sppGraspRootSequence_ = v; }
+  inline bool sppGraspRootSequence() const { return sppGraspRootSequence_; }
+  inline void setSppGraspStagedWork(double total, double used)
+  {
+    sppGraspStagedWorkEnabled_ = total > 0.0;
+    sppGraspStagedWorkTotal_ = total > 0.0 ? total : 0.0;
+    sppGraspStagedWorkUsed_ = used > 0.0 ? used : 0.0;
+    sppGraspStagedSecondPassDone_ = false;
+  }
+  inline void seedSppGraspStagedWork(double used)
+  {
+    if (!sppGraspStagedWorkEnabled_)
+      return;
+    if (used > sppGraspStagedWorkUsed_)
+      sppGraspStagedWorkUsed_ = used;
+  }
+  inline bool sppGraspStagedWorkEnabled() const
+  {
+    return sppGraspStagedWorkEnabled_;
+  }
+  inline double sppGraspStagedWorkUsed() const
+  {
+    return sppGraspStagedWorkUsed_;
+  }
+  inline double sppGraspStagedWorkTotal() const
+  {
+    return sppGraspStagedWorkTotal_;
+  }
+  inline void addSppGraspStagedWork(double work)
+  {
+    if (sppGraspStagedWorkEnabled_ && work > 0.0) {
+      sppGraspStagedWorkUsed_ += work;
+    }
+  }
+  inline bool beginSppGraspStagedSecondPass(double &remaining)
+  {
+    remaining = 0.0;
+    if (!sppGraspStagedWorkEnabled_ || sppGraspStagedSecondPassDone_)
+      return false;
+    sppGraspStagedSecondPassDone_ = true;
+    remaining = sppGraspStagedWorkTotal_ - sppGraspStagedWorkUsed_;
+    return remaining > 0.0;
+  }
+  inline void setSppGraspPumpGuide(bool v) { sppGraspPumpGuide_ = v; }
+  inline bool sppGraspPumpGuide() const { return sppGraspPumpGuide_; }
+  inline void setSppGraspFpumpOnlyWithoutIncumbent(bool v)
+  {
+    sppGraspFpumpOnlyWithoutIncumbent_ = v;
+  }
   /** Pass in branching priorities.
 
         If ifClique then priorities are on cliques otherwise priorities are
@@ -2203,6 +2450,16 @@ public:
   {
     return randomSeed_;
   }
+  /// Set the seed branchAndBound() gives a Clp solver (default 1234567)
+  inline void setSolverRandomSeed(int value)
+  {
+    solverRandomSeed_ = value;
+  }
+  /// Get the seed branchAndBound() gives a Clp solver
+  inline int getSolverRandomSeed() const
+  {
+    return solverRandomSeed_;
+  }
   /// Set multiple root tries
   inline void setMultipleRootTries(int value)
   {
@@ -2304,6 +2561,41 @@ public:
   inline int moreSpecialOptions2() const
   {
     return moreSpecialOptions2_;
+  }
+  /** Whether some branching objects are not Cbc objects but plain
+      OsiObjects from another solver, such as the spatial branching
+      objects of Couenne. Set in branchAndBound(). Cuts are then not
+      restricted to the top of the tree or filtered by how much they are
+      violated, since such solvers rely on them to tighten the relaxation
+      after branching.
+  */
+  inline bool hasNonCbcObjects() const
+  {
+    return hasNonCbcObjects_;
+  }
+  /** Whether the adaptive root cut-generator skip is enabled
+      (moreSpecialOptions2_ bit 4194304). When on, a cut generator that goes
+      several consecutive root passes without producing a single cut is put
+      on a growing backoff (skipped for a number of passes, then retried)
+      instead of being called every pass regardless of past success. Off by
+      default in this raw CbcModel constructor/API; the `cbc` command-line
+      tool enables it by default via CbcParam::MOREMOREMIPOPTIONS's default
+      value (see CbcParameters.cpp) -- validated as a net win on the
+      mip-sanity-data suite (test/cutskip-sweep, ROOT-FIXTURES.md).
+      Library/API callers that build a CbcModel directly (not through
+      CbcSolver.cpp's CLI parameter handling) must still opt in explicitly.
+      The thresholds are in cutAdaptiveSkipSettings().
+    */
+  inline bool cutGeneratorAdaptiveSkip() const
+  {
+    return (moreSpecialOptions2_ & 4194304) != 0;
+  }
+  inline void setCutGeneratorAdaptiveSkip(bool yesNo)
+  {
+    if (yesNo)
+      moreSpecialOptions2_ |= 4194304;
+    else
+      moreSpecialOptions2_ &= ~4194304;
   }
   /// Set cutoff as constraint
   inline void setCutoffAsConstraint(bool yesNo)
@@ -2866,6 +3158,71 @@ public:
   {
     return nodeBoundPropDepthInterval_;
   }
+  /** Simplex iteration limit adjustHeuristics() gives each dive heuristic
+      in the tree; -1 (the default) means max(10000, 2*rows+columns). */
+  inline void setDiveMaxIterTree(int value)
+  {
+    diveMaxIterTree_ = value;
+  }
+  /// Get the dive iteration limit in the tree (-1 is auto)
+  inline int diveMaxIterTree() const
+  {
+    return diveMaxIterTree_;
+  }
+  /** Simplex iteration limit adjustHeuristics() gives each dive heuristic
+      at the root; -1 (the default) means max(40000, 8*rows+4*columns). */
+  inline void setDiveMaxIterRoot(int value)
+  {
+    diveMaxIterRoot_ = value;
+  }
+  /// Get the dive iteration limit at the root (-1 is auto)
+  inline int diveMaxIterRoot() const
+  {
+    return diveMaxIterRoot_;
+  }
+  /** Strong branching in the top levels of the tree is boosted (3x the
+      candidates, 18x at the root) when rows < strongBoostRows or
+      rows+columns < strongBoostSize.  0 for both disables the boost. */
+  inline void setStrongBoostRows(int value)
+  {
+    strongBoostRows_ = value;
+  }
+  /// Get the row threshold for the strong branching boost
+  inline int strongBoostRows() const
+  {
+    return strongBoostRows_;
+  }
+  /// Set the rows+columns threshold for the strong branching boost
+  inline void setStrongBoostSize(int value)
+  {
+    strongBoostSize_ = value;
+  }
+  /// Get the rows+columns threshold for the strong branching boost
+  inline int strongBoostSize() const
+  {
+    return strongBoostSize_;
+  }
+  /** Thresholds for the parallelism filter applied to each round of
+      generated cuts (see cbcFilterGeneratedCuts) */
+  inline void setCutPoolFilterSettings(const CbcCutPoolFilterSettings &value)
+  {
+    cutPoolFilterSettings_ = value;
+  }
+  /// Get the cut parallelism filter thresholds
+  inline const CbcCutPoolFilterSettings &cutPoolFilterSettings() const
+  {
+    return cutPoolFilterSettings_;
+  }
+  /// Set the adaptive root cut-generator skip thresholds
+  inline void setCutAdaptiveSkipSettings(const CbcCutAdaptiveSkipSettings &value)
+  {
+    cutAdaptiveSkipSettings_ = value;
+  }
+  /// Get the adaptive root cut-generator skip thresholds
+  inline const CbcCutAdaptiveSkipSettings &cutAdaptiveSkipSettings() const
+  {
+    return cutAdaptiveSkipSettings_;
+  }
   /// Get anything with priority >= this can be treated as continuous
   inline int continuousPriority() const
   {
@@ -2965,6 +3322,7 @@ public:
   void setMIPStart(int count, const char **colNames, const double colValues[]);
 
 
+
   const std::vector< std::pair< std::string, double > > &getMIPStart()
   {
     return this->mipStart_;
@@ -2973,11 +3331,17 @@ public:
   //---------------------------------------------------------------------------
 
 private:
+  bool stoppingCriterionReachedImpl(bool checkMemory) const;
+  bool checkMemoryLimit(int *checkInterval) const;
+
   ///@name Private member data
   //@{
 
   /// The solver associated with this model.
   OsiSolverInterface *solver_;
+
+  /// See lastCutRoundResolveTime() accessor above.
+  double lastCutRoundResolveTime_;
 
   /** Ownership of objects and other stuff
 
@@ -3072,8 +3436,11 @@ private:
 
   /// Minimum degradation in objective value to continue cut generation
   double minimumDrop_;
+  int rootCutDropPatience_;
   /// Number of solutions
   int numberSolutions_;
+  /// Number of accepted incumbent improvements (distinct from feasible solutions)
+  std::atomic< int > incumbentCount_;
   /// Number of saved solutions
   int numberSavedSolutions_;
   /// Maximum number of saved solutions
@@ -3262,6 +3629,8 @@ private:
 	24 bit (67108864) - model has been flipped
     */
   int moreSpecialOptions2_;
+  /// See hasNonCbcObjects()
+  bool hasNonCbcObjects_;
   /// User node comparison function
   CbcCompareBase *nodeCompare_;
   /// User feasibility function (see CbcFeasibleBase.hpp)
@@ -3363,11 +3732,51 @@ private:
   CbcHeuristic **heuristic_;
   /// Pointer to heuristic solver which found last solution (or NULL)
   CbcHeuristic *lastHeuristic_;
+  /// Optional progress CSV (see setProgressCsv); not copied to sub-models
+  std::shared_ptr< FILE > progressCsv_;
+  double progressLastDual_ = -COIN_DBL_MAX;
+  double progressMinChange_ = 1.0e-4;
+  double progressLastSample_ = 0.0;
+  /// Best dual bound seen so far (minimisation sense), recorded or not
+  double progressDualSeen_ = -COIN_DBL_MAX;
+  /// Set when the progress handler asked to stop; reported as status 1 / secondary 5
+  bool progressStopRequested_ = false;
+  /// Time of the last progress notification
+  double progressLastNotify_ = 0.0;
+  /// Seconds without a notification after which a "tick" is sent
+  double progressHeartbeat_ = 1.0;
+  /// Snapshot delivered with CbcEventHandler::progress
+  CbcProgressInfo progressInfo_;
+  /// Best incumbent (minimisation sense) already written to the progress CSV
+  double progressLastPrimal_ = COIN_DBL_MAX;
+  /// Absolute clock origin for full-solve progress timestamps (not reset with B&B limits).
+  double progressClockOrigin_ = 0.0;
+  bool progressClockOriginSet_ = false;
+  struct PendingProgressIncumbent {
+    double seconds;
+    double objective;
+    std::string source;
+  };
+  /// Accepted MIP starts / original-model heuristic incumbents before CSV setup.
+  std::vector< PendingProgressIncumbent > preSearchProgress_;
+  /// Serialises CSV writes and the progress state above between the base model and its thread clones
+  std::shared_ptr< std::mutex > progressMutex_;
+  /// For thread clones: the base model that owns the CSV (nullptr otherwise)
+  CbcModel *progressOwner_ = nullptr;
   /// Output handler for root-node heuristics (not owned; nullptr after doHeuristicsAtRoot)
   CbcRootHeurOutput *rootHeurOutput_ = nullptr;
 
   /// When true, use CbcRootHeuristicSchedule (two-phase parallel) at root
   bool useRootHeuristicSchedule_ = false;
+  /// When true, root constructive heuristics run serially and publish each
+  /// result before the next one, so explicit SppGrasp/FPump orders are real.
+  bool sppGraspRootSequence_ = false;
+  bool sppGraspStagedWorkEnabled_ = false;
+  double sppGraspStagedWorkTotal_ = 0.0;
+  double sppGraspStagedWorkUsed_ = 0.0;
+  bool sppGraspStagedSecondPassDone_ = false;
+  bool sppGraspPumpGuide_ = false;
+  bool sppGraspFpumpOnlyWithoutIncumbent_ = false;
   /// Depth for fast nodes
   int fastNodeDepth_;
   /// Whether to run bound propagation at B&B nodes (0=off, 1=on)
@@ -3378,6 +3787,18 @@ private:
   int nodeBoundPropMinDepth_;
   /// Depth interval for node bound propagation (apply at depth 0, interval, 2*interval, ...)
   int nodeBoundPropDepthInterval_;
+  /// Dive simplex iteration limit in the tree (-1 is auto)
+  int diveMaxIterTree_;
+  /// Dive simplex iteration limit at the root (-1 is auto)
+  int diveMaxIterRoot_;
+  /// Strong branching boost applies below this many rows
+  int strongBoostRows_;
+  /// Strong branching boost applies below this many rows+columns
+  int strongBoostSize_;
+  /// Cut parallelism filter thresholds
+  CbcCutPoolFilterSettings cutPoolFilterSettings_;
+  /// Adaptive root cut-generator skip thresholds
+  CbcCutAdaptiveSkipSettings cutAdaptiveSkipSettings_;
   /*! Pointer to the event handler */
 #ifdef CBC_ONLY_CLP
   ClpEventHandler *eventHandler_;
@@ -3437,6 +3858,8 @@ private:
   int maximumCutPassesAtRoot_;
   /// Maximum number of cut passes
   int maximumCutPasses_;
+  /// Depth at which tree nodes stop getting cut passes (0: no limit)
+  int stopCutsDepth_;
   /// Preferred way of branching
   int preferredWay_;
   /// Current cut pass number
@@ -3447,6 +3870,8 @@ private:
   int maximumRows_;
   /// Random seed
   unsigned int randomSeed_;
+  /// Seed branchAndBound() gives a Clp solver
+  int solverRandomSeed_ = 1234567;
   /// Multiple root tries
   int multipleRootTries_;
   /// Current depth

@@ -1061,10 +1061,31 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
           outputSolution[2 * i + 1] = new double[numberColumns];
         }
         //clp->writeMps("bad");
+        // This single call resolves numberStrong candidates (down+up each)
+        // entirely inside Clp with no opportunity for CbcNode to check
+        // elapsed time in between - unlike the slower per-candidate path
+        // below, which checks hitMaxTime after every candidate. Propagate
+        // the remaining CBC time budget into the Clp instance actually
+        // used here (post-crunch, if CRUNCH substituted a smaller model)
+        // so ClpSimplexDual::strongBranching()'s own per-candidate deadline
+        // check - and the pre-existing per-iteration check inside
+        // fastDual() - can actually bound this call; clear it again right
+        // after so the limit doesn't leak into unrelated later LP solves.
+        if (maxTime < 1.0e18) {
+          double remaining = std::max(maxTime - model->getCurrentSeconds(), 0.0);
+          if (model->useElapsedTime())
+            clp->setMaximumWallSeconds(remaining);
+          else
+            clp->setMaximumSeconds(remaining);
+        }
         returnCode = clp->strongBranching(numberStrong, which,
           newLower, newUpper, outputSolution,
           outputStuff, outputStuff + 2 * numberStrong, !solveAll, false,
           startFinishOptions);
+        if (maxTime < 1.0e18) {
+          clp->setMaximumSeconds(-1.0);
+          clp->setMaximumWallSeconds(-1.0);
+        }
 #ifndef CRUNCH
         clp->setSpecialOptions(clpOptions); // restore
         clp->setMaximumIterations(saveMaxIts);
@@ -3268,7 +3289,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         if (searchStrategy != 2) {
           int numberRows = solver->getNumRows();
           // whether to do this or not is important - think
-          if (numberRows < 300 || numberRows + numberColumns < 2500) {
+          if (numberRows < model->strongBoostRows() || numberRows + numberColumns < model->strongBoostSize()) {
             if (depth_ < 7)
               numberStrong = std::min(3 * numberStrong, numberToDo);
             if (!depth_) {
@@ -4886,7 +4907,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       model->setSearchStrategy(2);
     }
   }
-  if (numberUnfinished * 10 < numberStrongDone && model->numberStrongIterations() * 20 < model->getIterationCount() && !auxiliaryInfo->solutionAddsCuts()) {
+  if (numberUnfinished * 10 < numberStrongDone && static_cast< double >(model->numberStrongIterations()) * 20 < model->getIterationCount() && !auxiliaryInfo->solutionAddsCuts()) {
     //printf("increasing trust\n");
     model->synchronizeNumberBeforeTrust(2);
   }
@@ -4974,11 +4995,11 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   }
 #endif
   if (model->logLevel() > 1)
-    printf("Node %d depth %d unsatisfied %d sum %g obj %g guess %g branching on %d\n",
+    printf("Node %d depth %d unsatisfied %d sum %g obj %g guess %g branching on %d nodeInfo=%p parentInfo=%p\n",
       model->getNodeCount(), depth_, numberUnsatisfied_,
 	   sumInfeasibilities_, model->trueObjValue(objectiveValue_),
 	   model->trueObjValue(guessedObjectiveValue_),
-      kColumn);
+      kColumn, (void *)nodeInfo_, (void *)(nodeInfo_ ? nodeInfo_->parent() : nullptr));
 #ifdef DO_ALL_AT_ROOT
   if (strongType) {
     char general[200];

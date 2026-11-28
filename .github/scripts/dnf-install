@@ -1,0 +1,36 @@
+#!/bin/bash
+# Usage: dnf-install PACKAGE...
+#
+# dnf install for the manylinux_2_34 containers of the Linux jobs in
+# sanity-tests.yml and next-release.yml. The image has EPEL enabled, so every
+# install downloads EPEL's metadata, and an EPEL mirror that is out of sync or
+# has a bad certificate fails the job before anything is built:
+#   Error: Failed to download metadata for repo 'epel'
+# This retries, and if the mirrors still fail, takes EPEL from its master site
+# (dl.fedoraproject.org), which is always in sync.
+#
+# DNF_INSTALL_MASTER=1 skips the mirrors (to test the fallback).
+
+set -u
+opts=(-y --setopt=install_weak_deps=False)
+
+if [ "${DNF_INSTALL_MASTER:-0}" != 1 ]; then
+  for attempt in 1 2; do
+    dnf install "${opts[@]}" "$@" >/dev/null && exit 0
+    # No dnf clean: dnf keeps the metadata of the repositories that worked,
+    # and tries the failed one again.
+    echo "dnf-install: attempt $attempt failed" >&2
+    if [ "$attempt" = 1 ]; then sleep 30; fi
+  done
+fi
+
+echo "dnf-install: using EPEL's master site instead of its mirrors" >&2
+rhel=$(rpm -E %rhel)
+cat > /etc/yum.repos.d/epel-master.repo <<EOF
+[epel-master]
+name=EPEL $rhel - \$basearch (master site)
+baseurl=https://dl.fedoraproject.org/pub/epel/$rhel/Everything/\$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-$rhel
+EOF
+dnf install "${opts[@]}" --disablerepo=epel "$@" >/dev/null

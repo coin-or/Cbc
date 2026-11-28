@@ -68,7 +68,7 @@ jobs:
             git
             zip
           path-type: inherit
-          msystem: mingw64
+          msystem: ucrt64
       - name: Fetch project
         run: |
           ADD_ARGS=()

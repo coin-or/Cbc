@@ -370,6 +370,20 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
 int CbcHeuristicLocal::solution(double &solutionValue,
   double *betterSolution)
 {
+  // only a new incumbent triggers a run, so only then can control veto one
+  if (numberSolutions_ != model_->getSolutionCount() && !controlAllows())
+    return 0;
+  const int runsBefore = numRuns_;
+  RunGuard runGuard(this);
+  const int returnCode = solutionImpl(solutionValue, betterSolution);
+  if (numRuns_ > runsBefore)
+    runGuard.finish(returnCode == 1);
+  return returnCode;
+}
+
+int CbcHeuristicLocal::solutionImpl(double &solutionValue,
+  double *betterSolution)
+{
   /*
   Execute only if a new solution has been discovered since the last time we
   were called.
@@ -1105,6 +1119,20 @@ void CbcHeuristicProximity::resetModel(CbcModel * /*model*/)
 int CbcHeuristicProximity::solution(double &solutionValue,
   double *betterSolution)
 {
+  // only a new incumbent triggers a run, so only then can control veto one
+  if (numberSolutions_ != model_->getSolutionCount() && !controlAllows())
+    return 0;
+  const int runsBefore = numRuns_;
+  RunGuard runGuard(this);
+  const int returnCode = solutionImpl(solutionValue, betterSolution);
+  if (numRuns_ > runsBefore)
+    runGuard.finish(returnCode == 1);
+  return returnCode;
+}
+
+int CbcHeuristicProximity::solutionImpl(double &solutionValue,
+  double *betterSolution)
+{
   if (feasibilityPumpOptions_ == -3 && numCouldRun_ == 0 && !feasibilityPump_) {
     // clone feasibility pump
     for (int i = 0; i < model_->numberHeuristics(); i++) {
@@ -1657,6 +1685,20 @@ void CbcHeuristicCrossover::resetModel(CbcModel *model)
   CbcHeuristic::resetModel(model);
 }
 int CbcHeuristicCrossover::solution(double &solutionValue,
+  double *betterSolution)
+{
+  // only a new incumbent triggers a run, so only then can control veto one
+  if (numberSolutions_ != model_->getSolutionCount() && !controlAllows())
+    return 0;
+  const int runsBefore = numRuns_;
+  RunGuard runGuard(this);
+  const int returnCode = solutionImpl(solutionValue, betterSolution);
+  if (numRuns_ > runsBefore)
+    runGuard.finish(returnCode == 1);
+  return returnCode;
+}
+
+int CbcHeuristicCrossover::solutionImpl(double &solutionValue,
   double *betterSolution)
 {
   if (when_ == 0)

@@ -1,0 +1,36 @@
+# cutgen-throttle-sweep configs: name<TAB>comma-separated overrides ("-" = none)
+# Each override is KEY=VAL (env var, exported before mip-root-replay runs)
+# or CLI:<arg> (extra mip-root-replay CLI argument; CLI:--param=NAME=VALUE
+# sets any CbcParameters entry).
+#
+# baseline: current shipped defaults -- GMI/LandP/RedSplit2 = root (per
+# CbcSolver.cpp), filter extended to all three (CbcCutGenerator.cpp).
+# As of 2026-09-24 the shipped per-round/per-lifetime cost-cap *values*
+# were reverted to match this sweep's own "old-unthrottled" config below
+# (reduce2TimeLimit=60, GMIHowOften=1, liftTimeLimit=1e30,
+# etc -- see CbcSolverCutSetup.cpp) after this sweep showed old-unthrottled
+# beating the originally-shipped tighter caps on both dual gap (30.66% vs
+# 30.76%) and primal gap (12.85% vs 13.11%) at 128 nodes/2h, with no
+# meaningful time cost. The independent RedSplit2 memory-safety fixes (row
+# gate, dynamic maxNumComputedCuts*nrow buffer cap, and the
+# mTab*card_contNonBasicVar tableau-size guard in CglRedSplit2.cpp) are
+# unaffected by this and remain in effect regardless of these cap values.
+baseline	-
+# Disable each new generator individually, to isolate which one (if any)
+# is driving a net win/loss over these first 128 nodes.
+no-gmi	CLI:--gmi=off
+no-landp	CLI:--landp=off
+no-redsplit2	CLI:--redsplit2=off
+# Disable all three -- the "these three generators shouldn't exist at all
+# in this window" baseline the user asked to also check.
+no-new-cuts	CLI:--gmi=off,CLI:--landp=off,CLI:--redsplit2=off
+# Kept for reference: this is now numerically identical to "baseline"
+# above (its values became the new shipped defaults on 2026-09-24). Left
+# in the sweep so future re-runs still have an explicit, self-documenting
+# override set that doesn't silently drift if the shipped defaults change
+# again.
+old-unthrottled	CLI:--param=reduce2TimeLimit=60,CLI:--param=reduce2MaxCuts=10000,CLI:--param=reduce2MaxComputed=10000,CLI:--param=GMIHowOften=1,CLI:--param=liftTimeLimit=1e30,CLI:--param=liftCutTimeLimit=1e30,CLI:--param=liftMaxCutsPerRound=5000
+# Tighter throttles than the shipped defaults, to see if squeezing further
+# still helps (or starts costing too much bound value). This sweep found
+# it does not -- worst primal gap (13.58%) of all seven configs.
+tighter-throttles	CLI:--param=reduce2TimeLimit=2,CLI:--param=reduce2MaxCuts=300,CLI:--param=reduce2MaxComputed=600,CLI:--param=GMIHowOften=10,CLI:--param=liftTimeLimit=10,CLI:--param=liftCutTimeLimit=1,CLI:--param=liftMaxCutsPerRound=300

@@ -1,0 +1,47 @@
+# LP relaxation parameter settings — one per line
+# Format: tag|cbc_params
+#
+# Sources:
+#   - guess_methods_report.tex: 4 guess() leaves (L1-L4)
+#   - guess_option.tex: barrier candidates
+#   - fbps paper (Vilas Boas et al. 2019): irace-tuned configs + decision tree leaves
+#   - CLP defaults: plain dual/primal/barrier
+#
+# CBC default behavior: fastPreProcess milpbt (on), timeMode elapsed
+# The script adds: -randomSeed, -sec, -initialSolve, output actions
+
+# ── Defaults (no tuning) ──────────────────────────────────────────────
+dual_default|-lpMethod dual
+primal_default|-lpMethod primal
+
+# ── Dual simplex variants (from fbps paper) ──────────────────────────
+dual_pesteep|-dualPivot pesteep -lpMethod dual
+dual_pesteep_psi1|-dualPivot pesteep -psi 1.0 -lpMethod dual
+dual_pesteep_psi1_pertv61|-dualPivot pesteep -psi 1.0 -pertValue 61 -lpMethod dual
+dual_pesteep_psineg1_pertv61|-dualPivot pesteep -psi -1.0 -pertValue 61 -lpMethod dual
+dual_pertv61|-pertValue 61 -lpMethod dual
+dual_pertv52|-pertValue 52 -lpMethod dual
+dual_pertv50|-pertValue 50 -lpMethod dual
+dual_pesteep_psineg1|-dualPivot pesteep -psi -1.0 -lpMethod dual
+
+# ── Primal simplex + idiot crash variants (from fbps paper) ──────────
+primal_idiot10|-idiot 10 -lpMethod primal
+primal_idiot30|-idiot 30 -lpMethod primal
+primal_idiot40|-idiot 40 -lpMethod primal
+primal_idiot50|-idiot 50 -lpMethod primal
+primal_idiot60|-idiot 60 -lpMethod primal
+primal_idiot80|-idiot 80 -lpMethod primal
+primal_idiot100|-idiot 100 -lpMethod primal
+primal_idiot125|-idiot 125 -lpMethod primal
+
+# ── Primal + idiot + perturbation (from fbps paper) ──────────────────
+primal_idiot7_pertv61|-idiot 7 -pertValue 61 -lpMethod primal
+primal_idiot11_pertvm1483|-idiot 11 -pertValue -1483 -lpMethod primal
+primal_idiot30_pertvm1483|-idiot 30 -pertValue -1483 -lpMethod primal
+primal_idiot40_pertvm1483|-idiot 40 -pertValue -1483 -lpMethod primal
+
+# ── Primal + sprint (from fbps paper) ────────────────────────────────
+primal_sprint|-sprint -1 -lpMethod primal
+
+# ── initialSolve default (CBC's own default path) ────────────────────
+cbc_default|

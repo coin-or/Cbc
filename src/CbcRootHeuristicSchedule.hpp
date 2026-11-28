@@ -13,7 +13,7 @@
 class CbcModel;
 class CbcHeuristic;
 
-/** Two-phase parallel heuristic schedule for root node.
+/** Two-phase root heuristic schedule.
  *
  *  Phase 1 (constructive): runs diving, FPump, rounding, greedy in parallel.
  *  Stops as soon as maxSolutionsPhase1 solutions are found.
@@ -28,8 +28,12 @@ public:
   CbcRootHeuristicSchedule(CbcModel &model);
   ~CbcRootHeuristicSchedule();
 
-  /// Run the two-phase schedule. Returns number of solutions found.
-  int run(bool afterCuts = false);
+  /** Run the two-phase schedule for the given root "hook" moment (see
+      CbcHeuristic::rootHooks()): 'L' (default) is the pre-processed LP
+      solution before any cuts, 'C' is after root cut generation finished.
+      Only heuristics whose rootHooks() include hookCode are considered.
+      Returns number of solutions found. */
+  int run(char hookCode = 'L');
 
   /// Add the default v5 diving schedule to the model
   void addDefaultDivingConfigs();
@@ -37,6 +41,12 @@ public:
   /// Parameters
   void setMaxSolutionsPhase1(int n) { maxSolutionsPhase1_ = n; }
   void setNumThreads(int n) { numThreads_ = n; }
+  void setSequentialCalls(bool value) { sequentialCalls_ = value; }
+  void setPumpGuide(bool value) { pumpGuide_ = value; }
+  void setPumpOnlyWithoutIncumbent(bool value)
+  {
+    pumpOnlyWithoutIncumbent_ = value;
+  }
 
   int maxSolutionsPhase1() const { return maxSolutionsPhase1_; }
   int numThreads() const { return numThreads_; }
@@ -60,7 +70,7 @@ private:
   /// Run improvement heuristics. Returns number of solutions found.
   int runPhase2(std::vector<CbcHeuristic *> &heuristics);
 
-  /// Run a set of heuristics in parallel with early termination.
+  /// Run a set of heuristics, optionally in order, with early termination.
   /// Returns number of solutions found.
   int runParallel(std::vector<CbcHeuristic *> &heuristics,
     int maxSolutions);
@@ -69,6 +79,10 @@ private:
   std::atomic<bool> stopFlag_;
   int maxSolutionsPhase1_;
   int numThreads_;
+  bool sequentialCalls_;
+  bool pumpGuide_;
+  /// In the conditional SppGrasp-first mode, skip FPump only for a real CBC incumbent.
+  bool pumpOnlyWithoutIncumbent_;
   int solutionsFound_;
   OsiCuts conflictCuts_;
   double conflictMinViol_;

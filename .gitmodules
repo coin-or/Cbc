@@ -1,0 +1,3 @@
+[submodule "test/mip-sanity-data"]
+	path = test/mip-sanity-data
+	url = https://github.com/h-g-s/mip-sanity-data.git

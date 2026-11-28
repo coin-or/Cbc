@@ -223,6 +223,23 @@ void testMip()
 
   checkRowActivityAndSlack(model, rows, "MIP");
 
+  /* Cbc_savedSolutionObj() must give each saved solution's cost in the
+   * model's own sense (maximization here), as Cbc_getObjValue() does. */
+  int numSaved = Cbc_numberSavedSolutions(model);
+  check(numSaved >= 1, "MIP: at least one saved solution");
+  for (int i = 0; i < numSaved; ++i) {
+    const double *xi = Cbc_savedSolution(model, i);
+    check(xi != NULL, "MIP: Cbc_savedSolution(" + std::to_string(i) + ") is non-NULL");
+    if (!xi)
+      continue;
+    double cost = 4.0 * xi[0] + 1.0 * xi[1] - 1.0 * xi[2];
+    checkClose(Cbc_savedSolutionObj(model, i), cost, 1e-6,
+      "MIP: Cbc_savedSolutionObj(" + std::to_string(i) + ") is the cost of saved solution " + std::to_string(i));
+  }
+  if (numSaved >= 1)
+    checkClose(Cbc_savedSolutionObj(model, 0), Cbc_getObjValue(model), 1e-6,
+      "MIP: Cbc_savedSolutionObj(0) equals Cbc_getObjValue()");
+
   Cbc_deleteModel(model);
 }
 

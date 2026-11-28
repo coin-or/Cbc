@@ -2445,6 +2445,9 @@ int CbcSolver::runSolveContinuous(int forcedMethod,
     } else if (iStatus == 4) {
       iStatus = 2; // difficulties
       iStatus2 = 0;
+    } else if (iStatus == 5) {
+      iStatus = 1;
+      iStatus2 = 5; // user event, where Clp gives its event code (100 up)
     }
     model_.setProblemStatus(iStatus);
     model_.setSecondaryStatus(iStatus2);
